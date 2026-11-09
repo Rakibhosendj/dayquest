@@ -1,0 +1,10 @@
+{
+  "name": "DayQuest \u2013 Expenses & Daily Goals",
+  "short_name": "DayQuest",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3f5f9",
+  "theme_color": "#101827",
+  "description": "Offline daily expense and quest tracker",
+  "icons": []
+}

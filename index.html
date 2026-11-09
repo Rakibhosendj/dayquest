@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css">
+<title>DayQuest</title>
+</head>
+<body>
+<header class="top"><div><div class="eyebrow">YOUR PERSONAL DASHBOARD</div><h1>DayQuest <span>✦</span></h1></div><button id="installBtn" class="ghost" hidden>Install</button></header>
+<main>
+<section class="hero">
+ <div><div class="eyebrow">TODAY'S SPENDING</div><div class="money" id="todayTotal">৳0.00</div><div class="muted" id="todayDate"></div></div>
+ <div class="hero-side"><div class="eyebrow">QUEST PROGRESS</div><div class="big" id="questProgress">0/0</div><div class="progress"><i id="questBar"></i></div></div>
+</section>
+<nav class="tabs">
+ <button class="tab active" data-tab="home">Overview</button><button class="tab" data-tab="expenses">Expenses</button><button class="tab" data-tab="quests">Daily quests</button><button class="tab" data-tab="reports">Reports</button>
+</nav>
+<section id="home" class="panel active">
+ <div class="section-head"><h2>Today's activity</h2><span class="pill" id="todayQuestLabel">0 quests done</span></div>
+ <div class="cards"><article class="stat"><span class="muted">This week</span><strong id="weekTotal">৳0</strong><small>expenses</small></article><article class="stat"><span class="muted">This month</span><strong id="monthTotal">৳0</strong><small>expenses</small></article></div>
+ <div class="section-head"><h2>Quick actions</h2></div>
+ <div class="quick"><button class="primary" data-go="expenses">＋ Add expense</button><button class="secondary" data-go="quests">＋ Add daily quest</button></div>
+ <div class="section-head"><h2>Recent expenses</h2><button class="link" data-go="expenses">See all</button></div><div id="recentExpenses" class="list"></div>
+ <div class="section-head"><h2>Today's quests</h2><button class="link" data-go="quests">Manage</button></div><div id="todayQuests" class="list"></div>
+</section>
+<section id="expenses" class="panel">
+ <div class="section-head"><h2>Expenses</h2><span class="muted" id="expenseCount">0 entries</span></div>
+ <form id="expenseForm" class="form">
+  <label>Amount <input id="amount" type="number" min="0.01" step="0.01" placeholder="0.00" required></label>
+  <label>Category <select id="category"><option>Food</option><option>Transport</option><option>Shopping</option><option>Bills</option><option>Health</option><option>Education</option><option>Entertainment</option><option>Other</option></select></label>
+  <label>Date <input id="expenseDate" type="date" required></label>
+  <label>Note <input id="note" maxlength="80" placeholder="What did you spend on?"></label>
+  <button class="primary full">Save expense</button>
+ </form>
+ <div class="toolbar"><input id="expenseSearch" placeholder="Search expenses…"><select id="expenseFilter"><option value="all">All categories</option><option>Food</option><option>Transport</option><option>Shopping</option><option>Bills</option><option>Health</option><option>Education</option><option>Entertainment</option><option>Other</option></select></div>
+ <div id="expenseList" class="list"></div>
+</section>
+<section id="quests" class="panel">
+ <div class="section-head"><h2>Daily quests</h2><span class="pill" id="questSummary">0 completed</span></div>
+ <form id="questForm" class="form">
+  <label>Quest title <input id="questTitle" maxlength="70" placeholder="e.g. Read 10 pages" required></label>
+  <label>Repeat <select id="questRepeat"><option value="daily">Every day</option><option value="once">Today only</option></select></label>
+  <button class="primary full">＋ Add quest</button>
+ </form>
+ <p class="hint">Tick a quest when you finish it. Daily quests reset automatically each new day; one-time quests stay for today.</p>
+ <div id="questList" class="list"></div>
+</section>
+<section id="reports" class="panel">
+ <div class="section-head"><h2>Reports</h2></div>
+ <div class="report-switch"><button class="period active" data-period="week">Weekly</button><button class="period" data-period="month">Monthly</button></div>
+ <article class="report-card"><div class="eyebrow" id="reportLabel">THIS WEEK</div><strong class="report-total" id="reportTotal">৳0.00</strong><div class="muted" id="reportRange"></div><div class="bars" id="reportBars"></div></article>
+ <div class="section-head"><h2>By category</h2></div><div id="categoryBreakdown" class="list"></div>
+ <div class="section-head"><h2>Quest achievement</h2></div><article class="stat"><strong id="achievementRate">0%</strong><small>completion rate for selected period</small></article>
+ <div class="section-head"><h2>Data & backup</h2></div><div class="quick"><button class="secondary" id="exportBtn">Export backup</button><label class="secondary import">Import backup<input id="importFile" type="file" accept="application/json"></label></div><p class="hint">Your data stays on this device. Export a backup regularly before clearing browser data or changing phones.</p>
+</section>
+</main>
+<footer>DayQuest · Private by design · Works offline</footer>
+<script src="app.js"></script>
+</body></html>
