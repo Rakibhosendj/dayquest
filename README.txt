@@ -2,10 +2,14 @@ DAYQUEST — OFFLINE EXPENSE & DAILY QUEST TRACKER
 
 WHAT IT DOES
 - Add, search, filter and delete daily expenses.
+- Choose payment type: Cash, Bank or Due. For Due entries, choose whether you owe or someone owes you, and enter the person name.
+- Due payment report with total amounts you owe, amounts others owe you, and person-wise balances. Older Due entries without direction are shown separately as unassigned.
+- Select expense names and add your own names; select units and add custom units.
+- Enter quantity and rate; total expense is calculated automatically.
 - Categories: Food, Transport, Shopping, Bills, Health, Education, Entertainment, Other.
-- Create daily repeating quests or one-day quests; tick them off to track achievement.
+- Create daily repeating quests or one-day quests with a configurable number of checkboxes and an achievement value for each check. The app displays checked times and the running total achieved (for example, 5 checks × 2 each = 10).
 - Overview with today's spending, weekly/monthly totals and today's quest progress.
-- Weekly and monthly reports, daily spending bars, category breakdown and quest completion rate.
+- Weekly and monthly reports, daily spending bars, category breakdown, quest completion rate and a separate all-time due payment report.
 - Export/import a JSON backup. Data is stored locally in this browser on this device.
 
 ANDROID INSTALL (PWA)

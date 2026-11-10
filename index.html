@@ -27,10 +27,21 @@
 <section id="expenses" class="panel">
  <div class="section-head"><h2>Expenses</h2><span class="muted" id="expenseCount">0 entries</span></div>
  <form id="expenseForm" class="form">
-  <label>Amount <input id="amount" type="number" min="0.01" step="0.01" placeholder="0.00" required></label>
+  <label>Expense name <span class="select-add"><select id="expenseName"></select><button type="button" class="mini-add" id="addExpenseName">＋ Add</button></span></label>
+  <label>Payment type <select id="paymentType"><option>Cash</option><option>Bank</option><option>Due</option></select></label>
+  <div id="dueFields" class="due-fields" hidden>
+   <label>Due direction <select id="dueDirection"><option value="i_owe">I Owe</option><option value="owed_to_me">Others Owe Me</option></select></label>
+   <label>Person name <input id="duePerson" maxlength="60" placeholder="Who is involved in this due?"></label>
+  </div>
+  <div class="form-grid">
+   <label>Quantity <input id="quantity" type="number" min="0.001" step="0.001" value="1" required></label>
+   <label>Unit <span class="select-add"><select id="unitName"></select><button type="button" class="mini-add" id="addUnit">＋ Add</button></span></label>
+  </div>
+  <label>Rate per unit <input id="rate" type="number" min="0" step="0.01" placeholder="0.00" required></label>
+  <div class="total-preview"><span>Total amount</span><strong id="calculatedTotal">৳0.00</strong></div>
   <label>Category <select id="category"><option>Food</option><option>Transport</option><option>Shopping</option><option>Bills</option><option>Health</option><option>Education</option><option>Entertainment</option><option>Other</option></select></label>
   <label>Date <input id="expenseDate" type="date" required></label>
-  <label>Note <input id="note" maxlength="80" placeholder="What did you spend on?"></label>
+  <label>Note <input id="note" maxlength="80" placeholder="Optional details"></label>
   <button class="primary full">Save expense</button>
  </form>
  <div class="toolbar"><input id="expenseSearch" placeholder="Search expenses…"><select id="expenseFilter"><option value="all">All categories</option><option>Food</option><option>Transport</option><option>Shopping</option><option>Bills</option><option>Health</option><option>Education</option><option>Entertainment</option><option>Other</option></select></div>
@@ -39,11 +50,15 @@
 <section id="quests" class="panel">
  <div class="section-head"><h2>Daily quests</h2><span class="pill" id="questSummary">0 completed</span></div>
  <form id="questForm" class="form">
-  <label>Quest title <input id="questTitle" maxlength="70" placeholder="e.g. Read 10 pages" required></label>
+  <label>Quest name <input id="questTitle" maxlength="70" value="Namaz" placeholder="e.g. Read 10 pages" required></label>
+  <div class="form-grid">
+   <label>Time (number of checkboxes) <input id="questTimes" type="number" min="1" max="30" step="1" value="5" required></label>
+   <label>Each Time (achievement value) <input id="questEachTime" type="number" min="0.01" step="0.01" value="2" required></label>
+  </div>
   <label>Repeat <select id="questRepeat"><option value="daily">Every day</option><option value="once">Today only</option></select></label>
   <button class="primary full">＋ Add quest</button>
  </form>
- <p class="hint">Tick a quest when you finish it. Daily quests reset automatically each new day; one-time quests stay for today.</p>
+ <p class="hint">Set how many times the quest can be checked and the value earned by each check. Every checked box adds its Each Time value to Total achieved. Daily quests reset automatically each new day.</p>
  <div id="questList" class="list"></div>
 </section>
 <section id="reports" class="panel">
@@ -51,6 +66,11 @@
  <div class="report-switch"><button class="period active" data-period="week">Weekly</button><button class="period" data-period="month">Monthly</button></div>
  <article class="report-card"><div class="eyebrow" id="reportLabel">THIS WEEK</div><strong class="report-total" id="reportTotal">৳0.00</strong><div class="muted" id="reportRange"></div><div class="bars" id="reportBars"></div></article>
  <div class="section-head"><h2>By category</h2></div><div id="categoryBreakdown" class="list"></div>
+ <div class="section-head"><h2>Due payment report</h2><span class="pill">All outstanding dues</span></div>
+ <div class="cards due-summary"><article class="stat"><span class="muted">I owe</span><strong id="iOweTotal">৳0.00</strong><small>Money you need to pay</small></article><article class="stat"><span class="muted">Others owe me</span><strong id="owedToMeTotal">৳0.00</strong><small>Money to receive</small></article></div>
+ <div class="section-head"><h2>People I owe</h2></div><div id="iOweList" class="list"></div>
+ <div class="section-head"><h2>People who owe me</h2></div><div id="owedToMeList" class="list"></div>
+ <p class="hint" id="unassignedDueHint" hidden></p>
  <div class="section-head"><h2>Quest achievement</h2></div><article class="stat"><strong id="achievementRate">0%</strong><small>completion rate for selected period</small></article>
  <div class="section-head"><h2>Data & backup</h2></div><div class="quick"><button class="secondary" id="exportBtn">Export backup</button><label class="secondary import">Import backup<input id="importFile" type="file" accept="application/json"></label></div><p class="hint">Your data stays on this device. Export a backup regularly before clearing browser data or changing phones.</p>
 </section>
