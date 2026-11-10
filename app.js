@@ -31,29 +31,8 @@ $('expenseForm').onsubmit=e=>{e.preventDefault();let quantity=Number($('quantity
  if(paymentType==='Due'&&!$('duePerson').value.trim()){alert('Enter the person name for this due.');$('duePerson').focus();return}
  db.expenses.unshift({id:crypto.randomUUID(),amount:quantity*rate,name,quantity,unit,rate,paymentType,dueDirection:paymentType==='Due'?$('dueDirection').value:null,duePerson:paymentType==='Due'?$('duePerson').value.trim():null,category:$('category').value,date:$('expenseDate').value,note:$('note').value.trim()});
  e.target.reset();$('expenseDate').value=today();$('quantity').value=1;$('dueFields').hidden=true;$('duePerson').required=false;fillChoices();calcTotal();save()};
-$('questForm').onsubmit=e=>{
- e.preventDefault();
- const title=$('questTitle').value.trim(),times=Math.max(1,Math.min(30,Math.floor(Number($('questTimes').value)||1))),eachTime=Number($('questEachTime').value);
- if(!title||!(eachTime>0)||!Number.isFinite(eachTime)){alert('Enter a quest name and a valid Each Time value greater than 0.');return}
- db.quests.push({id:crypto.randomUUID(),title,repeat:$('questRepeat').value,date:today(),times,eachTime});
- e.target.reset();$('questTitle').value='Namaz';$('questTimes').value=5;$('questEachTime').value=2;save()
-};
-function questCheckState(q,d){
- const count=Math.max(1,Math.min(30,Math.floor(Number(q.times)||1))),state=(db.checks[d]||{})[q.id];
- if(Array.isArray(state))return Array.from({length:count},(_,i)=>!!state[i]);
- return Array(count).fill(state===true);
-}
-function questCheckedCount(q,d){return questCheckState(q,d).filter(Boolean).length}
-function questAchieved(q,d){return questCheckedCount(q,d)*Number(q.eachTime??1)}
-function questTarget(q){return Math.max(1,Math.min(30,Math.floor(Number(q.times)||1)))*Number(q.eachTime??1)}
-function numberText(n){return Number(n).toLocaleString(undefined,{maximumFractionDigits:2})}
-function completed(q,d){const state=questCheckState(q,d);return state.every(Boolean)}
-function toggleQuest(id,index){
- const q=db.quests.find(x=>x.id===id);if(!q)return;
- db.checks[today()]??={};const state=questCheckState(q,today());
- if(index<0||index>=state.length)return;
- state[index]=!state[index];db.checks[today()][id]=state;save()
-}
+$('questForm').onsubmit=e=>{e.preventDefault();db.quests.push({id:crypto.randomUUID(),title:$('questTitle').value.trim(),repeat:$('questRepeat').value,date:today()});e.target.reset();save()};
+function toggleQuest(id){db.checks[today()]??={};db.checks[today()][id]=!db.checks[today()][id];save()}
 function delExpense(id){if(confirm('Delete this expense?')){db.expenses=db.expenses.filter(x=>x.id!==id);save()}}
 function delQuest(id){if(confirm('Delete this quest?')){db.quests=db.quests.filter(x=>x.id!==id);Object.values(db.checks).forEach(v=>delete v[id]);save()}}
 function empty(msg){return `<div class="empty">${msg}</div>`}
@@ -69,17 +48,7 @@ function render(){
  $('questSummary').textContent=`${done}/${qToday.length} completed`;
 }
 function expenseHTML(items,del){return items.length?items.map(x=>{let title=x.name||x.note||x.category,dueInfo=x.paymentType==='Due'?[x.dueDirection==='i_owe'?'I owe':x.dueDirection==='owed_to_me'?'Owed to me':'Old due',x.duePerson].filter(Boolean).join(' · '):'',details=[x.paymentType||'Cash',dueInfo,x.quantity?`${x.quantity} ${x.unit||''} × ${money(x.rate||0)}`:x.category,fmt(x.date),x.note].filter(Boolean).join(' · ');return `<div class="item"><div class="item-main"><div class="item-title">${esc(title)}</div><div class="item-sub">${esc(details)}</div></div><div class="item-amount">${money(x.amount)}</div>${del?`<button class="delete" onclick="delExpense('${x.id}')">×</button>`:''}</div>`}).join(''):empty('No expenses yet. Add your first one above.') }
-function questHTML(items,del){return items.length?items.map(q=>{
- const d=today(),state=questCheckState(q,d),checked=state.filter(Boolean).length,achieved=questAchieved(q,d),target=questTarget(q);
- return `<div class="quest-item ${completed(q,d)?'done':''}">
-  <div class="quest-item-head"><div class="item-main"><div class="item-title">${esc(q.title)}</div><div class="item-sub">${q.repeat==='daily'?'Repeats daily':'Today only'} · Each Time: ${numberText(Number(q.eachTime??1))}</div></div>
-   <div class="quest-score"><strong>Total achieved: ${numberText(achieved)} / ${numberText(target)}</strong><span>${checked} / ${state.length} times checked</span></div>
-   ${del?`<button class="delete" onclick="delQuest('${q.id}')" aria-label="Delete ${esc(q.title)}">×</button>`:''}
-  </div>
-  <div class="quest-checks">${state.map((isChecked,i)=>`<label class="quest-check"><input class="check" type="checkbox" ${isChecked?'checked':''} aria-label="${esc(q.title)} time ${i+1}" onchange="toggleQuest('${q.id}',${i})"><span>Time ${i+1}</span></label>`).join('')}</div>
- </div>`
- }).join(''):empty('No quests for today. Add a small goal to get started.')}
-
+function questHTML(items,del){return items.length?items.map(q=>`<div class="item ${completed(q,today())?'done':''}"><input class="check" type="checkbox" ${completed(q,today())?'checked':''} onchange="toggleQuest('${q.id}')"><div class="item-main"><div class="item-title">${esc(q.title)}</div><div class="item-sub">${q.repeat==='daily'?'Repeats daily':'Today only'}</div></div>${del?`<button class="delete" onclick="delQuest('${q.id}')">×</button>`:''}</div>`).join(''):empty('No quests for today. Add a small goal to get started.')}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 $('expenseSearch').oninput=render;$('expenseFilter').onchange=render;
 document.querySelectorAll('.period').forEach(b=>b.onclick=()=>{period=b.dataset.period;document.querySelectorAll('.period').forEach(x=>x.classList.toggle('active',x===b));renderReport()});
@@ -93,7 +62,7 @@ function renderReport(){
  $('reportBars').innerHTML=vals.map((v,i)=>`<div class="bar-wrap"><div class="bar" title="${money(v)}" style="height:${Math.max(v?3:1,v/max*82)}px"></div><span class="bar-label">${labels[i]}</span></div>`).join('');
  let cats={};items.forEach(x=>cats[x.category]=(cats[x.category]||0)+Number(x.amount));
  $('categoryBreakdown').innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="breakrow"><span>${esc(k)}</span><strong>${money(v)}</strong></div>`).join('')||empty('No expenses in this period.');
- let all=0,done=0;days.forEach(d=>dayQuests(d).forEach(q=>{const state=questCheckState(q,d);all+=state.length;done+=state.filter(Boolean).length}));$('achievementRate').textContent=(all?Math.round(done/all*100):0)+'%';
+ let all=0,done=0;days.forEach(d=>dayQuests(d).forEach(q=>{all++;if(completed(q,d))done++}));$('achievementRate').textContent=(all?Math.round(done/all*100):0)+'%';
  renderDueReport();
 }
 function renderDueReport(){

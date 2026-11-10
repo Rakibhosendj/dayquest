@@ -50,15 +50,11 @@
 <section id="quests" class="panel">
  <div class="section-head"><h2>Daily quests</h2><span class="pill" id="questSummary">0 completed</span></div>
  <form id="questForm" class="form">
-  <label>Quest name <input id="questTitle" maxlength="70" value="Namaz" placeholder="e.g. Read 10 pages" required></label>
-  <div class="form-grid">
-   <label>Time (number of checkboxes) <input id="questTimes" type="number" min="1" max="30" step="1" value="5" required></label>
-   <label>Each Time (achievement value) <input id="questEachTime" type="number" min="0.01" step="0.01" value="2" required></label>
-  </div>
+  <label>Quest title <input id="questTitle" maxlength="70" placeholder="e.g. Read 10 pages" required></label>
   <label>Repeat <select id="questRepeat"><option value="daily">Every day</option><option value="once">Today only</option></select></label>
   <button class="primary full">＋ Add quest</button>
  </form>
- <p class="hint">Set how many times the quest can be checked and the value earned by each check. Every checked box adds its Each Time value to Total achieved. Daily quests reset automatically each new day.</p>
+ <p class="hint">Tick a quest when you finish it. Daily quests reset automatically each new day; one-time quests stay for today.</p>
  <div id="questList" class="list"></div>
 </section>
 <section id="reports" class="panel">
