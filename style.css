@@ -2,3 +2,30 @@
 .select-add{display:flex;gap:7px;align-items:center}.select-add select{flex:1;min-width:0}.mini-add{border:0;background:#e5eaf2;color:#263b5c;border-radius:9px;padding:10px 11px;font-size:11px;font-weight:800;white-space:nowrap}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.total-preview{display:flex;justify-content:space-between;align-items:center;background:#f0f3f8;border-radius:11px;padding:13px;font-size:12px;color:#647188}.total-preview strong{font-size:18px;color:#172033}
 
 .due-fields{display:grid;gap:11px;padding:12px;background:#f7f8fb;border:1px solid #e8ebf1;border-radius:12px}.due-fields[hidden]{display:none}.due-summary{margin-bottom:8px}
+
+.quest-item{display:grid;gap:11px;background:white;border:1px solid #e8ebf1;border-radius:13px;padding:12px}.quest-item-head{display:flex;align-items:center;gap:10px;min-width:0}.quest-score{display:grid;gap:3px;text-align:right;white-space:nowrap}.quest-score strong{font-size:11px;color:#263b5c}.quest-score span{font-size:10px;color:#8a95a5}.quest-checks{display:flex;flex-wrap:wrap;gap:7px}.quest-check{display:flex;align-items:center;gap:5px;padding:7px 9px;background:#f3f5f9;border:1px solid #e6eaf0;border-radius:9px;font-size:10px;font-weight:700;color:#566176}.quest-check .check{width:16px;height:16px;margin:0}.quest-item.done .item-title{text-decoration:line-through;color:#929baa}.quest-item.done .quest-score strong{color:#28734c}@media(max-width:380px){.quest-item-head{flex-wrap:wrap}.quest-score{text-align:left;margin-left:auto}}
+
+.form-section-head{margin:12px 3px 8px}.form-section-head h3{font-size:13px;margin:0;color:#263b5c}.item-actions{display:flex;align-items:center;gap:5px}.edit-btn{border:0;background:#e8eef7;color:#29466d;border-radius:9px;padding:7px 9px;font-size:11px;font-weight:750;cursor:pointer}.delete{cursor:pointer}.form button[hidden]{display:none}
+
+/* Income and due collection */
+.quick{flex-wrap:wrap}
+.income-toolbar{align-items:end}
+.date-filter-label{display:grid;gap:5px;flex:1;min-width:170px;font-size:11px;font-weight:750;color:#566176}
+.date-filter-label input{width:100%;border:1px solid #e1e6ee;border-radius:10px;padding:11px;background:#fbfcfe;color:#172033;font:inherit;font-size:13px}
+.income-date-group{display:grid;gap:8px;margin-bottom:14px}
+.income-date-head{display:flex;align-items:center;justify-content:space-between;padding:4px 2px;color:#526078;font-size:11px}
+.income-date-head strong{font-size:12px;color:#263b5c}
+.income-item{align-items:flex-start}
+.income-right{display:grid;justify-items:end;gap:7px}
+.income-status{display:inline-block;margin-top:6px;padding:4px 7px;border-radius:20px;font-size:9px;font-weight:800;background:#edf1f6;color:#58667b}
+.income-status.is-due{background:#fff2dd;color:#98611d}
+.income-status.is-paid{background:#e7f5ed;color:#28734c}
+.collect-btn{border:0;background:#e7f5ed;color:#28734c;border-radius:9px;padding:7px 9px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap}
+.income-item .item-actions{flex-wrap:wrap;justify-content:flex-end}
+.income-item .item-sub{line-height:1.5}
+#incomeCollectForm[hidden]{display:none}
+#incomeDueFields .hint{margin:0}
+@media(max-width:420px){.income-toolbar{align-items:stretch;flex-wrap:wrap}.date-filter-label{flex-basis:100%}.income-item{flex-wrap:wrap}.income-right{width:100%;display:flex;align-items:center;justify-content:space-between}.income-item .item-actions{justify-content:flex-end}}
+.expense-right{display:grid;justify-items:end;gap:7px}
+.expense-right .item-actions{flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:420px){.expense-right{width:100%;display:flex;align-items:center;justify-content:space-between}}

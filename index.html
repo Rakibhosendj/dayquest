@@ -14,18 +14,20 @@
  <div class="hero-side"><div class="eyebrow">QUEST PROGRESS</div><div class="big" id="questProgress">0/0</div><div class="progress"><i id="questBar"></i></div></div>
 </section>
 <nav class="tabs">
- <button class="tab active" data-tab="home">Overview</button><button class="tab" data-tab="expenses">Expenses</button><button class="tab" data-tab="quests">Daily quests</button><button class="tab" data-tab="reports">Reports</button>
+ <button class="tab active" data-tab="home">Overview</button><button class="tab" data-tab="expenses">Expenses</button><button class="tab" data-tab="income">Income</button><button class="tab" data-tab="quests">Daily quests</button><button class="tab" data-tab="reports">Reports</button>
 </nav>
 <section id="home" class="panel active">
  <div class="section-head"><h2>Today's activity</h2><span class="pill" id="todayQuestLabel">0 quests done</span></div>
- <div class="cards"><article class="stat"><span class="muted">This week</span><strong id="weekTotal">৳0</strong><small>expenses</small></article><article class="stat"><span class="muted">This month</span><strong id="monthTotal">৳0</strong><small>expenses</small></article></div>
+ <div class="cards"><article class="stat"><span class="muted">This week</span><strong id="weekTotal">৳0</strong><small>expenses</small></article><article class="stat"><span class="muted">This month</span><strong id="monthTotal">৳0</strong><small>expenses</small></article><article class="stat"><span class="muted">Income received today</span><strong id="todayIncome">৳0</strong><small>cash, bank & due collections</small></article><article class="stat"><span class="muted">Income received this month</span><strong id="monthIncome">৳0</strong><small>cash, bank & due collections</small></article></div>
  <div class="section-head"><h2>Quick actions</h2></div>
- <div class="quick"><button class="primary" data-go="expenses">＋ Add expense</button><button class="secondary" data-go="quests">＋ Add daily quest</button></div>
+ <div class="quick"><button class="primary" data-go="expenses">＋ Add expense</button><button class="secondary" data-go="income">＋ Add income</button><button class="secondary" data-go="quests">＋ Add daily quest</button></div>
  <div class="section-head"><h2>Recent expenses</h2><button class="link" data-go="expenses">See all</button></div><div id="recentExpenses" class="list"></div>
+ <div class="section-head"><h2>Recent income</h2><button class="link" data-go="income">See all</button></div><div id="recentIncome" class="list"></div>
  <div class="section-head"><h2>Today's quests</h2><button class="link" data-go="quests">Manage</button></div><div id="todayQuests" class="list"></div>
 </section>
 <section id="expenses" class="panel">
  <div class="section-head"><h2>Expenses</h2><span class="muted" id="expenseCount">0 entries</span></div>
+ <div class="section-head form-section-head"><h3 id="expenseFormTitle">Add expense</h3><span class="muted" id="expenseEditHint" hidden>Editing saved expense</span></div>
  <form id="expenseForm" class="form">
   <label>Expense name <span class="select-add"><select id="expenseName"></select><button type="button" class="mini-add" id="addExpenseName">＋ Add</button></span></label>
   <label>Payment type <select id="paymentType"><option>Cash</option><option>Bank</option><option>Due</option></select></label>
@@ -42,19 +44,68 @@
   <label>Category <select id="category"><option>Food</option><option>Transport</option><option>Shopping</option><option>Bills</option><option>Health</option><option>Education</option><option>Entertainment</option><option>Other</option></select></label>
   <label>Date <input id="expenseDate" type="date" required></label>
   <label>Note <input id="note" maxlength="80" placeholder="Optional details"></label>
-  <button class="primary full">Save expense</button>
+  <button class="primary full" id="expenseSubmitBtn">Save expense</button>
+  <button class="secondary full" type="button" id="cancelExpenseEdit" hidden>Cancel edit</button>
+ </form>
+ <div class="section-head"><h3>Pay or collect an expense due</h3><span class="muted">Record due settlements</span></div>
+ <form id="expenseDueActionForm" class="form" hidden>
+  <div class="total-preview"><span id="expenseDueActionLabel">Due settlement</span><strong id="expenseDueRemaining">৳0.00</strong></div>
+  <label>Amount <input id="expenseDueActionAmount" type="number" min="0.01" step="0.01" required></label>
+  <div class="form-grid">
+   <label>Payment date <input id="expenseDueActionDate" type="date" required></label>
+   <label>Method <select id="expenseDueActionMethod"><option>Cash</option><option>Bank</option></select></label>
+  </div>
+  <label>Note <input id="expenseDueActionNote" maxlength="100" placeholder="Optional details"></label>
+  <button class="primary full" id="expenseDueActionSubmit">Save due settlement</button>
+  <button class="secondary full" type="button" id="cancelExpenseDueAction">Cancel</button>
  </form>
  <div class="toolbar"><input id="expenseSearch" placeholder="Search expenses…"><select id="expenseFilter"><option value="all">All categories</option><option>Food</option><option>Transport</option><option>Shopping</option><option>Bills</option><option>Health</option><option>Education</option><option>Entertainment</option><option>Other</option></select></div>
  <div id="expenseList" class="list"></div>
 </section>
+<section id="income" class="panel">
+ <div class="section-head"><h2>Income</h2><span class="muted" id="incomeCount">0 entries</span></div>
+ <div class="section-head form-section-head"><h3 id="incomeFormTitle">Add income</h3><span class="muted" id="incomeEditHint" hidden>Editing saved income</span></div>
+ <form id="incomeForm" class="form">
+  <label>Income source <input id="incomeSource" maxlength="70" placeholder="e.g. Salary, Sales, Freelance" required></label>
+  <label>Amount <input id="incomeAmount" type="number" min="0.01" step="0.01" placeholder="0.00" required></label>
+  <label>Payment type <select id="incomePaymentType"><option>Cash</option><option>Bank</option><option>Due</option></select></label>
+  <div id="incomeDueFields" class="due-fields" hidden>
+   <label>Customer / person who owes you <input id="incomeDuePerson" maxlength="60" placeholder="Enter person or customer name"></label>
+   <p class="hint">This income will stay outstanding until you collect it. You can collect the full amount or collect it in parts later.</p>
+  </div>
+  <label>Date <input id="incomeDate" type="date" required></label>
+  <label>Note <input id="incomeNote" maxlength="100" placeholder="Optional details"></label>
+  <div class="total-preview"><span>Income amount</span><strong id="incomeTotalPreview">৳0.00</strong></div>
+  <button class="primary full" id="incomeSubmitBtn">Save income</button>
+  <button class="secondary full" type="button" id="cancelIncomeEdit" hidden>Cancel edit</button>
+ </form>
+ <div class="section-head"><h3>Collect outstanding due</h3><span class="muted">Record money received later</span></div>
+ <form id="incomeCollectForm" class="form" hidden>
+  <div class="total-preview"><span id="collectIncomeLabel">Due collection</span><strong id="collectDueRemaining">৳0.00</strong></div>
+  <label>Collection amount <input id="collectAmount" type="number" min="0.01" step="0.01" required></label>
+  <div class="form-grid">
+   <label>Collection date <input id="collectDate" type="date" required></label>
+   <label>Received by <select id="collectMethod"><option>Cash</option><option>Bank</option></select></label>
+  </div>
+  <label>Note <input id="collectNote" maxlength="100" placeholder="Optional collection details"></label>
+  <button class="primary full">Save collection</button>
+  <button class="secondary full" type="button" id="cancelCollect">Cancel</button>
+ </form>
+ <div class="toolbar income-toolbar"><label class="date-filter-label">Show entries for date <input id="incomeDateFilter" type="date"></label><button class="secondary" id="clearIncomeDate">All dates</button></div>
+ <div id="incomeList" class="list"></div>
+</section>
 <section id="quests" class="panel">
  <div class="section-head"><h2>Daily quests</h2><span class="pill" id="questSummary">0 completed</span></div>
  <form id="questForm" class="form">
-  <label>Quest title <input id="questTitle" maxlength="70" placeholder="e.g. Read 10 pages" required></label>
+  <label>Quest name <input id="questTitle" maxlength="70" value="Namaz" placeholder="e.g. Read 10 pages" required></label>
+  <div class="form-grid">
+   <label>Time (number of checkboxes) <input id="questTimes" type="number" min="1" max="30" step="1" value="5" required></label>
+   <label>Each Time (achievement value) <input id="questEachTime" type="number" min="0.01" step="0.01" value="2" required></label>
+  </div>
   <label>Repeat <select id="questRepeat"><option value="daily">Every day</option><option value="once">Today only</option></select></label>
   <button class="primary full">＋ Add quest</button>
  </form>
- <p class="hint">Tick a quest when you finish it. Daily quests reset automatically each new day; one-time quests stay for today.</p>
+ <p class="hint">Set how many times the quest can be checked and the value earned by each check. Every checked box adds its Each Time value to Total achieved. Daily quests reset automatically each new day.</p>
  <div id="questList" class="list"></div>
 </section>
 <section id="reports" class="panel">
@@ -62,10 +113,13 @@
  <div class="report-switch"><button class="period active" data-period="week">Weekly</button><button class="period" data-period="month">Monthly</button></div>
  <article class="report-card"><div class="eyebrow" id="reportLabel">THIS WEEK</div><strong class="report-total" id="reportTotal">৳0.00</strong><div class="muted" id="reportRange"></div><div class="bars" id="reportBars"></div></article>
  <div class="section-head"><h2>By category</h2></div><div id="categoryBreakdown" class="list"></div>
+ <div class="section-head"><h2>Income report</h2><span class="pill">Selected period</span></div>
+ <div class="cards"><article class="stat"><span class="muted">Income entries</span><strong id="reportIncomeTotal">৳0.00</strong><small>by entry date</small></article><article class="stat"><span class="muted">Money collected</span><strong id="reportIncomeCollected">৳0.00</strong><small>by collection date</small></article></div>
  <div class="section-head"><h2>Due payment report</h2><span class="pill">All outstanding dues</span></div>
  <div class="cards due-summary"><article class="stat"><span class="muted">I owe</span><strong id="iOweTotal">৳0.00</strong><small>Money you need to pay</small></article><article class="stat"><span class="muted">Others owe me</span><strong id="owedToMeTotal">৳0.00</strong><small>Money to receive</small></article></div>
  <div class="section-head"><h2>People I owe</h2></div><div id="iOweList" class="list"></div>
  <div class="section-head"><h2>People who owe me</h2></div><div id="owedToMeList" class="list"></div>
+ <div class="section-head"><h2>Income due to collect</h2></div><div id="incomeDueList" class="list"></div>
  <p class="hint" id="unassignedDueHint" hidden></p>
  <div class="section-head"><h2>Quest achievement</h2></div><article class="stat"><strong id="achievementRate">0%</strong><small>completion rate for selected period</small></article>
  <div class="section-head"><h2>Data & backup</h2></div><div class="quick"><button class="secondary" id="exportBtn">Export backup</button><label class="secondary import">Import backup<input id="importFile" type="file" accept="application/json"></label></div><p class="hint">Your data stays on this device. Export a backup regularly before clearing browser data or changing phones.</p>
