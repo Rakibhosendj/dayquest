@@ -38,3 +38,17 @@
   .expense-item .item-actions{flex-wrap:nowrap;gap:4px}
   .expense-item .collect-btn,.expense-item .edit-btn,.expense-item .delete{padding:6px 7px;font-size:10px;white-space:nowrap}
 }
+
+/* Desktop font compatibility: use installed text fonts instead of symbol/icon fallback fonts. */
+html,body,body *{font-family:Arial,"Segoe UI","Nirmala UI","Noto Sans Bengali",sans-serif!important;font-variant-ligatures:none;text-rendering:optimizeLegibility}
+.form label[hidden],.due-fields label[hidden]{display:none!important}
+@media(min-width:700px){
+ main{max-width:1100px;padding-left:20px;padding-right:20px}
+ .top{padding-left:max(24px,calc((100% - 1060px)/2));padding-right:max(24px,calc((100% - 1060px)/2))}
+ .hero{max-width:1060px}
+ .cards.balance-cards{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .panel{padding-left:8px;padding-right:8px}
+ .form{max-width:900px}
+ .list{max-width:100%}
+}
+@media(max-width:699px){.cards.balance-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.balance-main{grid-column:1/-1}}

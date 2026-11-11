@@ -4,7 +4,10 @@ let db=load(),period='week',deferredInstall=null,editingExpenseId=null,editingIn
 db.expenseNames=db.expenseNames||['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];
 db.units=db.units||['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];
 db.incomes=Array.isArray(db.incomes)?db.incomes:[];
-const save=()=>{localStorage.setItem('dayquest_v1',JSON.stringify(db));render()};
+db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];
+db.incomes.forEach(x=>{if(x.source&&!db.incomeHeads.includes(x.source))db.incomeHeads.push(x.source)});
+db.profile=db.profile&&typeof db.profile==='object'?db.profile:{name:'',phone:'',openingCash:0,openingBank:0};
+const save=()=>{localStorage.setItem('dayquest_v1',JSON.stringify(db));render();if($('reports')?.classList.contains('active'))renderReport()};
 const money=n=>'৳'+Number(n||0).toLocaleString('en-BD',{minimumFractionDigits:2,maximumFractionDigits:2});
 const dateObj=s=>new Date(s+'T12:00:00');
 const fmt=s=>dateObj(s).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
@@ -17,6 +20,19 @@ const collectedAmount=x=>x.paymentType==='Due'?sum(incomeCollections(x)):0;
 const incomeOutstanding=x=>x.paymentType==='Due'?Math.max(0,Number(x.amount||0)-collectedAmount(x)):0;
 const incomeReceivedOn=(x,d)=>{let direct=x.paymentType!=='Due'&&x.date===d?Number(x.amount||0):0;let collections=incomeCollections(x).filter(c=>c.date===d).reduce((a,c)=>a+Number(c.amount||0),0);return direct+collections};
 const incomeReceivedBetween=(a,b)=>db.incomes.reduce((t,x)=>t+incomeCollections(x).filter(c=>c.date>=a&&c.date<=b).reduce((v,c)=>v+Number(c.amount||0),0)+(x.paymentType!=='Due'&&x.date>=a&&x.date<=b?Number(x.amount||0):0),0);
+function calculateBalances(){
+ let cash=Number(db.profile?.openingCash||0),bank=Number(db.profile?.openingBank||0);
+ const add=(method,amount)=>{if(method==='Bank')bank+=amount;else if(method==='Cash')cash+=amount};
+ db.incomes.forEach(x=>{if(x.paymentType==='Due')incomeCollections(x).forEach(c=>add(c.method||'Cash',Number(c.amount||0)));else add(x.paymentType||'Cash',Number(x.amount||0))});
+ db.expenses.forEach(x=>{
+  if(x.paymentType==='Due'){
+   if(x.dueDirection==='owed_to_me')add(x.duePaidFrom||'Cash',-Number(x.amount||0));
+   expenseSettlements(x).forEach(t=>{if(x.dueDirection==='i_owe')add(t.method||'Cash',-Number(t.amount||0));else if(x.dueDirection==='owed_to_me')add(t.method||'Cash',Number(t.amount||0))});
+  }else add(x.paymentType||'Cash',-Number(x.amount||0));
+ });
+ return {cash,bank,total:cash+bank};
+}
+function showBalances(){const b=calculateBalances();[['earnedBalance',b.total],['cashBalance',b.cash],['bankBalance',b.bank],['reportEarnedBalance',b.total],['reportCashBalance',b.cash],['reportBankBalance',b.bank],['profileEarnedBalance',b.total],['profileCashBalance',b.cash],['profileBankBalance',b.bank]].forEach(([id,v])=>{if($(id))$(id).textContent=money(v)});}
 const startWeek=d=>{let x=dateObj(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return x.toISOString().slice(0,10)};
 function dayQuests(d){return db.quests.filter(q=>q.repeat==='daily'||q.date===d)}
 function completed(q,d){return !!(db.checks[d]||{})[q.id]}
@@ -28,19 +44,22 @@ $('expenseDate').value=today();
 function fillChoices(){
  $('expenseName').innerHTML=db.expenseNames.map(n=>`<option>${esc(n)}</option>`).join('');
  $('unitName').innerHTML=db.units.map(n=>`<option>${esc(n)}</option>`).join('');
+ $('incomeSource').innerHTML=db.incomeHeads.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
 }
 function calcTotal(){let v=(Number($('quantity').value)||0)*(Number($('rate').value)||0);$('calculatedTotal').textContent=money(v)}
 $('quantity').oninput=calcTotal;$('rate').oninput=calcTotal;
-$('paymentType').onchange=()=>{let show=$('paymentType').value==='Due';$('dueFields').hidden=!show;$('duePerson').required=show};
+function updateExpenseDueFields(){let show=$('paymentType').value==='Due',owed=$('dueDirection').value==='owed_to_me';$('dueFields').hidden=!show;$('duePerson').required=show;$('duePaidFromField').hidden=!(show&&owed)}
+$('paymentType').onchange=updateExpenseDueFields;$('dueDirection').onchange=updateExpenseDueFields;
 $('incomePaymentType').onchange=()=>{let show=$('incomePaymentType').value==='Due';$('incomeDueFields').hidden=!show;$('incomeDuePerson').required=show};
 $('incomeAmount').oninput=()=>{$('incomeTotalPreview').textContent=money(Number($('incomeAmount').value)||0)};
 $('incomeDate').value=today();$('collectDate').value=today();$('expenseDueActionDate').value=today();
 $('addExpenseName').onclick=()=>{let n=prompt('Add an expense name:');if(n&&n.trim()){n=n.trim();if(!db.expenseNames.includes(n))db.expenseNames.push(n);fillChoices();$('expenseName').value=n;localSaveOnly()}};
 $('addUnit').onclick=()=>{let n=prompt('Add a unit (e.g. bottle, sack, km):');if(n&&n.trim()){n=n.trim();if(!db.units.includes(n))db.units.push(n);fillChoices();$('unitName').value=n;localSaveOnly()}};
+$('addIncomeHead').onclick=()=>{let n=prompt('Add an income head (e.g. Salary, Shop, Rent, Freelance):');if(n&&n.trim()){n=n.trim();if(!db.incomeHeads.includes(n))db.incomeHeads.push(n);fillChoices();$('incomeSource').value=n;localSaveOnly()}};
 function localSaveOnly(){localStorage.setItem('dayquest_v1',JSON.stringify(db))}
 function resetExpenseForm(){
  editingExpenseId=null;$('expenseForm').reset();$('expenseDate').value=today();$('quantity').value=1;
- $('dueFields').hidden=true;$('duePerson').required=false;$('expenseFormTitle').textContent='Add expense';
+ $('dueFields').hidden=true;$('duePaidFromField').hidden=true;$('duePerson').required=false;$('expenseFormTitle').textContent='Add expense';
  $('expenseSubmitBtn').textContent='Save expense';$('cancelExpenseEdit').hidden=true;$('expenseEditHint').hidden=true;
  fillChoices();calcTotal();
 }
@@ -57,8 +76,8 @@ function editExpense(id){
  fillChoices();
  ensureOption($('category'),x.category||'Other');
  $('expenseName').value=x.name||db.expenseNames[0];$('paymentType').value=x.paymentType||'Cash';
- $('dueDirection').value=x.dueDirection||'i_owe';$('duePerson').value=x.duePerson||'';
- $('dueFields').hidden=$('paymentType').value!=='Due';$('duePerson').required=$('paymentType').value==='Due';
+ $('dueDirection').value=x.dueDirection||'i_owe';$('duePerson').value=x.duePerson||'';$('duePaidFrom').value=x.duePaidFrom||'Cash';
+ updateExpenseDueFields();
  const quantity=Number(x.quantity)>0?Number(x.quantity):1;
  $('quantity').value=quantity;$('unitName').value=x.unit||db.units[0];
  $('rate').value=x.rate!=null?Number(x.rate):(Number(x.amount||0)/quantity);
@@ -71,7 +90,7 @@ $('cancelExpenseEdit').onclick=resetExpenseForm;
 $('expenseForm').onsubmit=e=>{e.preventDefault();let quantity=Number($('quantity').value),rate=Number($('rate').value),name=$('expenseName').value,unit=$('unitName').value,paymentType=$('paymentType').value;
  if(!(quantity>0)||!(rate>=0)||!Number.isFinite(quantity)||!Number.isFinite(rate)){alert('Enter a valid quantity and rate.');return}
  if(paymentType==='Due'&&!$('duePerson').value.trim()){alert('Enter the person name for this due.');$('duePerson').focus();return}
- const values={amount:quantity*rate,name,quantity,unit,rate,paymentType,dueDirection:paymentType==='Due'?$('dueDirection').value:null,duePerson:paymentType==='Due'?$('duePerson').value.trim():null,category:$('category').value,date:$('expenseDate').value,note:$('note').value.trim()};
+ const values={amount:quantity*rate,name,quantity,unit,rate,paymentType,dueDirection:paymentType==='Due'?$('dueDirection').value:null,duePerson:paymentType==='Due'?$('duePerson').value.trim():null,duePaidFrom:paymentType==='Due'&&$('dueDirection').value==='owed_to_me'?$('duePaidFrom').value:null,category:$('category').value,date:$('expenseDate').value,note:$('note').value.trim()};
  if(editingExpenseId){const existing=db.expenses.find(x=>x.id===editingExpenseId);if(existing){const settled=expenseSettledAmount(existing);if(settled>0&&(paymentType!=='Due'||quantity*rate<settled||$('dueDirection').value!==existing.dueDirection)){alert('This due already has payments or collections. Keep the Due type and direction, and set the amount to at least the amount already settled.');return}Object.assign(existing,values)}}
  else db.expenses.unshift({id:crypto.randomUUID(),...values});
  resetExpenseForm();save()};
@@ -94,12 +113,12 @@ $('expenseDueActionForm').onsubmit=e=>{
 };
 
 function resetIncomeForm(){
- editingIncomeId=null;$('incomeForm').reset();$('incomeDate').value=today();$('incomeDueFields').hidden=true;$('incomeDuePerson').required=false;
+ editingIncomeId=null;$('incomeForm').reset();$('incomeDate').value=today();if($('incomeSource').options.length)$('incomeSource').selectedIndex=0;$('incomeDueFields').hidden=true;$('incomeDuePerson').required=false;
  $('incomeFormTitle').textContent='Add income';$('incomeSubmitBtn').textContent='Save income';$('cancelIncomeEdit').hidden=true;$('incomeEditHint').hidden=true;$('incomeTotalPreview').textContent=money(0);
 }
 function editIncome(id){
  const x=db.incomes.find(item=>item.id===id);if(!x)return;
- editingIncomeId=id;$('incomeSource').value=x.source||'';$('incomeAmount').value=Number(x.amount||0);$('incomePaymentType').value=x.paymentType||'Cash';
+ editingIncomeId=id;ensureOption($('incomeSource'),x.source||'Other');$('incomeSource').value=x.source||'Other';$('incomeAmount').value=Number(x.amount||0);$('incomePaymentType').value=x.paymentType||'Cash';
  $('incomeDuePerson').value=x.duePerson||'';$('incomeDueFields').hidden=$('incomePaymentType').value!=='Due';$('incomeDuePerson').required=$('incomePaymentType').value==='Due';
  $('incomeDate').value=x.date||today();$('incomeNote').value=x.note||'';$('incomeTotalPreview').textContent=money(x.amount||0);
  $('incomeFormTitle').textContent='Edit income';$('incomeSubmitBtn').textContent='Update income';$('cancelIncomeEdit').hidden=false;$('incomeEditHint').hidden=false;
@@ -133,6 +152,8 @@ $('incomeCollectForm').onsubmit=e=>{
 function deleteIncome(id){if(confirm('Delete this income entry and its collection history?')){if(collectingIncomeId===id)closeCollectForm();if(editingIncomeId===id)resetIncomeForm();db.incomes=db.incomes.filter(x=>x.id!==id);save()}}
 $('incomeDateFilter').onchange=render;
 $('clearIncomeDate').onclick=()=>{$('incomeDateFilter').value='';render()};
+function loadProfileForm(){ $('profileName').value=db.profile.name||'';$('profilePhone').value=db.profile.phone||'';$('openingCash').value=Number(db.profile.openingCash||0);$('openingBank').value=Number(db.profile.openingBank||0)}
+$('profileForm').onsubmit=e=>{e.preventDefault();const openingCash=Number($('openingCash').value),openingBank=Number($('openingBank').value);if(!Number.isFinite(openingCash)||openingCash<0||!Number.isFinite(openingBank)||openingBank<0){alert('Opening balances must be zero or greater.');return}db.profile={name:$('profileName').value.trim(),phone:$('profilePhone').value.trim(),openingCash,openingBank};save();alert('Profile and starting balances saved.')};
 
 $('questForm').onsubmit=e=>{
  e.preventDefault();
@@ -164,7 +185,7 @@ function render(){
  let d=today(),exToday=db.expenses.filter(x=>x.date===d),qToday=dayQuests(d),done=qToday.filter(q=>completed(q,d)).length;
  $('todayTotal').textContent=money(sum(exToday));$('questProgress').textContent=`${done}/${qToday.length}`;$('questBar').style.width=(qToday.length?done/qToday.length*100:0)+'%';$('todayQuestLabel').textContent=`${done} quests done`;
  let ws=startWeek(d),ms=d.slice(0,7);$('weekTotal').textContent=money(sum(db.expenses.filter(x=>x.date>=ws&&x.date<=d)));$('monthTotal').textContent=money(sum(db.expenses.filter(x=>x.date.startsWith(ms))));
- $('todayIncome').textContent=money(db.incomes.reduce((t,x)=>t+incomeReceivedOn(x,d),0));$('monthIncome').textContent=money(incomeReceivedBetween(ms+'-01',d));
+ $('todayIncome').textContent=money(db.incomes.reduce((t,x)=>t+incomeReceivedOn(x,d),0));$('monthIncome').textContent=money(incomeReceivedBetween(ms+'-01',d));showBalances();
  $('recentExpenses').innerHTML=expenseHTML([...db.expenses].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4),false);
  $('recentIncome').innerHTML=incomeHTML([...db.incomes].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4),false);
  $('todayQuests').innerHTML=questHTML(qToday.slice(0,4),false);
@@ -211,6 +232,7 @@ function renderReport(){
  let a=start.toISOString().slice(0,10),b=end.toISOString().slice(0,10),items=db.expenses.filter(x=>x.date>=a&&x.date<=b),total=sum(items);
  $('reportLabel').textContent=period==='week'?'THIS WEEK':'THIS MONTH';$('reportTotal').textContent=money(total);$('reportRange').textContent=`${fmt(a)} – ${fmt(b)}`;
  $('reportIncomeTotal').textContent=money(sum(db.incomes.filter(x=>x.date>=a&&x.date<=b)));$('reportIncomeCollected').textContent=money(incomeReceivedBetween(a,b));
+ let headTotals={};db.incomes.forEach(x=>{let received=0;if(x.paymentType==='Due')received=incomeCollections(x).filter(c=>c.date>=a&&c.date<=b).reduce((t,c)=>t+Number(c.amount||0),0);else if(x.date>=a&&x.date<=b)received=Number(x.amount||0);if(received)headTotals[x.source||'Other']=(headTotals[x.source||'Other']||0)+received});$('incomeHeadBreakdown').innerHTML=Object.entries(headTotals).sort((x,y)=>y[1]-x[1]).map(([head,total])=>`<div class="breakrow"><span>${esc(head)}</span><strong>${money(total)}</strong></div>`).join('')||empty('No received income in this period.');showBalances();
  let vals=days.map(d=>sum(items.filter(x=>x.date===d))),max=Math.max(...vals,1);
  $('reportBars').innerHTML=vals.map((v,i)=>`<div class="bar-wrap"><div class="bar" title="${money(v)}" style="height:${Math.max(v?3:1,v/max*82)}px"></div><span class="bar-label">${labels[i]}</span></div>`).join('');
  let cats={};items.forEach(x=>cats[x.category]=(cats[x.category]||0)+Number(x.amount));
@@ -228,8 +250,8 @@ function renderDueReport(){
  $('unassignedDueHint').hidden=!legacy.length;$('unassignedDueHint').textContent=legacy.length?`${legacy.length} older Due ${legacy.length===1?'entry is':'entries are'} not assigned to either side. These older records are preserved and excluded from the two totals.`:'';
 }
 $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`dayquest-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href)};
-$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(confirm('Replace current data with this backup?')){db=x;db.incomes=Array.isArray(db.incomes)?db.incomes:[];save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
+$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',openingCash:0,openingBank:0};if(confirm('Replace current data with this backup?')){db=x;db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];db.profile=db.profile||{name:'',phone:'',openingCash:0,openingBank:0};fillChoices();loadProfileForm();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('installBtn').hidden=false});
 $('installBtn').onclick=async()=>{if(deferredInstall){deferredInstall.prompt();deferredInstall=null;$('installBtn').hidden=true}};
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-fillChoices();calcTotal();$('dueFields').hidden=true;$('incomeDueFields').hidden=true;$('expenseDueActionForm').hidden=true;$('incomeCollectForm').hidden=true;$('incomeTotalPreview').textContent=money(0);render();
+fillChoices();loadProfileForm();calcTotal();$('dueFields').hidden=true;$('duePaidFromField').hidden=true;$('incomeDueFields').hidden=true;$('expenseDueActionForm').hidden=true;$('incomeCollectForm').hidden=true;$('incomeTotalPreview').textContent=money(0);render();

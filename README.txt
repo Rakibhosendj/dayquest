@@ -2,12 +2,12 @@ DAYQUEST — OFFLINE EXPENSE & DAILY QUEST TRACKER
 
 WHAT IT DOES
 - Add, search, filter, edit and delete daily expenses.
-- Add date-wise income entries with Cash, Bank or Due payment type.
+- Add date-wise income entries with reusable income heads (Salary, Business, Sales, Freelance, Rent, Gift, Other) and custom heads; add multiple income entries under one or more heads.
 - Record full or partial due collections later, with a separate collection date and Cash/Bank method. Income entries show collection history, collected amount and remaining due.
 - Filter income by date; income entries are grouped by date and daily totals are shown.
-- Overview and weekly/monthly reports show income received and due balances. Income dues are included in the 'Others owe me' report.
-- Choose payment type: Cash, Bank or Due. For Due entries, choose whether you owe or someone owes you, and enter the person name.
-- Due payment report with person-wise outstanding balances. Use Pay due to record payments against 'I Owe' expenses and Collect to record money received against 'Others Owe Me' expenses. Partial settlements are supported; older Due entries without direction are shown separately as unassigned.
+- Overview and weekly/monthly reports show income received, due balances, income-by-head summaries and live earned/cash/bank balances.
+- Choose payment type: Cash, Bank or Due. For Due entries, choose whether you owe or someone owes you, and enter the person name. For an 'Others Owe Me' expense, choose whether the expense was paid from Cash or Bank.
+- Due payment report with person-wise outstanding balances. Profile stores your name, phone and opening cash/bank amounts. Earned balance is calculated from opening balances plus received income and collections minus expense outflows and paid dues. Use Pay due to record payments against 'I Owe' expenses and Collect to record money received against 'Others Owe Me' expenses. Partial settlements are supported; older Due entries without direction are shown separately as unassigned.
 - Select expense names and add your own names; select units and add custom units.
 - Enter quantity and rate; total expense is calculated automatically.
 - Categories: Food, Transport, Shopping, Bills, Health, Education, Entertainment, Other.
@@ -53,3 +53,14 @@ Saved expense list layout (mobile)
 - Saved expenses now remain in a compact horizontal row on phone screens.
 - The amount and Edit / Delete / Pay due / Collect actions stay aligned on the right.
 - Long expense titles are shortened with an ellipsis and supporting details wrap to two lines.
+
+
+Profile and balances
+- Open Profile to save your name, phone and starting cash/bank balances.
+- Earned balance is calculated as cash plus bank balance, using opening balances and saved transactions.
+- Cash/Bank income increases the matching balance. Cash/Bank expenses decrease the matching balance.
+- Due income increases balance only when it is collected; each collection adds to the selected Cash or Bank account.
+- An expense marked I Owe decreases balance when you record a Pay Due settlement.
+- An expense marked Others Owe Me is counted as an expense when entered (select Paid from Cash or Bank); later collections add money back to the selected account.
+- Income heads can be selected repeatedly, and custom income heads can be added using Add head.
+- Desktop typography uses explicit system font fallbacks to avoid Symbol-font substitution.

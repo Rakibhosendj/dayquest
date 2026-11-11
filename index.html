@@ -14,9 +14,11 @@
  <div class="hero-side"><div class="eyebrow">QUEST PROGRESS</div><div class="big" id="questProgress">0/0</div><div class="progress"><i id="questBar"></i></div></div>
 </section>
 <nav class="tabs">
- <button class="tab active" data-tab="home">Overview</button><button class="tab" data-tab="expenses">Expenses</button><button class="tab" data-tab="income">Income</button><button class="tab" data-tab="quests">Daily quests</button><button class="tab" data-tab="reports">Reports</button>
+ <button class="tab active" data-tab="home">Overview</button><button class="tab" data-tab="expenses">Expenses</button><button class="tab" data-tab="income">Income</button><button class="tab" data-tab="quests">Daily quests</button><button class="tab" data-tab="reports">Reports</button><button class="tab" data-tab="profile">Profile</button>
 </nav>
 <section id="home" class="panel active">
+ <div class="section-head"><h2>Available balance</h2><span class="pill">Live</span></div>
+ <div class="cards balance-cards"><article class="stat balance-main"><span class="muted">Earned balance</span><strong id="earnedBalance">৳0.00</strong><small>Cash + bank after recorded expenses</small></article><article class="stat"><span class="muted">Cash balance</span><strong id="cashBalance">৳0.00</strong><small>Available cash</small></article><article class="stat"><span class="muted">Bank balance</span><strong id="bankBalance">৳0.00</strong><small>Available in bank</small></article></div>
  <div class="section-head"><h2>Today's activity</h2><span class="pill" id="todayQuestLabel">0 quests done</span></div>
  <div class="cards"><article class="stat"><span class="muted">This week</span><strong id="weekTotal">৳0</strong><small>expenses</small></article><article class="stat"><span class="muted">This month</span><strong id="monthTotal">৳0</strong><small>expenses</small></article><article class="stat"><span class="muted">Income received today</span><strong id="todayIncome">৳0</strong><small>cash, bank & due collections</small></article><article class="stat"><span class="muted">Income received this month</span><strong id="monthIncome">৳0</strong><small>cash, bank & due collections</small></article></div>
  <div class="section-head"><h2>Quick actions</h2></div>
@@ -34,6 +36,7 @@
   <div id="dueFields" class="due-fields" hidden>
    <label>Due direction <select id="dueDirection"><option value="i_owe">I Owe</option><option value="owed_to_me">Others Owe Me</option></select></label>
    <label>Person name <input id="duePerson" maxlength="60" placeholder="Who is involved in this due?"></label>
+   <label id="duePaidFromField" hidden>Expense paid from <select id="duePaidFrom"><option>Cash</option><option>Bank</option></select></label>
   </div>
   <div class="form-grid">
    <label>Quantity <input id="quantity" type="number" min="0.001" step="0.001" value="1" required></label>
@@ -66,7 +69,7 @@
  <div class="section-head"><h2>Income</h2><span class="muted" id="incomeCount">0 entries</span></div>
  <div class="section-head form-section-head"><h3 id="incomeFormTitle">Add income</h3><span class="muted" id="incomeEditHint" hidden>Editing saved income</span></div>
  <form id="incomeForm" class="form">
-  <label>Income source <input id="incomeSource" maxlength="70" placeholder="e.g. Salary, Sales, Freelance" required></label>
+  <label>Income head <span class="select-add"><select id="incomeSource" required></select><button type="button" class="mini-add" id="addIncomeHead">＋ Add head</button></span></label>
   <label>Amount <input id="incomeAmount" type="number" min="0.01" step="0.01" placeholder="0.00" required></label>
   <label>Payment type <select id="incomePaymentType"><option>Cash</option><option>Bank</option><option>Due</option></select></label>
   <div id="incomeDueFields" class="due-fields" hidden>
@@ -108,6 +111,22 @@
  <p class="hint">Set how many times the quest can be checked and the value earned by each check. Every checked box adds its Each Time value to Total achieved. Daily quests reset automatically each new day.</p>
  <div id="questList" class="list"></div>
 </section>
+<section id="profile" class="panel">
+ <div class="section-head"><h2>User profile</h2><span class="pill">Stored on this device</span></div>
+ <form id="profileForm" class="form">
+  <label>Full name <input id="profileName" maxlength="80" placeholder="Enter your name"></label>
+  <label>Phone number <input id="profilePhone" maxlength="30" type="tel" placeholder="Optional"></label>
+  <div class="section-head form-section-head"><h3>Starting balances</h3></div>
+  <p class="hint">Enter the cash and bank amounts you had when you started using DayQuest. These are the starting amounts before the saved income and expense entries below are calculated.</p>
+  <div class="form-grid">
+   <label>Opening cash balance <input id="openingCash" type="number" min="0" step="0.01" value="0"></label>
+   <label>Opening bank balance <input id="openingBank" type="number" min="0" step="0.01" value="0"></label>
+  </div>
+  <button class="primary full">Save profile</button>
+ </form>
+ <div class="section-head"><h2>Current balance</h2></div>
+ <div class="cards balance-cards"><article class="stat balance-main"><span class="muted">Earned balance</span><strong id="profileEarnedBalance">৳0.00</strong><small>Cash + bank after recorded transactions</small></article><article class="stat"><span class="muted">Cash balance</span><strong id="profileCashBalance">৳0.00</strong></article><article class="stat"><span class="muted">Bank balance</span><strong id="profileBankBalance">৳0.00</strong></article></div>
+</section>
 <section id="reports" class="panel">
  <div class="section-head"><h2>Reports</h2></div>
  <div class="report-switch"><button class="period active" data-period="week">Weekly</button><button class="period" data-period="month">Monthly</button></div>
@@ -115,6 +134,8 @@
  <div class="section-head"><h2>By category</h2></div><div id="categoryBreakdown" class="list"></div>
  <div class="section-head"><h2>Income report</h2><span class="pill">Selected period</span></div>
  <div class="cards"><article class="stat"><span class="muted">Income entries</span><strong id="reportIncomeTotal">৳0.00</strong><small>by entry date</small></article><article class="stat"><span class="muted">Money collected</span><strong id="reportIncomeCollected">৳0.00</strong><small>by collection date</small></article></div>
+ <div class="section-head"><h2>Income by head</h2></div><div id="incomeHeadBreakdown" class="list"></div>
+ <div class="section-head"><h2>Balance overview</h2></div><div class="cards balance-cards"><article class="stat"><span class="muted">Earned balance</span><strong id="reportEarnedBalance">৳0.00</strong><small>Cash + bank</small></article><article class="stat"><span class="muted">Cash</span><strong id="reportCashBalance">৳0.00</strong><small>Cash available</small></article><article class="stat"><span class="muted">Bank</span><strong id="reportBankBalance">৳0.00</strong><small>Bank available</small></article></div>
  <div class="section-head"><h2>Due payment report</h2><span class="pill">All outstanding dues</span></div>
  <div class="cards due-summary"><article class="stat"><span class="muted">I owe</span><strong id="iOweTotal">৳0.00</strong><small>Money you need to pay</small></article><article class="stat"><span class="muted">Others owe me</span><strong id="owedToMeTotal">৳0.00</strong><small>Money to receive</small></article></div>
  <div class="section-head"><h2>People I owe</h2></div><div id="iOweList" class="list"></div>
