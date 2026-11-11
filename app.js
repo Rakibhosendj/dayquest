@@ -44,7 +44,14 @@ $('expenseDate').value=today();
 function fillChoices(){
  $('expenseName').innerHTML=db.expenseNames.map(n=>`<option>${esc(n)}</option>`).join('');
  $('unitName').innerHTML=db.units.map(n=>`<option>${esc(n)}</option>`).join('');
- $('incomeSource').innerHTML=db.incomeHeads.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+ const source=$('incomeSource'),sourceValue=source.value;
+ source.innerHTML=db.incomeHeads.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+ if(db.incomeHeads.includes(sourceValue))source.value=sourceValue;
+ [['incomeHeadFilter','All income heads'],['reportIncomeHeadFilter','All income heads']].forEach(([id,label])=>{
+  const select=$(id);if(!select)return;const previous=select.value;
+  select.innerHTML=`<option value="all">${label}</option>`+db.incomeHeads.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  select.value=previous==='all'||db.incomeHeads.includes(previous)?previous:'all';
+ });
 }
 function calcTotal(){let v=(Number($('quantity').value)||0)*(Number($('rate').value)||0);$('calculatedTotal').textContent=money(v)}
 $('quantity').oninput=calcTotal;$('rate').oninput=calcTotal;
@@ -151,6 +158,8 @@ $('incomeCollectForm').onsubmit=e=>{
 };
 function deleteIncome(id){if(confirm('Delete this income entry and its collection history?')){if(collectingIncomeId===id)closeCollectForm();if(editingIncomeId===id)resetIncomeForm();db.incomes=db.incomes.filter(x=>x.id!==id);save()}}
 $('incomeDateFilter').onchange=render;
+$('incomeHeadFilter').onchange=render;
+$('reportIncomeHeadFilter').onchange=renderReport;
 $('clearIncomeDate').onclick=()=>{$('incomeDateFilter').value='';render()};
 function loadProfileForm(){ $('profileName').value=db.profile.name||'';$('profilePhone').value=db.profile.phone||'';$('openingCash').value=Number(db.profile.openingCash||0);$('openingBank').value=Number(db.profile.openingBank||0)}
 $('profileForm').onsubmit=e=>{e.preventDefault();const openingCash=Number($('openingCash').value),openingBank=Number($('openingBank').value);if(!Number.isFinite(openingCash)||openingCash<0||!Number.isFinite(openingBank)||openingBank<0){alert('Opening balances must be zero or greater.');return}db.profile={name:$('profileName').value.trim(),phone:$('profilePhone').value.trim(),openingCash,openingBank};save();alert('Profile and starting balances saved.')};
@@ -193,7 +202,7 @@ function render(){
  let filtered=db.expenses.filter(x=>( $('expenseFilter').value==='all'||x.category===$('expenseFilter').value)&&(`${x.note} ${x.category}`).toLowerCase().includes($('expenseSearch').value.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date));
  $('expenseList').innerHTML=expenseHTML(filtered,true);$('questList').innerHTML=questHTML(dayQuests(d),true);
  $('questSummary').textContent=`${done}/${qToday.length} completed`;$('incomeCount').textContent=`${db.incomes.length} entries`;
- const incomeFilter=$('incomeDateFilter').value;const incomes=[...db.incomes].filter(x=>!incomeFilter||x.date===incomeFilter).sort((a,b)=>b.date.localeCompare(a.date));$('incomeList').innerHTML=incomeHTML(incomes,true);
+ const incomeFilter=$('incomeDateFilter').value,incomeHead=$('incomeHeadFilter').value;const incomes=[...db.incomes].filter(x=>(!incomeFilter||x.date===incomeFilter)&&(incomeHead==='all'||(x.source||'Other')===incomeHead)).sort((a,b)=>b.date.localeCompare(a.date));$('incomeList').innerHTML=incomeHTML(incomes,true);
 }
 function expenseHTML(items,actions){return items.length?items.map(x=>{let title=x.name||x.note||x.category,settled=expenseSettledAmount(x),remaining=expenseOutstanding(x),direction=x.dueDirection==='i_owe'?'I owe':x.dueDirection==='owed_to_me'?'Owed to me':'Old due',dueInfo=x.paymentType==='Due'?[direction,x.duePerson,`Settled ${money(settled)} · Remaining ${money(remaining)}`].filter(Boolean).join(' · '):'',details=[x.paymentType||'Cash',dueInfo,x.quantity?`${x.quantity} ${x.unit||''} × ${money(x.rate||0)}`:x.category,fmt(x.date),x.note].filter(Boolean).join(' · ');let actionLabel=x.dueDirection==='i_owe'?'Pay due':'Collect';return `<div class="item expense-item"><div class="item-main"><div class="item-title">${esc(title)}</div><div class="item-sub">${esc(details)}</div></div><div class="expense-right"><div class="item-amount">${money(x.amount)}</div>${actions?`<div class="item-actions">${x.paymentType==='Due'&&remaining>0&&['i_owe','owed_to_me'].includes(x.dueDirection)?`<button class="collect-btn" onclick="openExpenseDueAction('${x.id}')">${actionLabel}</button>`:''}<button class="edit-btn" onclick="editExpense('${x.id}')" aria-label="Edit ${esc(title)}">Edit</button><button class="delete" onclick="delExpense('${x.id}')" aria-label="Delete ${esc(title)}">×</button></div>`:''}</div></div>`}).join(''):empty('No expenses yet. Add your first one above.') }
 function incomeHTML(items,actions){
@@ -231,8 +240,18 @@ function renderReport(){
  else{start=new Date(now.getFullYear(),now.getMonth(),1);end=now;let n=now.getDate();for(let i=1;i<=n;i++){let x=new Date(now.getFullYear(),now.getMonth(),i);days.push(x.toISOString().slice(0,10));labels.push(i%5===1||i===n?String(i):'')}}
  let a=start.toISOString().slice(0,10),b=end.toISOString().slice(0,10),items=db.expenses.filter(x=>x.date>=a&&x.date<=b),total=sum(items);
  $('reportLabel').textContent=period==='week'?'THIS WEEK':'THIS MONTH';$('reportTotal').textContent=money(total);$('reportRange').textContent=`${fmt(a)} – ${fmt(b)}`;
- $('reportIncomeTotal').textContent=money(sum(db.incomes.filter(x=>x.date>=a&&x.date<=b)));$('reportIncomeCollected').textContent=money(incomeReceivedBetween(a,b));
- let headTotals={};db.incomes.forEach(x=>{let received=0;if(x.paymentType==='Due')received=incomeCollections(x).filter(c=>c.date>=a&&c.date<=b).reduce((t,c)=>t+Number(c.amount||0),0);else if(x.date>=a&&x.date<=b)received=Number(x.amount||0);if(received)headTotals[x.source||'Other']=(headTotals[x.source||'Other']||0)+received});$('incomeHeadBreakdown').innerHTML=Object.entries(headTotals).sort((x,y)=>y[1]-x[1]).map(([head,total])=>`<div class="breakrow"><span>${esc(head)}</span><strong>${money(total)}</strong></div>`).join('')||empty('No received income in this period.');showBalances();
+ const selectedIncomeHead=$('reportIncomeHeadFilter').value;
+ const incomeInScope=db.incomes.filter(x=>selectedIncomeHead==='all'||(x.source||'Other')===selectedIncomeHead);
+ const incomeEntriesInPeriod=incomeInScope.filter(x=>x.date>=a&&x.date<=b);
+ const receivedInPeriod=incomeInScope.reduce((total,x)=>total+(x.paymentType==='Due'?incomeCollections(x).filter(c=>c.date>=a&&c.date<=b).reduce((t,c)=>t+Number(c.amount||0),0):(x.date>=a&&x.date<=b?Number(x.amount||0):0)),0);
+ $('reportIncomeTotal').textContent=money(sum(incomeEntriesInPeriod));$('reportIncomeCollected').textContent=money(receivedInPeriod);
+ const headsToShow=selectedIncomeHead==='all'?db.incomeHeads:[selectedIncomeHead];
+ $('incomeHeadBreakdown').innerHTML=headsToShow.map(head=>{
+  const headEntries=db.incomes.filter(x=>(x.source||'Other')===head),recorded=sum(headEntries.filter(x=>x.date>=a&&x.date<=b));
+  const received=headEntries.reduce((total,x)=>total+(x.paymentType==='Due'?incomeCollections(x).filter(c=>c.date>=a&&c.date<=b).reduce((t,c)=>t+Number(c.amount||0),0):(x.date>=a&&x.date<=b?Number(x.amount||0):0)),0);
+  if(!recorded&&!received)return '';
+  return `<div class="income-report-row"><div><strong>${esc(head)}</strong><small>Recorded: ${money(recorded)}</small></div><strong>${money(received)}<small> received</small></strong></div>`;
+ }).filter(Boolean).join('')||empty('No income for this head in the selected period.');showBalances();
  let vals=days.map(d=>sum(items.filter(x=>x.date===d))),max=Math.max(...vals,1);
  $('reportBars').innerHTML=vals.map((v,i)=>`<div class="bar-wrap"><div class="bar" title="${money(v)}" style="height:${Math.max(v?3:1,v/max*82)}px"></div><span class="bar-label">${labels[i]}</span></div>`).join('');
  let cats={};items.forEach(x=>cats[x.category]=(cats[x.category]||0)+Number(x.amount));
@@ -254,4 +273,49 @@ $('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let 
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('installBtn').hidden=false});
 $('installBtn').onclick=async()=>{if(deferredInstall){deferredInstall.prompt();deferredInstall=null;$('installBtn').hidden=true}};
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-fillChoices();loadProfileForm();calcTotal();$('dueFields').hidden=true;$('duePaidFromField').hidden=true;$('incomeDueFields').hidden=true;$('expenseDueActionForm').hidden=true;$('incomeCollectForm').hidden=true;$('incomeTotalPreview').textContent=money(0);render();
+// Simple local login for the static GitHub Pages app. This is a device-level screen,
+// not server-side authentication; finance data remains in the existing local database.
+const AUTH_KEY='dayquest_auth_v1',SESSION_KEY='dayquest_session_v1';
+const bytesToBase64=bytes=>btoa(String.fromCharCode(...new Uint8Array(bytes)));
+const base64ToBytes=value=>Uint8Array.from(atob(value),c=>c.charCodeAt(0));
+async function passwordDigest(password,salt){
+ if(!window.crypto?.subtle)throw new Error('Secure password storage is unavailable. Open DayQuest using its HTTPS GitHub Pages address.');
+ const material=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
+ const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations:150000,hash:'SHA-256'},material,256);
+ return bytesToBase64(bits);
+}
+function showAuthView(view,message=''){
+ $('authScreen').hidden=false;$('appShell').hidden=true;
+ $('authSetupView').hidden=view!=='setup';$('authLoginView').hidden=view!=='login';$('authMessage').textContent=message;
+}
+function startAppSession(username){
+ sessionStorage.setItem(SESSION_KEY,'active');$('authScreen').hidden=true;$('appShell').hidden=false;
+ $('userGreeting').textContent=`Signed in: ${username}`;$('authMessage').textContent='';
+}
+async function initAuth(){
+ let saved=null;try{saved=JSON.parse(localStorage.getItem(AUTH_KEY)||'null')}catch{}
+ if(saved&&sessionStorage.getItem(SESSION_KEY)==='active'){startAppSession(saved.username||'User');return}
+ if(saved){$('loginUsername').value=saved.username||'';showAuthView('login')}else showAuthView('setup');
+}
+$('authSetupForm').onsubmit=async e=>{
+ e.preventDefault();const username=$('setupUsername').value.trim(),password=$('setupPassword').value,confirmPassword=$('setupPasswordConfirm').value;
+ if(!username){$('authMessage').textContent='Please choose a username.';return}
+ if(password.length<8){$('authMessage').textContent='Use a password with at least 8 characters.';return}
+ if(password!==confirmPassword){$('authMessage').textContent='The passwords do not match.';return}
+ const submit=$('authSetupForm').querySelector('button');if(submit)submit.disabled=true;
+ try{const salt=crypto.getRandomValues(new Uint8Array(16));const hash=await passwordDigest(password,salt);const record={username,salt:bytesToBase64(salt),hash};localStorage.setItem(AUTH_KEY,JSON.stringify(record));$('setupPassword').value='';$('setupPasswordConfirm').value='';startAppSession(username)}
+ catch(err){$('authMessage').textContent=err.message||'Could not create the login on this browser.'}
+ finally{if(submit)submit.disabled=false}
+};
+$('authLoginForm').onsubmit=async e=>{
+ e.preventDefault();const username=$('loginUsername').value.trim(),password=$('loginPassword').value;
+ let saved=null;try{saved=JSON.parse(localStorage.getItem(AUTH_KEY)||'null')}catch{}
+ if(!saved){showAuthView('setup','Create a login to protect this browser session.');return}
+ const submit=$('authLoginForm').querySelector('button');if(submit)submit.disabled=true;
+ try{const hash=await passwordDigest(password,base64ToBytes(saved.salt));if(username.toLowerCase()!==String(saved.username||'').toLowerCase()||hash!==saved.hash){$('authMessage').textContent='Incorrect username or password.';return}$('loginPassword').value='';startAppSession(saved.username||username)}
+ catch(err){$('authMessage').textContent=err.message||'Unable to verify the password.'}
+ finally{if(submit)submit.disabled=false}
+};
+$('logoutBtn').onclick=()=>{sessionStorage.removeItem(SESSION_KEY);$('loginPassword').value='';const saved=JSON.parse(localStorage.getItem(AUTH_KEY)||'null');$('loginUsername').value=saved?.username||'';showAuthView('login','You have been logged out.')};
+$('resetLocalLogin').onclick=()=>{if(confirm('Reset the login for this browser? Your DayQuest expenses, income and quests will not be deleted.')){localStorage.removeItem(AUTH_KEY);sessionStorage.removeItem(SESSION_KEY);$('loginPassword').value='';$('setupUsername').value='';$('setupPassword').value='';$('setupPasswordConfirm').value='';showAuthView('setup','Create a new local login. Your saved DayQuest records are kept.')}};
+fillChoices();loadProfileForm();calcTotal();$('dueFields').hidden=true;$('duePaidFromField').hidden=true;$('incomeDueFields').hidden=true;$('expenseDueActionForm').hidden=true;$('incomeCollectForm').hidden=true;$('incomeTotalPreview').textContent=money(0);render();initAuth();

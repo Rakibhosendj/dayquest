@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v9-font-rendering';
+const CACHE = 'dayquest-cache-v10-login-income-heads';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261111-fontfix2',
-  './app.js?v=20261111-fontfix2',
+  './style.css?v=20261111-login-incomeheads1',
+  './app.js?v=20261111-login-incomeheads1',
   './manifest.json'
 ];
 

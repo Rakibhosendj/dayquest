@@ -3,11 +3,39 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261111-fontfix2">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261111-login-incomeheads1">
 <title>DayQuest</title>
 </head>
 <body>
-<header class="top"><div><div class="eyebrow">YOUR PERSONAL DASHBOARD</div><h1>DayQuest <span>✦</span></h1></div><button id="installBtn" class="ghost" hidden>Install</button></header>
+<section id="authScreen" class="auth-screen" hidden aria-labelledby="authTitle">
+ <div class="auth-card">
+  <div class="auth-brand"><span class="auth-mark">✦</span><div><div class="eyebrow">PERSONAL FINANCE & DAILY GOALS</div><h1 id="authTitle">DayQuest</h1></div></div>
+  <div id="authSetupView" hidden>
+   <h2>Create your login</h2>
+   <p class="auth-copy">Set a username and password to open DayQuest on this device.</p>
+   <form id="authSetupForm" class="form auth-form">
+    <label>Username <input id="setupUsername" maxlength="40" autocomplete="username" placeholder="Choose a username" required></label>
+    <label>Password <input id="setupPassword" type="password" minlength="8" autocomplete="new-password" placeholder="At least 8 characters" required></label>
+    <label>Confirm password <input id="setupPasswordConfirm" type="password" minlength="8" autocomplete="new-password" placeholder="Enter password again" required></label>
+    <button class="primary full">Create login</button>
+   </form>
+  </div>
+  <div id="authLoginView" hidden>
+   <h2>Welcome back</h2>
+   <p class="auth-copy">Sign in to continue to your DayQuest dashboard.</p>
+   <form id="authLoginForm" class="form auth-form">
+    <label>Username <input id="loginUsername" maxlength="40" autocomplete="username" required></label>
+    <label>Password <input id="loginPassword" type="password" autocomplete="current-password" required></label>
+    <button class="primary full">Log in</button>
+   </form>
+   <button id="resetLocalLogin" class="auth-reset" type="button">Forgot password? Reset this device login</button>
+  </div>
+  <p class="auth-message" id="authMessage" role="status" aria-live="polite"></p>
+  <p class="auth-disclaimer">Device-only login for this browser. GitHub Pages does not provide server-side account security or multi-device sign-in.</p>
+ </div>
+</section>
+<div id="appShell" hidden>
+<header class="top"><div><div class="eyebrow">YOUR PERSONAL DASHBOARD</div><h1>DayQuest <span>✦</span></h1></div><div class="header-actions"><span id="userGreeting" class="user-greeting"></span><button id="logoutBtn" class="ghost" type="button">Log out</button><button id="installBtn" class="ghost" hidden>Install</button></div></header>
 <main>
 <section class="hero">
  <div><div class="eyebrow">TODAY'S SPENDING</div><div class="money" id="todayTotal">৳0.00</div><div class="muted" id="todayDate"></div></div>
@@ -94,7 +122,7 @@
   <button class="primary full">Save collection</button>
   <button class="secondary full" type="button" id="cancelCollect">Cancel</button>
  </form>
- <div class="toolbar income-toolbar"><label class="date-filter-label">Show entries for date <input id="incomeDateFilter" type="date"></label><button class="secondary" id="clearIncomeDate">All dates</button></div>
+ <div class="toolbar income-toolbar"><label class="date-filter-label">Income head <select id="incomeHeadFilter"></select></label><label class="date-filter-label">Show entries for date <input id="incomeDateFilter" type="date"></label><button class="secondary" id="clearIncomeDate">All dates</button></div>
  <div id="incomeList" class="list"></div>
 </section>
 <section id="quests" class="panel">
@@ -134,7 +162,7 @@
  <div class="section-head"><h2>By category</h2></div><div id="categoryBreakdown" class="list"></div>
  <div class="section-head"><h2>Income report</h2><span class="pill">Selected period</span></div>
  <div class="cards"><article class="stat"><span class="muted">Income entries</span><strong id="reportIncomeTotal">৳0.00</strong><small>by entry date</small></article><article class="stat"><span class="muted">Money collected</span><strong id="reportIncomeCollected">৳0.00</strong><small>by collection date</small></article></div>
- <div class="section-head"><h2>Income by head</h2></div><div id="incomeHeadBreakdown" class="list"></div>
+ <div class="section-head"><h2>Income by head</h2></div><label class="report-filter-label">Show income by <select id="reportIncomeHeadFilter"></select></label><div id="incomeHeadBreakdown" class="list"></div>
  <div class="section-head"><h2>Balance overview</h2></div><div class="cards balance-cards"><article class="stat"><span class="muted">Earned balance</span><strong id="reportEarnedBalance">৳0.00</strong><small>Cash + bank</small></article><article class="stat"><span class="muted">Cash</span><strong id="reportCashBalance">৳0.00</strong><small>Cash available</small></article><article class="stat"><span class="muted">Bank</span><strong id="reportBankBalance">৳0.00</strong><small>Bank available</small></article></div>
  <div class="section-head"><h2>Due payment report</h2><span class="pill">All outstanding dues</span></div>
  <div class="cards due-summary"><article class="stat"><span class="muted">I owe</span><strong id="iOweTotal">৳0.00</strong><small>Money you need to pay</small></article><article class="stat"><span class="muted">Others owe me</span><strong id="owedToMeTotal">৳0.00</strong><small>Money to receive</small></article></div>
@@ -147,5 +175,6 @@
 </section>
 </main>
 <footer>DayQuest · Private by design · Works offline</footer>
-<script src="app.js?v=20261111-fontfix2"></script>
+</div>
+<script src="app.js?v=20261111-login-incomeheads1"></script>
 </body></html>

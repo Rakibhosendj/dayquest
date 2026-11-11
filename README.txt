@@ -4,7 +4,8 @@ WHAT IT DOES
 - Add, search, filter, edit and delete daily expenses.
 - Add date-wise income entries with reusable income heads (Salary, Business, Sales, Freelance, Rent, Gift, Other) and custom heads; add multiple income entries under one or more heads.
 - Record full or partial due collections later, with a separate collection date and Cash/Bank method. Income entries show collection history, collected amount and remaining due.
-- Filter income by date; income entries are grouped by date and daily totals are shown.
+- Filter income by date and by income head; income entries are grouped by date and daily totals are shown.
+- Weekly/monthly income reports can be filtered to one selected income head or all heads, showing recorded and received amounts for each head.
 - Overview and weekly/monthly reports show income received, due balances, income-by-head summaries and live earned/cash/bank balances.
 - Choose payment type: Cash, Bank or Due. For Due entries, choose whether you owe or someone owes you, and enter the person name. For an 'Others Owe Me' expense, choose whether the expense was paid from Cash or Bank.
 - Due payment report with person-wise outstanding balances. Profile stores your name, phone and opening cash/bank amounts. Earned balance is calculated from opening balances plus received income and collections minus expense outflows and paid dues. Use Pay due to record payments against 'I Owe' expenses and Collect to record money received against 'Others Owe Me' expenses. Partial settlements are supported; older Due entries without direction are shown separately as unassigned.
@@ -26,8 +27,9 @@ ANDROID INSTALL (PWA)
 5. Export a backup from Reports > Data & backup before clearing browser data or changing phones.
 
 PRIVACY / LIMITATIONS
-- No account, analytics, cloud sync or network calls are used by the app itself.
-- All records remain in the browser's local storage. Clearing Chrome/site data can erase them.
+- A first-use local login screen can be set up with a username and password. The password is stored as a salted PBKDF2 hash in this browser.
+- The login is only a device-level screen. GitHub Pages is static hosting, so this is not server-side authentication, does not create secure multi-user accounts, and does not sync logins or data between devices.
+- No cloud sync or analytics are used by the app itself. All records remain in this browser's local storage. Clearing Chrome/site data can erase them.
 - Currency is shown as Bangladeshi taka (৳). Change the money() function in app.js if you
   prefer another currency.
 - This is an installable offline web app (PWA), not a Play Store APK.
@@ -73,3 +75,15 @@ DESKTOP FONT DISPLAY FIX (2026-11-11)
 - Updated the service worker to activate immediately, claim open tabs, and refresh cached app files from the network when online while retaining offline fallback.
 
 After uploading to GitHub Pages, open the site and press Ctrl+Shift+R. If an old page remains open, close all DayQuest tabs/windows and reopen the site. This update does not clear localStorage, so it does not remove saved app data.
+
+
+LOCAL LOGIN
+- On first launch, create a username and a password with at least 8 characters.
+- On later visits, enter the username and password to open DayQuest. The session stays open in the current browser tab until you log out or the tab session ends.
+- Use Log out in the top-right header to lock the app.
+- If you forget the password, choose 'Forgot password? Reset this device login' on the login screen. This resets only the local login; it does not delete expenses, income, quests or profile data.
+- This local login is for convenience, not high-security protection. Anyone who can access browser storage or developer tools may bypass it. Do not use this as a substitute for server authentication when protecting sensitive or shared financial data.
+
+INCOME HEAD FILTERS AND REPORTS
+- In the Income tab, use the Income head dropdown to show one income head or all heads. The date filter can be used at the same time.
+- In Reports, use 'Show income by' to select one income head or all income heads for the selected weekly/monthly period. The report displays the amount recorded by entry date and the amount received in the selected period.
