@@ -47,3 +47,9 @@ Income and due collection
 - The outstanding due decreases automatically; once fully collected, the entry is marked Fully collected.
 - Export a fresh backup after entering income records so they are included in your backup file.
 - Expense due payments and collections are recorded as settlements with amount, date, method and note; outstanding balances decrease automatically.
+
+
+Saved expense list layout (mobile)
+- Saved expenses now remain in a compact horizontal row on phone screens.
+- The amount and Edit / Delete / Pay due / Collect actions stay aligned on the right.
+- Long expense titles are shortened with an ellipsis and supporting details wrap to two lines.

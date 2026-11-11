@@ -28,4 +28,13 @@
 @media(max-width:420px){.income-toolbar{align-items:stretch;flex-wrap:wrap}.date-filter-label{flex-basis:100%}.income-item{flex-wrap:wrap}.income-right{width:100%;display:flex;align-items:center;justify-content:space-between}.income-item .item-actions{justify-content:flex-end}}
 .expense-right{display:grid;justify-items:end;gap:7px}
 .expense-right .item-actions{flex-wrap:wrap;justify-content:flex-end}
-@media(max-width:420px){.expense-right{width:100%;display:flex;align-items:center;justify-content:space-between}}
+@media(max-width:420px){
+  /* Keep each saved expense in one compact horizontal row on phones. */
+  .expense-item{flex-wrap:nowrap;align-items:center;gap:8px}
+  .expense-item .item-main{flex:1 1 auto;min-width:0}
+  .expense-item .item-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .expense-item .item-sub{line-height:1.35;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere}
+  .expense-item .expense-right{width:auto;flex:0 0 auto;display:grid;justify-items:end;gap:6px}
+  .expense-item .item-actions{flex-wrap:nowrap;gap:4px}
+  .expense-item .collect-btn,.expense-item .edit-btn,.expense-item .delete{padding:6px 7px;font-size:10px;white-space:nowrap}
+}
