@@ -39,8 +39,20 @@
   .expense-item .collect-btn,.expense-item .edit-btn,.expense-item .delete{padding:6px 7px;font-size:10px;white-space:nowrap}
 }
 
-/* Desktop font compatibility: use installed text fonts instead of symbol/icon fallback fonts. */
-html,body,body *{font-family:Arial,"Segoe UI","Nirmala UI","Noto Sans Bengali",sans-serif!important;font-variant-ligatures:none;text-rendering:optimizeLegibility}
+/* Reliable text rendering across desktop browsers and operating systems.
+   Prefer the platform UI font; avoid named symbol/icon fonts and text substitutions. */
+html,body,body *{
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif !important;
+  font-style:normal;
+  font-variant:normal;
+  font-variant-ligatures:none;
+  font-feature-settings:normal;
+  font-synthesis:none;
+  text-rendering:auto;
+}
+button,input,select,textarea{
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif !important;
+}
 .form label[hidden],.due-fields label[hidden]{display:none!important}
 @media(min-width:700px){
  main{max-width:1100px;padding-left:20px;padding-right:20px}

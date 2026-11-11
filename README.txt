@@ -64,3 +64,12 @@ Profile and balances
 - An expense marked Others Owe Me is counted as an expense when entered (select Paid from Cash or Bank); later collections add money back to the selected account.
 - Income heads can be selected repeatedly, and custom income heads can be added using Add head.
 - Desktop typography uses explicit system font fallbacks to avoid Symbol-font substitution.
+
+
+DESKTOP FONT DISPLAY FIX (2026-11-11)
+- Updated the font stack to use the operating system UI font first (system-ui / Segoe UI / Tahoma / Arial).
+- Added explicit font rules for form controls and disabled unusual font substitutions/ligatures.
+- Added a versioned CSS and JavaScript URL so browsers do not reuse stale copies.
+- Updated the service worker to activate immediately, claim open tabs, and refresh cached app files from the network when online while retaining offline fallback.
+
+After uploading to GitHub Pages, open the site and press Ctrl+Shift+R. If an old page remains open, close all DayQuest tabs/windows and reopen the site. This update does not clear localStorage, so it does not remove saved app data.
