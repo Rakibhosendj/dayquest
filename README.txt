@@ -2,10 +2,10 @@ DAYQUEST — OFFLINE EXPENSE & DAILY QUEST TRACKER
 
 WHAT IT DOES
 - Add, search, filter, edit and delete daily expenses.
-- Add date-wise income entries with reusable income heads (Salary, Business, Sales, Freelance, Rent, Gift, Other) and custom heads; add multiple income entries under one or more heads.
+- Add date-wise income entries with separate Income Type (Salary, Business, Sales, Freelance, Rent, Gift, Other) and Income By (person who earned it) fields; add custom income types and custom people.
 - Record full or partial due collections later, with a separate collection date and Cash/Bank method. Income entries show collection history, collected amount and remaining due.
-- Filter income by date and by income head; income entries are grouped by date and daily totals are shown.
-- Weekly/monthly income reports can be filtered to one selected income head or all heads, showing recorded and received amounts for each head.
+- Filter income by date, Income Type and Income By person; income entries are grouped by date and daily totals are shown.
+- Weekly/monthly income reports can be filtered by the person who earned the income, with separate summaries by person and Income Type.
 - Overview and weekly/monthly reports show income received, due balances, income-by-head summaries and live earned/cash/bank balances.
 - Choose payment type: Cash, Bank or Due. For Due entries, choose whether you owe or someone owes you, and enter the person name. For an 'Others Owe Me' expense, choose whether the expense was paid from Cash or Bank.
 - Due payment report with person-wise outstanding balances. Profile stores your name, phone and opening cash/bank amounts. Earned balance is calculated from opening balances plus received income and collections minus expense outflows and paid dues. Use Pay due to record payments against 'I Owe' expenses and Collect to record money received against 'Others Owe Me' expenses. Partial settlements are supported; older Due entries without direction are shown separately as unassigned.
@@ -64,7 +64,7 @@ Profile and balances
 - Due income increases balance only when it is collected; each collection adds to the selected Cash or Bank account.
 - An expense marked I Owe decreases balance when you record a Pay Due settlement.
 - An expense marked Others Owe Me is counted as an expense when entered (select Paid from Cash or Bank); later collections add money back to the selected account.
-- Income heads can be selected repeatedly, and custom income heads can be added using Add head.
+- Income types can be selected repeatedly, and new types or earners can be added using Add type or Add person.
 - Desktop typography uses explicit system font fallbacks to avoid Symbol-font substitution.
 
 
@@ -84,6 +84,9 @@ LOCAL LOGIN
 - If you forget the password, choose 'Forgot password? Reset this device login' on the login screen. This resets only the local login; it does not delete expenses, income, quests or profile data.
 - This local login is for convenience, not high-security protection. Anyone who can access browser storage or developer tools may bypass it. Do not use this as a substitute for server authentication when protecting sensitive or shared financial data.
 
-INCOME HEAD FILTERS AND REPORTS
-- In the Income tab, use the Income head dropdown to show one income head or all heads. The date filter can be used at the same time.
-- In Reports, use 'Show income by' to select one income head or all income heads for the selected weekly/monthly period. The report displays the amount recorded by entry date and the amount received in the selected period.
+INCOME TYPE AND INCOME BY PERSON
+- Income Type describes where the money came from, such as Salary, Business, Sales, Freelance, Rent, Gift or a custom type.
+- Income By identifies the person who earned the money. Select an existing person or use Add person to register another earner. Your Profile name is offered as a default person.
+- Older income records without an earner are kept as Unassigned; edit those records to attribute them to a person.
+- In the Income tab, filter by Income Type, Income By person and date.
+- In Reports, use Show person to view one person or everyone for the selected week/month. The report shows totals by person and a separate breakdown by Income Type.

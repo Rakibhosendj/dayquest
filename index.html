@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261111-login-incomeheads1">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261111-income-by-person2">
 <title>DayQuest</title>
 </head>
 <body>
@@ -97,7 +97,8 @@
  <div class="section-head"><h2>Income</h2><span class="muted" id="incomeCount">0 entries</span></div>
  <div class="section-head form-section-head"><h3 id="incomeFormTitle">Add income</h3><span class="muted" id="incomeEditHint" hidden>Editing saved income</span></div>
  <form id="incomeForm" class="form">
-  <label>Income head <span class="select-add"><select id="incomeSource" required></select><button type="button" class="mini-add" id="addIncomeHead">＋ Add head</button></span></label>
+  <label>Income type <span class="select-add"><select id="incomeSource" required></select><button type="button" class="mini-add" id="addIncomeHead">＋ Add type</button></span></label>
+  <label>Income by (person who earned) <span class="select-add"><select id="incomeBy" required></select><button type="button" class="mini-add" id="addIncomePerson">＋ Add person</button></span></label>
   <label>Amount <input id="incomeAmount" type="number" min="0.01" step="0.01" placeholder="0.00" required></label>
   <label>Payment type <select id="incomePaymentType"><option>Cash</option><option>Bank</option><option>Due</option></select></label>
   <div id="incomeDueFields" class="due-fields" hidden>
@@ -122,7 +123,7 @@
   <button class="primary full">Save collection</button>
   <button class="secondary full" type="button" id="cancelCollect">Cancel</button>
  </form>
- <div class="toolbar income-toolbar"><label class="date-filter-label">Income head <select id="incomeHeadFilter"></select></label><label class="date-filter-label">Show entries for date <input id="incomeDateFilter" type="date"></label><button class="secondary" id="clearIncomeDate">All dates</button></div>
+ <div class="toolbar income-toolbar"><label class="date-filter-label">Income type <select id="incomeHeadFilter"></select></label><label class="date-filter-label">Income by <select id="incomePersonFilter"></select></label><label class="date-filter-label">Date <input id="incomeDateFilter" type="date"></label><button class="secondary" id="clearIncomeDate">All dates</button></div>
  <div id="incomeList" class="list"></div>
 </section>
 <section id="quests" class="panel">
@@ -162,7 +163,8 @@
  <div class="section-head"><h2>By category</h2></div><div id="categoryBreakdown" class="list"></div>
  <div class="section-head"><h2>Income report</h2><span class="pill">Selected period</span></div>
  <div class="cards"><article class="stat"><span class="muted">Income entries</span><strong id="reportIncomeTotal">৳0.00</strong><small>by entry date</small></article><article class="stat"><span class="muted">Money collected</span><strong id="reportIncomeCollected">৳0.00</strong><small>by collection date</small></article></div>
- <div class="section-head"><h2>Income by head</h2></div><label class="report-filter-label">Show income by <select id="reportIncomeHeadFilter"></select></label><div id="incomeHeadBreakdown" class="list"></div>
+ <div class="section-head"><h2>Income by person</h2></div><label class="report-filter-label">Show person <select id="reportIncomePersonFilter"></select></label><div id="incomePersonBreakdown" class="list"></div>
+ <div class="section-head"><h2>Income by type</h2></div><div id="incomeHeadBreakdown" class="list"></div>
  <div class="section-head"><h2>Balance overview</h2></div><div class="cards balance-cards"><article class="stat"><span class="muted">Earned balance</span><strong id="reportEarnedBalance">৳0.00</strong><small>Cash + bank</small></article><article class="stat"><span class="muted">Cash</span><strong id="reportCashBalance">৳0.00</strong><small>Cash available</small></article><article class="stat"><span class="muted">Bank</span><strong id="reportBankBalance">৳0.00</strong><small>Bank available</small></article></div>
  <div class="section-head"><h2>Due payment report</h2><span class="pill">All outstanding dues</span></div>
  <div class="cards due-summary"><article class="stat"><span class="muted">I owe</span><strong id="iOweTotal">৳0.00</strong><small>Money you need to pay</small></article><article class="stat"><span class="muted">Others owe me</span><strong id="owedToMeTotal">৳0.00</strong><small>Money to receive</small></article></div>
@@ -176,5 +178,5 @@
 </main>
 <footer>DayQuest · Private by design · Works offline</footer>
 </div>
-<script src="app.js?v=20261111-login-incomeheads1"></script>
+<script src="app.js?v=20261111-income-by-person2"></script>
 </body></html>

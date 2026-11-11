@@ -7,6 +7,10 @@ db.incomes=Array.isArray(db.incomes)?db.incomes:[];
 db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];
 db.incomes.forEach(x=>{if(x.source&&!db.incomeHeads.includes(x.source))db.incomeHeads.push(x.source)});
 db.profile=db.profile&&typeof db.profile==='object'?db.profile:{name:'',phone:'',openingCash:0,openingBank:0};
+db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];
+if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);
+db.incomes.forEach(x=>{x.incomeBy=String(x.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(x.incomeBy))db.incomePeople.push(x.incomeBy)});
+if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');
 const save=()=>{localStorage.setItem('dayquest_v1',JSON.stringify(db));render();if($('reports')?.classList.contains('active'))renderReport()};
 const money=n=>'৳'+Number(n||0).toLocaleString('en-BD',{minimumFractionDigits:2,maximumFractionDigits:2});
 const dateObj=s=>new Date(s+'T12:00:00');
@@ -47,10 +51,16 @@ function fillChoices(){
  const source=$('incomeSource'),sourceValue=source.value;
  source.innerHTML=db.incomeHeads.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
  if(db.incomeHeads.includes(sourceValue))source.value=sourceValue;
- [['incomeHeadFilter','All income heads'],['reportIncomeHeadFilter','All income heads']].forEach(([id,label])=>{
+ [['incomeHeadFilter','All income types']].forEach(([id,label])=>{
   const select=$(id);if(!select)return;const previous=select.value;
   select.innerHTML=`<option value="all">${label}</option>`+db.incomeHeads.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
   select.value=previous==='all'||db.incomeHeads.includes(previous)?previous:'all';
+ });
+ [['incomeBy','Select person'],['incomePersonFilter','All people'],['reportIncomePersonFilter','All people']].forEach(([id,label])=>{
+  const select=$(id);if(!select)return;const previous=select.value;
+  select.innerHTML=(id==='incomeBy'?'':'<option value="all">'+label+'</option>')+db.incomePeople.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');
+  const preferred=(id==='incomeBy'?(db.profile.name||db.incomePeople[0]):'all');
+  select.value=db.incomePeople.includes(previous)?previous:(id==='incomeBy'?preferred:'all');
  });
 }
 function calcTotal(){let v=(Number($('quantity').value)||0)*(Number($('rate').value)||0);$('calculatedTotal').textContent=money(v)}
@@ -62,7 +72,8 @@ $('incomeAmount').oninput=()=>{$('incomeTotalPreview').textContent=money(Number(
 $('incomeDate').value=today();$('collectDate').value=today();$('expenseDueActionDate').value=today();
 $('addExpenseName').onclick=()=>{let n=prompt('Add an expense name:');if(n&&n.trim()){n=n.trim();if(!db.expenseNames.includes(n))db.expenseNames.push(n);fillChoices();$('expenseName').value=n;localSaveOnly()}};
 $('addUnit').onclick=()=>{let n=prompt('Add a unit (e.g. bottle, sack, km):');if(n&&n.trim()){n=n.trim();if(!db.units.includes(n))db.units.push(n);fillChoices();$('unitName').value=n;localSaveOnly()}};
-$('addIncomeHead').onclick=()=>{let n=prompt('Add an income head (e.g. Salary, Shop, Rent, Freelance):');if(n&&n.trim()){n=n.trim();if(!db.incomeHeads.includes(n))db.incomeHeads.push(n);fillChoices();$('incomeSource').value=n;localSaveOnly()}};
+$('addIncomeHead').onclick=()=>{let n=prompt('Add an income type (e.g. Salary, Business, Rent, Freelance):');if(n&&n.trim()){n=n.trim();if(!db.incomeHeads.includes(n))db.incomeHeads.push(n);fillChoices();$('incomeSource').value=n;localSaveOnly()}};
+$('addIncomePerson').onclick=()=>{let n=prompt('Add the person who earned this income:');if(n&&n.trim()){n=n.trim();if(!db.incomePeople.includes(n))db.incomePeople.push(n);fillChoices();$('incomeBy').value=n;localSaveOnly()}};
 function localSaveOnly(){localStorage.setItem('dayquest_v1',JSON.stringify(db))}
 function resetExpenseForm(){
  editingExpenseId=null;$('expenseForm').reset();$('expenseDate').value=today();$('quantity').value=1;
@@ -120,12 +131,16 @@ $('expenseDueActionForm').onsubmit=e=>{
 };
 
 function resetIncomeForm(){
- editingIncomeId=null;$('incomeForm').reset();$('incomeDate').value=today();if($('incomeSource').options.length)$('incomeSource').selectedIndex=0;$('incomeDueFields').hidden=true;$('incomeDuePerson').required=false;
+ editingIncomeId=null;$('incomeForm').reset();$('incomeDate').value=today();if($('incomeSource').options.length)$('incomeSource').selectedIndex=0;
+ const preferred=db.profile.name&&db.incomePeople.includes(db.profile.name)?db.profile.name:(db.incomePeople[0]||'Unassigned');$('incomeBy').value=preferred;
+ $('incomeDueFields').hidden=true;$('incomeDuePerson').required=false;
  $('incomeFormTitle').textContent='Add income';$('incomeSubmitBtn').textContent='Save income';$('cancelIncomeEdit').hidden=true;$('incomeEditHint').hidden=true;$('incomeTotalPreview').textContent=money(0);
 }
 function editIncome(id){
  const x=db.incomes.find(item=>item.id===id);if(!x)return;
- editingIncomeId=id;ensureOption($('incomeSource'),x.source||'Other');$('incomeSource').value=x.source||'Other';$('incomeAmount').value=Number(x.amount||0);$('incomePaymentType').value=x.paymentType||'Cash';
+ editingIncomeId=id;ensureOption($('incomeSource'),x.source||'Other');$('incomeSource').value=x.source||'Other';
+ const earner=x.incomeBy||'Unassigned';ensureOption($('incomeBy'),earner);$('incomeBy').value=earner;
+ $('incomeAmount').value=Number(x.amount||0);$('incomePaymentType').value=x.paymentType||'Cash';
  $('incomeDuePerson').value=x.duePerson||'';$('incomeDueFields').hidden=$('incomePaymentType').value!=='Due';$('incomeDuePerson').required=$('incomePaymentType').value==='Due';
  $('incomeDate').value=x.date||today();$('incomeNote').value=x.note||'';$('incomeTotalPreview').textContent=money(x.amount||0);
  $('incomeFormTitle').textContent='Edit income';$('incomeSubmitBtn').textContent='Update income';$('cancelIncomeEdit').hidden=false;$('incomeEditHint').hidden=false;
@@ -133,10 +148,11 @@ function editIncome(id){
 }
 $('cancelIncomeEdit').onclick=resetIncomeForm;
 $('incomeForm').onsubmit=e=>{
- e.preventDefault();const source=$('incomeSource').value.trim(),amount=Number($('incomeAmount').value),paymentType=$('incomePaymentType').value,duePerson=$('incomeDuePerson').value.trim();
- if(!source||!(amount>0)||!Number.isFinite(amount)){alert('Enter an income source and a valid amount.');return}
+ e.preventDefault();const source=$('incomeSource').value.trim(),incomeBy=$('incomeBy').value.trim(),amount=Number($('incomeAmount').value),paymentType=$('incomePaymentType').value,duePerson=$('incomeDuePerson').value.trim();
+ if(!source||!incomeBy||!(amount>0)||!Number.isFinite(amount)){alert('Select an income type, the person who earned it, and a valid amount.');return}
  if(paymentType==='Due'&&!duePerson){alert('Enter the customer or person who owes you.');$('incomeDuePerson').focus();return}
- const values={source,amount,paymentType,duePerson:paymentType==='Due'?duePerson:null,date:$('incomeDate').value,note:$('incomeNote').value.trim()};
+ if(!db.incomePeople.includes(incomeBy))db.incomePeople.push(incomeBy);
+ const values={source,incomeBy,amount,paymentType,duePerson:paymentType==='Due'?duePerson:null,date:$('incomeDate').value,note:$('incomeNote').value.trim()};
  if(editingIncomeId){const existing=db.incomes.find(x=>x.id===editingIncomeId);if(existing){const hadCollections=incomeCollections(existing).length>0;if(hadCollections&&(values.paymentType!=='Due'||amount<collectedAmount(existing))){alert('This income already has collections. Keep it as Due and set the amount to at least the amount already collected.');return}Object.assign(existing,values);if(paymentType!=='Due')existing.collections=[]}}
  else db.incomes.unshift({id:crypto.randomUUID(),...values,collections:[]});
  resetIncomeForm();save();
@@ -159,10 +175,11 @@ $('incomeCollectForm').onsubmit=e=>{
 function deleteIncome(id){if(confirm('Delete this income entry and its collection history?')){if(collectingIncomeId===id)closeCollectForm();if(editingIncomeId===id)resetIncomeForm();db.incomes=db.incomes.filter(x=>x.id!==id);save()}}
 $('incomeDateFilter').onchange=render;
 $('incomeHeadFilter').onchange=render;
-$('reportIncomeHeadFilter').onchange=renderReport;
+$('incomePersonFilter').onchange=render;
+$('reportIncomePersonFilter').onchange=renderReport;
 $('clearIncomeDate').onclick=()=>{$('incomeDateFilter').value='';render()};
 function loadProfileForm(){ $('profileName').value=db.profile.name||'';$('profilePhone').value=db.profile.phone||'';$('openingCash').value=Number(db.profile.openingCash||0);$('openingBank').value=Number(db.profile.openingBank||0)}
-$('profileForm').onsubmit=e=>{e.preventDefault();const openingCash=Number($('openingCash').value),openingBank=Number($('openingBank').value);if(!Number.isFinite(openingCash)||openingCash<0||!Number.isFinite(openingBank)||openingBank<0){alert('Opening balances must be zero or greater.');return}db.profile={name:$('profileName').value.trim(),phone:$('profilePhone').value.trim(),openingCash,openingBank};save();alert('Profile and starting balances saved.')};
+$('profileForm').onsubmit=e=>{e.preventDefault();const openingCash=Number($('openingCash').value),openingBank=Number($('openingBank').value);if(!Number.isFinite(openingCash)||openingCash<0||!Number.isFinite(openingBank)||openingBank<0){alert('Opening balances must be zero or greater.');return}db.profile={name:$('profileName').value.trim(),phone:$('profilePhone').value.trim(),openingCash,openingBank};if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);fillChoices();save();alert('Profile and starting balances saved.')};
 
 $('questForm').onsubmit=e=>{
  e.preventDefault();
@@ -202,7 +219,7 @@ function render(){
  let filtered=db.expenses.filter(x=>( $('expenseFilter').value==='all'||x.category===$('expenseFilter').value)&&(`${x.note} ${x.category}`).toLowerCase().includes($('expenseSearch').value.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date));
  $('expenseList').innerHTML=expenseHTML(filtered,true);$('questList').innerHTML=questHTML(dayQuests(d),true);
  $('questSummary').textContent=`${done}/${qToday.length} completed`;$('incomeCount').textContent=`${db.incomes.length} entries`;
- const incomeFilter=$('incomeDateFilter').value,incomeHead=$('incomeHeadFilter').value;const incomes=[...db.incomes].filter(x=>(!incomeFilter||x.date===incomeFilter)&&(incomeHead==='all'||(x.source||'Other')===incomeHead)).sort((a,b)=>b.date.localeCompare(a.date));$('incomeList').innerHTML=incomeHTML(incomes,true);
+ const incomeFilter=$('incomeDateFilter').value,incomeHead=$('incomeHeadFilter').value,incomePerson=$('incomePersonFilter').value;const incomes=[...db.incomes].filter(x=>(!incomeFilter||x.date===incomeFilter)&&(incomeHead==='all'||(x.source||'Other')===incomeHead)&&(incomePerson==='all'||(x.incomeBy||'Unassigned')===incomePerson)).sort((a,b)=>b.date.localeCompare(a.date));$('incomeList').innerHTML=incomeHTML(incomes,true);
 }
 function expenseHTML(items,actions){return items.length?items.map(x=>{let title=x.name||x.note||x.category,settled=expenseSettledAmount(x),remaining=expenseOutstanding(x),direction=x.dueDirection==='i_owe'?'I owe':x.dueDirection==='owed_to_me'?'Owed to me':'Old due',dueInfo=x.paymentType==='Due'?[direction,x.duePerson,`Settled ${money(settled)} · Remaining ${money(remaining)}`].filter(Boolean).join(' · '):'',details=[x.paymentType||'Cash',dueInfo,x.quantity?`${x.quantity} ${x.unit||''} × ${money(x.rate||0)}`:x.category,fmt(x.date),x.note].filter(Boolean).join(' · ');let actionLabel=x.dueDirection==='i_owe'?'Pay due':'Collect';return `<div class="item expense-item"><div class="item-main"><div class="item-title">${esc(title)}</div><div class="item-sub">${esc(details)}</div></div><div class="expense-right"><div class="item-amount">${money(x.amount)}</div>${actions?`<div class="item-actions">${x.paymentType==='Due'&&remaining>0&&['i_owe','owed_to_me'].includes(x.dueDirection)?`<button class="collect-btn" onclick="openExpenseDueAction('${x.id}')">${actionLabel}</button>`:''}<button class="edit-btn" onclick="editExpense('${x.id}')" aria-label="Edit ${esc(title)}">Edit</button><button class="delete" onclick="delExpense('${x.id}')" aria-label="Delete ${esc(title)}">×</button></div>`:''}</div></div>`}).join(''):empty('No expenses yet. Add your first one above.') }
 function incomeHTML(items,actions){
@@ -212,7 +229,7 @@ function incomeHTML(items,actions){
   const rows=groups[d],dayTotal=sum(rows);
   const cards=rows.map(x=>{
    const collected=collectedAmount(x),remaining=incomeOutstanding(x),status=x.paymentType==='Due'?(remaining<=0.000001?'Fully collected':collected>0?'Partially collected':'Due'):x.paymentType||'Cash';
-   const details=[x.paymentType||'Cash',x.duePerson?`From ${x.duePerson}`:'',x.note||'',x.paymentType==='Due'?`Collected ${money(collected)} · Due ${money(remaining)}`:''].filter(Boolean).join(' · ');
+   const details=[`Income by: ${x.incomeBy||'Unassigned'}`,x.paymentType||'Cash',x.duePerson?`Customer: ${x.duePerson}`:'',x.note||'',x.paymentType==='Due'?`Collected ${money(collected)} · Due ${money(remaining)}`:''].filter(Boolean).join(' · ');
    const collectionHistory=incomeCollections(x).slice().sort((a,b)=>b.date.localeCompare(a.date)).map(c=>`${fmt(c.date)}: ${money(c.amount)} (${c.method||'Cash'})`).join(' | ');
    return `<div class="item income-item"><div class="item-main"><div class="item-title">${esc(x.source||'Income')}</div><div class="item-sub">${esc(details||status)}${collectionHistory?`<br>Collections: ${esc(collectionHistory)}`:''}</div><span class="income-status ${remaining>0?'is-due':'is-paid'}">${esc(status)}</span></div><div class="income-right"><div class="item-amount">${money(x.amount)}</div>${actions?`<div class="item-actions">${remaining>0?`<button class="collect-btn" onclick="openCollectIncome('${x.id}')">Collect</button>`:''}<button class="edit-btn" onclick="editIncome('${x.id}')">Edit</button><button class="delete" onclick="deleteIncome('${x.id}')" aria-label="Delete ${esc(x.source||'income')}">×</button></div>`:''}</div></div>`;
   }).join('');
@@ -240,18 +257,26 @@ function renderReport(){
  else{start=new Date(now.getFullYear(),now.getMonth(),1);end=now;let n=now.getDate();for(let i=1;i<=n;i++){let x=new Date(now.getFullYear(),now.getMonth(),i);days.push(x.toISOString().slice(0,10));labels.push(i%5===1||i===n?String(i):'')}}
  let a=start.toISOString().slice(0,10),b=end.toISOString().slice(0,10),items=db.expenses.filter(x=>x.date>=a&&x.date<=b),total=sum(items);
  $('reportLabel').textContent=period==='week'?'THIS WEEK':'THIS MONTH';$('reportTotal').textContent=money(total);$('reportRange').textContent=`${fmt(a)} – ${fmt(b)}`;
- const selectedIncomeHead=$('reportIncomeHeadFilter').value;
- const incomeInScope=db.incomes.filter(x=>selectedIncomeHead==='all'||(x.source||'Other')===selectedIncomeHead);
+ const selectedIncomePerson=$('reportIncomePersonFilter').value;
+ const incomeInScope=db.incomes.filter(x=>selectedIncomePerson==='all'||(x.incomeBy||'Unassigned')===selectedIncomePerson);
  const incomeEntriesInPeriod=incomeInScope.filter(x=>x.date>=a&&x.date<=b);
- const receivedInPeriod=incomeInScope.reduce((total,x)=>total+(x.paymentType==='Due'?incomeCollections(x).filter(c=>c.date>=a&&c.date<=b).reduce((t,c)=>t+Number(c.amount||0),0):(x.date>=a&&x.date<=b?Number(x.amount||0):0)),0);
+ const receivedForPeriod=entries=>entries.reduce((total,x)=>total+(x.paymentType==='Due'?incomeCollections(x).filter(c=>c.date>=a&&c.date<=b).reduce((t,c)=>t+Number(c.amount||0),0):(x.date>=a&&x.date<=b?Number(x.amount||0):0)),0);
+ const receivedInPeriod=receivedForPeriod(incomeInScope);
  $('reportIncomeTotal').textContent=money(sum(incomeEntriesInPeriod));$('reportIncomeCollected').textContent=money(receivedInPeriod);
- const headsToShow=selectedIncomeHead==='all'?db.incomeHeads:[selectedIncomeHead];
- $('incomeHeadBreakdown').innerHTML=headsToShow.map(head=>{
-  const headEntries=db.incomes.filter(x=>(x.source||'Other')===head),recorded=sum(headEntries.filter(x=>x.date>=a&&x.date<=b));
-  const received=headEntries.reduce((total,x)=>total+(x.paymentType==='Due'?incomeCollections(x).filter(c=>c.date>=a&&c.date<=b).reduce((t,c)=>t+Number(c.amount||0),0):(x.date>=a&&x.date<=b?Number(x.amount||0):0)),0);
+ const peopleToShow=selectedIncomePerson==='all'?db.incomePeople:[selectedIncomePerson];
+ $('incomePersonBreakdown').innerHTML=peopleToShow.map(person=>{
+  const personEntries=db.incomes.filter(x=>(x.incomeBy||'Unassigned')===person),recorded=sum(personEntries.filter(x=>x.date>=a&&x.date<=b));
+  const received=receivedForPeriod(personEntries);
   if(!recorded&&!received)return '';
-  return `<div class="income-report-row"><div><strong>${esc(head)}</strong><small>Recorded: ${money(recorded)}</small></div><strong>${money(received)}<small> received</small></strong></div>`;
- }).filter(Boolean).join('')||empty('No income for this head in the selected period.');showBalances();
+  return `<div class="income-report-row"><div><strong>${esc(person)}</strong><small>Recorded: ${money(recorded)}</small></div><strong>${money(received)}<small> received</small></strong></div>`;
+ }).filter(Boolean).join('')||empty('No income by person in the selected period.');
+ const typesToShow=db.incomeHeads;
+ $('incomeHeadBreakdown').innerHTML=typesToShow.map(type=>{
+  const typeEntries=incomeInScope.filter(x=>(x.source||'Other')===type),recorded=sum(typeEntries.filter(x=>x.date>=a&&x.date<=b));
+  const received=receivedForPeriod(typeEntries);
+  if(!recorded&&!received)return '';
+  return `<div class="income-report-row"><div><strong>${esc(type)}</strong><small>Recorded: ${money(recorded)}</small></div><strong>${money(received)}<small> received</small></strong></div>`;
+ }).filter(Boolean).join('')||empty('No income by type for this person in the selected period.');showBalances();
  let vals=days.map(d=>sum(items.filter(x=>x.date===d))),max=Math.max(...vals,1);
  $('reportBars').innerHTML=vals.map((v,i)=>`<div class="bar-wrap"><div class="bar" title="${money(v)}" style="height:${Math.max(v?3:1,v/max*82)}px"></div><span class="bar-label">${labels[i]}</span></div>`).join('');
  let cats={};items.forEach(x=>cats[x.category]=(cats[x.category]||0)+Number(x.amount));
@@ -269,7 +294,7 @@ function renderDueReport(){
  $('unassignedDueHint').hidden=!legacy.length;$('unassignedDueHint').textContent=legacy.length?`${legacy.length} older Due ${legacy.length===1?'entry is':'entries are'} not assigned to either side. These older records are preserved and excluded from the two totals.`:'';
 }
 $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`dayquest-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href)};
-$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',openingCash:0,openingBank:0};if(confirm('Replace current data with this backup?')){db=x;db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];db.profile=db.profile||{name:'',phone:'',openingCash:0,openingBank:0};fillChoices();loadProfileForm();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
+$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',openingCash:0,openingBank:0};if(confirm('Replace current data with this backup?')){db=x;db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];db.profile=db.profile||{name:'',phone:'',openingCash:0,openingBank:0};db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('installBtn').hidden=false});
 $('installBtn').onclick=async()=>{if(deferredInstall){deferredInstall.prompt();deferredInstall=null;$('installBtn').hidden=true}};
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));

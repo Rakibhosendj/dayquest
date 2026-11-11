@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v10-login-income-heads';
+const CACHE = 'dayquest-cache-v11-income-by-person';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261111-login-incomeheads1',
-  './app.js?v=20261111-login-incomeheads1',
+  './style.css?v=20261111-income-by-person2',
+  './app.js?v=20261111-income-by-person2',
   './manifest.json'
 ];
 
