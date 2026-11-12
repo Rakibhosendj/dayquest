@@ -1,35 +1,26 @@
-DAYQUEST PURCHASE BILL + SUPPLIER + CONSUMPTION UPDATE
+DAYQUEST FAMILY PROFILE & INCOME BY FAMILY MEMBER UPDATE (2026-11-12)
 
-UPLOAD
-- Extract this ZIP.
-- Upload the files inside the DayQuest folder to your existing GitHub Pages publishing directory (branch main, / root).
-- Overwrite matching app files. Keep unrelated repository files such as CNAME and .nojekyll.
-- Commit directly to main and then force-refresh the site with Ctrl+Shift+R (desktop) or close/reopen DayQuest (phone).
-- Export a JSON backup before updating. This release keeps the existing localStorage database key and adds new arrays for purchase bills, supplier payments, suppliers and consumption entries.
+PROFILE PHOTO
+- Added an image upload control and photo preview to Profile.
+- Uploaded images are resized to max 480 px on the longest edge and compressed to JPEG before saving. Added a Remove photo action.
+- The photo is stored locally with the existing profile and included in JSON backups.
 
-PURCHASE BILL EXAMPLE
-- Supplier: Rahman Store
-- Product: Soap; specification: 300 gram; quantity: 2; unit: pcs; rate per pc; line amount calculated automatically.
-- Product: Rice; quantity: 25; unit: kg; rate per kg; line amount calculated automatically.
-- Add any other products with Add product.
-- Enter Cash paid now and Bank paid now. Credit is calculated as Bill total minus Cash and Bank.
+FAMILY INFORMATION
+- Added Family name to the Profile form.
+- Added a Family members manager to add and remove household members.
+- The Profile full name is automatically registered as a family member if not already present.
+- Every family member is synchronized into the Income By person list and available for new income entries and person reports.
+- Removing a family member from the list does not alter existing income transaction attribution.
 
-SUPPLIER ACCOUNT
-- Save the bill to create the supplier account.
-- Click the supplier's account to see bills by date, each product line, quantity, unit, rate and amount, plus initial Cash/Bank/Credit split and the remaining credit.
-- Use Pay supplier due for full or partial payments. Choose the date and Cash or Bank. The payment reduces the supplier's outstanding balance and the selected balance.
+DATA COMPATIBILITY
+- Keeps existing family-free profile records compatible; new family fields are initialized without clearing saved transactions.
+- Preserves existing profile photo/name/family name when saving profile fields.
+- Backup import/export retains the new profile photo, family name and family member list.
+- Existing Income By names and historical income records are preserved.
+- Uses the same dayquest_v1 localStorage database. No cloud sync is added.
 
-PRODUCT CONSUMPTION
-- Record actual usage separately under Expenses > Record product consumption.
-- Select a product, enter consumed quantity/unit/date, and save.
-- The app checks stock available on the chosen date. g/kg/mg and ml/litre are converted for compatible stock calculations.
-- Reports > Product consumption & expense report shows purchased amount, purchased quantity, consumed quantity, current stock and estimated consumption cost for each product.
-- Consumption does not deduct cash again; the purchase bill already recorded the paid Cash/Bank outflow. Credit reduces Cash/Bank only when paid to the supplier.
-
-
-PRODUCT CATALOG SHORTCUT UPDATE
-- The Purchase bill entry section now starts with a prominent + Add New Product button.
-- Add a product name once; it is saved to the product catalogue and automatically placed into the first empty product line (or a new line if all lines are already filled).
-- Product name fields provide saved product suggestions while typing.
-- Existing product names are retained and deduplicated case-insensitively.
-- The regular Add another line button remains available for adding further products to the same bill.
+GITHUB PAGES UPDATE
+- Export a JSON backup before updating.
+- Extract this archive and upload all files inside the DayQuest folder to your existing repository publishing root (branch main, folder /), overwriting matching project files.
+- Keep unrelated repository files (such as CNAME, .nojekyll and .github).
+- Commit to main. After deployment, close DayQuest tabs and force-refresh the website so the bumped app, stylesheet and service-worker cache versions load.

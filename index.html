@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261112-product-catalog1">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261112-family-profile2">
 <title>DayQuest</title>
 </head>
 <body>
@@ -35,15 +35,29 @@
  </div>
 </section>
 <div id="appShell" hidden>
-<header class="top"><div><div class="eyebrow">YOUR PERSONAL DASHBOARD</div><h1>DayQuest <span>✦</span></h1></div><div class="header-actions"><span id="userGreeting" class="user-greeting"></span><button id="logoutBtn" class="ghost" type="button">Log out</button><button id="installBtn" class="ghost" hidden>Install</button></div></header>
+<div class="app-layout">
+ <aside id="sidebar" class="sidebar" aria-label="Main navigation">
+  <div class="sidebar-brand"><span class="sidebar-mark">DQ</span><div><strong>DayQuest</strong><small>Personal dashboard</small></div></div>
+  <div class="sidebar-caption">MENU</div>
+  <nav class="side-nav">
+   <button class="tab side-link active" data-tab="home" type="button"><span class="side-link-mark">01</span><span>Overview</span></button>
+   <button class="tab side-link" data-tab="expenses" type="button"><span class="side-link-mark">02</span><span>Expenses</span></button>
+   <button class="tab side-link" data-tab="income" type="button"><span class="side-link-mark">03</span><span>Income</span></button>
+   <button class="tab side-link" data-tab="quests" type="button"><span class="side-link-mark">04</span><span>Daily quests</span></button>
+   <button class="tab side-link" data-tab="reports" type="button"><span class="side-link-mark">05</span><span>Reports</span></button>
+   <button class="tab side-link" data-tab="profile" type="button"><span class="side-link-mark">06</span><span>Profile</span></button>
+   <button class="tab side-link" data-tab="settings" type="button"><span class="side-link-mark">07</span><span>Settings</span></button>
+  </nav>
+  <div class="sidebar-foot">Your data stays on this device.</div>
+ </aside>
+ <button id="sidebarBackdrop" class="sidebar-backdrop" type="button" aria-label="Close navigation" hidden></button>
+ <div class="app-main">
+<header class="top"><div class="top-title"><button id="menuToggle" class="menu-toggle" type="button" aria-expanded="false" aria-controls="sidebar">Menu</button><div><div class="eyebrow">YOUR PERSONAL DASHBOARD</div><h1>DayQuest <span>✦</span></h1></div></div><div class="header-actions"><span id="userGreeting" class="user-greeting"></span><button id="logoutBtn" class="ghost" type="button">Log out</button><button id="installBtn" class="ghost" hidden>Install</button></div></header>
 <main>
 <section class="hero">
  <div><div class="eyebrow">TODAY'S SPENDING</div><div class="money" id="todayTotal">৳0.00</div><div class="muted" id="todayDate"></div></div>
  <div class="hero-side"><div class="eyebrow">QUEST PROGRESS</div><div class="big" id="questProgress">0/0</div><div class="progress"><i id="questBar"></i></div></div>
 </section>
-<nav class="tabs">
- <button class="tab active" data-tab="home">Overview</button><button class="tab" data-tab="expenses">Expenses</button><button class="tab" data-tab="income">Income</button><button class="tab" data-tab="quests">Daily quests</button><button class="tab" data-tab="reports">Reports</button><button class="tab" data-tab="profile">Profile</button>
-</nav>
 <section id="home" class="panel active">
  <div class="section-head"><h2>Available balance</h2><span class="pill">Live</span></div>
  <div class="cards balance-cards"><article class="stat balance-main"><span class="muted">Earned balance</span><strong id="earnedBalance">৳0.00</strong><small>Cash + bank after recorded expenses</small></article><article class="stat"><span class="muted">Cash balance</span><strong id="cashBalance">৳0.00</strong><small>Available cash</small></article><article class="stat"><span class="muted">Bank balance</span><strong id="bankBalance">৳0.00</strong><small>Available in bank</small></article></div>
@@ -64,6 +78,7 @@
  <datalist id="productNameSuggestions"></datalist>
  <form id="purchaseBillForm" class="form purchase-form">
   <label>Supplier / store <span class="select-add"><select id="purchaseSupplier" required><option value="">Select supplier</option></select><button type="button" class="mini-add" id="addSupplier">＋ Add supplier</button></span></label>
+  <label>Purchase category <select id="purchaseCategory" required><option value="">Select purchase category</option></select></label>
   <div class="form-grid">
    <label>Bill number <input id="purchaseBillNo" maxlength="50" placeholder="Optional bill / memo no."></label>
    <label>Purchase date <input id="purchaseDate" type="date" required></label>
@@ -98,14 +113,6 @@
   <div class="form-grid"><label>Payment date <input id="supplierPaymentDate" type="date" required></label><label>Paid from <select id="supplierPaymentMethod"><option>Cash</option><option>Bank</option></select></label></div>
   <label>Note <input id="supplierPaymentNote" maxlength="100" placeholder="Optional payment note"></label>
   <button class="primary full">Save supplier payment</button><button class="secondary full" type="button" id="cancelSupplierPayment">Cancel</button>
- </form>
- <div class="section-head"><h2>Record product consumption</h2><span class="muted">Track items used from stock</span></div>
- <form id="consumptionForm" class="form">
-  <label>Product <select id="consumptionProduct" required><option value="">Add a purchase bill first</option></select></label>
-  <div class="form-grid"><label>Quantity consumed <input id="consumptionQuantity" type="number" min="0.001" step="0.001" required></label><label>Unit <select id="consumptionUnit" required></select></label></div>
-  <div class="total-preview"><span>Available stock</span><strong id="consumptionAvailable">—</strong></div>
-  <div class="form-grid"><label>Consumption date <input id="consumptionDate" type="date" required></label><label>Purpose / note <input id="consumptionNote" maxlength="100" placeholder="Optional"></label></div>
-  <button class="primary full">Save consumption</button>
  </form>
 
  <div class="section-head"><h2>Expenses</h2><span class="muted" id="expenseCount">0 entries</span></div>
@@ -195,8 +202,19 @@
 <section id="profile" class="panel">
  <div class="section-head"><h2>User profile</h2><span class="pill">Stored on this device</span></div>
  <form id="profileForm" class="form">
+  <div class="profile-photo-row">
+   <div class="profile-photo-frame"><img id="profilePhotoPreview" alt="Profile photo" hidden><span id="profilePhotoFallback">DQ</span></div>
+   <div class="profile-photo-copy"><strong>Profile photo</strong><small>Upload a family or profile picture. It is stored on this device.</small>
+    <div class="profile-photo-actions"><label class="secondary photo-upload-label">Upload photo<input id="profilePhotoInput" type="file" accept="image/*"></label><button class="ghost-light" id="removeProfilePhoto" type="button">Remove photo</button></div>
+   </div>
+  </div>
   <label>Full name <input id="profileName" maxlength="80" placeholder="Enter your name"></label>
   <label>Phone number <input id="profilePhone" maxlength="30" type="tel" placeholder="Optional"></label>
+  <label>Family name <input id="familyName" maxlength="80" placeholder="e.g. Rahman Family"></label>
+  <div class="section-head form-section-head"><h3>Family members</h3><span class="muted">Available in Income By</span></div>
+  <div class="family-member-add"><input id="newFamilyMember" maxlength="80" placeholder="Enter family member name" aria-label="New family member"><button class="secondary" id="addFamilyMember" type="button">＋ Add member</button></div>
+  <div id="familyMemberList" class="list family-member-list"></div>
+  <p class="hint">Every saved family member is automatically available in the Income By selector. Existing income records keep their original earner names.</p>
   <div class="section-head form-section-head"><h3>Starting balances</h3></div>
   <p class="hint">Enter the cash and bank amounts you had when you started using DayQuest. These are the starting amounts before the saved income and expense entries below are calculated.</p>
   <div class="form-grid">
@@ -208,14 +226,38 @@
  <div class="section-head"><h2>Current balance</h2></div>
  <div class="cards balance-cards"><article class="stat balance-main"><span class="muted">Earned balance</span><strong id="profileEarnedBalance">৳0.00</strong><small>Cash + bank after recorded transactions</small></article><article class="stat"><span class="muted">Cash balance</span><strong id="profileCashBalance">৳0.00</strong></article><article class="stat"><span class="muted">Bank balance</span><strong id="profileBankBalance">৳0.00</strong></article></div>
 </section>
+<section id="settings" class="panel">
+ <div class="section-head"><h2>Settings</h2><span class="pill">Personalize DayQuest</span></div>
+ <section class="settings-card">
+  <div class="section-head settings-section-head"><div><h3>Theme color</h3><p class="settings-copy">Choose the main color for navigation, buttons and highlights.</p></div></div>
+  <div class="theme-picker-row"><label for="themeColorInput">Custom color</label><input id="themeColorInput" type="color" value="#263b5c" aria-label="Choose theme color"><strong id="themeColorValue">#263B5C</strong></div>
+  <div class="theme-presets" aria-label="Theme color presets">
+   <button type="button" class="theme-swatch" data-theme-color="#263b5c" aria-label="Navy blue" title="Navy blue" style="--swatch:#263b5c"></button>
+   <button type="button" class="theme-swatch" data-theme-color="#18765b" aria-label="Forest green" title="Forest green" style="--swatch:#18765b"></button>
+   <button type="button" class="theme-swatch" data-theme-color="#6941a5" aria-label="Violet" title="Violet" style="--swatch:#6941a5"></button>
+   <button type="button" class="theme-swatch" data-theme-color="#a65b20" aria-label="Amber" title="Amber" style="--swatch:#a65b20"></button>
+   <button type="button" class="theme-swatch" data-theme-color="#b44358" aria-label="Rose" title="Rose" style="--swatch:#b44358"></button>
+   <button type="button" class="theme-swatch" data-theme-color="#236d91" aria-label="Ocean blue" title="Ocean blue" style="--swatch:#236d91"></button>
+  </div>
+ </section>
+ <section class="settings-card">
+  <div class="section-head settings-section-head"><div><h3>Purchase categories</h3><p class="settings-copy">These categories are used on purchase bills and in expense reports.</p></div></div>
+  <form id="addPurchaseCategoryForm" class="category-add-form">
+   <input id="newPurchaseCategory" maxlength="40" placeholder="Add a category name" aria-label="New purchase category" required>
+   <button class="primary" type="submit">＋ Add category</button>
+  </form>
+  <div id="purchaseCategoryList" class="list category-settings-list"></div>
+  <p class="hint">Default categories: Assets, Staples and Fixed Ex. You can add, rename or remove categories here.</p>
+ </section>
+</section>
 <section id="reports" class="panel">
  <div class="section-head"><h2>Reports</h2></div>
  <div class="report-switch"><button class="period active" data-period="week">Weekly</button><button class="period" data-period="month">Monthly</button></div>
  <article class="report-card"><div class="eyebrow" id="reportLabel">THIS WEEK</div><strong class="report-total" id="reportTotal">৳0.00</strong><div class="muted" id="reportRange"></div><div class="bars" id="reportBars"></div></article>
  <div class="section-head"><h2>By category</h2></div><div id="categoryBreakdown" class="list"></div>
- <div class="section-head"><h2>Product consumption & expense report</h2><span class="pill">By individual product</span></div>
- <label class="report-filter-label">Product report period <select id="productReportPeriod"><option value="all">All time</option><option value="week">This week</option><option value="month">This month</option></select></label>
- <div id="productConsumptionReport" class="list"></div>
+ <div class="section-head"><h2>Product purchase report</h2><span class="pill">By individual product</span></div>
+ <label class="report-filter-label">Purchase report period <select id="productReportPeriod"><option value="week" selected>Weekly</option><option value="month">Monthly</option><option value="year">Yearly</option></select></label>
+ <div id="productPurchaseReport" class="list"></div>
 
  <div class="section-head"><h2>Income report</h2><span class="pill">Selected period</span></div>
  <div class="cards"><article class="stat"><span class="muted">Income entries</span><strong id="reportIncomeTotal">৳0.00</strong><small>by entry date</small></article><article class="stat"><span class="muted">Money collected</span><strong id="reportIncomeCollected">৳0.00</strong><small>by collection date</small></article></div>
@@ -234,5 +276,7 @@
 </main>
 <footer>DayQuest · Private by design · Works offline</footer>
 </div>
-<script src="app.js?v=20261112-product-catalog1"></script>
+</div>
+</div>
+<script src="app.js?v=20261112-family-profile2"></script>
 </body></html>

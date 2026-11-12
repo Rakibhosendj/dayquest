@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v13-product-catalog';
+const CACHE = 'dayquest-cache-v16-family-profile';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261112-product-catalog1',
-  './app.js?v=20261112-product-catalog1',
+  './style.css?v=20261112-family-profile2',
+  './app.js?v=20261112-family-profile2',
   './manifest.json'
 ];
 

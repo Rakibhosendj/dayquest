@@ -92,19 +92,36 @@ INCOME TYPE AND INCOME BY PERSON
 - In Reports, use Show person to view one person or everyone for the selected week/month. The report shows totals by person and a separate breakdown by Income Type.
 
 
-PURCHASE BILLS, SUPPLIER CREDITORS AND PRODUCT CONSUMPTION
+PURCHASE BILLS, SUPPLIER CREDITORS AND PRODUCT PURCHASE REPORT
 - Open Expenses > Purchase bill entry to record one supplier bill with multiple product lines.
 - Each line stores product name, optional pack size/specification (for example 300 gram), quantity, unit, rate per unit and line amount.
 - Enter how much was paid immediately by Cash and by Bank. The remaining amount is calculated automatically as Credit / payable to supplier. Cash and Bank portions reduce those balances on the bill date; credit is shown as a supplier liability and reduces the selected balance only when a later supplier payment is recorded.
 - Saving a bill creates/updates the supplier account. Open a supplier such as Rahman Store to see bill dates, bill totals, individual products, quantities, units, rates, line amounts, cash/bank/credit split, remaining credit and payment history.
 - Use Pay supplier due in the supplier account for full or partial payments. Choose the payment date and whether the payment came from Cash or Bank. Payments reduce the supplier's outstanding creditor balance and the matching cash/bank balance.
-- Purchase bills are included in today's, weekly and monthly spending totals, category reports, and expense reports. Individual product purchase costs appear in Reports > Product consumption & expense report.
-- Recording a purchase increases product stock. To track actual use, enter each use under Expenses > Record product consumption. Select the product, quantity, unit and date. The app prevents consumption above recorded stock. Supported conversions include g/kg/mg and ml/litre; other units are tracked separately.
-- The product report shows quantity purchased, quantity consumed, current stock, purchase expense by individual product and estimated consumption cost using the product's weighted average purchase cost. Recording consumption does not deduct cash a second time; the cash/bank outflow was recorded when the bill was paid.
-- Bills with supplier payments or linked consumption are protected from edit/delete to avoid breaking the supplier and stock ledgers. Make a backup before changing records.
-- All purchase bills, supplier payments and consumption records are included in the JSON backup and remain on this browser/device (no cloud sync).
+- Every product line saved on a purchase bill is counted as bought/consumed for product reporting. There is no separate consumption-entry form.
+- Reports > Product purchase report offers Weekly, Monthly and Yearly periods. Each individual product shows the quantity bought, total purchase cost, average rate per displayed unit, and number of bills/lines in the selected period. A summary shows the overall purchase cost and number of products for that period.
+- Product purchase costs are already included in purchase bill spending. Recording a bill deducts the actual Cash/Bank paid portion once; supplier credit reduces Cash/Bank only when paid later.
+- Existing old consumption entries in backups are retained for compatibility, but are no longer needed, displayed or used in product purchase reports.
+- All purchase bills and supplier payments are included in JSON backups and remain on this browser/device (no cloud sync).
 
 PRODUCT CATALOG
 - Use + Add New Product at the top of Purchase bill entry to save a product name before creating a bill. It fills the first empty product line automatically.
 - When entering bill lines, click/type in Product name to see saved product suggestions. Choose a saved name or type a new one.
 - Add another line adds a further product row to the current supplier bill.
+
+SIDE MENU AND SETTINGS (2026-11-12)
+- All primary app sections are available from the left side menu: Overview, Expenses, Income, Daily quests, Reports, Profile and Settings.
+- On a desktop browser, the side menu stays visible beside the app. On a phone/tablet, use the Menu button in the header to open the navigation drawer; selecting a section closes it.
+- Open Settings > Theme color to choose a custom brand color or one of the color presets. The selection is saved in the DayQuest local database and restored on the next visit.
+- Open Settings > Purchase categories to add, rename or remove purchase categories. The default list is Assets, Staples and Fixed Ex.
+- Select a Purchase category when saving a purchase bill. The selected category appears in the bill list, supplier bill details and Reports > By category totals.
+- A category already used on a saved purchase bill cannot be deleted; rename it instead so old bills and reports keep their category history.
+- Old purchase bills without a category are shown as Uncategorised and remain in reports. All existing financial records remain in the same local database; this update does not clear browser storage.
+
+FAMILY PROFILE AND FAMILY-MEMBER INCOME ATTRIBUTION (2026-11-12)
+- Open Profile to upload or remove a family/profile photo, set the family name, and manage the family member list.
+- Uploaded photos are resized to a maximum 480-pixel edge and compressed as JPEG before being saved in this browser's local DayQuest data, helping keep storage use smaller. A photo is local to this browser/device and is included in exported JSON backups.
+- Add each person who can earn income under Profile > Family members. Every listed family member is automatically added to the Income By selector on the Income entry form and to the person filters/reports.
+- The Profile full name is automatically added as a family member if it is not already listed.
+- Removing a member from the family list does not rewrite or delete historical income entries. Existing income records keep the person recorded when they were created.
+- Family name, member list and profile photo are stored in the existing dayquest_v1 localStorage record. No server account, cloud photo storage or multi-device sync is provided by GitHub Pages.

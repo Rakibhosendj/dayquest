@@ -4,7 +4,7 @@
   "start_url": "./",
   "display": "standalone",
   "background_color": "#f3f5f9",
-  "theme_color": "#101827",
+  "theme_color": "#263b5c",
   "description": "Offline expense, income, balance and daily quest tracker",
   "icons": []
 }
