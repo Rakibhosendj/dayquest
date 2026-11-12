@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v16-family-profile';
+const CACHE = 'dayquest-cache-v21-line-amount-calculation';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261112-family-profile2',
-  './app.js?v=20261112-family-profile2',
+  './style.css?v=20261112-line-amount-calculation',
+  './app.js?v=20261112-line-amount-calculation',
   './manifest.json'
 ];
 

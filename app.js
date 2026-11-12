@@ -1,6 +1,8 @@
 const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slice(0,10);
 const load=()=>{try{return JSON.parse(localStorage.getItem('dayquest_v1'))||{expenses:[],quests:[],checks:{}}}catch{return{expenses:[],quests:[],checks:{}}}};
-let db=load(),period='week',deferredInstall=null,editingExpenseId=null,editingIncomeId=null,collectingIncomeId=null,settlingExpenseId=null,activeSupplierName=null,payingSupplierName=null,purchaseLines=[],editingPurchaseBillId=null;
+let db=load(),period='week',deferredInstall=null,editingExpenseId=null,editingIncomeId=null,collectingIncomeId=null,settlingExpenseId=null,activeSupplierName=null,payingSupplierName=null,purchaseLines=[],editingPurchaseBillId=null,purchaseBillOriginalDate='';
+db.expenses=Array.isArray(db.expenses)?db.expenses:[];
+db.expenses.forEach(x=>{if(!['family','member','unassigned'].includes(x.costType))x.costType=x.costMember?'member':'unassigned';x.costMember=String(x.costMember||'').trim();if(x.costType==='member'&&!x.costMember)x.costType='unassigned'});
 db.expenseNames=db.expenseNames||['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];
 db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];
 db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};
@@ -16,12 +18,57 @@ db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(
 db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];
 db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];
 db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];
+// Purchase bill numbers use MM-YYYY-N and remain unique across the entire bill register.
+function purchaseBillPrefix(date){
+ const match=/^(\d{4})-(\d{2})-\d{2}$/.exec(String(date||''));
+ if(!match)return purchaseBillPrefix(today());
+ return `${match[2]}-${match[1]}`;
+}
+function nextPurchaseBillNo(date,excludingId=null,reserved=new Set()){
+ const prefix=purchaseBillPrefix(date),used=new Set([...reserved].map(value=>String(value||'').trim().toLocaleLowerCase()));
+ let highest=0;
+ db.purchaseBills.forEach(b=>{
+  if(excludingId&&b.id===excludingId)return;
+  const value=String(b.billNo||'').trim();if(!value)return;
+  used.add(value.toLocaleLowerCase());
+  const match=new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}-(\\d+)$`,'i').exec(value);
+  if(match)highest=Math.max(highest,Number(match[1])||0);
+ });
+ let sequence=highest+1,candidate=`${prefix}-${sequence}`;
+ while(used.has(candidate.toLocaleLowerCase())){sequence++;candidate=`${prefix}-${sequence}`}
+ return candidate;
+}
+function normalizePurchaseBillNumbers(){
+ let changed=false;const used=new Set();
+ const ordered=db.purchaseBills.slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||String(a.id||'').localeCompare(String(b.id||'')));
+ ordered.forEach(b=>{
+  const existing=String(b.billNo||'').trim(),key=existing.toLocaleLowerCase();
+  if(existing&&!used.has(key)){if(b.billNo!==existing){b.billNo=existing;changed=true}used.add(key);return}
+  b.billNo=nextPurchaseBillNo(b.date,null,used);used.add(b.billNo.toLocaleLowerCase());changed=true;
+ });
+ return changed;
+}
+const purchaseBillNumbersMigrated=normalizePurchaseBillNumbers();
+if(purchaseBillNumbersMigrated)localStorage.setItem('dayquest_v1',JSON.stringify(db));
 db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];
 db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
 db.productNames=Array.isArray(db.productNames)?db.productNames:[];
 db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);
 db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];
-db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});
+function normalizePurchaseInventory(){
+ db.purchaseBills.forEach(b=>{
+  if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);
+  (b.lines||[]).forEach(l=>{
+   if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product);
+   if(!l.id)l.id=crypto.randomUUID();
+   if(!['family','member','unassigned'].includes(l.costType))l.costType='unassigned';
+   l.costMember=String(l.costMember||'').trim();
+   if(l.costType==='member'&&!l.costMember)l.costType='unassigned';
+  });
+ });
+ db.consumptions=db.consumptions.filter(x=>x&&x.billId&&x.lineId&&Number(x.quantity)>0);
+}
+normalizePurchaseInventory();
 db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});
 if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);
 db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeople.push(name)});
@@ -64,16 +111,50 @@ function showBalances(){const b=calculateBalances();[['earnedBalance',b.total],[
 const startWeek=d=>{let x=dateObj(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return x.toISOString().slice(0,10)};
 function dayQuests(d){return db.quests.filter(q=>q.repeat==='daily'||q.date===d)}
 function completed(q,d){return !!(db.checks[d]||{})[q.id]}
-function closeSidebar(){const side=$('sidebar'),backdrop=$('sidebarBackdrop'),toggle=$('menuToggle');side?.classList.remove('open');backdrop?.setAttribute('hidden','');if(toggle)toggle.setAttribute('aria-expanded','false')}
+const SIDEBAR_PREF_KEY='dayquest_sidebar_hidden_v1';
+if(localStorage.getItem(SIDEBAR_PREF_KEY)==='1')$('appLayout')?.classList.add('sidebar-collapsed');
+function syncMenuToggle(){
+ const side=$('sidebar'),toggle=$('menuToggle');if(!side||!toggle)return;
+ if(window.innerWidth>=760){
+  const hidden=$('appLayout')?.classList.contains('sidebar-collapsed');
+  toggle.textContent=hidden?'Show menu':'Hide menu';
+  toggle.setAttribute('aria-label',hidden?'Show side menu':'Hide side menu');
+  toggle.setAttribute('aria-expanded',String(!hidden));
+ }else{
+  const open=side.classList.contains('open');
+  toggle.textContent=open?'Close':'Menu';
+  toggle.setAttribute('aria-label',open?'Close navigation':'Open navigation');
+  toggle.setAttribute('aria-expanded',String(open));
+ }
+}
+function closeSidebar(){const side=$('sidebar'),backdrop=$('sidebarBackdrop');side?.classList.remove('open');backdrop?.setAttribute('hidden','');syncMenuToggle()}
 function setTab(t){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===t));closeSidebar();if(t==='reports')renderReport();if(t==='settings')renderPurchaseCategorySettings()}
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>setTab(b.dataset.go));
-$('menuToggle').onclick=()=>{const open=!$('sidebar').classList.contains('open');$('sidebar').classList.toggle('open',open);$('sidebarBackdrop').hidden=!open;$('menuToggle').setAttribute('aria-expanded',String(open))};
+$('menuToggle').onclick=()=>{
+ if(window.innerWidth>=760){
+  const hidden=$('appLayout').classList.toggle('sidebar-collapsed');
+  try{localStorage.setItem(SIDEBAR_PREF_KEY,hidden?'1':'0')}catch{}
+  syncMenuToggle();return;
+ }
+ const open=!$('sidebar').classList.contains('open');
+ $('sidebar').classList.toggle('open',open);$('sidebarBackdrop').hidden=!open;syncMenuToggle();
+};
 $('sidebarBackdrop').onclick=closeSidebar;
-window.addEventListener('resize',()=>{if(window.innerWidth>=760)closeSidebar()});
+window.addEventListener('resize',()=>{closeSidebar();syncMenuToggle()});
+syncMenuToggle();
 $('todayDate').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'});
 $('expenseDate').value=today();
+function fillExpenseCostOptions(selectedValue='family'){
+ const select=$('expenseCostFor');if(!select)return;
+ const options=[['family','Family (split equally)'],['unassigned','Not assigned (exclude from member totals)']];
+ db.familyMembers.forEach(name=>options.push([`member:${name}`,`Only ${name}`]));
+ if(String(selectedValue).startsWith('member:')&&!options.some(([value])=>value===selectedValue))options.push([selectedValue,`Only ${String(selectedValue).slice(7)} (not in current family list)`]);
+ select.innerHTML=options.map(([value,label])=>`<option value="${esc(value)}">${esc(label)}</option>`).join('');
+ select.value=options.some(([value])=>value===selectedValue)?selectedValue:'family';
+}
 function fillChoices(){
+ const currentCostChoice=$('expenseCostFor')?.value||'family';
  $('expenseName').innerHTML=db.expenseNames.map(n=>`<option>${esc(n)}</option>`).join('');
  $('unitName').innerHTML=db.units.map(n=>`<option>${esc(n)}</option>`).join('');
  const source=$('incomeSource'),sourceValue=source.value;
@@ -92,6 +173,7 @@ function fillChoices(){
  });
  const supplierSelect=$('purchaseSupplier');if(supplierSelect){const previous=supplierSelect.value;supplierSelect.innerHTML='<option value="">Select supplier</option>'+db.suppliers.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(db.suppliers.includes(previous))supplierSelect.value=previous;}
  const purchaseCategory=$('purchaseCategory');if(purchaseCategory){const previous=purchaseCategory.value;purchaseCategory.innerHTML='<option value="">Select purchase category</option>'+db.purchaseCategories.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');purchaseCategory.value=db.purchaseCategories.includes(previous)?previous:'';}
+ fillExpenseCostOptions(currentCostChoice);
  renderProductNameSuggestions();
 
 }
@@ -112,7 +194,7 @@ function renderProductNameSuggestions(){
  const count=$('productCatalogCount');if(count)count.textContent=`${db.productNames.length} saved product${db.productNames.length===1?'':'s'}`;
 }
 function defaultPurchaseLine(product=''){
- return {product,spec:'',quantity:1,unit:db.units.includes('pcs')?'pcs':db.units[0],rate:0};
+ return {lineId:null,product,spec:'',quantity:1,unit:db.units.includes('pcs')?'pcs':db.units[0],rate:0,amount:0,amountMode:'rate',calcError:'',amountPending:false,costType:'unassigned',costMember:''};
 }
 $('addNewProduct').onclick=()=>{
  const raw=prompt('Enter the new product name:');if(raw===null)return;
@@ -152,51 +234,157 @@ function productCatalog(){
  map.forEach(r=>{r.avgUnitCost=r.purchasedNorm>0?r.purchaseSpend/r.purchasedNorm:0;r.preferredUnit=r.unit});
  return [...map.values()].sort((a,b)=>a.product.localeCompare(b.product)||a.spec.localeCompare(b.spec));
 }
+function roundPurchaseAmount(value){return Math.round((Number(value||0)+Number.EPSILON)*100)/100}
+function purchaseLineAmount(line){
+ const amount=Number(line.amount);
+ return Number.isFinite(amount)?Math.max(0,amount):roundPurchaseAmount(Math.max(0,Number(line.quantity||0))*Math.max(0,Number(line.rate||0)));
+}
 function purchaseLineTemplate(line,index){
  const units=db.units.map(u=>`<option value="${esc(u)}" ${line.unit===u?'selected':''}>${esc(u)}</option>`).join('');
+ const amountMode=line.amountMode==='quantity'?'quantity':'rate';
  return `<div class="purchase-line" data-line-index="${index}">
   <div class="purchase-line-top"><strong>Product ${index+1}</strong><button type="button" class="delete remove-purchase-line" data-index="${index}" ${purchaseLines.length===1?'disabled':''}>Remove</button></div>
   <label>Product name <input class="pl-product" list="productNameSuggestions" maxlength="80" value="${esc(line.product||'')}" placeholder="e.g. Soap" required></label>
   <label>Size / specification <input class="pl-spec" maxlength="80" value="${esc(line.spec||'')}" placeholder="e.g. 300 gram (optional)"></label>
-  <div class="form-grid"><label>Quantity <input class="pl-quantity" type="number" min="0.001" step="0.001" value="${Number(line.quantity||1)}" required></label><label>Unit <select class="pl-unit">${units}</select></label></div>
-  <div class="form-grid"><label>Rate per unit <input class="pl-rate" type="number" min="0" step="0.01" value="${Number(line.rate||0)}" required></label><div class="line-amount-box"><span>Line amount</span><strong class="pl-amount">${money(Number(line.quantity||1)*Number(line.rate||0))}</strong></div></div>
+  <div class="form-grid"><label>Quantity <input class="pl-quantity" type="number" min="0.001" step="any" value="${Number(line.quantity??1)}" required></label><label>Unit <select class="pl-unit">${units}</select></label></div>
+  <div class="form-grid"><label>Rate per unit <input class="pl-rate" type="number" min="0" step="any" value="${Number(line.rate||0)}" required></label><label>Line amount <input class="pl-amount" type="number" min="0" step="any" value="${purchaseLineAmount(line)}" required></label></div>
+  <label class="pl-amount-mode-label">When line amount is entered, calculate automatically <select class="pl-amount-mode"><option value="rate" ${amountMode==='rate'?'selected':''}>Rate per unit</option><option value="quantity" ${amountMode==='quantity'?'selected':''}>Quantity</option></select><small>Choose whether DayQuest should calculate the rate or quantity from the line amount.</small></label>
+  <p class="pl-calc-message" role="status" aria-live="polite">${esc(line.calcError||'')}</p>
  </div>`;
+}
+function applyPurchaseLineAmount(index){
+ const line=purchaseLines[index];if(!line)return;
+ const amount=Math.max(0,Number(line.amount)||0);
+ if(line.amountMode==='quantity'){
+  const rate=Number(line.rate||0);
+  if(rate>0&&Number.isFinite(rate)){
+   line.quantity=Number((amount/rate).toFixed(6));line.calcError='';line.amountPending=false;
+  }else{
+   line.calcError='Enter a rate per unit first; then the quantity will be calculated.';line.amountPending=true;
+  }
+ }else{
+  const quantity=Number(line.quantity||0);
+  if(quantity>0&&Number.isFinite(quantity)){
+   line.rate=Number((amount/quantity).toFixed(6));line.calcError='';line.amountPending=false;
+  }else{
+   line.calcError='Enter a quantity greater than zero first; then the rate will be calculated.';line.amountPending=true;
+  }
+ }
 }
 function renderPurchaseLines(){
  $('purchaseLines').innerHTML=purchaseLines.map(purchaseLineTemplate).join('');
  $('purchaseLines').querySelectorAll('.purchase-line').forEach((node,index)=>node.querySelectorAll('input,select').forEach(el=>{
-  const prop=el.classList.contains('pl-product')?'product':el.classList.contains('pl-spec')?'spec':el.classList.contains('pl-quantity')?'quantity':el.classList.contains('pl-unit')?'unit':'rate';
-  el.addEventListener('input',()=>{purchaseLines[index][prop]=prop==='quantity'||prop==='rate'?Number(el.value):el.value;updatePurchaseTotals()});
-  el.addEventListener('change',()=>{purchaseLines[index][prop]=prop==='quantity'||prop==='rate'?Number(el.value):el.value;updatePurchaseTotals()});
+  const prop=el.classList.contains('pl-product')?'product':el.classList.contains('pl-spec')?'spec':el.classList.contains('pl-quantity')?'quantity':el.classList.contains('pl-unit')?'unit':el.classList.contains('pl-rate')?'rate':el.classList.contains('pl-amount')?'amount':'amountMode';
+  const handle=()=>{
+   const line=purchaseLines[index];if(!line)return;
+   if(prop==='amountMode'){
+    line.amountMode=el.value;
+    if(purchaseLineAmount(line)>0)applyPurchaseLineAmount(index);else{line.calcError='';line.amountPending=false;}
+   }else if(prop==='amount'){
+    line.amount=Math.max(0,Number(el.value)||0);applyPurchaseLineAmount(index);
+   }else if(prop==='quantity'||prop==='rate'){
+    line[prop]=Number(el.value)||0;
+    if(line.amountPending)applyPurchaseLineAmount(index);
+    else {line.amount=roundPurchaseAmount(Math.max(0,Number(line.quantity||0))*Math.max(0,Number(line.rate||0)));line.calcError=''}
+   }else line[prop]=el.value;
+   updatePurchaseTotals();
+  };
+  el.addEventListener('input',handle);
+  el.addEventListener('change',handle);
  }));
  $('purchaseLines').querySelectorAll('.remove-purchase-line').forEach(btn=>btn.onclick=()=>{if(purchaseLines.length>1){purchaseLines.splice(Number(btn.dataset.index),1);renderPurchaseLines();updatePurchaseTotals()}});
  updatePurchaseTotals();
 }
-function currentPurchaseTotal(){return purchaseLines.reduce((t,l)=>t+Math.max(0,Number(l.quantity||0))*Math.max(0,Number(l.rate||0)),0)}
+function currentPurchaseTotal(){return purchaseLines.reduce((t,l)=>t+purchaseLineAmount(l),0)}
 function updatePurchaseTotals(){
- purchaseLines.forEach((l,i)=>{const el=$('purchaseLines').querySelector(`[data-line-index="${i}"] .pl-amount`);if(el)el.textContent=money(Number(l.quantity||0)*Number(l.rate||0))});
+ purchaseLines.forEach((l,i)=>{
+  const node=$('purchaseLines').querySelector(`[data-line-index="${i}"]`);if(!node)return;
+  const amountField=node.querySelector('.pl-amount'),quantityField=node.querySelector('.pl-quantity'),rateField=node.querySelector('.pl-rate'),message=node.querySelector('.pl-calc-message');
+  if(amountField&&document.activeElement!==amountField)amountField.value=purchaseLineAmount(l);
+  if(quantityField&&document.activeElement!==quantityField)quantityField.value=Number(l.quantity??0);
+  if(rateField&&document.activeElement!==rateField)rateField.value=Number(l.rate??0);
+  if(message)message.textContent=l.calcError||'';
+ });
  const total=currentPurchaseTotal(),cash=Number($('purchaseCashPaid').value||0),bank=Number($('purchaseBankPaid').value||0),credit=Math.max(0,total-cash-bank);
  $('purchaseBillTotal').textContent=money(total);$('purchaseCreditTotal').textContent=money(credit);
  const invalid=cash+bank>total+0.000001;$('purchaseCreditTotal').classList.toggle('invalid-total',invalid);$('purchaseBillSubmit').disabled=invalid;
 }
-function resetPurchaseForm(){editingPurchaseBillId=null;$('purchaseBillForm').reset();$('purchaseDate').value=today();$('purchaseCategory').value='';$('purchaseCashPaid').value=0;$('purchaseBankPaid').value=0;$('purchaseBillSubmit').textContent='Save purchase bill';$('cancelPurchaseEdit').hidden=true;purchaseLines=[{product:'',spec:'',quantity:1,unit:db.units.includes('pcs')?'pcs':db.units[0],rate:0}];renderPurchaseLines();fillChoices()}
-$('addPurchaseLine').onclick=()=>{purchaseLines.push({product:'',spec:'',quantity:1,unit:db.units.includes('pcs')?'pcs':db.units[0],rate:0});renderPurchaseLines()};
+function updatePurchaseBillNo(){
+ const date=$('purchaseDate').value,field=$('purchaseBillNo');if(!field||!date)return;
+ if(editingPurchaseBillId&&date===purchaseBillOriginalDate){const original=db.purchaseBills.find(b=>b.id===editingPurchaseBillId);if(original&&original.billNo){field.value=original.billNo;return}}
+ field.value=nextPurchaseBillNo(date,editingPurchaseBillId);
+}
+function resetPurchaseForm(){editingPurchaseBillId=null;purchaseBillOriginalDate='';$('purchaseBillForm').reset();$('purchaseDate').value=today();$('purchaseBillNo').value='';updatePurchaseBillNo();$('purchaseCategory').value='';$('purchaseCashPaid').value=0;$('purchaseBankPaid').value=0;$('purchaseBillSubmit').textContent='Save purchase bill';$('cancelPurchaseEdit').hidden=true;purchaseLines=[defaultPurchaseLine()];renderPurchaseLines();fillChoices()}
+$('purchaseDate').addEventListener('change',updatePurchaseBillNo);
+$('addPurchaseLine').onclick=()=>{purchaseLines.push(defaultPurchaseLine());renderPurchaseLines()};
 $('purchaseCashPaid').oninput=updatePurchaseTotals;$('purchaseBankPaid').oninput=updatePurchaseTotals;
 $('addSupplier').onclick=()=>{let n=prompt('Enter supplier / store name:');if(n&&n.trim()){n=n.trim();if(!db.suppliers.includes(n))db.suppliers.push(n);fillChoices();$('purchaseSupplier').value=n;localSaveOnly()}};
 $('purchaseBillForm').onsubmit=e=>{
  e.preventDefault();const supplier=$('purchaseSupplier').value.trim(),category=$('purchaseCategory').value,date=$('purchaseDate').value,cashPaid=Number($('purchaseCashPaid').value||0),bankPaid=Number($('purchaseBankPaid').value||0),total=currentPurchaseTotal();
- const lines=purchaseLines.map(l=>({product:String(l.product||'').trim(),spec:String(l.spec||'').trim(),quantity:Number(l.quantity),unit:String(l.unit||'pcs'),rate:Number(l.rate),amount:Number(l.quantity)*Number(l.rate)}));
+ const lines=purchaseLines.map(l=>({id:l.lineId||crypto.randomUUID(),product:String(l.product||'').trim(),spec:String(l.spec||'').trim(),quantity:Number(l.quantity),unit:String(l.unit||'pcs'),rate:Number(l.rate),amount:purchaseLineAmount(l),costType:['family','member','unassigned'].includes(l.costType)?l.costType:'unassigned',costMember:String(l.costMember||'').trim()}));
  if(!supplier){alert('Select or add a supplier.');return}
  if(!date){alert('Select the purchase date.');return}
  if(!category){alert('Select a purchase category.');return}
- if(!lines.length||lines.some(l=>!l.product||!(l.quantity>0)||!(l.rate>=0)||!Number.isFinite(l.quantity)||!Number.isFinite(l.rate))){alert('Enter a product name, valid quantity and rate for every bill line.');return}
+ if(!lines.length||purchaseLines.some(l=>l.calcError)||lines.some(l=>!l.product||!(l.quantity>0)||!(l.rate>=0)||!(l.amount>=0)||!Number.isFinite(l.quantity)||!Number.isFinite(l.rate)||!Number.isFinite(l.amount))){alert('Enter a product name, valid quantity, rate and line amount for every bill line. For amount-based calculation, enter the required quantity or rate first.');return}
  if(cashPaid<0||bankPaid<0||cashPaid+bankPaid>total+0.000001){alert('Cash paid plus bank paid cannot exceed the bill total.');return}
- const values={supplier,category,billNo:$('purchaseBillNo').value.trim(),date,lines,total,cashPaid,bankPaid,credit:Math.max(0,total-cashPaid-bankPaid),note:$('purchaseNote').value.trim()};
- if(editingPurchaseBillId){const old=db.purchaseBills.find(b=>b.id===editingPurchaseBillId);if(old){if(db.supplierPayments.some(p=>p.supplier===old.supplier||p.supplier===supplier)){alert('This bill has supplier payment history. To protect the supplier ledger, it cannot be edited safely.');return}Object.assign(old,values)}}
+ const old=editingPurchaseBillId?db.purchaseBills.find(b=>b.id===editingPurchaseBillId):null;
+ const billNo=old&&date===purchaseBillOriginalDate?String(old.billNo||'').trim():nextPurchaseBillNo(date,editingPurchaseBillId);
+ if(!billNo){alert('Could not generate a bill number. Check the purchase date and try again.');return}
+ if(db.purchaseBills.some(b=>b.id!==editingPurchaseBillId&&String(b.billNo||'').trim().toLocaleLowerCase()===billNo.toLocaleLowerCase())){alert('This bill number already exists. Please try saving again to generate a unique number.');updatePurchaseBillNo();return}
+ const values={supplier,category,billNo,date,lines,total,cashPaid,bankPaid,credit:Math.max(0,total-cashPaid-bankPaid),note:$('purchaseNote').value.trim()};
+ if(editingPurchaseBillId){if(old){if(db.supplierPayments.some(p=>p.supplier===old.supplier||p.supplier===supplier)){alert('This bill has supplier payment history. To protect the supplier ledger, it cannot be edited safely.');return}Object.assign(old,values)}}
  else db.purchaseBills.unshift({id:crypto.randomUUID(),...values});
  if(!db.suppliers.includes(supplier))db.suppliers.push(supplier);lines.forEach(l=>{if(!db.productNames.includes(l.product))db.productNames.push(l.product);if(!db.units.includes(l.unit))db.units.push(l.unit)});
  resetPurchaseForm();save();
 };
+function inventoryAssignmentOptions(selectedValue='unassigned'){
+ const options=[['unassigned','Not assigned'],['family','Family (split equally)']];
+ db.familyMembers.forEach(name=>options.push([`member:${name}`,`Only ${name}`]));
+ if(String(selectedValue).startsWith('member:')&&!options.some(([value])=>value===selectedValue))options.push([selectedValue,`Only ${String(selectedValue).slice(7)}`]);
+ return options.map(([value,label])=>`<option value="${esc(value)}" ${value===selectedValue?'selected':''}>${esc(label)}</option>`).join('');
+}
+function inventoryEntries(){
+ const rows=[];
+ db.purchaseBills.forEach(b=>(b.lines||[]).forEach(l=>{
+  const used=db.consumptions.filter(c=>c.billId===b.id&&c.lineId===l.id).reduce((t,c)=>t+Number(c.quantity||0),0);
+  rows.push({bill:b,line:l,used,remaining:Math.max(0,Number(l.quantity||0)-used)});
+ }));
+ return rows.sort((a,b)=>String(b.bill.date||'').localeCompare(String(a.bill.date||'')));
+}
+function renderInventory(){
+ const list=$('inventoryList');if(!list)return;
+ const rows=inventoryEntries();
+ const assigned=rows.filter(({line})=>line.costType==='family'||(line.costType==='member'&&line.costMember)).length;
+ $('inventoryCount').textContent=`${rows.length} product lots · ${assigned} assigned`;
+ list.innerHTML=rows.length?rows.map(({bill,line,used,remaining})=>{
+  const amount=Number(line.amount??(Number(line.quantity||0)*Number(line.rate||0)));
+  const assignment=line.costType==='family'?'Family · shared':line.costType==='member'?`For ${line.costMember}`:'Not assigned';
+  const lineIndex=esc(line.id);
+  return `<article class="inventory-row" data-inventory-line="${lineIndex}">
+   <div class="inventory-row-head"><div><strong>${esc(line.product)}${line.spec?` · ${esc(line.spec)}`:''}</strong><small>${esc(bill.supplier||'Supplier')} · ${fmt(bill.date)}${bill.billNo?` · Bill #${esc(bill.billNo)}`:''}</small></div><strong>${money(amount)}</strong></div>
+   <div class="inventory-row-stats"><span>Purchased <strong>${numberText(line.quantity)} ${esc(line.unit)}</strong></span><span>Used <strong>${numberText(used)} ${esc(line.unit)}</strong></span><span>In stock <strong>${numberText(remaining)} ${esc(line.unit)}</strong></span><span>Cost owner <strong>${esc(assignment)}</strong></span></div>
+   <div class="inventory-row-actions"><label>Assign product cost <select data-inventory-assignment>${inventoryAssignmentOptions(line.costType==='member'?`member:${line.costMember||''}`:line.costType||'unassigned')}</select></label><div class="inventory-buttons"><button type="button" class="edit-btn" data-save-inventory-assignment>Save assignment</button><button type="button" class="secondary" data-use-inventory ${remaining<=0.000001?'disabled':''}>Use stock</button></div></div>
+  </article>`;
+ }).join(''):empty('No inventory yet. Save a purchase bill to add products to your inventory.');
+ list.querySelectorAll('[data-save-inventory-assignment]').forEach(button=>button.onclick=()=>{
+  const row=button.closest('[data-inventory-line]'),lineId=row?.dataset.inventoryLine,choice=row?.querySelector('[data-inventory-assignment]')?.value;
+  const found=db.purchaseBills.flatMap(b=>(b.lines||[]).map(l=>({bill:b,line:l}))).find(x=>x.line.id===lineId);if(!found)return;
+  if(String(choice).startsWith('member:')&&!String(choice).slice(7).trim()){alert('Choose a family member for this product.');return}
+  found.line.costType=String(choice).startsWith('member:')?'member':choice;
+  found.line.costMember=String(choice).startsWith('member:')?String(choice).slice(7):'';
+  save();
+ });
+ list.querySelectorAll('[data-use-inventory]').forEach(button=>button.onclick=()=>{
+  const row=button.closest('[data-inventory-line]'),lineId=row?.dataset.inventoryLine;
+  const found=db.purchaseBills.flatMap(b=>(b.lines||[]).map(l=>({bill:b,line:l}))).find(x=>x.line.id===lineId);if(!found)return;
+  const used=db.consumptions.filter(c=>c.billId===found.bill.id&&c.lineId===lineId).reduce((t,c)=>t+Number(c.quantity||0),0),remaining=Math.max(0,Number(found.line.quantity||0)-used);
+  if(remaining<=0.000001)return;
+  const raw=prompt(`How much ${found.line.product} stock was used? Available: ${numberText(remaining)} ${found.line.unit}`);if(raw===null)return;
+  const quantity=Number(raw);if(!(quantity>0)||!Number.isFinite(quantity)||quantity>remaining+0.000001){alert(`Enter a quantity greater than 0 and no more than ${numberText(remaining)} ${found.line.unit}.`);return}
+  db.consumptions.push({id:crypto.randomUUID(),billId:found.bill.id,lineId,quantity,date:today()});save();
+ });
+}
+
 function supplierBillBalances(supplier){
  const rows=db.purchaseBills.filter(b=>b.supplier===supplier).slice().sort((a,b)=>a.date.localeCompare(b.date)||String(a.id).localeCompare(String(b.id))).map(b=>({bill:b,credit:billCredit(b),paid:0,remaining:billCredit(b)}));
  const payments=db.supplierPayments.filter(p=>p.supplier===supplier).slice().sort((a,b)=>a.date.localeCompare(b.date)||String(a.id).localeCompare(String(b.id)));
@@ -264,20 +452,21 @@ function editPurchaseBill(id){
  const b=db.purchaseBills.find(x=>x.id===id);if(!b)return;
  const hasSupplierPayments=db.supplierPayments.some(p=>p.supplier===b.supplier);
  if(hasSupplierPayments){alert('This supplier has payment history, so this bill cannot be edited safely without changing the supplier ledger.');return}
- editingPurchaseBillId=id;ensureOption($('purchaseSupplier'),b.supplier);$('purchaseSupplier').value=b.supplier;
+ if(db.consumptions.some(c=>c.billId===id)){alert('This bill has stock usage records. Editing it could make the inventory quantity inaccurate, so it is locked.');return}
+ editingPurchaseBillId=id;purchaseBillOriginalDate=String(b.date||'');ensureOption($('purchaseSupplier'),b.supplier);$('purchaseSupplier').value=b.supplier;
  const billCategory=b.category||'Uncategorised';if(!db.purchaseCategories.includes(billCategory))db.purchaseCategories.push(billCategory);fillChoices();$('purchaseCategory').value=billCategory;
  $('purchaseBillNo').value=b.billNo||'';$('purchaseDate').value=b.date||today();$('purchaseCashPaid').value=Number(b.cashPaid||0);$('purchaseBankPaid').value=Number(b.bankPaid||0);$('purchaseNote').value=b.note||'';
- purchaseLines=(b.lines||[]).map(l=>({product:l.product||'',spec:l.spec||'',quantity:Number(l.quantity||0),unit:l.unit||'pcs',rate:Number(l.rate||0)}));
+ purchaseLines=(b.lines||[]).map(l=>({lineId:l.id||null,product:l.product||'',spec:l.spec||'',quantity:Number(l.quantity||0),unit:l.unit||'pcs',rate:Number(l.rate||0),amount:Number(l.amount??(Number(l.quantity||0)*Number(l.rate||0))),amountMode:'rate',calcError:'',amountPending:false,costType:l.costType||'unassigned',costMember:l.costMember||''}));
  purchaseLines.forEach(l=>{if(!db.units.includes(l.unit))db.units.push(l.unit)});renderPurchaseLines();$('purchaseBillSubmit').textContent='Update purchase bill';$('cancelPurchaseEdit').hidden=false;$('purchaseBillForm').scrollIntoView({behavior:'smooth',block:'start'});
 }
 $('cancelPurchaseEdit').onclick=resetPurchaseForm;
-function deletePurchaseBill(id){const b=db.purchaseBills.find(x=>x.id===id);if(!b)return;if(db.supplierPayments.some(p=>p.supplier===b.supplier)){alert('This supplier has payment history. Keep the bill to preserve the supplier ledger.');return}if(confirm('Delete this purchase bill?')){db.purchaseBills=db.purchaseBills.filter(x=>x.id!==id);save()}}
+function deletePurchaseBill(id){const b=db.purchaseBills.find(x=>x.id===id);if(!b)return;if(db.supplierPayments.some(p=>p.supplier===b.supplier)){alert('This supplier has payment history. Keep the bill to preserve the supplier ledger.');return}if(db.consumptions.some(c=>c.billId===id)){alert('This bill has stock usage records. It cannot be deleted because that would break the inventory history.');return}if(confirm('Delete this purchase bill?')){db.purchaseBills=db.purchaseBills.filter(x=>x.id!==id);save()}}
 
 function resetExpenseForm(){
  editingExpenseId=null;$('expenseForm').reset();$('expenseDate').value=today();$('quantity').value=1;
  $('dueFields').hidden=true;$('duePaidFromField').hidden=true;$('duePerson').required=false;$('expenseFormTitle').textContent='Add expense';
  $('expenseSubmitBtn').textContent='Save expense';$('cancelExpenseEdit').hidden=true;$('expenseEditHint').hidden=true;
- fillChoices();calcTotal();
+ fillChoices();$('expenseCostFor').value='family';calcTotal();
 }
 function ensureOption(select,value){
  if(value==null||value==='')return;
@@ -290,6 +479,7 @@ function editExpense(id){
  if(x.name&&!db.expenseNames.includes(x.name))db.expenseNames.push(x.name);
  if(x.unit&&!db.units.includes(x.unit))db.units.push(x.unit);
  fillChoices();
+ fillExpenseCostOptions(x.costType==='member'&&x.costMember?`member:${x.costMember}`:x.costType==='family'?'family':'unassigned');
  ensureOption($('category'),x.category||'Other');
  $('expenseName').value=x.name||db.expenseNames[0];$('paymentType').value=x.paymentType||'Cash';
  $('dueDirection').value=x.dueDirection||'i_owe';$('duePerson').value=x.duePerson||'';$('duePaidFrom').value=x.duePaidFrom||'Cash';
@@ -306,7 +496,8 @@ $('cancelExpenseEdit').onclick=resetExpenseForm;
 $('expenseForm').onsubmit=e=>{e.preventDefault();let quantity=Number($('quantity').value),rate=Number($('rate').value),name=$('expenseName').value,unit=$('unitName').value,paymentType=$('paymentType').value;
  if(!(quantity>0)||!(rate>=0)||!Number.isFinite(quantity)||!Number.isFinite(rate)){alert('Enter a valid quantity and rate.');return}
  if(paymentType==='Due'&&!$('duePerson').value.trim()){alert('Enter the person name for this due.');$('duePerson').focus();return}
- const values={amount:quantity*rate,name,quantity,unit,rate,paymentType,dueDirection:paymentType==='Due'?$('dueDirection').value:null,duePerson:paymentType==='Due'?$('duePerson').value.trim():null,duePaidFrom:paymentType==='Due'&&$('dueDirection').value==='owed_to_me'?$('duePaidFrom').value:null,category:$('category').value,date:$('expenseDate').value,note:$('note').value.trim()};
+ const costChoice=$('expenseCostFor').value;
+ const values={amount:quantity*rate,name,quantity,unit,rate,paymentType,costType:costChoice==='family'?'family':costChoice==='unassigned'?'unassigned':'member',costMember:costChoice.startsWith('member:')?costChoice.slice(7):'',dueDirection:paymentType==='Due'?$('dueDirection').value:null,duePerson:paymentType==='Due'?$('duePerson').value.trim():null,duePaidFrom:paymentType==='Due'&&$('dueDirection').value==='owed_to_me'?$('duePaidFrom').value:null,category:$('category').value,date:$('expenseDate').value,note:$('note').value.trim()};
  if(editingExpenseId){const existing=db.expenses.find(x=>x.id===editingExpenseId);if(existing){const settled=expenseSettledAmount(existing);if(settled>0&&(paymentType!=='Due'||quantity*rate<settled||$('dueDirection').value!==existing.dueDirection)){alert('This due already has payments or collections. Keep the Due type and direction, and set the amount to at least the amount already settled.');return}Object.assign(existing,values)}}
  else db.expenses.unshift({id:crypto.randomUUID(),...values});
  resetExpenseForm();save()};
@@ -495,11 +686,11 @@ function render(){
  $('todayQuests').innerHTML=questHTML(qToday.slice(0,4),false);
  $('expenseCount').textContent=`${db.expenses.length} expenses · ${db.purchaseBills.length} bills`;
  let filtered=db.expenses.filter(x=>( $('expenseFilter').value==='all'||x.category===$('expenseFilter').value)&&(`${x.note} ${x.category}`).toLowerCase().includes($('expenseSearch').value.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date));
- $('expenseList').innerHTML=expenseHTML(filtered,true);$('questList').innerHTML=questHTML(dayQuests(d),true);renderSupplierAccounts();
+ $('expenseList').innerHTML=expenseHTML(filtered,true);$('questList').innerHTML=questHTML(dayQuests(d),true);renderSupplierAccounts();renderInventory();
  $('questSummary').textContent=`${done}/${qToday.length} completed`;$('incomeCount').textContent=`${db.incomes.length} entries`;
  const incomeFilter=$('incomeDateFilter').value,incomeHead=$('incomeHeadFilter').value,incomePerson=$('incomePersonFilter').value;const incomes=[...db.incomes].filter(x=>(!incomeFilter||x.date===incomeFilter)&&(incomeHead==='all'||(x.source||'Other')===incomeHead)&&(incomePerson==='all'||(x.incomeBy||'Unassigned')===incomePerson)).sort((a,b)=>b.date.localeCompare(a.date));$('incomeList').innerHTML=incomeHTML(incomes,true);
 }
-function expenseHTML(items,actions){return items.length?items.map(x=>{let title=x.name||x.note||x.category,settled=expenseSettledAmount(x),remaining=expenseOutstanding(x),direction=x.dueDirection==='i_owe'?'I owe':x.dueDirection==='owed_to_me'?'Owed to me':'Old due',dueInfo=x.paymentType==='Due'?[direction,x.duePerson,`Settled ${money(settled)} · Remaining ${money(remaining)}`].filter(Boolean).join(' · '):'',details=[x.paymentType||'Cash',dueInfo,x.quantity?`${x.quantity} ${x.unit||''} × ${money(x.rate||0)}`:x.category,fmt(x.date),x.note].filter(Boolean).join(' · ');let actionLabel=x.dueDirection==='i_owe'?'Pay due':'Collect';return `<div class="item expense-item"><div class="item-main"><div class="item-title">${esc(title)}</div><div class="item-sub">${esc(details)}</div></div><div class="expense-right"><div class="item-amount">${money(x.amount)}</div>${actions?`<div class="item-actions">${x.paymentType==='Due'&&remaining>0&&['i_owe','owed_to_me'].includes(x.dueDirection)?`<button class="collect-btn" onclick="openExpenseDueAction('${x.id}')">${actionLabel}</button>`:''}<button class="edit-btn" onclick="editExpense('${x.id}')" aria-label="Edit ${esc(title)}">Edit</button><button class="delete" onclick="delExpense('${x.id}')" aria-label="Delete ${esc(title)}">×</button></div>`:''}</div></div>`}).join(''):empty('No expenses yet. Add your first one above.') }
+function expenseHTML(items,actions){return items.length?items.map(x=>{let title=x.name||x.note||x.category,settled=expenseSettledAmount(x),remaining=expenseOutstanding(x),direction=x.dueDirection==='i_owe'?'I owe':x.dueDirection==='owed_to_me'?'Owed to me':'Old due',dueInfo=x.paymentType==='Due'?[direction,x.duePerson,`Settled ${money(settled)} · Remaining ${money(remaining)}`].filter(Boolean).join(' · '):'',costInfo=x.costType==='family'?'Family · shared':x.costType==='member'?`For ${x.costMember}`:'Not assigned',details=[x.paymentType||'Cash',costInfo,dueInfo,x.quantity?`${x.quantity} ${x.unit||''} × ${money(x.rate||0)}`:x.category,fmt(x.date),x.note].filter(Boolean).join(' · ');let actionLabel=x.dueDirection==='i_owe'?'Pay due':'Collect';return `<div class="item expense-item"><div class="item-main"><div class="item-title">${esc(title)}</div><div class="item-sub">${esc(details)}</div></div><div class="expense-right"><div class="item-amount">${money(x.amount)}</div>${actions?`<div class="item-actions">${x.paymentType==='Due'&&remaining>0&&['i_owe','owed_to_me'].includes(x.dueDirection)?`<button class="collect-btn" onclick="openExpenseDueAction('${x.id}')">${actionLabel}</button>`:''}<button class="edit-btn" onclick="editExpense('${x.id}')" aria-label="Edit ${esc(title)}">Edit</button><button class="delete" onclick="delExpense('${x.id}')" aria-label="Delete ${esc(title)}">×</button></div>`:''}</div></div>`}).join(''):empty('No expenses yet. Add your first one above.') }
 function incomeHTML(items,actions){
  if(!items.length)return empty('No income entries for this date. Add your first income above.');
  const groups={};items.forEach(x=>(groups[x.date||'Undated']??=[]).push(x));
@@ -529,12 +720,44 @@ function questHTML(items,del){return items.length?items.map(q=>{
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 $('expenseSearch').oninput=render;$('expenseFilter').onchange=render;
 document.querySelectorAll('.period').forEach(b=>b.onclick=()=>{period=b.dataset.period;document.querySelectorAll('.period').forEach(x=>x.classList.toggle('active',x===b));renderReport()});
+function renderFamilyCostReport(items,bills=[]){
+ const familyMembers=[...new Map(db.familyMembers.map(name=>[name.toLocaleLowerCase(),name])).values()];
+ const purchaseLines=bills.flatMap(b=>(b.lines||[]).map(line=>({amount:Number(line.amount??(Number(line.quantity||0)*Number(line.rate||0))),costType:line.costType||'unassigned',costMember:String(line.costMember||'').trim(),product:line.product||'Product'})));
+ const familyExpenses=items.filter(x=>x.costType==='family');
+ const memberExpenses=items.filter(x=>x.costType==='member'&&x.costMember);
+ const unassignedExpenses=items.filter(x=>x.costType!=='family'&&!(x.costType==='member'&&x.costMember));
+ const familyPurchases=purchaseLines.filter(x=>x.costType==='family');
+ const memberPurchases=purchaseLines.filter(x=>x.costType==='member'&&x.costMember);
+ const unassignedPurchases=purchaseLines.filter(x=>x.costType!=='family'&&!(x.costType==='member'&&x.costMember));
+ const familyTotal=[...familyExpenses,...familyPurchases].reduce((total,x)=>total+Number(x.amount||0),0);
+ const directTotal=[...memberExpenses,...memberPurchases].reduce((total,x)=>total+Number(x.amount||0),0);
+ const unassignedTotal=[...unassignedExpenses,...unassignedPurchases].reduce((total,x)=>total+Number(x.amount||0),0);
+ const people=[...new Map([...familyMembers,...memberExpenses.map(x=>x.costMember),...memberPurchases.map(x=>x.costMember)].map(name=>[name.toLocaleLowerCase(),name])).values()];
+ const totalPaisa=Math.round(familyTotal*100),basePaisa=familyMembers.length?Math.floor(totalPaisa/familyMembers.length):0,remainderPaisa=familyMembers.length?totalPaisa%familyMembers.length:0;
+ const directByMember=new Map(people.map(name=>[name,[...memberExpenses,...memberPurchases].filter(x=>x.costMember.toLocaleLowerCase()===name.toLocaleLowerCase()).reduce((total,x)=>total+Number(x.amount||0),0)]));
+ const familyShareByMember=new Map(familyMembers.map((name,index)=>[name,(basePaisa+(index<remainderPaisa?1:0))/100]));
+ $('familyCostTotal').textContent=money(familyTotal);
+ $('familyCostMemberCount').textContent=`Split across ${familyMembers.length} ${familyMembers.length===1?'member':'members'}`;
+ $('familyCostPerMember').textContent=familyMembers.length?money(familyTotal/familyMembers.length):'—';
+ $('memberDirectCostTotal').textContent=money(directTotal);
+ $('unassignedCostTotal').textContent=money(unassignedTotal);
+ $('memberCostCount').textContent=`${people.length} ${people.length===1?'member':'members'}`;
+ $('memberCostBreakdown').innerHTML=people.map(name=>{
+  const direct=directByMember.get(name)||0,share=familyShareByMember.get(name)||0,total=direct+share;
+  return `<div class="member-cost-row"><div><strong>${esc(name)}</strong><small>Personal: ${money(direct)} · Family share: ${money(share)}</small></div><strong>${money(total)}</strong></div>`;
+ }).join('')||empty('Add family members in Profile to see the member-wise cost breakdown.');
+ const notes=[];
+ if(!familyMembers.length&&familyTotal>0)notes.push('Add family members in Profile before family costs can be divided.');
+ if(unassignedTotal>0)notes.push(`${money(unassignedTotal)} is not included in the family or member totals. Assign unassigned purchase products in Expenses → Inventory and edit unassigned expenses to include them.`);
+ $('familyCostNote').textContent=notes.join(' ')||'Member costing includes assigned expense entries and purchased inventory items. Family-assigned costs are divided equally among the current members listed in Profile.';
+}
 function renderReport(){
  let now=dateObj(today()),start,end,labels=[],days=[];
  if(period==='week'){start=dateObj(startWeek(today()));end=now;for(let i=0;i<7;i++){let x=new Date(start);x.setDate(x.getDate()+i);let s=x.toISOString().slice(0,10);days.push(s);labels.push(x.toLocaleDateString(undefined,{weekday:'short'}))}}
  else{start=new Date(now.getFullYear(),now.getMonth(),1);end=now;let n=now.getDate();for(let i=1;i<=n;i++){let x=new Date(now.getFullYear(),now.getMonth(),i);days.push(x.toISOString().slice(0,10));labels.push(i%5===1||i===n?String(i):'')}}
  let a=start.toISOString().slice(0,10),b=end.toISOString().slice(0,10),items=db.expenses.filter(x=>x.date>=a&&x.date<=b),bills=db.purchaseBills.filter(x=>x.date>=a&&x.date<=b),total=sum(items)+bills.reduce((t,x)=>t+billTotal(x),0);
  $('reportLabel').textContent=period==='week'?'THIS WEEK':'THIS MONTH';$('reportTotal').textContent=money(total);$('reportRange').textContent=`${fmt(a)} – ${fmt(b)}`;
+ renderFamilyCostReport(items,bills);
  const selectedIncomePerson=$('reportIncomePersonFilter').value;
  const incomeInScope=db.incomes.filter(x=>selectedIncomePerson==='all'||(x.incomeBy||'Unassigned')===selectedIncomePerson);
  const incomeEntriesInPeriod=incomeInScope.filter(x=>x.date>=a&&x.date<=b);
@@ -573,10 +796,10 @@ function renderDueReport(){
  $('incomeDueList').innerHTML=incomeDue.length?incomeDue.map(x=>`<div class="breakrow"><span>${esc(x.source)} · ${esc(x.duePerson||'Unknown person')}</span><strong>${money(incomeOutstanding(x))}</strong></div>`).join(''):empty('No outstanding income dues.');
  $('unassignedDueHint').hidden=!legacy.length;$('unassignedDueHint').textContent=legacy.length?`${legacy.length} older Due ${legacy.length===1?'entry is':'entries are'} not assigned to either side. These older records are preserved and excluded from the two totals.`:'';
 }
-purchaseLines=[{product:'',spec:'',quantity:1,unit:db.units.includes('pcs')?'pcs':db.units[0],rate:0}];renderPurchaseLines();fillChoices();$('purchaseDate').value=today();applyThemeColor(db.settings.themeColor,false);renderPurchaseCategorySettings();
+purchaseLines=[defaultPurchaseLine()];renderPurchaseLines();fillChoices();$('purchaseDate').value=today();updatePurchaseBillNo();applyThemeColor(db.settings.themeColor,false);renderPurchaseCategorySettings();
 $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`dayquest-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href)};
-$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.purchaseCategories))x.purchaseCategories=['Assets','Staples','Fixed Ex.'];if(!x.settings||typeof x.settings!=='object')x.settings={themeColor:'#263b5c'};if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};if(!Array.isArray(x.familyMembers))x.familyMembers=[];if(confirm('Replace current data with this backup?')){db=x;db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];
-db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];db.units=Array.isArray(db.units)?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];db.profile=db.profile||{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};db.profile.familyName=String(db.profile.familyName||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeople.push(name)});db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);renderPurchaseCategorySettings();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
+$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.purchaseCategories))x.purchaseCategories=['Assets','Staples','Fixed Ex.'];if(!x.settings||typeof x.settings!=='object')x.settings={themeColor:'#263b5c'};if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};if(!Array.isArray(x.familyMembers))x.familyMembers=[];if(confirm('Replace current data with this backup?')){db=x;db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(item=>{if(!['family','member','unassigned'].includes(item.costType))item.costType=item.costMember?'member':'unassigned';item.costMember=String(item.costMember||'').trim();if(item.costType==='member'&&!item.costMember)item.costType='unassigned'});db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];
+db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];normalizePurchaseInventory();db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];db.units=Array.isArray(db.units)?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];normalizePurchaseBillNumbers();db.profile=db.profile||{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};db.profile.familyName=String(db.profile.familyName||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeople.push(name)});db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);renderPurchaseCategorySettings();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('installBtn').hidden=false});
 $('installBtn').onclick=async()=>{if(deferredInstall){deferredInstall.prompt();deferredInstall=null;$('installBtn').hidden=true}};
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));

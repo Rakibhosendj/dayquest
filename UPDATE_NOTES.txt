@@ -24,3 +24,47 @@ GITHUB PAGES UPDATE
 - Extract this archive and upload all files inside the DayQuest folder to your existing repository publishing root (branch main, folder /), overwriting matching project files.
 - Keep unrelated repository files (such as CNAME, .nojekyll and .github).
 - Commit to main. After deployment, close DayQuest tabs and force-refresh the website so the bumped app, stylesheet and service-worker cache versions load.
+
+
+SIDE MENU HIDE / SHOW (2026-11-12)
+- Added a desktop Hide menu / Show menu toggle in the top bar.
+- The desktop sidebar visibility choice is saved in this browser and restored on the next visit.
+- Kept the mobile slide-out menu behavior; its Menu / Close control remains available on small screens.
+- Updated asset query strings and the service-worker cache version so deployed browsers load this update.
+
+
+FAMILY & MEMBER-WISE EXPENSE COSTING (2026-11-12)
+- Added a Cost assigned to selector to each new expense: Family (split equally), or one named family member.
+- Family costs are divided equally among the current members listed in Profile → Family members. Any one-paisa rounding remainder is distributed across the first members so displayed shares add back to the family total.
+- Added Reports summaries for family-shared costs, average share per member, directly assigned member expenses, unassigned expenses, and each member's combined personal cost + family share.
+- The costing report follows the selected Weekly / Monthly report period and covers expense entries (supplier purchase bills remain separate).
+- Existing expenses without an assignment are kept as Not assigned; they are not automatically reclassified. Edit older expenses and assign them to Family or a member to include them in member costing.
+- Backup import/export retains the new cost allocation fields. Older backups remain compatible.
+- Updated the app asset and service-worker cache versions.
+
+
+INVENTORY & FAMILY / MEMBER PRODUCT COSTING (2026-11-12)
+- Added an Inventory & product assignment register below purchase bills. Every product line in a saved bill appears as an individual lot with supplier, purchase date, purchased quantity, used quantity, available quantity and total cost.
+- Each product lot can be assigned to one named family member (full product cost is charged to that member), to Family (cost is divided equally across current family members), or left Not assigned until reviewed.
+- Added Use stock to record quantities used and update the available inventory quantity without charging the cost a second time. Bills with stock usage are protected from unsafe edits/deletion.
+- Extended the Family costing and Member-wise costing report to include assigned purchase product costs alongside ordinary expense entries for the selected reporting period.
+- Existing purchase lines are migrated as Not assigned and remain unchanged until assigned in Expenses → Inventory. Existing expense assignments and transaction history are preserved.
+- Backup import/export continues to include inventory assignments and stock usage. Updated the app asset versions and service-worker cache.
+
+
+AUTOMATIC UNIQUE PURCHASE BILL NUMBERS (2026-11-12)
+- New purchase bills automatically receive a bill number based on their purchase date in MM-YYYY-N format (example: 11-2026-1).
+- The sequence starts at 1 for each month and advances after the highest existing sequence for that month. Existing bill numbers are checked before a number is generated, so a new number is never reused or duplicated.
+- The bill number is shown as a read-only preview and is recalculated when the purchase date changes. Editing a bill on its original date preserves its existing number; changing its date assigns a unique number for the new month.
+- Older bills with no bill number are assigned a unique number during migration. Existing non-duplicate manual bill numbers are preserved; duplicate historical numbers are repaired.
+- Backup imports also normalize missing or duplicate bill numbers. Existing purchase records and their inventory/cost assignments are preserved.
+- Updated the app asset URL and service-worker cache version.
+
+
+PURCHASE LINE AMOUNT ENTRY & AUTO-CALCULATION (2026-11-12)
+- Made Line amount an editable field on each purchase bill product line.
+- Added an explicit “When line amount is entered, calculate automatically” choice: calculate Rate per unit, or calculate Quantity.
+- When calculating rate, DayQuest uses line amount ÷ quantity. When calculating quantity, it uses line amount ÷ rate. The required divisor is validated and a helpful inline message is shown if it is missing.
+- Manually changing quantity or rate continues to recalculate the line amount. Line amounts are rounded to two decimal places for bill totals, while automatically derived quantity/rate values retain six decimal places.
+- Saved bill totals, inventory cost, supplier balance, and member/family costing use the entered line amount, keeping the saved bill value consistent. Existing saved bill lines retain their recorded amounts and remain editable.
+- Updated application asset URLs and service-worker cache version so deployed browsers load this change.

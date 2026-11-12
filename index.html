@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261112-family-profile2">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261112-line-amount-calculation">
 <title>DayQuest</title>
 </head>
 <body>
@@ -35,7 +35,7 @@
  </div>
 </section>
 <div id="appShell" hidden>
-<div class="app-layout">
+<div id="appLayout" class="app-layout">
  <aside id="sidebar" class="sidebar" aria-label="Main navigation">
   <div class="sidebar-brand"><span class="sidebar-mark">DQ</span><div><strong>DayQuest</strong><small>Personal dashboard</small></div></div>
   <div class="sidebar-caption">MENU</div>
@@ -80,7 +80,7 @@
   <label>Supplier / store <span class="select-add"><select id="purchaseSupplier" required><option value="">Select supplier</option></select><button type="button" class="mini-add" id="addSupplier">＋ Add supplier</button></span></label>
   <label>Purchase category <select id="purchaseCategory" required><option value="">Select purchase category</option></select></label>
   <div class="form-grid">
-   <label>Bill number <input id="purchaseBillNo" maxlength="50" placeholder="Optional bill / memo no."></label>
+   <label>Auto bill number <input id="purchaseBillNo" maxlength="50" placeholder="Generated automatically" readonly aria-readonly="true"><small>Unique format: MM-YYYY-number (for example, 11-2026-1). Sequence starts at 1 each month.</small></label>
    <label>Purchase date <input id="purchaseDate" type="date" required></label>
   </div>
   <div class="section-head form-section-head purchase-lines-heading"><h3>Products in this bill</h3><button type="button" class="mini-add" id="addPurchaseLine">＋ Add another line</button></div>
@@ -98,6 +98,9 @@
  </form>
  <div class="section-head"><h3>Recent purchase bills</h3><span class="muted" id="purchaseBillCount">0 bills</span></div>
  <div id="purchaseBillList" class="list"></div>
+ <div class="section-head"><h2>Inventory & product assignment</h2><span class="muted" id="inventoryCount">0 product lots · 0 assigned</span></div>
+ <p class="hint inventory-hint">Each purchased product lot appears here. Assign it to one family member to charge the full product cost to that person, or assign it to Family to divide the cost equally across all family members. Use “Use stock” to reduce the available inventory quantity.</p>
+ <div id="inventoryList" class="list"></div>
  <div class="section-head"><h2>Supplier accounts / creditors</h2><span class="muted">Open an account to see bill history</span></div>
  <div id="supplierList" class="list"></div>
  <section id="supplierAccountPanel" class="supplier-account-panel" hidden>
@@ -120,6 +123,8 @@
  <form id="expenseForm" class="form">
   <label>Expense name <span class="select-add"><select id="expenseName"></select><button type="button" class="mini-add" id="addExpenseName">＋ Add</button></span></label>
   <label>Payment type <select id="paymentType"><option>Cash</option><option>Bank</option><option>Due</option></select></label>
+  <label>Cost assigned to <select id="expenseCostFor"><option value="family">Family (split equally)</option></select></label>
+  <p class="hint expense-cost-hint">Family expenses are shared equally by everyone listed in Profile → Family members. Choose a member to assign the full cost only to that person.</p>
   <div id="dueFields" class="due-fields" hidden>
    <label>Due direction <select id="dueDirection"><option value="i_owe">I Owe</option><option value="owed_to_me">Others Owe Me</option></select></label>
    <label>Person name <input id="duePerson" maxlength="60" placeholder="Who is involved in this due?"></label>
@@ -255,6 +260,16 @@
  <div class="report-switch"><button class="period active" data-period="week">Weekly</button><button class="period" data-period="month">Monthly</button></div>
  <article class="report-card"><div class="eyebrow" id="reportLabel">THIS WEEK</div><strong class="report-total" id="reportTotal">৳0.00</strong><div class="muted" id="reportRange"></div><div class="bars" id="reportBars"></div></article>
  <div class="section-head"><h2>By category</h2></div><div id="categoryBreakdown" class="list"></div>
+ <div class="section-head"><h2>Family costing</h2><span class="pill">Selected period</span></div>
+ <div class="cards costing-summary">
+  <article class="stat"><span class="muted">Family-shared expenses</span><strong id="familyCostTotal">৳0.00</strong><small id="familyCostMemberCount">Split across 0 members</small></article>
+  <article class="stat"><span class="muted">Average share per member</span><strong id="familyCostPerMember">৳0.00</strong><small>Equal share of family costs</small></article>
+  <article class="stat"><span class="muted">Member-assigned expenses</span><strong id="memberDirectCostTotal">৳0.00</strong><small>Assigned directly to a person</small></article>
+  <article class="stat"><span class="muted">Not assigned</span><strong id="unassignedCostTotal">৳0.00</strong><small>Older / unallocated expenses</small></article>
+ </div>
+ <div class="section-head"><h2>Member-wise costing</h2><span class="muted" id="memberCostCount">0 members</span></div>
+ <div id="memberCostBreakdown" class="list"></div>
+ <p class="hint" id="familyCostNote">Family costs are divided equally among the current members in Profile. Older expenses without a cost assignment stay unassigned until edited.</p>
  <div class="section-head"><h2>Product purchase report</h2><span class="pill">By individual product</span></div>
  <label class="report-filter-label">Purchase report period <select id="productReportPeriod"><option value="week" selected>Weekly</option><option value="month">Monthly</option><option value="year">Yearly</option></select></label>
  <div id="productPurchaseReport" class="list"></div>
@@ -278,5 +293,5 @@
 </div>
 </div>
 </div>
-<script src="app.js?v=20261112-family-profile2"></script>
+<script src="app.js?v=20261112-line-amount-calculation"></script>
 </body></html>
