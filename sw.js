@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v11-income-by-person';
+const CACHE = 'dayquest-cache-v12-purchase-ledger';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261111-income-by-person2',
-  './app.js?v=20261111-income-by-person2',
+  './style.css?v=20261112-purchase-ledger1',
+  './app.js?v=20261112-purchase-ledger1',
   './manifest.json'
 ];
 
@@ -20,13 +20,12 @@ self.addEventListener('activate', event => {
   })());
 });
 
-// Prefer the latest deployed app files while online, but retain an offline copy.
+// Prefer deployed files while online and retain the latest successfully loaded files offline.
 self.addEventListener('fetch', event => {
   const request = event.request;
   if (request.method !== 'GET') return;
   const requestUrl = new URL(request.url);
   if (requestUrl.origin !== self.location.origin) return;
-
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
     try {

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261111-income-by-person2">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261112-purchase-ledger1">
 <title>DayQuest</title>
 </head>
 <body>
@@ -56,6 +56,53 @@
  <div class="section-head"><h2>Today's quests</h2><button class="link" data-go="quests">Manage</button></div><div id="todayQuests" class="list"></div>
 </section>
 <section id="expenses" class="panel">
+ <div class="section-head"><h2>Purchase bill entry</h2><span class="muted">Multiple products per supplier bill</span></div>
+ <form id="purchaseBillForm" class="form purchase-form">
+  <label>Supplier / store <span class="select-add"><select id="purchaseSupplier" required><option value="">Select supplier</option></select><button type="button" class="mini-add" id="addSupplier">＋ Add supplier</button></span></label>
+  <div class="form-grid">
+   <label>Bill number <input id="purchaseBillNo" maxlength="50" placeholder="Optional bill / memo no."></label>
+   <label>Purchase date <input id="purchaseDate" type="date" required></label>
+  </div>
+  <div class="section-head form-section-head purchase-lines-heading"><h3>Products in this bill</h3><button type="button" class="mini-add" id="addPurchaseLine">＋ Add product</button></div>
+  <div id="purchaseLines" class="purchase-lines"></div>
+  <div class="total-preview"><span>Bill total</span><strong id="purchaseBillTotal">৳0.00</strong></div>
+  <div class="form-grid">
+   <label>Cash paid now <input id="purchaseCashPaid" type="number" min="0" step="0.01" value="0"></label>
+   <label>Bank paid now <input id="purchaseBankPaid" type="number" min="0" step="0.01" value="0"></label>
+  </div>
+  <div class="total-preview credit-preview"><span>Credit / payable to supplier</span><strong id="purchaseCreditTotal">৳0.00</strong></div>
+  <p class="hint">Cash and bank payments reduce their balances immediately. The remaining credit is saved under the supplier account and reduces your balance only when you pay the supplier later.</p>
+  <label>Bill note <input id="purchaseNote" maxlength="120" placeholder="Optional note"></label>
+  <button class="primary full" id="purchaseBillSubmit">Save purchase bill</button>
+  <button class="secondary full" type="button" id="cancelPurchaseEdit" hidden>Cancel edit</button>
+ </form>
+ <div class="section-head"><h3>Recent purchase bills</h3><span class="muted" id="purchaseBillCount">0 bills</span></div>
+ <div id="purchaseBillList" class="list"></div>
+ <div class="section-head"><h2>Supplier accounts / creditors</h2><span class="muted">Open an account to see bill history</span></div>
+ <div id="supplierList" class="list"></div>
+ <section id="supplierAccountPanel" class="supplier-account-panel" hidden>
+  <div class="section-head"><div><h3 id="supplierAccountTitle">Supplier account</h3><span class="muted" id="supplierAccountSubtitle"></span></div><button type="button" class="secondary" id="closeSupplierAccount">Close</button></div>
+  <div class="cards supplier-stats"><article class="stat"><span class="muted">Total billed</span><strong id="supplierBilledTotal">৳0.00</strong></article><article class="stat"><span class="muted">Credit remaining</span><strong id="supplierDueTotal">৳0.00</strong></article></div>
+  <button type="button" class="primary full" id="paySupplierBtn">＋ Pay supplier due</button>
+  <div class="section-head"><h3>Date-wise bills and products</h3></div><div id="supplierAccountBills" class="list"></div>
+  <div class="section-head"><h3>Payment history</h3></div><div id="supplierAccountPayments" class="list"></div>
+ </section>
+ <form id="supplierPaymentForm" class="form" hidden>
+  <div class="total-preview"><span id="supplierPaymentTitle">Pay supplier</span><strong id="supplierPaymentRemaining">৳0.00</strong></div>
+  <label>Payment amount <input id="supplierPaymentAmount" type="number" min="0.01" step="0.01" required></label>
+  <div class="form-grid"><label>Payment date <input id="supplierPaymentDate" type="date" required></label><label>Paid from <select id="supplierPaymentMethod"><option>Cash</option><option>Bank</option></select></label></div>
+  <label>Note <input id="supplierPaymentNote" maxlength="100" placeholder="Optional payment note"></label>
+  <button class="primary full">Save supplier payment</button><button class="secondary full" type="button" id="cancelSupplierPayment">Cancel</button>
+ </form>
+ <div class="section-head"><h2>Record product consumption</h2><span class="muted">Track items used from stock</span></div>
+ <form id="consumptionForm" class="form">
+  <label>Product <select id="consumptionProduct" required><option value="">Add a purchase bill first</option></select></label>
+  <div class="form-grid"><label>Quantity consumed <input id="consumptionQuantity" type="number" min="0.001" step="0.001" required></label><label>Unit <select id="consumptionUnit" required></select></label></div>
+  <div class="total-preview"><span>Available stock</span><strong id="consumptionAvailable">—</strong></div>
+  <div class="form-grid"><label>Consumption date <input id="consumptionDate" type="date" required></label><label>Purpose / note <input id="consumptionNote" maxlength="100" placeholder="Optional"></label></div>
+  <button class="primary full">Save consumption</button>
+ </form>
+
  <div class="section-head"><h2>Expenses</h2><span class="muted" id="expenseCount">0 entries</span></div>
  <div class="section-head form-section-head"><h3 id="expenseFormTitle">Add expense</h3><span class="muted" id="expenseEditHint" hidden>Editing saved expense</span></div>
  <form id="expenseForm" class="form">
@@ -161,6 +208,10 @@
  <div class="report-switch"><button class="period active" data-period="week">Weekly</button><button class="period" data-period="month">Monthly</button></div>
  <article class="report-card"><div class="eyebrow" id="reportLabel">THIS WEEK</div><strong class="report-total" id="reportTotal">৳0.00</strong><div class="muted" id="reportRange"></div><div class="bars" id="reportBars"></div></article>
  <div class="section-head"><h2>By category</h2></div><div id="categoryBreakdown" class="list"></div>
+ <div class="section-head"><h2>Product consumption & expense report</h2><span class="pill">By individual product</span></div>
+ <label class="report-filter-label">Product report period <select id="productReportPeriod"><option value="all">All time</option><option value="week">This week</option><option value="month">This month</option></select></label>
+ <div id="productConsumptionReport" class="list"></div>
+
  <div class="section-head"><h2>Income report</h2><span class="pill">Selected period</span></div>
  <div class="cards"><article class="stat"><span class="muted">Income entries</span><strong id="reportIncomeTotal">৳0.00</strong><small>by entry date</small></article><article class="stat"><span class="muted">Money collected</span><strong id="reportIncomeCollected">৳0.00</strong><small>by collection date</small></article></div>
  <div class="section-head"><h2>Income by person</h2></div><label class="report-filter-label">Show person <select id="reportIncomePersonFilter"></select></label><div id="incomePersonBreakdown" class="list"></div>
@@ -178,5 +229,5 @@
 </main>
 <footer>DayQuest · Private by design · Works offline</footer>
 </div>
-<script src="app.js?v=20261111-income-by-person2"></script>
+<script src="app.js?v=20261112-purchase-ledger1"></script>
 </body></html>

@@ -90,3 +90,16 @@ INCOME TYPE AND INCOME BY PERSON
 - Older income records without an earner are kept as Unassigned; edit those records to attribute them to a person.
 - In the Income tab, filter by Income Type, Income By person and date.
 - In Reports, use Show person to view one person or everyone for the selected week/month. The report shows totals by person and a separate breakdown by Income Type.
+
+
+PURCHASE BILLS, SUPPLIER CREDITORS AND PRODUCT CONSUMPTION
+- Open Expenses > Purchase bill entry to record one supplier bill with multiple product lines.
+- Each line stores product name, optional pack size/specification (for example 300 gram), quantity, unit, rate per unit and line amount.
+- Enter how much was paid immediately by Cash and by Bank. The remaining amount is calculated automatically as Credit / payable to supplier. Cash and Bank portions reduce those balances on the bill date; credit is shown as a supplier liability and reduces the selected balance only when a later supplier payment is recorded.
+- Saving a bill creates/updates the supplier account. Open a supplier such as Rahman Store to see bill dates, bill totals, individual products, quantities, units, rates, line amounts, cash/bank/credit split, remaining credit and payment history.
+- Use Pay supplier due in the supplier account for full or partial payments. Choose the payment date and whether the payment came from Cash or Bank. Payments reduce the supplier's outstanding creditor balance and the matching cash/bank balance.
+- Purchase bills are included in today's, weekly and monthly spending totals, category reports, and expense reports. Individual product purchase costs appear in Reports > Product consumption & expense report.
+- Recording a purchase increases product stock. To track actual use, enter each use under Expenses > Record product consumption. Select the product, quantity, unit and date. The app prevents consumption above recorded stock. Supported conversions include g/kg/mg and ml/litre; other units are tracked separately.
+- The product report shows quantity purchased, quantity consumed, current stock, purchase expense by individual product and estimated consumption cost using the product's weighted average purchase cost. Recording consumption does not deduct cash a second time; the cash/bank outflow was recorded when the bill was paid.
+- Bills with supplier payments or linked consumption are protected from edit/delete to avoid breaking the supplier and stock ledgers. Make a backup before changing records.
+- All purchase bills, supplier payments and consumption records are included in the JSON backup and remain on this browser/device (no cloud sync).

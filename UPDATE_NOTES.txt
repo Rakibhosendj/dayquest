@@ -1,0 +1,27 @@
+DAYQUEST PURCHASE BILL + SUPPLIER + CONSUMPTION UPDATE
+
+UPLOAD
+- Extract this ZIP.
+- Upload the files inside the DayQuest folder to your existing GitHub Pages publishing directory (branch main, / root).
+- Overwrite matching app files. Keep unrelated repository files such as CNAME and .nojekyll.
+- Commit directly to main and then force-refresh the site with Ctrl+Shift+R (desktop) or close/reopen DayQuest (phone).
+- Export a JSON backup before updating. This release keeps the existing localStorage database key and adds new arrays for purchase bills, supplier payments, suppliers and consumption entries.
+
+PURCHASE BILL EXAMPLE
+- Supplier: Rahman Store
+- Product: Soap; specification: 300 gram; quantity: 2; unit: pcs; rate per pc; line amount calculated automatically.
+- Product: Rice; quantity: 25; unit: kg; rate per kg; line amount calculated automatically.
+- Add any other products with Add product.
+- Enter Cash paid now and Bank paid now. Credit is calculated as Bill total minus Cash and Bank.
+
+SUPPLIER ACCOUNT
+- Save the bill to create the supplier account.
+- Click the supplier's account to see bills by date, each product line, quantity, unit, rate and amount, plus initial Cash/Bank/Credit split and the remaining credit.
+- Use Pay supplier due for full or partial payments. Choose the date and Cash or Bank. The payment reduces the supplier's outstanding balance and the selected balance.
+
+PRODUCT CONSUMPTION
+- Record actual usage separately under Expenses > Record product consumption.
+- Select a product, enter consumed quantity/unit/date, and save.
+- The app checks stock available on the chosen date. g/kg/mg and ml/litre are converted for compatible stock calculations.
+- Reports > Product consumption & expense report shows purchased amount, purchased quantity, consumed quantity, current stock and estimated consumption cost for each product.
+- Consumption does not deduct cash again; the purchase bill already recorded the paid Cash/Bank outflow. Credit reduces Cash/Bank only when paid to the supplier.
