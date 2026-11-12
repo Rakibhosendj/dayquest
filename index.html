@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261112-purchase-ledger1">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261112-product-catalog1">
 <title>DayQuest</title>
 </head>
 <body>
@@ -57,13 +57,18 @@
 </section>
 <section id="expenses" class="panel">
  <div class="section-head"><h2>Purchase bill entry</h2><span class="muted">Multiple products per supplier bill</span></div>
+ <div class="product-catalog-bar">
+  <button type="button" class="primary" id="addNewProduct">＋ Add New Product</button>
+  <div><strong id="productCatalogCount">0 saved products</strong><small>Create a product once, then select it from product-name suggestions in any bill.</small></div>
+ </div>
+ <datalist id="productNameSuggestions"></datalist>
  <form id="purchaseBillForm" class="form purchase-form">
   <label>Supplier / store <span class="select-add"><select id="purchaseSupplier" required><option value="">Select supplier</option></select><button type="button" class="mini-add" id="addSupplier">＋ Add supplier</button></span></label>
   <div class="form-grid">
    <label>Bill number <input id="purchaseBillNo" maxlength="50" placeholder="Optional bill / memo no."></label>
    <label>Purchase date <input id="purchaseDate" type="date" required></label>
   </div>
-  <div class="section-head form-section-head purchase-lines-heading"><h3>Products in this bill</h3><button type="button" class="mini-add" id="addPurchaseLine">＋ Add product</button></div>
+  <div class="section-head form-section-head purchase-lines-heading"><h3>Products in this bill</h3><button type="button" class="mini-add" id="addPurchaseLine">＋ Add another line</button></div>
   <div id="purchaseLines" class="purchase-lines"></div>
   <div class="total-preview"><span>Bill total</span><strong id="purchaseBillTotal">৳0.00</strong></div>
   <div class="form-grid">
@@ -229,5 +234,5 @@
 </main>
 <footer>DayQuest · Private by design · Works offline</footer>
 </div>
-<script src="app.js?v=20261112-purchase-ledger1"></script>
+<script src="app.js?v=20261112-product-catalog1"></script>
 </body></html>

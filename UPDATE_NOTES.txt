@@ -25,3 +25,11 @@ PRODUCT CONSUMPTION
 - The app checks stock available on the chosen date. g/kg/mg and ml/litre are converted for compatible stock calculations.
 - Reports > Product consumption & expense report shows purchased amount, purchased quantity, consumed quantity, current stock and estimated consumption cost for each product.
 - Consumption does not deduct cash again; the purchase bill already recorded the paid Cash/Bank outflow. Credit reduces Cash/Bank only when paid to the supplier.
+
+
+PRODUCT CATALOG SHORTCUT UPDATE
+- The Purchase bill entry section now starts with a prominent + Add New Product button.
+- Add a product name once; it is saved to the product catalogue and automatically placed into the first empty product line (or a new line if all lines are already filled).
+- Product name fields provide saved product suggestions while typing.
+- Existing product names are retained and deduplicated case-insensitively.
+- The regular Add another line button remains available for adding further products to the same bill.

@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v12-purchase-ledger';
+const CACHE = 'dayquest-cache-v13-product-catalog';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261112-purchase-ledger1',
-  './app.js?v=20261112-purchase-ledger1',
+  './style.css?v=20261112-product-catalog1',
+  './app.js?v=20261112-product-catalog1',
   './manifest.json'
 ];
 

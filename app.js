@@ -12,6 +12,7 @@ db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];
 db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];
 db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
 db.productNames=Array.isArray(db.productNames)?db.productNames:[];
+db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);
 db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];
 db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});
 db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});
@@ -77,6 +78,7 @@ function fillChoices(){
   select.value=db.incomePeople.includes(previous)?previous:(id==='incomeBy'?preferred:'all');
  });
  const supplierSelect=$('purchaseSupplier');if(supplierSelect){const previous=supplierSelect.value;supplierSelect.innerHTML='<option value="">Select supplier</option>'+db.suppliers.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(db.suppliers.includes(previous))supplierSelect.value=previous;}
+ renderProductNameSuggestions();
  renderConsumptionProductChoices();
 }
 function calcTotal(){let v=(Number($('quantity').value)||0)*(Number($('rate').value)||0);$('calculatedTotal').textContent=money(v)}
@@ -91,6 +93,27 @@ $('addUnit').onclick=()=>{let n=prompt('Add a unit (e.g. bottle, sack, km):');if
 $('addIncomeHead').onclick=()=>{let n=prompt('Add an income type (e.g. Salary, Business, Rent, Freelance):');if(n&&n.trim()){n=n.trim();if(!db.incomeHeads.includes(n))db.incomeHeads.push(n);fillChoices();$('incomeSource').value=n;localSaveOnly()}};
 $('addIncomePerson').onclick=()=>{let n=prompt('Add the person who earned this income:');if(n&&n.trim()){n=n.trim();if(!db.incomePeople.includes(n))db.incomePeople.push(n);fillChoices();$('incomeBy').value=n;localSaveOnly()}};
 function localSaveOnly(){localStorage.setItem('dayquest_v1',JSON.stringify(db))}
+function renderProductNameSuggestions(){
+ const list=$('productNameSuggestions');if(list)list.innerHTML=db.productNames.map(n=>`<option value="${esc(n)}"></option>`).join('');
+ const count=$('productCatalogCount');if(count)count.textContent=`${db.productNames.length} saved product${db.productNames.length===1?'':'s'}`;
+}
+function defaultPurchaseLine(product=''){
+ return {product,spec:'',quantity:1,unit:db.units.includes('pcs')?'pcs':db.units[0],rate:0};
+}
+$('addNewProduct').onclick=()=>{
+ const raw=prompt('Enter the new product name:');if(raw===null)return;
+ const name=raw.trim();if(!name){alert('Enter a product name.');return}
+ const existing=db.productNames.find(n=>n.toLocaleLowerCase()===name.toLocaleLowerCase());
+ const product=existing||name;
+ if(!existing)db.productNames.unshift(product);
+ let line=purchaseLines.find(item=>!String(item.product||'').trim());
+ if(!line){line=defaultPurchaseLine();purchaseLines.push(line)}
+ line.product=product;
+ renderProductNameSuggestions();renderPurchaseLines();localSaveOnly();
+ const nodes=[...$('purchaseLines').querySelectorAll('.pl-product')],target=nodes.find(input=>input.value===product&&input.closest('.purchase-line')?.dataset.lineIndex===String(purchaseLines.indexOf(line)));
+ if(target){target.focus();target.select()}
+};
+
 // Purchase bills, supplier creditor accounts and product consumption
 function unitInfo(unit){
  const u=String(unit||'pcs').trim().toLowerCase();
@@ -123,7 +146,7 @@ function purchaseLineTemplate(line,index){
  const units=db.units.map(u=>`<option value="${esc(u)}" ${line.unit===u?'selected':''}>${esc(u)}</option>`).join('');
  return `<div class="purchase-line" data-line-index="${index}">
   <div class="purchase-line-top"><strong>Product ${index+1}</strong><button type="button" class="delete remove-purchase-line" data-index="${index}" ${purchaseLines.length===1?'disabled':''}>Remove</button></div>
-  <label>Product name <input class="pl-product" maxlength="80" value="${esc(line.product||'')}" placeholder="e.g. Soap" required></label>
+  <label>Product name <input class="pl-product" list="productNameSuggestions" maxlength="80" value="${esc(line.product||'')}" placeholder="e.g. Soap" required></label>
   <label>Size / specification <input class="pl-spec" maxlength="80" value="${esc(line.spec||'')}" placeholder="e.g. 300 gram (optional)"></label>
   <div class="form-grid"><label>Quantity <input class="pl-quantity" type="number" min="0.001" step="0.001" value="${Number(line.quantity||1)}" required></label><label>Unit <select class="pl-unit">${units}</select></label></div>
   <div class="form-grid"><label>Rate per unit <input class="pl-rate" type="number" min="0" step="0.01" value="${Number(line.rate||0)}" required></label><div class="line-amount-box"><span>Line amount</span><strong class="pl-amount">${money(Number(line.quantity||1)*Number(line.rate||0))}</strong></div></div>
@@ -480,7 +503,8 @@ function renderDueReport(){
 }
 purchaseLines=[{product:'',spec:'',quantity:1,unit:db.units.includes('pcs')?'pcs':db.units[0],rate:0}];renderPurchaseLines();fillChoices();$('purchaseDate').value=today();$('consumptionDate').value=today();
 $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`dayquest-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href)};
-$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',openingCash:0,openingBank:0};if(confirm('Replace current data with this backup?')){db=x;db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];db.units=Array.isArray(db.units)?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];db.profile=db.profile||{name:'',phone:'',openingCash:0,openingBank:0};db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
+$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',openingCash:0,openingBank:0};if(confirm('Replace current data with this backup?')){db=x;db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];
+db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];db.units=Array.isArray(db.units)?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];db.profile=db.profile||{name:'',phone:'',openingCash:0,openingBank:0};db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('installBtn').hidden=false});
 $('installBtn').onclick=async()=>{if(deferredInstall){deferredInstall.prompt();deferredInstall=null;$('installBtn').hidden=true}};
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));

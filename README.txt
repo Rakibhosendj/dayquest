@@ -103,3 +103,8 @@ PURCHASE BILLS, SUPPLIER CREDITORS AND PRODUCT CONSUMPTION
 - The product report shows quantity purchased, quantity consumed, current stock, purchase expense by individual product and estimated consumption cost using the product's weighted average purchase cost. Recording consumption does not deduct cash a second time; the cash/bank outflow was recorded when the bill was paid.
 - Bills with supplier payments or linked consumption are protected from edit/delete to avoid breaking the supplier and stock ledgers. Make a backup before changing records.
 - All purchase bills, supplier payments and consumption records are included in the JSON backup and remain on this browser/device (no cloud sync).
+
+PRODUCT CATALOG
+- Use + Add New Product at the top of Purchase bill entry to save a product name before creating a bill. It fills the first empty product line automatically.
+- When entering bill lines, click/type in Product name to see saved product suggestions. Choose a saved name or type a new one.
+- Add another line adds a further product row to the current supplier bill.
