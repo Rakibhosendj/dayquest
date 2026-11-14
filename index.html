@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261112-line-amount-calculation">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261114-reports-submenus-units">
 <title>DayQuest</title>
 </head>
 <body>
@@ -37,22 +37,52 @@
 <div id="appShell" hidden>
 <div id="appLayout" class="app-layout">
  <aside id="sidebar" class="sidebar" aria-label="Main navigation">
-  <div class="sidebar-brand"><span class="sidebar-mark">DQ</span><div><strong>DayQuest</strong><small>Personal dashboard</small></div></div>
+  <div class="sidebar-brand"><span class="sidebar-mark">DQ</span><div><strong id="sidebarBrandTitle">DayQuest</strong><small id="sidebarBrandSubtitle">Personal dashboard</small></div></div>
   <div class="sidebar-caption">MENU</div>
-  <nav class="side-nav">
+  <nav class="side-nav" aria-label="Sections">
    <button class="tab side-link active" data-tab="home" type="button"><span class="side-link-mark">01</span><span>Overview</span></button>
-   <button class="tab side-link" data-tab="expenses" type="button"><span class="side-link-mark">02</span><span>Expenses</span></button>
-   <button class="tab side-link" data-tab="income" type="button"><span class="side-link-mark">03</span><span>Income</span></button>
-   <button class="tab side-link" data-tab="quests" type="button"><span class="side-link-mark">04</span><span>Daily quests</span></button>
-   <button class="tab side-link" data-tab="reports" type="button"><span class="side-link-mark">05</span><span>Reports</span></button>
-   <button class="tab side-link" data-tab="profile" type="button"><span class="side-link-mark">06</span><span>Profile</span></button>
-   <button class="tab side-link" data-tab="settings" type="button"><span class="side-link-mark">07</span><span>Settings</span></button>
+   <details class="side-group" open>
+    <summary class="side-link side-group-title"><span class="side-link-mark">02</span><span>Expenses</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
+    <div class="side-submenu">
+     <button class="tab side-sub-link" data-tab="purchaseBills" type="button">Purchase</button>
+    </div>
+   </details>
+   <button class="tab side-link" data-tab="inventory" type="button"><span class="side-link-mark">03</span><span>Inventory</span></button>
+   <button class="tab side-link" data-tab="production" type="button"><span class="side-link-mark">04</span><span>Production</span></button>
+   <button class="tab side-link" data-tab="supplierAccounts" type="button"><span class="side-link-mark">05</span><span>Supplier accounts / creditors</span></button>
+   <details class="side-group" open>
+    <summary class="side-link side-group-title"><span class="side-link-mark">06</span><span>Outstanding</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
+    <div class="side-submenu">
+     <button class="tab side-sub-link" data-tab="payExpenseDue" type="button">Pay or collect an expense due</button>
+    </div>
+   </details>
+   <button class="tab side-link" data-tab="income" type="button"><span class="side-link-mark">07</span><span>Income</span></button>
+   <button class="tab side-link" data-tab="quests" type="button"><span class="side-link-mark">08</span><span>Daily quests</span></button>
+   <details class="side-group" data-side-group="reports" open>
+    <summary class="side-link side-group-title"><span class="side-link-mark">09</span><span>Reports</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
+    <div class="side-submenu report-side-submenu">
+     <button type="button" class="side-sub-link report-sub-link active" data-report-go="members">Members Report</button>
+     <button type="button" class="side-sub-link report-sub-link" data-report-go="production">Production Report</button>
+     <button type="button" class="side-sub-link report-sub-link" data-report-go="cost">Cost Report</button>
+     <button type="button" class="side-sub-link report-sub-link" data-report-go="income">Income Report</button>
+     <button type="button" class="side-sub-link report-sub-link" data-report-go="creditors">Creditors</button>
+     <button type="button" class="side-sub-link report-sub-link" data-report-go="debitors">Debtors</button>
+     <button type="button" class="side-sub-link report-sub-link" data-report-go="assets">Assets</button>
+     <button type="button" class="side-sub-link report-sub-link" data-report-go="purchase">Purchase Reports</button>
+     <button type="button" class="side-sub-link report-sub-link" data-report-go="all">All Reports</button>
+    </div>
+   </details>
+   <button class="tab side-link" data-tab="profile" type="button"><span class="side-link-mark">10</span><span>Profile</span></button>
+   <button class="tab side-link" data-tab="settings" type="button"><span class="side-link-mark">11</span><span>Settings</span></button>
   </nav>
-  <div class="sidebar-foot">Your data stays on this device.</div>
+  <div class="sidebar-bottom">
+   <div class="sidebar-account"><span id="userGreeting" class="user-greeting">Signed in</span><button id="logoutBtn" class="ghost" type="button">Log out</button></div>
+   <div class="sidebar-foot">Your data stays on this device.</div>
+  </div>
  </aside>
  <button id="sidebarBackdrop" class="sidebar-backdrop" type="button" aria-label="Close navigation" hidden></button>
  <div class="app-main">
-<header class="top"><div class="top-title"><button id="menuToggle" class="menu-toggle" type="button" aria-expanded="false" aria-controls="sidebar">Menu</button><div><div class="eyebrow">YOUR PERSONAL DASHBOARD</div><h1>DayQuest <span>✦</span></h1></div></div><div class="header-actions"><span id="userGreeting" class="user-greeting"></span><button id="logoutBtn" class="ghost" type="button">Log out</button><button id="installBtn" class="ghost" hidden>Install</button></div></header>
+<header class="top" aria-label="App controls"><button id="menuToggle" class="menu-toggle" type="button" aria-label="Open side menu" title="Open side menu" aria-expanded="false" aria-controls="sidebar"><span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button><div class="header-actions"><button id="installBtn" class="ghost" hidden>Install</button></div></header>
 <main>
 <section class="hero">
  <div><div class="eyebrow">TODAY'S SPENDING</div><div class="money" id="todayTotal">৳0.00</div><div class="muted" id="todayDate"></div></div>
@@ -64,28 +94,34 @@
  <div class="section-head"><h2>Today's activity</h2><span class="pill" id="todayQuestLabel">0 quests done</span></div>
  <div class="cards"><article class="stat"><span class="muted">This week</span><strong id="weekTotal">৳0</strong><small>expenses</small></article><article class="stat"><span class="muted">This month</span><strong id="monthTotal">৳0</strong><small>expenses</small></article><article class="stat"><span class="muted">Income received today</span><strong id="todayIncome">৳0</strong><small>cash, bank & due collections</small></article><article class="stat"><span class="muted">Income received this month</span><strong id="monthIncome">৳0</strong><small>cash, bank & due collections</small></article></div>
  <div class="section-head"><h2>Quick actions</h2></div>
- <div class="quick"><button class="primary" data-go="expenses">＋ Add expense</button><button class="secondary" data-go="income">＋ Add income</button><button class="secondary" data-go="quests">＋ Add daily quest</button></div>
- <div class="section-head"><h2>Recent expenses</h2><button class="link" data-go="expenses">See all</button></div><div id="recentExpenses" class="list"></div>
+ <div class="quick"><button class="primary" data-go="expenseEntries">＋ Add expense</button><button class="secondary" data-go="income">＋ Add income</button><button class="secondary" data-go="quests">＋ Add daily quest</button></div>
+ <div class="section-head"><h2>Recent expenses</h2><button class="link" data-go="expenseEntries">See all</button></div><div id="recentExpenses" class="list"></div>
  <div class="section-head"><h2>Recent income</h2><button class="link" data-go="income">See all</button></div><div id="recentIncome" class="list"></div>
  <div class="section-head"><h2>Today's quests</h2><button class="link" data-go="quests">Manage</button></div><div id="todayQuests" class="list"></div>
 </section>
-<section id="expenses" class="panel">
+<section id="purchaseBills" class="panel">
+
  <div class="section-head"><h2>Purchase bill entry</h2><span class="muted">Multiple products per supplier bill</span></div>
- <div class="product-catalog-bar">
-  <button type="button" class="primary" id="addNewProduct">＋ Add New Product</button>
-  <div><strong id="productCatalogCount">0 saved products</strong><small>Create a product once, then select it from product-name suggestions in any bill.</small></div>
- </div>
  <datalist id="productNameSuggestions"></datalist>
  <form id="purchaseBillForm" class="form purchase-form">
   <label>Supplier / store <span class="select-add"><select id="purchaseSupplier" required><option value="">Select supplier</option></select><button type="button" class="mini-add" id="addSupplier">＋ Add supplier</button></span></label>
   <label>Purchase category <select id="purchaseCategory" required><option value="">Select purchase category</option></select></label>
   <div class="form-grid">
-   <label>Auto bill number <input id="purchaseBillNo" maxlength="50" placeholder="Generated automatically" readonly aria-readonly="true"><small>Unique format: MM-YYYY-number (for example, 11-2026-1). Sequence starts at 1 each month.</small></label>
+   <label>Auto bill number <input id="purchaseBillNo" maxlength="50" placeholder="Generated automatically" readonly aria-readonly="true"></label>
    <label>Purchase date <input id="purchaseDate" type="date" required></label>
   </div>
-  <div class="section-head form-section-head purchase-lines-heading"><h3>Products in this bill</h3><button type="button" class="mini-add" id="addPurchaseLine">＋ Add another line</button></div>
+  <div class="section-head form-section-head purchase-lines-heading"><h3>Products in this bill</h3></div>
   <div id="purchaseLines" class="purchase-lines"></div>
-  <div class="total-preview"><span>Bill total</span><strong id="purchaseBillTotal">৳0.00</strong></div>
+  <div class="purchase-add-line-row"><button type="button" class="mini-add" id="addPurchaseLine">＋ Add Line</button></div>
+  <div class="purchase-adjustments">
+   <div class="total-preview"><span>Products subtotal</span><strong id="purchaseSubtotal">৳0.00</strong></div>
+   <div class="form-grid">
+    <label>Transit cost <input id="purchaseTransitCost" type="number" min="0" step="0.01" value="0"></label>
+    <label>Purchase discount <input id="purchaseDiscount" type="number" min="0" step="0.01" value="0"></label>
+   </div>
+   <p class="hint" id="purchaseAdjustmentPreview">৳0.00 + ৳0.00 transit − ৳0.00 discount</p>
+   <div class="total-preview"><span>Final bill total</span><strong id="purchaseBillTotal">৳0.00</strong></div>
+  </div>
   <div class="form-grid">
    <label>Cash paid now <input id="purchaseCashPaid" type="number" min="0" step="0.01" value="0"></label>
    <label>Bank paid now <input id="purchaseBankPaid" type="number" min="0" step="0.01" value="0"></label>
@@ -96,11 +132,39 @@
   <button class="primary full" id="purchaseBillSubmit">Save purchase bill</button>
   <button class="secondary full" type="button" id="cancelPurchaseEdit" hidden>Cancel edit</button>
  </form>
- <div class="section-head"><h3>Recent purchase bills</h3><span class="muted" id="purchaseBillCount">0 bills</span></div>
+ <div class="section-head history-section-head"><div><h3>Recent purchase bills</h3><span class="muted" id="purchaseBillCount">0 bills</span></div></div>
  <div id="purchaseBillList" class="list"></div>
+
+</section>
+<section id="inventory" class="panel">
  <div class="section-head"><h2>Inventory & product assignment</h2><span class="muted" id="inventoryCount">0 product lots · 0 assigned</span></div>
- <p class="hint inventory-hint">Each purchased product lot appears here. Assign it to one family member to charge the full product cost to that person, or assign it to Family to divide the cost equally across all family members. Use “Use stock” to reduce the available inventory quantity.</p>
+ <p class="hint inventory-hint">Each purchased product lot appears here. Select one person to assign the full product cost to them, or select multiple people to divide the cost equally among them. Use “Use stock” to reduce the available inventory quantity.</p>
  <div id="inventoryList" class="list"></div>
+
+</section>
+<section id="production" class="panel">
+ <div class="section-head"><div><h2>Production</h2><span class="muted">Use inventory materials to create a finished product</span></div><span class="pill" id="productionCount">0 batches</span></div>
+ <form id="productionForm" class="form production-form">
+  <div class="form-grid"><label>Production number <input id="productionNo" readonly aria-readonly="true"></label><label>Production date <input id="productionDate" type="date" required></label></div>
+  <div class="section-head form-section-head"><h3>Finished product</h3></div>
+  <label>Product name <input id="productionProduct" list="productNameSuggestions" maxlength="80" placeholder="e.g. Homemade pickle" required></label>
+  <div class="form-grid"><label>Product type <select id="productionProductType" required></select></label><label>Product size / specification <input id="productionProductSize" maxlength="80" placeholder="e.g. 250 gram jar"></label></div>
+  <div class="form-grid"><label>Produced quantity <input id="productionQuantity" type="number" min="0.001" step="any" value="1" required></label><label>Output unit <span class="select-add"><select id="productionUnit"></select><button type="button" class="mini-add" id="addProductionUnit">＋ Add</button></span></label></div>
+  <div class="section-head form-section-head production-input-heading"><h3>Inventory materials used</h3></div>
+  <div id="productionInputs" class="production-inputs"></div>
+  <div class="form-grid"><label>Electricity cost <input id="productionElectricityCost" type="number" min="0" step="0.01" value="0"></label><label>Production transit cost <input id="productionTransitCost" type="number" min="0" step="0.01" value="0"></label></div>
+  <div class="production-cost-preview">
+   <div class="total-preview"><span>Material cost</span><strong id="productionMaterialCost">৳0.00</strong></div>
+   <div class="total-preview"><span>Total production cost</span><strong id="productionTotalCost">৳0.00</strong></div>
+   <div class="total-preview"><span>Cost per output unit</span><strong id="productionUnitCost">৳0.00</strong></div>
+  </div>
+  <p class="hint" id="productionCostHint">Material cost is calculated from FIFO inventory lot costs. Electricity and transit are added to the finished product's inventory cost.</p>
+  <button class="primary full" id="productionSubmit">Save production & add to Inventory</button>
+ </form>
+ <div class="section-head history-section-head"><div><h3>Production register</h3><span class="muted">Finished product batches and costs</span></div><button type="button" class="mini-add" id="addProductionInput">＋ New material</button></div>
+ <div id="productionList" class="list"></div>
+</section>
+<section id="supplierAccounts" class="panel">
  <div class="section-head"><h2>Supplier accounts / creditors</h2><span class="muted">Open an account to see bill history</span></div>
  <div id="supplierList" class="list"></div>
  <section id="supplierAccountPanel" class="supplier-account-panel" hidden>
@@ -112,19 +176,26 @@
  </section>
  <form id="supplierPaymentForm" class="form" hidden>
   <div class="total-preview"><span id="supplierPaymentTitle">Pay supplier</span><strong id="supplierPaymentRemaining">৳0.00</strong></div>
-  <label>Payment amount <input id="supplierPaymentAmount" type="number" min="0.01" step="0.01" required></label>
+  <div class="form-grid">
+   <label>Cash / bank paid <input id="supplierPaymentAmount" type="number" min="0" step="0.01" value="0" required></label>
+   <label>Discount received <input id="supplierPaymentDiscount" type="number" min="0" step="0.01" value="0"></label>
+  </div>
+  <div class="total-preview"><span>Total creditor balance settled</span><strong id="supplierPaymentSettlementTotal">৳0.00</strong></div>
   <div class="form-grid"><label>Payment date <input id="supplierPaymentDate" type="date" required></label><label>Paid from <select id="supplierPaymentMethod"><option>Cash</option><option>Bank</option></select></label></div>
+  <p class="hint">Discount reduces the supplier's outstanding balance but is not deducted from Cash or Bank. Only the paid amount changes your cash or bank balance.</p>
   <label>Note <input id="supplierPaymentNote" maxlength="100" placeholder="Optional payment note"></label>
   <button class="primary full">Save supplier payment</button><button class="secondary full" type="button" id="cancelSupplierPayment">Cancel</button>
  </form>
 
- <div class="section-head"><h2>Expenses</h2><span class="muted" id="expenseCount">0 entries</span></div>
+
+</section>
+<section id="expenseEntries" class="panel">
+ <div class="section-head"><h2>Expense entries</h2><span class="muted" id="expenseCount">0 entries</span></div>
  <div class="section-head form-section-head"><h3 id="expenseFormTitle">Add expense</h3><span class="muted" id="expenseEditHint" hidden>Editing saved expense</span></div>
  <form id="expenseForm" class="form">
   <label>Expense name <span class="select-add"><select id="expenseName"></select><button type="button" class="mini-add" id="addExpenseName">＋ Add</button></span></label>
   <label>Payment type <select id="paymentType"><option>Cash</option><option>Bank</option><option>Due</option></select></label>
-  <label>Cost assigned to <select id="expenseCostFor"><option value="family">Family (split equally)</option></select></label>
-  <p class="hint expense-cost-hint">Family expenses are shared equally by everyone listed in Profile → Family members. Choose a member to assign the full cost only to that person.</p>
+  <div class="assignment-field"><strong>Assign cost to members</strong><div id="expenseCostMembers" class="member-check-list"></div><p class="hint expense-cost-hint">Select one or more family members or guests. The expense amount is divided equally among only the selected people. Leave everyone unselected to keep it unassigned.</p></div>
   <div id="dueFields" class="due-fields" hidden>
    <label>Due direction <select id="dueDirection"><option value="i_owe">I Owe</option><option value="owed_to_me">Others Owe Me</option></select></label>
    <label>Person name <input id="duePerson" maxlength="60" placeholder="Who is involved in this due?"></label>
@@ -142,7 +213,15 @@
   <button class="primary full" id="expenseSubmitBtn">Save expense</button>
   <button class="secondary full" type="button" id="cancelExpenseEdit" hidden>Cancel edit</button>
  </form>
- <div class="section-head"><h3>Pay or collect an expense due</h3><span class="muted">Record due settlements</span></div>
+ <div class="toolbar"><input id="expenseSearch" placeholder="Search expenses…"><select id="expenseFilter"><option value="all">All categories</option><option>Food</option><option>Transport</option><option>Shopping</option><option>Bills</option><option>Health</option><option>Education</option><option>Entertainment</option><option>Other</option></select></div>
+ <div id="expenseList" class="list"></div>
+
+</section>
+<section id="payExpenseDue" class="panel">
+
+ <div class="section-head"><h2>Outstanding expense dues</h2><span class="muted">Select a due to pay or collect</span></div>
+ <div id="expenseDueList" class="list"></div>
+ <div class="section-head"><h2>Pay or collect an expense due</h2><span class="muted">Record due settlements</span></div>
  <form id="expenseDueActionForm" class="form" hidden>
   <div class="total-preview"><span id="expenseDueActionLabel">Due settlement</span><strong id="expenseDueRemaining">৳0.00</strong></div>
   <label>Amount <input id="expenseDueActionAmount" type="number" min="0.01" step="0.01" required></label>
@@ -154,12 +233,29 @@
   <button class="primary full" id="expenseDueActionSubmit">Save due settlement</button>
   <button class="secondary full" type="button" id="cancelExpenseDueAction">Cancel</button>
  </form>
- <div class="toolbar"><input id="expenseSearch" placeholder="Search expenses…"><select id="expenseFilter"><option value="all">All categories</option><option>Food</option><option>Transport</option><option>Shopping</option><option>Bills</option><option>Health</option><option>Education</option><option>Entertainment</option><option>Other</option></select></div>
- <div id="expenseList" class="list"></div>
+
 </section>
 <section id="income" class="panel">
- <div class="section-head"><h2>Income</h2><span class="muted" id="incomeCount">0 entries</span></div>
- <div class="section-head form-section-head"><h3 id="incomeFormTitle">Add income</h3><span class="muted" id="incomeEditHint" hidden>Editing saved income</span></div>
+ <div class="section-head income-page-head"><div><h2>Income</h2><span class="muted" id="incomeCount">0 entries</span></div><button type="button" class="mini-add" id="toggleSalesMemoForm">＋ New sales memo</button></div>
+ <div id="salesMemoWrap" hidden>
+  <div class="section-head form-section-head"><h3 id="salesMemoFormTitle">Create sales memo</h3><span class="muted" id="salesMemoEditHint" hidden>Editing saved sales memo</span></div>
+  <form id="salesMemoForm" class="form sales-memo-form">
+   <div class="form-grid"><label>Sales memo number <input id="salesMemoNo" readonly aria-readonly="true"></label><label>Sales date <input id="salesMemoDate" type="date" required></label></div>
+   <label>Customer name <input id="salesMemoCustomer" maxlength="90" placeholder="Customer / buyer name" required></label>
+   <div class="form-grid"><label>Customer phone <input id="salesMemoPhone" maxlength="30" placeholder="Optional phone"></label><label>Prepared by <select id="salesMemoBy" required></select></label></div>
+   <label>Customer address <input id="salesMemoAddress" maxlength="140" placeholder="Optional address"></label>
+   <div class="form-grid"><label>Payment type <select id="salesMemoPayment"><option>Cash</option><option>Bank</option><option>Due</option></select></label><label>Memo note <input id="salesMemoNote" maxlength="120" placeholder="Optional note"></label></div>
+   <div class="section-head form-section-head sales-lines-heading"><h3>Products sold</h3><button type="button" class="mini-add" id="addSalesMemoLine">＋ Add product</button></div>
+   <div id="salesMemoLines" class="sales-memo-lines"></div>
+   <p class="hint sales-stock-hint">Only products with available Inventory stock can be selected. Saving a memo reduces the available stock automatically.</p>
+   <div class="total-preview"><span>Sales memo total</span><strong id="salesMemoTotal">৳0.00</strong></div>
+   <button class="primary full" id="salesMemoSubmit">Save sales memo</button>
+   <button class="secondary full" type="button" id="cancelSalesMemoEdit">Cancel</button>
+  </form>
+ </div>
+ <div class="section-head form-section-head"><h3>Sales memo register</h3><span class="muted" id="salesMemoCount">0 memos</span></div>
+ <div id="salesMemoList" class="list"></div>
+ <div class="section-head form-section-head"><h3 id="incomeFormTitle">Add other income</h3><span class="muted" id="incomeEditHint" hidden>Editing saved income</span></div>
  <form id="incomeForm" class="form">
   <label>Income type <span class="select-add"><select id="incomeSource" required></select><button type="button" class="mini-add" id="addIncomeHead">＋ Add type</button></span></label>
   <label>Income by (person who earned) <span class="select-add"><select id="incomeBy" required></select><button type="button" class="mini-add" id="addIncomePerson">＋ Add person</button></span></label>
@@ -254,44 +350,120 @@
   <div id="purchaseCategoryList" class="list category-settings-list"></div>
   <p class="hint">Default categories: Assets, Staples and Fixed Ex. You can add, rename or remove categories here.</p>
  </section>
+ <section class="settings-card">
+  <div class="section-head settings-section-head"><div><h3>Data & backup</h3><p class="settings-copy">Export a backup regularly before clearing browser data or changing devices.</p></div></div>
+  <div class="quick"><button class="secondary" id="exportBtn">Export backup</button><label class="secondary import">Import backup<input id="importFile" type="file" accept="application/json"></label></div>
+  <p class="hint">Your data stays on this device. Backup files contain your local records and can be restored here.</p>
+ </section>
 </section>
 <section id="reports" class="panel">
- <div class="section-head"><h2>Reports</h2></div>
- <div class="report-switch"><button class="period active" data-period="week">Weekly</button><button class="period" data-period="month">Monthly</button></div>
- <article class="report-card"><div class="eyebrow" id="reportLabel">THIS WEEK</div><strong class="report-total" id="reportTotal">৳0.00</strong><div class="muted" id="reportRange"></div><div class="bars" id="reportBars"></div></article>
- <div class="section-head"><h2>By category</h2></div><div id="categoryBreakdown" class="list"></div>
- <div class="section-head"><h2>Family costing</h2><span class="pill">Selected period</span></div>
- <div class="cards costing-summary">
-  <article class="stat"><span class="muted">Family-shared expenses</span><strong id="familyCostTotal">৳0.00</strong><small id="familyCostMemberCount">Split across 0 members</small></article>
-  <article class="stat"><span class="muted">Average share per member</span><strong id="familyCostPerMember">৳0.00</strong><small>Equal share of family costs</small></article>
-  <article class="stat"><span class="muted">Member-assigned expenses</span><strong id="memberDirectCostTotal">৳0.00</strong><small>Assigned directly to a person</small></article>
-  <article class="stat"><span class="muted">Not assigned</span><strong id="unassignedCostTotal">৳0.00</strong><small>Older / unallocated expenses</small></article>
+ <div class="section-head"><h2>Reports</h2><span class="pill">Date-range reports</span></div>
+ <div class="report-date-range report-global-date-range" aria-label="Report date range">
+  <label>From date <input id="productReportFromDate" type="date" aria-label="Report from date" required></label>
+  <label>To date <input id="productReportToDate" type="date" aria-label="Report to date" required></label>
  </div>
- <div class="section-head"><h2>Member-wise costing</h2><span class="muted" id="memberCostCount">0 members</span></div>
- <div id="memberCostBreakdown" class="list"></div>
- <p class="hint" id="familyCostNote">Family costs are divided equally among the current members in Profile. Older expenses without a cost assignment stay unassigned until edited.</p>
- <div class="section-head"><h2>Product purchase report</h2><span class="pill">By individual product</span></div>
- <label class="report-filter-label">Purchase report period <select id="productReportPeriod"><option value="week" selected>Weekly</option><option value="month">Monthly</option><option value="year">Yearly</option></select></label>
- <div id="productPurchaseReport" class="list"></div>
+ <p class="hint report-date-hint" id="reportDateHint">Both dates are included. All report sections use this date range. Creditor and debtor balances are shown as of the To date.</p>
 
- <div class="section-head"><h2>Income report</h2><span class="pill">Selected period</span></div>
- <div class="cards"><article class="stat"><span class="muted">Income entries</span><strong id="reportIncomeTotal">৳0.00</strong><small>by entry date</small></article><article class="stat"><span class="muted">Money collected</span><strong id="reportIncomeCollected">৳0.00</strong><small>by collection date</small></article></div>
- <div class="section-head"><h2>Income by person</h2></div><label class="report-filter-label">Show person <select id="reportIncomePersonFilter"></select></label><div id="incomePersonBreakdown" class="list"></div>
- <div class="section-head"><h2>Income by type</h2></div><div id="incomeHeadBreakdown" class="list"></div>
- <div class="section-head"><h2>Balance overview</h2></div><div class="cards balance-cards"><article class="stat"><span class="muted">Earned balance</span><strong id="reportEarnedBalance">৳0.00</strong><small>Cash + bank</small></article><article class="stat"><span class="muted">Cash</span><strong id="reportCashBalance">৳0.00</strong><small>Cash available</small></article><article class="stat"><span class="muted">Bank</span><strong id="reportBankBalance">৳0.00</strong><small>Bank available</small></article></div>
- <div class="section-head"><h2>Due payment report</h2><span class="pill">All outstanding dues</span></div>
- <div class="cards due-summary"><article class="stat"><span class="muted">I owe</span><strong id="iOweTotal">৳0.00</strong><small>Money you need to pay</small></article><article class="stat"><span class="muted">Others owe me</span><strong id="owedToMeTotal">৳0.00</strong><small>Money to receive</small></article></div>
- <div class="section-head"><h2>People I owe</h2></div><div id="iOweList" class="list"></div>
- <div class="section-head"><h2>People who owe me</h2></div><div id="owedToMeList" class="list"></div>
- <div class="section-head"><h2>Income due to collect</h2></div><div id="incomeDueList" class="list"></div>
- <p class="hint" id="unassignedDueHint" hidden></p>
- <div class="section-head"><h2>Quest achievement</h2></div><article class="stat"><strong id="achievementRate">0%</strong><small>completion rate for selected period</small></article>
- <div class="section-head"><h2>Data & backup</h2></div><div class="quick"><button class="secondary" id="exportBtn">Export backup</button><label class="secondary import">Import backup<input id="importFile" type="file" accept="application/json"></label></div><p class="hint">Your data stays on this device. Export a backup regularly before clearing browser data or changing phones.</p>
+ <section class="report-pane" data-report-pane="purchase">
+  <div class="section-head"><h2>Purchase cost by product type</h2><span class="pill">Selected date range</span></div>
+  <div id="productTypePurchaseReport" class="list"></div>
+  <div class="section-head"><h2>Purchase cost by product</h2><span class="pill">Individual products</span></div>
+  <div id="productPurchaseReport" class="list"></div>
+ </section>
+
+ <section class="report-pane" data-report-pane="assets" hidden>
+  <div class="section-head"><h2>Assets Report</h2><span class="pill">Purchase category: Assets</span></div>
+  <div class="cards">
+   <article class="stat"><span class="muted">Asset purchases</span><strong id="assetPurchaseTotal">৳0.00</strong><small>In selected date range</small></article>
+   <article class="stat"><span class="muted">Asset purchase lines</span><strong id="assetPurchaseLines">0</strong><small>Products recorded</small></article>
+   <article class="stat"><span class="muted">Asset bills</span><strong id="assetPurchaseBills">0</strong><small>Purchase bills</small></article>
+  </div>
+  <div class="section-head"><h3>Asset purchase details</h3></div>
+  <div id="assetPurchaseReportList" class="list"></div>
+ </section>
+
+ <section class="report-pane" data-report-pane="members" hidden>
+  <div class="section-head"><h2>Members Report</h2><span class="pill">Selected date range</span></div>
+  <div class="section-head"><h2>Member-wise costing</h2><span class="pill" id="memberCostCount">0 members</span></div>
+  <div class="cards costing-summary">
+   <article class="stat"><span class="muted">Multi-member assigned costs</span><strong id="familyCostTotal">৳0.00</strong><small id="familyCostMemberCount">Shared across 0 selected people</small></article>
+   <article class="stat"><span class="muted">Average shared share per person</span><strong id="familyCostPerMember">৳0.00</strong><small>Average across selected recipients</small></article>
+   <article class="stat"><span class="muted">Single-member assigned costs</span><strong id="memberDirectCostTotal">৳0.00</strong><small>Assigned to one person</small></article>
+   <article class="stat"><span class="muted">Not assigned</span><strong id="unassignedCostTotal">৳0.00</strong><small>Older / unallocated expenses</small></article>
+  </div>
+  <div id="memberCostBreakdown" class="list"></div>
+  <p class="hint" id="familyCostNote">Each expense or purchased product is divided equally among only the people selected for that entry.</p>
+  <div class="section-head"><h2>Member product consumption & cost list</h2><span class="pill">Selected date range</span></div>
+  <label class="report-filter-label">Show product consumption for <select id="memberProductFilter"><option value="all">All products</option></select></label>
+  <p class="hint member-consumption-hint" id="memberConsumptionHint">Choose an individual member to see their consumed products, quantities and allocated costs for the selected report dates.</p>
+  <div id="memberProductConsumption" class="list"></div>
+  <div class="section-head"><h2>Guest entry & stay register</h2><span class="pill">Entry / out date</span></div>
+  <form id="guestForm" class="form guest-form">
+   <div class="family-member-add"><input id="newGuestName" maxlength="80" placeholder="Add a guest name" aria-label="New guest name"><button class="secondary" type="button" id="addGuestName">＋ Add guest</button></div>
+   <label>Guest entry date <input id="guestEntryDate" type="date" required></label>
+   <div class="assignment-field"><strong>Which members are guests? (multiple selection)</strong><div id="guestMemberOptions" class="member-check-list"></div></div>
+   <label>Guest purpose <input id="guestPurpose" maxlength="120" placeholder="e.g. Family visit, medical stay, occasion"></label>
+   <button class="primary full" type="submit">Save guest entry</button>
+  </form>
+  <div class="section-head"><h3>Guest stays</h3><span class="muted">Set the out date when guests leave</span></div>
+  <div id="guestStayList" class="list"></div>
+  <div class="section-head"><h3>Guest cost report</h3><span class="muted">Costs within the selected report range</span></div>
+  <p class="hint guest-report-hint">Guest purpose cost totals expenses and products assigned only to the selected guest(s). Shared family cost and the guests' share are calculated only for the selected date range overlapping each stay.</p>
+  <div id="guestReport" class="list"></div>
+  <div class="section-head"><h2>Quest achievement</h2></div><article class="stat"><strong id="achievementRate">0%</strong><small>completion rate for selected period</small></article>
+ </section>
+
+ <section class="report-pane" data-report-pane="production" hidden>
+  <div class="section-head"><h2>Production Report</h2><span class="pill">Selected date range</span></div>
+  <div class="cards">
+   <article class="stat"><span class="muted">Production batches</span><strong id="productionReportBatchCount">0</strong><small>Saved batches in range</small></article>
+   <article class="stat"><span class="muted">Produced quantity</span><strong id="productionReportQuantity">0</strong><small id="productionReportUnitLabel">Output quantity</small></article>
+   <article class="stat"><span class="muted">Production cost</span><strong id="productionReportCost">৳0.00</strong><small>Material + electricity + transit</small></article>
+  </div>
+  <div id="productionReportList" class="list"></div>
+ </section>
+
+ <section class="report-pane" data-report-pane="creditors" hidden>
+  <article class="stat report-total-stat"><span class="muted">Total creditors · supplier + expense dues</span><strong id="iOweTotal">৳0.00</strong><small id="creditorAsOfLabel">Outstanding as of the To date</small></article>
+  <div class="section-head"><h2>Supplier creditors</h2><span class="pill">Supplier balances</span></div>
+  <div id="supplierCreditorReport" class="list"></div>
+  <div class="section-head"><h2>Other creditors · Expenses I owe</h2></div>
+  <article class="stat report-total-stat"><span class="muted">Total expense dues to pay</span><strong id="iOweExpenseTotal">৳0.00</strong><small>Outstanding as of the To date</small></article>
+  <div id="iOweList" class="list"></div>
+  <p class="hint" id="unassignedDueHint" hidden></p>
+ </section>
+
+ <section class="report-pane" data-report-pane="debitors" hidden>
+  <div class="section-head"><h2>Debitors · People who owe me</h2><span class="pill" id="debitorAsOfLabel">Balance at To date</span></div>
+  <article class="stat report-total-stat"><span class="muted">Total debtors · receivable expenses + income due</span><strong id="owedToMeTotal">৳0.00</strong><small>Outstanding as of the To date</small></article>
+  <article class="stat report-total-stat"><span class="muted">Total receivable expenses</span><strong id="owedToMeExpenseTotal">৳0.00</strong><small>Outstanding as of the To date</small></article>
+  <div id="owedToMeList" class="list"></div>
+  <div class="section-head"><h2>Income due to collect</h2></div>
+  <article class="stat report-total-stat"><span class="muted">Total income due</span><strong id="incomeDueTotal">৳0.00</strong><small>Outstanding as of the To date</small></article>
+  <div id="incomeDueList" class="list"></div>
+ </section>
+
+ <section class="report-pane" data-report-pane="cost" hidden>
+  <article class="report-card"><div class="eyebrow" id="reportLabel">SELECTED DATE RANGE</div><strong class="report-total" id="reportTotal">৳0.00</strong><div class="muted" id="reportRange"></div><div class="bars" id="reportBars"></div></article>
+  <div class="section-head"><h2>Cost by category</h2></div><div id="categoryBreakdown" class="list"></div>
+ </section>
+
+ <section class="report-pane" data-report-pane="income" hidden>
+  <div class="section-head"><h2>Income report</h2><span class="pill">Selected date range</span></div>
+  <div class="cards"><article class="stat"><span class="muted">Income entries</span><strong id="reportIncomeTotal">৳0.00</strong><small>by entry date</small></article><article class="stat"><span class="muted">Money collected</span><strong id="reportIncomeCollected">৳0.00</strong><small>by collection date</small></article></div>
+  <div class="section-head"><h2>Income by person</h2></div><label class="report-filter-label">Show person <select id="reportIncomePersonFilter"></select></label><div id="incomePersonBreakdown" class="list"></div>
+  <div class="section-head"><h2>Income by type</h2></div><div id="incomeHeadBreakdown" class="list"></div>
+  <div class="section-head"><h2>Current cash & bank balance</h2><span class="pill">All-time balance</span></div>
+  <p class="hint">These balances reflect all saved transactions, not only the selected report date range.</p>
+  <div class="cards balance-cards"><article class="stat"><span class="muted">Earned balance</span><strong id="reportEarnedBalance">৳0.00</strong><small>Cash + bank</small></article><article class="stat"><span class="muted">Cash</span><strong id="reportCashBalance">৳0.00</strong><small>Cash available</small></article><article class="stat"><span class="muted">Bank</span><strong id="reportBankBalance">৳0.00</strong><small>Bank available</small></article></div>
+ </section>
+
+
 </section>
 </main>
 <footer>DayQuest · Private by design · Works offline</footer>
 </div>
 </div>
 </div>
-<script src="app.js?v=20261112-line-amount-calculation"></script>
+<script src="app.js?v=20261114-reports-submenus-units"></script>
 </body></html>

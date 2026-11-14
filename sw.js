@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v21-line-amount-calculation';
+const CACHE = 'dayquest-cache-v38-reports-submenus-units';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261112-line-amount-calculation',
-  './app.js?v=20261112-line-amount-calculation',
+  './style.css?v=20261114-reports-submenus-units',
+  './app.js?v=20261114-reports-submenus-units',
   './manifest.json'
 ];
 

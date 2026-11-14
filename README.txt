@@ -1,7 +1,7 @@
 DAYQUEST — OFFLINE EXPENSE & DAILY QUEST TRACKER
 
 WHAT IT DOES
-- Add, search, filter, edit and delete daily expenses.
+- Add, search, filter, edit and delete daily expenses from the Expenses → Add / manage expenses sidebar submenu.
 - Add date-wise income entries with separate Income Type (Salary, Business, Sales, Freelance, Rent, Gift, Other) and Income By (person who earned it) fields; add custom income types and custom people.
 - Record full or partial due collections later, with a separate collection date and Cash/Bank method. Income entries show collection history, collected amount and remaining due.
 - Filter income by date, Income Type and Income By person; income entries are grouped by date and daily totals are shown.
@@ -16,6 +16,7 @@ WHAT IT DOES
 - Overview with today's spending, weekly/monthly totals and today's quest progress.
 - Weekly and monthly reports, daily spending bars, category breakdown, quest completion rate and a separate all-time due payment report.
 - Export/import a JSON backup. Data is stored locally in this browser on this device.
+- Sidebar organization: Expenses → Purchase; Inventory; Supplier accounts / creditors; Outstanding → Pay or collect an expense due.
 
 ANDROID INSTALL (PWA)
 1. Upload the contents of this folder to a static HTTPS host (for example GitHub Pages).
@@ -24,7 +25,7 @@ ANDROID INSTALL (PWA)
 2. Open the hosted HTTPS address in Chrome on your Android phone while online.
 3. Use Chrome menu (⋮) > Install app or Add to Home screen.
 4. Open DayQuest once while online. After its files are cached, it works offline.
-5. Export a backup from Reports > Data & backup before clearing browser data or changing phones.
+5. Export a backup from Settings > Data & backup before clearing browser data or changing phones.
 
 PRIVACY / LIMITATIONS
 - A first-use local login screen can be set up with a username and password. The password is stored as a salted PBKDF2 hash in this browser.
@@ -36,7 +37,7 @@ PRIVACY / LIMITATIONS
 
 
 Saved expense editing
-- Open Expenses and tap Edit beside a saved expense.
+- Open the Expenses sidebar group → Add / manage expenses and tap Edit beside a saved expense.
 - Change any field and tap Update expense.
 - Tap Cancel edit to leave the saved entry unchanged.
 - Editing updates the existing expense record instead of creating a duplicate.
@@ -48,7 +49,7 @@ Income and due collection
 - In the saved income list, tap Collect to record full or partial payment received later. Choose collection date and Cash or Bank.
 - The outstanding due decreases automatically; once fully collected, the entry is marked Fully collected.
 - Export a fresh backup after entering income records so they are included in your backup file.
-- Expense due payments and collections are recorded as settlements with amount, date, method and note; outstanding balances decrease automatically.
+- To settle an expense due, open Outstanding > Pay or collect an expense due, select a listed outstanding entry, and record the amount, payment date, method and note. Partial settlements are supported.
 
 
 Saved expense list layout (mobile)
@@ -80,7 +81,7 @@ After uploading to GitHub Pages, open the site and press Ctrl+Shift+R. If an old
 LOCAL LOGIN
 - On first launch, create a username and a password with at least 8 characters.
 - On later visits, enter the username and password to open DayQuest. The session stays open in the current browser tab until you log out or the tab session ends.
-- Use Log out in the top-right header to lock the app.
+- Open the side menu and use Log out at the bottom to lock the app.
 - If you forget the password, choose 'Forgot password? Reset this device login' on the login screen. This resets only the local login; it does not delete expenses, income, quests or profile data.
 - This local login is for convenience, not high-security protection. Anyone who can access browser storage or developer tools may bypass it. Do not use this as a substitute for server authentication when protecting sensitive or shared financial data.
 
@@ -93,25 +94,25 @@ INCOME TYPE AND INCOME BY PERSON
 
 
 PURCHASE BILLS, SUPPLIER CREDITORS AND PRODUCT PURCHASE REPORT
-- Open Expenses > Purchase bill entry to record one supplier bill with multiple product lines.
+- Open the Expenses sidebar group > Purchase to enter a supplier bill and review recent bills.
 - Each line stores product name, optional pack size/specification (for example 300 gram), quantity, unit, rate per unit and line amount.
 - Enter how much was paid immediately by Cash and by Bank. The remaining amount is calculated automatically as Credit / payable to supplier. Cash and Bank portions reduce those balances on the bill date; credit is shown as a supplier liability and reduces the selected balance only when a later supplier payment is recorded.
 - Saving a bill creates/updates the supplier account. Open a supplier such as Rahman Store to see bill dates, bill totals, individual products, quantities, units, rates, line amounts, cash/bank/credit split, remaining credit and payment history.
-- Use Pay supplier due in the supplier account for full or partial payments. Choose the payment date and whether the payment came from Cash or Bank. Payments reduce the supplier's outstanding creditor balance and the matching cash/bank balance.
-- Every product line saved on a purchase bill is counted as bought/consumed for product reporting. There is no separate consumption-entry form.
-- Reports > Product purchase report offers Weekly, Monthly and Yearly periods. Each individual product shows the quantity bought, total purchase cost, average rate per displayed unit, and number of bills/lines in the selected period. A summary shows the overall purchase cost and number of products for that period.
+- Use Pay supplier due in the supplier account for full or partial settlements. Choose the payment date, Cash or Bank amount, and any Discount Received. The payment amount reduces the selected cash/bank balance; the discount reduces the supplier creditor balance without changing cash/bank.
+- Each purchase line creates a stock lot in Inventory. Stock can be assigned to one or more family members and consumed later; the app tracks purchased, sold, other-used and remaining quantities.
+- Reports > Purchase Reports uses a From Date / To Date filter. Product type and individual product breakdowns show quantities, landed purchase costs, average rates and bill/line counts in the selected inclusive date range.
 - Product purchase costs are already included in purchase bill spending. Recording a bill deducts the actual Cash/Bank paid portion once; supplier credit reduces Cash/Bank only when paid later.
 - Existing old consumption entries in backups are retained for compatibility, but are no longer needed, displayed or used in product purchase reports.
 - All purchase bills and supplier payments are included in JSON backups and remain on this browser/device (no cloud sync).
 
 PRODUCT CATALOG
-- Use + Add New Product at the top of Purchase bill entry to save a product name before creating a bill. It fills the first empty product line automatically.
+- In Expenses > Purchase, use the Add button beside Product Name to create or reuse a product and select it on that purchase line.
 - When entering bill lines, click/type in Product name to see saved product suggestions. Choose a saved name or type a new one.
 - Add another line adds a further product row to the current supplier bill.
 
 SIDE MENU AND SETTINGS (2026-11-12)
-- All primary app sections are available from the left side menu: Overview, Expenses, Income, Daily quests, Reports, Profile and Settings.
-- On a desktop browser, the side menu stays visible beside the app. On a phone/tablet, use the Menu button in the header to open the navigation drawer; selecting a section closes it.
+- Main destinations are available from the left side menu: Overview, Expenses > Purchase, Inventory, Production, Supplier accounts / creditors, Outstanding > Pay or collect an expense due, Income, Daily quests, Reports, Profile and Settings.
+- On a desktop browser, the side menu stays visible beside the app. On a phone/tablet, use the compact three-line hamburger button in the header to open the navigation drawer; selecting a destination closes it.
 - Open Settings > Theme color to choose a custom brand color or one of the color presets. The selection is saved in the DayQuest local database and restored on the next visit.
 - Open Settings > Purchase categories to add, rename or remove purchase categories. The default list is Assets, Staples and Fixed Ex.
 - Select a Purchase category when saving a purchase bill. The selected category appears in the bill list, supplier bill details and Reports > By category totals.
@@ -125,3 +126,34 @@ FAMILY PROFILE AND FAMILY-MEMBER INCOME ATTRIBUTION (2026-11-12)
 - The Profile full name is automatically added as a family member if it is not already listed.
 - Removing a member from the family list does not rewrite or delete historical income entries. Existing income records keep the person recorded when they were created.
 - Family name, member list and profile photo are stored in the existing dayquest_v1 localStorage record. No server account, cloud photo storage or multi-device sync is provided by GitHub Pages.
+
+
+LATEST NAVIGATION UPDATE (2026-11-14)
+The top app bar no longer displays the DayQuest title. It now contains a compact three-line hamburger button for opening/hiding the side menu, plus the Install control when available. Desktop hide/show preference and mobile slide-out behavior are retained.
+
+Product type-wise purchase reporting: open Reports and use the Purchase cost by product type section. The shared From Date / To Date filter applies to both the type summary and individual product breakdown.
+
+
+LATEST UI UPDATE — INLINE PURCHASE CATALOG ADD BUTTONS
+- Removed the Add New Product and Add Product Type buttons from the top of the Purchase page.
+- Each purchase line now has a small Add button beside Product Name and another beside Product Type.
+- Add beside Product Name creates or reuses a product and selects it on that specific purchase line.
+- Add beside Product Type creates or reuses a product type and selects it on that specific purchase line.
+- Existing product and product-type catalogs, purchase lines, inventory, reports, and saved bill data are unchanged.
+
+
+Cost report member product consumption
+Select a member in Reports > Cost > Member product consumption & cost list to see their stock consumption rows for the same From/To dates. Values use the assigned inventory lot's landed unit cost, with shared costs divided by the number of assigned members. The detail ledger is not added again to totals.
+
+
+New Product and New Material shortcuts
+- In Purchase, use New product above Recent purchase bills to add a product to the saved catalog and select it in a blank line of the current bill (or create a new line when needed).
+- In Production, use New material above the Production register to add another inventory-material row to the production form.
+
+
+REPORTS MENU AND UNITS (2026-11-14)
+- All reports are grouped under the Reports expandable sidebar menu: Members Report, Production Report, Cost Report, Income Report, Creditors, Debtors, Assets, Purchase Reports and All Reports.
+- The same From Date / To Date selection is shared by every report. All Reports displays every report pane together.
+- Member costing, member product consumption and the guest stay/cost register are in Members Report. Production batches and produced quantities are in Production Report. Asset purchases are filtered from purchase bills whose category is Assets.
+- Data & backup is under Settings, keeping the Reports area focused on financial and operational reports.
+- Custom unit names can be added beside Purchase line Unit, Production Output Unit and Expense Unit. Production material and Sales Memo units follow the selected inventory lot so stock quantities cannot be converted accidentally.

@@ -68,3 +68,133 @@ PURCHASE LINE AMOUNT ENTRY & AUTO-CALCULATION (2026-11-12)
 - Manually changing quantity or rate continues to recalculate the line amount. Line amounts are rounded to two decimal places for bill totals, while automatically derived quantity/rate values retain six decimal places.
 - Saved bill totals, inventory cost, supplier balance, and member/family costing use the entered line amount, keeping the saved bill value consistent. Existing saved bill lines retain their recorded amounts and remain editable.
 - Updated application asset URLs and service-worker cache version so deployed browsers load this change.
+
+
+UPDATE — MULTI-MEMBER EXPENSES & GUEST STAYS
+
+Expense assignment now uses checkboxes instead of a Family / single-member selector. Select one or more family members or registered guest names; the entry amount is divided equally among the selected people. Leave all people unselected to keep the expense unassigned.
+
+Inventory product lots use the same multiple-person allocation. This makes purchase-product costs consistent with expense costs. Existing Family-assigned and individual-member expenses / inventory lines are migrated to member lists so historical data remains included.
+
+Reports now show member-wise costs based on each entry's selected recipients. Guest names appear in the member-cost list while their stay overlaps the selected reporting period.
+
+A Guest Entry & Stay Register is available in Reports. Add guest names, select multiple guests, enter the guest entry date and purpose, then save the stay. When guests leave, set the out date in the Guest Stays list. The Guest Cost Report shows entry date, out date, purpose, guest-purpose cost (single-guest assignments), total shared family cost during the stay date range, and the selected guests' allocated share of those shared costs.
+
+Guest names, stays, assignments, and out dates are included in normal local storage and JSON backup export/import. The service-worker cache version was updated.
+
+
+UI branding and navigation update (November 2026)
+- Removed the bill-number format helper note from the purchase form.
+- Moved the signed-in username and Log out control from the top header into the side menu.
+- Removed the “YOUR PERSONAL DASHBOARD” header tagline.
+- The app title now uses “{Family name} DayQuest” when a family name is entered in Profile, and updates the browser tab title and side-menu branding as well.
+- Kept the Install control in the top header.
+
+
+COMPACT HAMBURGER NAVIGATION (2026-11-14)
+- Removed the DayQuest / family-name title from the top app bar. The family-branded title remains in the side menu, login screen, and browser tab.
+- Replaced the text-based Hide menu / Show menu / Menu / Close control with a compact three-line hamburger button.
+- Kept the existing desktop sidebar collapse preference and mobile slide-out navigation behavior. Screen-reader label, title tooltip, and expanded state update with the menu state.
+- Kept the Install action in the top bar.
+- Bumped CSS/JS asset versions and service-worker cache so deployed browsers load the new header.
+
+SIDEBAR NAVIGATION REORGANIZATION (2026-11-14)
+- Removed the old single combined Expenses destination and separated its workflows into sidebar pages.
+- Added an Expenses sidebar group with “Add / manage expenses” and “Recent purchase bills” submenus. Purchase bill entry and the recent bill register are together under Recent purchase bills.
+- Moved Inventory & product assignment to its own top-level Inventory destination.
+- Moved Supplier accounts / creditors to its own top-level sidebar destination, including supplier account details and payment forms.
+- Added an Outstanding sidebar group with “Pay or collect an expense due” as a submenu. The page lists unsettled expense dues; selecting Pay due or Collect due opens the existing settlement form.
+- Preserved the existing expense, purchase bill, inventory, supplier ledger and due settlement records and forms. Home quick actions and report links now route to the new destinations.
+- Kept all data in the existing dayquest_v1 local storage database; no migration or data reset is required. Updated the stylesheet/script query strings and service-worker cache version.
+
+
+PURCHASE MENU & PRODUCT TYPES (2026-11-14)
+- Removed the “Add / manage expenses” item from the Expenses sidebar submenu and renamed “Recent purchase bills” to “Purchase”. The purchase page continues to contain bill entry and the recent purchase bill register.
+- Added a Product type selector to every product line on a purchase bill. Product types are per line, independent from the bill-level Purchase category.
+- Added “Add Product Type” so the household can create custom types such as Medicine, Grocery, Household, Personal Care, or other categories, then select them for each purchased product.
+- Saved product types with purchase lines, restored them when editing bills, displayed them in Inventory and Supplier account bill details, and included them in normal JSON backup export/import.
+- Older purchase lines and older backups without a product type remain compatible and are assigned the default “Other” type; existing product costs, quantities, assignments, and bill numbers are preserved.
+- Updated JavaScript/CSS asset URLs and the service-worker cache version.
+
+
+PRODUCT TYPE-WISE PURCHASE REPORT UPDATE
+- Added a purchase cost report grouped by saved product type (for example Medicine, Food & Grocery, Household, or custom types).
+- The selected weekly, monthly, or yearly report period filters the type-wise summary and the individual-product report consistently.
+- Each product-type row shows total cost, distinct products, purchase lines, bill count, and share of purchase cost.
+- Product type is taken from each saved purchase line; missing legacy types are treated as Other.
+- Updated service-worker cache version so deployed browsers fetch the latest report assets.
+
+
+PRODUCT PURCHASE REPORT — CUSTOM DATE RANGE (2026-11-14)
+- Replaced the preset weekly/monthly/yearly purchase report selector with From date and To date inputs.
+- Both dates are inclusive; the same selected range filters the product-type summary and individual product purchase report.
+- Defaults to the first day of the current month through today.
+- Shows a validation message when the start date is after the end date or either date is missing.
+- Bumped the app script and service-worker cache versions to ensure the updated report loads after deployment.
+
+
+LATEST UI UPDATE — INLINE PURCHASE CATALOG ADD BUTTONS
+- Removed the Add New Product and Add Product Type buttons from the top of the Purchase page.
+- Each purchase line now has a small Add button beside Product Name and another beside Product Type.
+- Add beside Product Name creates or reuses a product and selects it on that specific purchase line.
+- Add beside Product Type creates or reuses a product type and selects it on that specific purchase line.
+- Existing product and product-type catalogs, purchase lines, inventory, reports, and saved bill data are unchanged.
+
+
+Reports update (2026-11-14)
+- Reports are organized into Purchase Reports, Creditors, Debitors, Cost, and Income sections.
+- One shared From date / To date range controls all report sections; both dates are included.
+- Creditor and debtor balances are shown as of the selected To date, including balances carried from before the From date.
+- Long cost ranges use monthly chart buckets; ranges up to 31 days use daily buckets.
+
+
+Recent expenses overview update (November 14, 2026)
+- The Overview Recent Expenses feed now combines regular expense entries with individual purchased product lines.
+- Purchase rows show the short product name, purchase date, quantity/unit, and line amount.
+- Selecting a purchase row opens the matching bill and expands its product/inventory summary, including purchased, used, in-stock, and member assignment details.
+- The bill detail provides a direct action to open and highlight that product lot in Inventory.
+- Updated the service-worker cache version for the new overview and navigation behavior.
+
+
+SALES MEMO / STOCK-BASED INCOME UPDATE (2026-11-14)
+- Added a Sales Memo workflow inside Income while retaining the existing simple Add other income form for non-product receipts such as salary, rent, gifts, and other income.
+- Sales memos include a unique monthly memo number (SM-MM-YYYY-N), date, customer name, optional phone/address, prepared-by person, payment method (Cash / Bank / Due), memo note, and multiple product lines with quantity, unit, sale rate, and line amount.
+- Product selection is limited to items with available stock in Inventory. Saving a sales memo consumes stock from the oldest available purchase lots first (FIFO), and Inventory now shows Sold, Other used, and In stock quantities separately.
+- Sales memo totals are saved as Income entries under the Sales income type, so existing cash/bank balances, Due collection history, Income reports, date filters, and debtor balances remain connected without double-counting income.
+- Added a Sales memo register with Print, Edit, and Delete actions. The printable A4 memo shows seller/family name, customer details, memo number/date, product lines, quantity, rate, amount, total, payment received, balance due, notes, and signature lines.
+- Editing a saved memo temporarily releases its previous stock consumption for availability checks, then re-allocates stock on save. Deleting a sales memo removes its linked stock consumption (restoring stock) and its linked income entry. Existing simple income entries, purchase bills, and backup formats are preserved. Sales memo data is part of the existing income and consumption arrays and therefore included in JSON backup export/import.
+- Updated application asset query strings and service-worker cache version.
+
+PURCHASE COST ADJUSTMENTS, CREDITOR DISCOUNTS & PRODUCTION UPDATE (2026-11-14)
+- Purchase bills now include Transit Cost and Purchase Discount fields. The final bill total is products subtotal + transit cost - discount. Transit and discount are allocated proportionally across purchased product lines so each inventory lot receives a landed cost; inventory valuation, product costs, purchase reports, and member-cost reports use those allocated line costs.
+- Supplier / creditor payments now accept a Discount Received amount. The cash/bank payment remains the actual amount paid, while the discount is applied as an additional settlement against the supplier's outstanding balance. Supplier account history and the outstanding creditor report show the discount separately.
+- Added a Production menu and production register. A production batch can use one or more existing Inventory products and enter the quantity consumed from each material lot; materials are consumed FIFO and stock availability is validated against the selected production date.
+- Production forms record the finished product name, product type, size/specification, output quantity and unit, plus electricity and transit costs. The app shows material cost, total production cost, and cost per output unit before saving.
+- Saving production records the consumed inventory quantities and creates a finished-goods inventory lot with the calculated total and unit cost. Produced stock can be assigned to members, used in later production, or selected for Sales Memos. Production overhead is tracked separately in member/guest cost reports so ingredient purchase cost is not counted twice.
+- Production batches and their inventory consumption records are included in backup export/import. A batch cannot be deleted after its finished output has been used or sold; deleting an unused batch restores its material quantities.
+- Updated the application asset versions and service-worker cache name to refresh deployed files.
+
+
+Member product consumption report
+- Cost report includes a member selector for product stock consumption activity.
+- The selected member sees dated consumption entries, product names, quantities, landed unit costs, full costs, and their equal allocation share for the selected From/To range.
+- Sales memo and production-material stock movements are labelled separately from manual stock use.
+- The consumption ledger is informational and is not added again to Cost totals; source purchase and production costs remain counted once.
+
+
+Superseded purchase shortcut correction
+- The Add button beside Product Name remains in each purchase line and creates/selects a product on that line.
+- The separate New Product button above Recent purchase bills is removed.
+- New Material remains available above the Production register and adds a material row to the active production form.
+- Product Type Add remains beside Product Type.
+
+
+REPORTS SUBMENU, DEDICATED REPORTS & UNIT NAMES (2026-11-14)
+- Consolidated reports into the expandable Reports sidebar menu: Members Report, Production Report, Cost Report, Income Report, Creditors, Debtors, Assets, Purchase Reports and All Reports.
+- Each destination opens its own report pane; All Reports displays all panes together. The shared From Date / To Date selector applies across the report destinations.
+- Moved member-wise costing, individual product consumption, and guest entry/stay/cost details into Members Report. Cost Report focuses on overall cost and category breakdown.
+- Added a date-filtered Production Report with batch count, produced quantities grouped by unit, total production cost, materials, electricity, transit, and unit costs.
+- Added an Assets Report showing purchase lines from bills assigned to the Assets purchase category, including product, supplier, date, quantity/unit and cost.
+- Moved Data & backup from Reports to Settings. Operational pages remain focused on their entry, recent-record, inventory and account registers rather than duplicating reports.
+- Added custom-unit Add controls beside Purchase line Unit and Production Output Unit; Expense Unit retains its Add control. Production material quantities display the unit inherited from the selected inventory item, and Sales Memo quantities display the stock unit as read-only to preserve inventory consistency.
+- Preserves the existing local dayquest_v1 data, transactions, inventory, production batches, member assignments and backups. Updated asset URLs and service-worker cache version.
