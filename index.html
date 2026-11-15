@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261114-reports-submenus-units">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261115-quick-actions">
 <title>DayQuest</title>
 </head>
 <body>
@@ -44,6 +44,7 @@
    <details class="side-group" open>
     <summary class="side-link side-group-title"><span class="side-link-mark">02</span><span>Expenses</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
     <div class="side-submenu">
+     <button class="tab side-sub-link" data-tab="quickExpenses" type="button">Quick Expenses</button>
      <button class="tab side-sub-link" data-tab="purchaseBills" type="button">Purchase</button>
     </div>
    </details>
@@ -104,12 +105,12 @@
  <div class="section-head"><h2>Purchase bill entry</h2><span class="muted">Multiple products per supplier bill</span></div>
  <datalist id="productNameSuggestions"></datalist>
  <form id="purchaseBillForm" class="form purchase-form">
-  <label>Supplier / store <span class="select-add"><select id="purchaseSupplier" required><option value="">Select supplier</option></select><button type="button" class="mini-add" id="addSupplier">＋ Add supplier</button></span></label>
-  <label>Purchase category <select id="purchaseCategory" required><option value="">Select purchase category</option></select></label>
-  <div class="form-grid">
+  <div class="purchase-header-grid">
+   <label>Supplier / store <span class="select-add"><select id="purchaseSupplier"><option value="">Select supplier (optional for fully paid purchases)</option></select><button type="button" class="mini-add" id="addSupplier">＋ Add</button></span></label>
    <label>Auto bill number <input id="purchaseBillNo" maxlength="50" placeholder="Generated automatically" readonly aria-readonly="true"></label>
    <label>Purchase date <input id="purchaseDate" type="date" required></label>
   </div>
+  <p class="hint purchase-edit-hint" id="purchaseEditHint" hidden>Edit the saved bill and select Update recent bill. Compatible units convert automatically; custom unit corrections keep the entered quantity. Inventory, linked stock use, production material cost, supplier balances and all date-range reports recalculate after saving.</p>
   <div class="section-head form-section-head purchase-lines-heading"><h3>Products in this bill</h3></div>
   <div id="purchaseLines" class="purchase-lines"></div>
   <div class="purchase-add-line-row"><button type="button" class="mini-add" id="addPurchaseLine">＋ Add Line</button></div>
@@ -127,32 +128,56 @@
    <label>Bank paid now <input id="purchaseBankPaid" type="number" min="0" step="0.01" value="0"></label>
   </div>
   <div class="total-preview credit-preview"><span>Credit / payable to supplier</span><strong id="purchaseCreditTotal">৳0.00</strong></div>
-  <p class="hint">Cash and bank payments reduce their balances immediately. The remaining credit is saved under the supplier account and reduces your balance only when you pay the supplier later.</p>
-  <label>Bill note <input id="purchaseNote" maxlength="120" placeholder="Optional note"></label>
-  <button class="primary full" id="purchaseBillSubmit">Save purchase bill</button>
-  <button class="secondary full" type="button" id="cancelPurchaseEdit" hidden>Cancel edit</button>
+  <p class="hint purchase-payment-hint">Unpaid balance is tracked under the supplier account and reduces when you pay the supplier.</p>
+  <label class="purchase-note-field">Bill note <input id="purchaseNote" maxlength="120" placeholder="Optional note"></label>
+  <div class="purchase-form-actions"><button class="primary" id="purchaseBillSubmit">Save purchase bill</button><button class="secondary" type="button" id="cancelPurchaseEdit" hidden>Cancel edit</button></div>
  </form>
  <div class="section-head history-section-head"><div><h3>Recent purchase bills</h3><span class="muted" id="purchaseBillCount">0 bills</span></div></div>
  <div id="purchaseBillList" class="list"></div>
 
 </section>
+<section id="quickExpenses" class="panel">
+ <div class="section-head"><div><h2>Quick Expenses</h2><span class="muted">Create fixed-rate expense and income buttons</span></div><span class="pill" id="quickActionCount">0 buttons</span></div>
+ <p class="hint quick-action-intro">Set a fixed rate for each button. The counter starts at 1; use − or + to change the quantity, then record it. Each record is saved as a normal expense or income and included in balances and reports.</p>
+ <div class="section-head form-section-head"><h3 id="quickActionFormTitle">Create quick button</h3></div>
+ <form id="quickActionForm" class="form quick-action-form">
+  <input id="quickActionId" type="hidden">
+  <div class="form-grid">
+   <label>Button name <input id="quickActionName" maxlength="60" placeholder="e.g. Tea, Bus fare, Daily sales" required></label>
+   <label>Button type <select id="quickActionType"><option value="expense">Expense</option><option value="income">Income</option></select></label>
+   <label>Fixed rate per click <input id="quickActionRate" type="number" min="0.01" step="0.01" placeholder="0.00" required></label>
+   <label>Payment method <select id="quickActionPayment"><option>Cash</option><option>Bank</option></select></label>
+  </div>
+  <div id="quickExpenseConfig" class="quick-action-config">
+   <label>Expense category <select id="quickActionCategory"><option>Food</option><option>Transport</option><option>Shopping</option><option>Bills</option><option>Health</option><option>Education</option><option>Entertainment</option><option>Other</option></select></label>
+   <div class="assignment-field"><strong>Assign expense cost to members</strong><div id="quickActionMembers" class="member-check-list"></div><p class="hint">The recorded amount is split equally among the selected people. Leave empty to keep it unassigned.</p></div>
+  </div>
+  <div id="quickIncomeConfig" class="quick-action-config" hidden>
+   <div class="form-grid">
+    <label>Income type <select id="quickActionIncomeType"></select></label>
+    <label>Income earned by <select id="quickActionIncomeBy"></select></label>
+   </div>
+  </div>
+  <div class="quick-action-form-tools"><button class="primary" id="quickActionSave">＋ Create button</button><button class="secondary" type="button" id="quickActionCancel" hidden>Cancel edit</button></div>
+ </form>
+ <div class="section-head"><h3>Your quick buttons</h3><span class="muted">Tap Record to save</span></div>
+ <div id="quickActionList" class="quick-action-list"></div>
+</section>
 <section id="inventory" class="panel">
- <div class="section-head"><h2>Inventory & product assignment</h2><span class="muted" id="inventoryCount">0 product lots · 0 assigned</span></div>
- <p class="hint inventory-hint">Each purchased product lot appears here. Select one person to assign the full product cost to them, or select multiple people to divide the cost equally among them. Use “Use stock” to reduce the available inventory quantity.</p>
+ <div class="section-head inventory-section-head"><div><h2>Inventory & product assignment</h2><span class="muted" id="inventoryCount">0 product lots · 0 assigned</span></div><div class="inventory-tools"><button type="button" class="secondary" id="inventoryExcelBtn">Excel</button><button type="button" class="secondary" id="inventoryPdfBtn">Statement PDF</button></div></div>
  <div id="inventoryList" class="list"></div>
-
 </section>
 <section id="production" class="panel">
  <div class="section-head"><div><h2>Production</h2><span class="muted">Use inventory materials to create a finished product</span></div><span class="pill" id="productionCount">0 batches</span></div>
  <form id="productionForm" class="form production-form">
   <div class="form-grid"><label>Production number <input id="productionNo" readonly aria-readonly="true"></label><label>Production date <input id="productionDate" type="date" required></label></div>
   <div class="section-head form-section-head"><h3>Finished product</h3></div>
-  <label>Product name <input id="productionProduct" list="productNameSuggestions" maxlength="80" placeholder="e.g. Homemade pickle" required></label>
-  <div class="form-grid"><label>Product type <select id="productionProductType" required></select></label><label>Product size / specification <input id="productionProductSize" maxlength="80" placeholder="e.g. 250 gram jar"></label></div>
-  <div class="form-grid"><label>Produced quantity <input id="productionQuantity" type="number" min="0.001" step="any" value="1" required></label><label>Output unit <span class="select-add"><select id="productionUnit"></select><button type="button" class="mini-add" id="addProductionUnit">＋ Add</button></span></label></div>
+  <div class="form-grid production-product-header"><label>Product name <input id="productionProduct" list="productNameSuggestions" maxlength="80" placeholder="e.g. Homemade pickle" required></label><label>Product type <select id="productionProductType" required></select></label></div>
+  <div class="production-output-grid"><label>Product size / specification <input id="productionProductSize" maxlength="80" placeholder="e.g. 250 gram jar"></label><label>Produced quantity <input id="productionQuantity" type="number" min="0.001" step="any" value="1" required></label><label>Output unit <span class="select-add"><select id="productionUnit"></select><button type="button" class="mini-add" id="addProductionUnit">＋ Add</button></span></label></div>
   <div class="section-head form-section-head production-input-heading"><h3>Inventory materials used</h3></div>
   <div id="productionInputs" class="production-inputs"></div>
-  <div class="form-grid"><label>Electricity cost <input id="productionElectricityCost" type="number" min="0" step="0.01" value="0"></label><label>Production transit cost <input id="productionTransitCost" type="number" min="0" step="0.01" value="0"></label></div>
+  <div class="production-new-material-row"><button type="button" class="mini-add" id="addProductionInput">＋ New Material</button></div>
+  <div class="form-grid production-overhead-grid"><label>Electricity cost <input id="productionElectricityCost" type="number" min="0" step="0.01" value="0"></label><label>Production transit cost <input id="productionTransitCost" type="number" min="0" step="0.01" value="0"></label></div>
   <div class="production-cost-preview">
    <div class="total-preview"><span>Material cost</span><strong id="productionMaterialCost">৳0.00</strong></div>
    <div class="total-preview"><span>Total production cost</span><strong id="productionTotalCost">৳0.00</strong></div>
@@ -161,7 +186,7 @@
   <p class="hint" id="productionCostHint">Material cost is calculated from FIFO inventory lot costs. Electricity and transit are added to the finished product's inventory cost.</p>
   <button class="primary full" id="productionSubmit">Save production & add to Inventory</button>
  </form>
- <div class="section-head history-section-head"><div><h3>Production register</h3><span class="muted">Finished product batches and costs</span></div><button type="button" class="mini-add" id="addProductionInput">＋ New material</button></div>
+ <div class="section-head history-section-head"><div><h3>Production register</h3><span class="muted">Finished product batches and costs</span></div></div>
  <div id="productionList" class="list"></div>
 </section>
 <section id="supplierAccounts" class="panel">
@@ -342,13 +367,24 @@
   </div>
  </section>
  <section class="settings-card">
-  <div class="section-head settings-section-head"><div><h3>Purchase categories</h3><p class="settings-copy">These categories are used on purchase bills and in expense reports.</p></div></div>
-  <form id="addPurchaseCategoryForm" class="category-add-form">
-   <input id="newPurchaseCategory" maxlength="40" placeholder="Add a category name" aria-label="New purchase category" required>
-   <button class="primary" type="submit">＋ Add category</button>
-  </form>
-  <div id="purchaseCategoryList" class="list category-settings-list"></div>
-  <p class="hint">Default categories: Assets, Staples and Fixed Ex. You can add, rename or remove categories here.</p>
+  <div class="section-head settings-section-head"><div><h3>Supplier requirement for credit purchases</h3><p class="settings-copy">Choose whether a supplier must be selected when a purchase bill has an unpaid balance.</p></div></div>
+  <label class="settings-toggle-row"><input id="requireSupplierForDuePurchase" type="checkbox" checked> <span>Supplier name is mandatory when a purchase has a due balance</span></label>
+  <p class="hint">When disabled, unpaid purchases without a supplier are recorded under “Unassigned supplier” so the due still appears in Creditors.</p>
+ </section>
+ <section class="settings-card">
+  <div class="section-head settings-section-head"><div><h3>Purchase bill editing</h3><p class="settings-copy">Control whether saved purchase bills can be edited from Purchase and Inventory.</p></div></div>
+  <label class="settings-toggle-row"><input id="allowPurchaseBillEdits" type="checkbox" checked> <span>Allow editing saved purchase bills</span></label>
+  <p class="hint">When enabled, saved bill changes refresh inventory values and all reports. Bills with recorded stock usage, production or sales are locked. If the supplier has payment history, keep the supplier, purchase date and outstanding credit amount unchanged to protect creditor allocations. Equivalent units such as kg/g and litre/ml convert automatically while preserving the line amount.</p>
+ </section>
+ <section class="settings-card">
+  <div class="section-head settings-section-head"><div><h3>Custom lists</h3><p class="settings-copy">Open any list to add, rename or manage its entries. Renaming updates saved references; deleting is blocked while an item is in use.</p></div></div>
+  <div class="settings-master-grid settings-master-accordions">
+   <details class="settings-master-group"><summary>Suppliers</summary><form id="addSettingSupplierForm" class="category-add-form"><input id="newSettingSupplier" maxlength="80" placeholder="Add supplier" required><button class="primary" type="submit">＋ Add</button></form><div id="settingsSupplierList" class="list category-settings-list"></div></details>
+   <details class="settings-master-group"><summary>Products</summary><form id="addSettingProductForm" class="category-add-form"><input id="newSettingProduct" maxlength="80" placeholder="Add product" required><button class="primary" type="submit">＋ Add</button></form><div id="settingsProductList" class="list category-settings-list"></div></details>
+   <details class="settings-master-group"><summary>Product types</summary><form id="addSettingProductTypeForm" class="category-add-form"><input id="newSettingProductType" maxlength="60" placeholder="Add product type" required><button class="primary" type="submit">＋ Add</button></form><div id="settingsProductTypeList" class="list category-settings-list"></div></details>
+   <details class="settings-master-group"><summary>Units</summary><form id="addSettingUnitForm" class="category-add-form"><input id="newSettingUnit" maxlength="30" placeholder="Add unit name" required><button class="primary" type="submit">＋ Add</button></form><div id="settingsUnitList" class="list category-settings-list"></div></details>
+   <details class="settings-master-group settings-master-category"><summary>Purchase item categories</summary><form id="addPurchaseCategoryForm" class="category-add-form"><input id="newPurchaseCategory" maxlength="40" placeholder="Add a category name" aria-label="New purchase category" required><button class="primary" type="submit">＋ Add category</button></form><div id="purchaseCategoryList" class="list category-settings-list"></div><p class="hint">These categories are available beside Product Name on purchase lines and are used in cost and asset reports.</p></details>
+  </div>
  </section>
  <section class="settings-card">
   <div class="section-head settings-section-head"><div><h3>Data & backup</h3><p class="settings-copy">Export a backup regularly before clearing browser data or changing devices.</p></div></div>
@@ -357,7 +393,7 @@
  </section>
 </section>
 <section id="reports" class="panel">
- <div class="section-head"><h2>Reports</h2><span class="pill">Date-range reports</span></div>
+ <div class="section-head"><h2>Reports</h2><div class="report-global-tools"><span class="pill">Date-range reports</span><button type="button" class="secondary report-export-btn" data-report-export="all" data-export-format="pdf">Print / PDF all</button><button type="button" class="secondary report-export-btn" data-report-export="all" data-export-format="excel">Excel all</button></div></div>
  <div class="report-date-range report-global-date-range" aria-label="Report date range">
   <label>From date <input id="productReportFromDate" type="date" aria-label="Report from date" required></label>
   <label>To date <input id="productReportToDate" type="date" aria-label="Report to date" required></label>
@@ -465,5 +501,5 @@
 </div>
 </div>
 </div>
-<script src="app.js?v=20261114-reports-submenus-units"></script>
+<script src="app.js?v=20261115-quick-actions"></script>
 </body></html>

@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v38-reports-submenus-units';
+const CACHE = 'dayquest-cache-v49-quick-expense-buttons';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261114-reports-submenus-units',
-  './app.js?v=20261114-reports-submenus-units',
+  './style.css?v=20261115-quick-actions',
+  './app.js?v=20261115-quick-actions',
   './manifest.json'
 ];
 

@@ -157,3 +157,24 @@ REPORTS MENU AND UNITS (2026-11-14)
 - Member costing, member product consumption and the guest stay/cost register are in Members Report. Production batches and produced quantities are in Production Report. Asset purchases are filtered from purchase bills whose category is Assets.
 - Data & backup is under Settings, keeping the Reports area focused on financial and operational reports.
 - Custom unit names can be added beside Purchase line Unit, Production Output Unit and Expense Unit. Production material and Sales Memo units follow the selected inventory lot so stock quantities cannot be converted accidentally.
+
+
+SETTINGS & REPORTING UPDATES
+- Settings now manages Supplier, Product, Product Type and Unit lists. Used values are protected from deletion; renaming updates linked records.
+- Supplier requirement for due purchases is configurable in Settings.
+- Purchase category is assigned per product line.
+- All Reports opens as collapsed summaries with expandable details. Each report and All Reports can be printed / saved as PDF and exported as an Excel-compatible .xls file.
+
+PURCHASE BILL ENTRY FORM
+- Purchase entry uses a compact responsive layout: supplier, bill number and date share a header row on larger screens; product details and quantity/rate/amount fields are grouped to reduce scrolling.
+- All fields and existing calculations remain available on mobile and desktop.
+
+
+ALL FORMS COMPACT LAYOUT
+- All transaction and setup forms use a compact responsive layout to reduce scrolling. Related fields are grouped where screen width allows. Login remains at its original comfortable size.
+
+Inventory screen refinements (15 Nov 2026)
+- Inventory cards show In stock, Unit cost and Cost owners in the collapsed summary.
+- Additional quantities, source/date/bill details and assignment controls are in the expandable Other details section.
+- Purchase-source inventory rows include an Edit recent bill action. The app's existing protections prevent editing bills whose stock has been consumed or whose supplier ledger has payment history.
+- Inventory statement can be exported as Excel-compatible .xls or opened in the browser print dialog to save as PDF.

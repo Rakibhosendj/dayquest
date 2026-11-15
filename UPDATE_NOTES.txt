@@ -198,3 +198,96 @@ REPORTS SUBMENU, DEDICATED REPORTS & UNIT NAMES (2026-11-14)
 - Moved Data & backup from Reports to Settings. Operational pages remain focused on their entry, recent-record, inventory and account registers rather than duplicating reports.
 - Added custom-unit Add controls beside Purchase line Unit and Production Output Unit; Expense Unit retains its Add control. Production material quantities display the unit inherited from the selected inventory item, and Sales Memo quantities display the stock unit as read-only to preserve inventory consistency.
 - Preserves the existing local dayquest_v1 data, transactions, inventory, production batches, member assignments and backups. Updated asset URLs and service-worker cache version.
+
+
+SETTINGS MASTER LISTS, PURCHASE SUPPLIER RULE, AND REPORT EXPORTS (2026-11-15)
+- Added Settings lists for Suppliers, Products, Product Types and Units. Users can add and rename values; deletion is blocked while a value is referenced by saved records. Renames update related stored references.
+- Added a Settings option to require a supplier when a purchase has an unpaid balance. When this rule is disabled, due purchases without a selected supplier are recorded under “Unassigned supplier” and remain in the creditor ledger. Fully paid purchases may omit the supplier.
+- Moved Purchase Category to each purchase product line and labelled it Category beside Product Name. Migrates older bills by carrying their former bill-level category into each line. Asset and Cost category reports now use line categories.
+- Moved the purchase bill View option into the same action row as Account, rather than below the bill summary.
+- All Reports starts with a summary row for each report and an expandable detail panel. Individual report views remain expanded.
+- Added per-report and All Reports Print / PDF (browser print dialog; choose Save as PDF) and Excel-compatible .xls export buttons.
+- Keeps the existing dayquest_v1 local database and backup import/export structure; no cloud service added.
+
+
+CUSTOM LIST ACCORDIONS (2026-11-15)
+- Moved Purchase item categories into Settings > Custom lists.
+- Made Suppliers, Products, Product types, Units and Purchase item categories collapsible with a down-arrow disclosure control.
+- Lists are collapsed by default and open when their arrow/heading is selected.
+- Existing add, rename, delete-protection and purchase category behavior is retained.
+
+COMPACT PURCHASE BILL ENTRY FORM (2026-11-15)
+- Reduced vertical spacing and padding throughout the Purchase Bill form while keeping every purchase field and calculation available.
+- Arranged Supplier, Bill Number and Purchase Date in a compact header; grouped Product Type with Size / Specification; aligned Quantity, Unit, Rate and Line Amount in a denser grid.
+- Changed the line amount calculation selector to a compact row and arranged Products Subtotal, Transit Cost, Purchase Discount and Final Bill Total in a shorter summary block.
+- Placed cash/bank payment inputs side-by-side, shortened the payable helper text and aligned Save / Cancel actions horizontally.
+- Kept the existing purchase line add/remove, product/category/type/unit selection, supplier rules, bill numbering, amount calculations, transit/discount logic and inventory costing behavior unchanged.
+- Bumped stylesheet, app script and service-worker cache versions to ensure deployed devices load the compact layout.
+
+
+ALL ENTRY FORMS — COMPACT LAYOUT (2026-11-15)
+- Applied a shared compact layout across Purchase, Production, Supplier Payment, Expense, Due Settlement, Sales Memo, Income, Income Collection, Daily Quest, Profile and Guest forms.
+- Reduced form padding, field gaps, label spacing, control heights and button heights while retaining all existing fields, form IDs, validation rules and event handlers.
+- Grouped related top-level fields into two columns on wider screens; narrow phones keep a single-column layout and the existing paired field groups.
+- Compactened repeating production-material and sales-product rows, totals, custom-list add controls, assignment controls and profile photo area.
+- Login forms remain unchanged for readability. No database schema or saved transaction data was changed.
+- Updated stylesheet and service-worker cache versions.
+
+
+Production form layout update (15 November 2026)
+- Product name and product type now share one compact row.
+- Product size, output quantity and output unit use a compact grid.
+- Each material row shows Quantity to use beside its read-only inventory Unit.
+- New Material now appears immediately before Electricity cost and production overhead fields.
+- Removed the empty-state stock/material-cost helper note.
+- Tightened Production form spacing and responsive material-row layout without changing costing or FIFO inventory behavior.
+
+INVENTORY SUMMARY, BILL EDITING & STATEMENT EXPORT (15 NOVEMBER 2026)
+- Added an Edit recent bill action inside the expanded details for each inventory lot originating from a purchase bill. Existing bill-edit safety checks remain in place; bills with stock usage or supplier-payment history stay protected.
+- Simplified each inventory card's collapsed view to show product name, In stock quantity, Unit cost and Cost owners first.
+- Moved added quantity, sold/other used quantities, total lot cost, product type, source/supplier, source date, bill/production number, specification and member assignment controls into a down-arrow Other details disclosure.
+- Reduced inventory card padding, row gaps, statistic spacing and assignment-control sizing to reduce vertical scrolling on desktop and mobile.
+- Added Inventory Excel statement export as an Excel-compatible .xls file and Statement PDF using the browser print dialog (choose Save as PDF).
+- Inventory exports include product/source details, quantities, available stock, unit cost, total lot cost and cost owners. No saved records or costing rules were changed.
+
+
+INVENTORY INLINE DETAILS CONTROL & EXTRA COMPACT LAYOUT (15 NOVEMBER 2026)
+- Moved the Other details disclosure control into the primary inventory summary row, immediately beside Cost owners.
+- Kept In stock, Unit cost and Cost owners visible; Other details remains collapsed by default and expands to show lot details, source information, assignment controls and stock-use actions.
+- Reduced inventory card padding, summary gaps, statistic card padding, typography and expanded-detail spacing to further reduce vertical scrolling.
+- Kept inventory assignment, edit recent bill, use stock, Excel export and Statement PDF behavior unchanged.
+- Bumped app asset query strings and service-worker cache version to v45 to avoid stale offline files.
+
+PURCHASE BILL UNIT CORRECTION & EDIT PERMISSION
+- Added Settings > Purchase bill editing with an Allow editing saved purchase bills toggle. It defaults to enabled for existing users and imported backups.
+- Edit actions in Purchase and Inventory are hidden when the permission is disabled, and the edit/save handlers enforce the setting.
+- Saved purchase bills can be corrected while stock is still unused. Updating a bill refreshes derived inventory, supplier balances, dashboard summaries and date-range reports from the corrected source data.
+- Equivalent unit changes within supported unit families (kg/g/mg, litre/ml, and piece aliases) automatically convert quantity and rate while preserving the line amount.
+- Bills with recorded inventory use can be edited for compatible unit corrections when the physical quantity and line amount stay unchanged. Linked consumption quantities are converted into the corrected source unit so inventory and consumption reports remain consistent. Product replacement/removal, purchase-date changes, incompatible unit conversions and changes to used stock quantity/value are blocked. Where a supplier has payment history, supplier, purchase date and outstanding credit allocation must remain unchanged.
+
+
+PURCHASE BILL UNIT CORRECTION FIX (15 NOVEMBER 2026)
+- Fixed purchase-line select events so each selected unit change is processed once; quantity, rate and preserved line amount update reliably in the edit form.
+- Removed the blanket edit blocker for bills with used stock. Compatible unit corrections now adjust all linked manual-use, production and sales consumption quantities in the same normalized unit family.
+- For consumed lines, the physical quantity and line amount must remain the same; product replacement/removal and bill-date changes are blocked to preserve stock history.
+- Incompatible unit changes on consumed stock are blocked with an explanation because no safe conversion factor exists. Unused stock lines can still be corrected freely.
+- Supplier-payment history safeguards and the Settings permission toggle remain enforced.
+- Bumped service-worker cache and app asset version to v47 so deployed browsers fetch the fixed edit flow.
+
+PURCHASE BILL EDIT + RECALCULATION REPAIR
+- Removed the previous supplier-payment-history blocker. Supplier bill allocations are recalculated dynamically from the edited bill values and existing supplier payments.
+- Correcting units no longer triggers a blocking conversion dialog for custom/unmapped units. Compatible units still convert quantity/rate; other unit changes preserve the entered quantity and rate as a unit-label correction.
+- Historical stock consumption quantities are scaled with the corrected purchase quantity so on-hand inventory remains proportionate.
+- Purchase bill lines already linked to production are re-costed from current landed inventory costs. Dependent production batches recalculate recursively, including material summaries, ingredient cost, total cost and unit cost.
+- Saving any record now refreshes all report sections, including date-range purchase, cost, member, production, creditor, debtor, asset and income views.
+- Purchase edit validation feedback is displayed inline instead of blocking modal alert dialogs. Edit permission remains controlled by Settings.
+- Service-worker cache updated to v48-purchase-bill-edit-recalc.
+
+2026-11-15 · Quick Expenses fixed-rate buttons
+- Added an Expenses > Quick Expenses sidebar destination.
+- Added configurable quick-button templates for Expense and Income records with a fixed per-unit rate.
+- Each quick button starts at quantity 1; the minus/plus stepper changes the number to record before submitting.
+- Expense shortcuts support category, Cash/Bank payment method, and multiple cost-owner assignments.
+- Income shortcuts support income type, earner, and Cash/Bank payment method.
+- Recording a shortcut creates a standard transaction in the existing expenses or incomes collection, so balance calculations, dashboard totals, date-range reports, member-cost reports, and backup export include it without a separate reporting ledger.
+- Quick-button templates are included in backup export/import.

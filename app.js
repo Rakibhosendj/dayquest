@@ -1,15 +1,19 @@
 const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slice(0,10);
 const load=()=>{try{return JSON.parse(localStorage.getItem('dayquest_v1'))||{expenses:[],quests:[],checks:{}}}catch{return{expenses:[],quests:[],checks:{}}}};
-let db=load(),deferredInstall=null,editingExpenseId=null,editingIncomeId=null,collectingIncomeId=null,settlingExpenseId=null,activeSupplierName=null,payingSupplierName=null,purchaseLines=[],editingPurchaseBillId=null,purchaseBillOriginalDate='',salesMemoLines=[],editingSalesMemoId=null;
+let db=load(),deferredInstall=null,editingExpenseId=null,editingIncomeId=null,collectingIncomeId=null,settlingExpenseId=null,activeSupplierName=null,payingSupplierName=null,purchaseLines=[],editingPurchaseBillId=null,purchaseBillOriginalDate='',salesMemoLines=[],editingSalesMemoId=null,editingQuickActionId=null;
+const quickActionCounts=new Map();
 db.expenses=Array.isArray(db.expenses)?db.expenses:[];
 db.expenses.forEach(x=>{if(!['family','member','unassigned','members'].includes(x.costType))x.costType=x.costMember?'member':'unassigned';x.costMember=String(x.costMember||'').trim();if(x.costType==='member'&&!x.costMember)x.costType='unassigned'});
 db.expenseNames=db.expenseNames||['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];
+db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];
 db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];
 db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];
 db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);
 db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};
 if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.themeColor||'')))db.settings.themeColor='#263b5c';
-db.units=db.units||['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];
+if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;if(typeof db.settings.allowPurchaseBillEdits!=='boolean')db.settings.allowPurchaseBillEdits=true;
+db.units=Array.isArray(db.units)&&db.units.length?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];
+db.units=[...new Map(db.units.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);
 db.incomes=Array.isArray(db.incomes)?db.incomes:[];
 db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];
 db.incomes.forEach(x=>{if(x.source&&!db.incomeHeads.includes(x.source))db.incomeHeads.push(x.source)});
@@ -82,6 +86,8 @@ function normalizePurchaseInventory(){
   if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);
   (b.lines||[]).forEach(l=>{
    if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product);
+   l.category=String(l.category||b.category||'Staples').trim()||'Staples';
+   if(!db.purchaseCategories.some(name=>name.toLocaleLowerCase()===l.category.toLocaleLowerCase()))db.purchaseCategories.push(l.category);
    l.productType=String(l.productType||'Other').trim()||'Other';
    if(!db.productTypes.some(name=>name.toLocaleLowerCase()===l.productType.toLocaleLowerCase()))db.productTypes.push(l.productType);
    if(!l.id)l.id=crypto.randomUUID();
@@ -100,7 +106,18 @@ db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeop
 if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);
 db.incomes.forEach(x=>{x.incomeBy=String(x.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(x.incomeBy))db.incomePeople.push(x.incomeBy)});
 if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');
-const save=()=>{localStorage.setItem('dayquest_v1',JSON.stringify(db));updateAppBrand();render();if($('reports')?.classList.contains('active'))renderReport()};
+db.quickActions=db.quickActions.filter(action=>action&&typeof action==='object'&&String(action.name||'').trim()&&Number(action.rate)>0);
+db.quickActions.forEach(action=>{
+ action.id=String(action.id||crypto.randomUUID());action.name=String(action.name||'').trim();action.type=action.type==='income'?'income':'expense';action.rate=Number(action.rate||0);action.paymentType=action.paymentType==='Bank'?'Bank':'Cash';
+ if(action.type==='income'){
+  action.incomeType=String(action.incomeType||'Other');action.incomeBy=String(action.incomeBy||'Unassigned');
+  if(!db.incomeHeads.includes(action.incomeType))db.incomeHeads.push(action.incomeType);if(!db.incomePeople.includes(action.incomeBy))db.incomePeople.push(action.incomeBy);
+ }else{
+  action.category=String(action.category||'Other');action.costMembers=uniquePeople(action.costMembers||[]);
+  if(!db.expenseNames.some(name=>name.toLocaleLowerCase()===action.name.toLocaleLowerCase()))db.expenseNames.push(action.name);
+ }
+});
+const save=()=>{localStorage.setItem('dayquest_v1',JSON.stringify(db));updateAppBrand();render();renderReport()};
 const money=n=>'৳'+Number(n||0).toLocaleString('en-BD',{minimumFractionDigits:2,maximumFractionDigits:2});
 const dateObj=s=>new Date(s+'T12:00:00');
 const fmt=s=>dateObj(s).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
@@ -186,11 +203,13 @@ function setTab(t){
  if(activeGroup)activeGroup.open=true;
  closeSidebar();
  if(t==='reports'){renderReport();if(!document.querySelector('[data-report-go].active'))activateReportSection('members')}
- if(t==='settings')renderPurchaseCategorySettings();
+ if(t==='settings'){renderPurchaseCategorySettings();renderMasterLists();$('requireSupplierForDuePurchase').checked=db.settings.requireSupplierForDuePurchase!==false;$('allowPurchaseBillEdits').checked=db.settings.allowPurchaseBillEdits!==false;}
  if(t==='payExpenseDue')renderExpenseDueList();
+ if(t==='quickExpenses'){renderQuickMemberOptions(quickSelectedMembers());fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickActions();}
  if(t==='inventory')renderInventory();
  if(t==='production'){fillProductionOptions();renderProductionList();renderProductionInputs()}
- if(t==='supplierAccounts'||t==='purchaseBills')renderSupplierAccounts();
+ if(t==='supplierAccounts')renderSupplierAccounts();
+ if(t==='purchaseBills'){fillChoices();renderPurchaseLines();renderSupplierAccounts();}
 }
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>setTab(b.dataset.go));
@@ -241,8 +260,7 @@ function fillChoices(){
   const preferred=(personSelect?(db.profile.name||db.incomePeople[0]):'all');
   select.value=db.incomePeople.includes(previous)?previous:(personSelect?preferred:'all');
  });
- const supplierSelect=$('purchaseSupplier');if(supplierSelect){const previous=supplierSelect.value;supplierSelect.innerHTML='<option value="">Select supplier</option>'+db.suppliers.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(db.suppliers.includes(previous))supplierSelect.value=previous;}
- const purchaseCategory=$('purchaseCategory');if(purchaseCategory){const previous=purchaseCategory.value;purchaseCategory.innerHTML='<option value="">Select purchase category</option>'+db.purchaseCategories.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');purchaseCategory.value=db.purchaseCategories.includes(previous)?previous:'';}
+ const supplierSelect=$('purchaseSupplier');if(supplierSelect){const previous=supplierSelect.value;supplierSelect.innerHTML='<option value="">Select supplier (optional unless a due requires it)</option>'+db.suppliers.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(db.suppliers.includes(previous))supplierSelect.value=previous;}
  renderExpenseMemberOptions(currentCostMembers);
  fillGuestMemberOptions(selectedGuestMembers());
  renderProductNameSuggestions();
@@ -259,7 +277,7 @@ $('addExpenseName').onclick=()=>{let n=prompt('Add an expense name:');if(n&&n.tr
 function addUnitName(select,afterAdd){
  let n=prompt('Add a unit name (e.g. bottle, sack, jar, metre):');if(!n||!n.trim())return;
  n=n.trim();const existing=db.units.find(value=>value.toLocaleLowerCase()===n.toLocaleLowerCase());if(existing)n=existing;else db.units.push(n);
- fillChoices();if(typeof afterAdd==='function')afterAdd(n);else if(select){if(select.tagName==='SELECT'){select.innerHTML=db.units.map(value=>`<option value="${esc(value)}">${esc(value)}</option>`).join('');select.value=n}else select.value=n}
+ fillChoices();renderMasterLists();if(typeof afterAdd==='function')afterAdd(n);else if(select){if(select.tagName==='SELECT'){select.innerHTML=db.units.map(value=>`<option value="${esc(value)}">${esc(value)}</option>`).join('');select.value=n}else select.value=n}
  localSaveOnly();
 }
 $('addUnit').onclick=()=>addUnitName($('unitName'),n=>{$('unitName').value=n});
@@ -272,7 +290,7 @@ function renderProductNameSuggestions(){
  const count=$('productCatalogCount');if(count)count.textContent=`${db.productNames.length} saved product${db.productNames.length===1?'':'s'}`;
 }
 function defaultPurchaseLine(product=''){
- return {lineId:null,product,productType:db.productTypes.includes('Other')?'Other':db.productTypes[0],spec:'',quantity:1,unit:db.units.includes('pcs')?'pcs':db.units[0],rate:0,amount:0,amountMode:'rate',calcError:'',amountPending:false,costType:'unassigned',costMember:''};
+ return {lineId:null,product,category:db.purchaseCategories[0]||'Staples',productType:db.productTypes.includes('Other')?'Other':db.productTypes[0],spec:'',quantity:1,unit:db.units.includes('pcs')?'pcs':db.units[0],rate:0,amount:0,amountMode:'rate',calcError:'',amountPending:false,costType:'unassigned',costMember:''};
 }
 function addNewPurchaseProduct(index){
  const raw=prompt('Enter the new product name:');if(raw===null)return;
@@ -283,7 +301,7 @@ function addNewPurchaseProduct(index){
  const targetIndex=Number(index);
  if(!Number.isInteger(targetIndex)||targetIndex<0||!purchaseLines[targetIndex])return;
  purchaseLines[targetIndex].product=product;
- renderProductNameSuggestions();renderPurchaseLines();localSaveOnly();
+ renderProductNameSuggestions();renderPurchaseLines();renderMasterLists();localSaveOnly();
  const target=$('purchaseLines').querySelector(`[data-line-index="${targetIndex}"] .pl-product`);
  if(target){target.focus();target.select()}
 }
@@ -294,14 +312,15 @@ function addProductTypeToPurchaseLine(index){
  const existing=db.productTypes.find(item=>item.toLocaleLowerCase()===name.toLocaleLowerCase());
  if(existing){line.productType=existing;alert('That product type already exists, so it has been selected for this line.')}
  else{db.productTypes.push(name);line.productType=name}
- renderPurchaseLines();localSaveOnly();
+ renderPurchaseLines();renderMasterLists();localSaveOnly();
  const target=$('purchaseLines').querySelector(`[data-line-index="${index}"] .pl-product-type`);
  if(target)target.focus();
 }
 
 // Purchase bills, supplier creditor accounts and product purchase reporting
 function unitInfo(unit){
- const u=String(unit||'pcs').trim().toLowerCase();
+ let u=String(unit||'pcs').trim().toLowerCase();
+ const aliases=db.settings?.unitAliases||{};let guard=0;while(aliases[u]&&guard++<12)u=String(aliases[u]).trim().toLowerCase();
  if(['g','gram','grams'].includes(u))return {family:'mass',factor:1};
  if(['kg','kilogram','kilograms'].includes(u))return {family:'mass',factor:1000};
  if(['mg','milligram','milligrams'].includes(u))return {family:'mass',factor:0.001};
@@ -309,6 +328,11 @@ function unitInfo(unit){
  if(['l','litre','liter','litres','liters'].includes(u))return {family:'volume',factor:1000};
  if(['pc','pcs','piece','pieces'].includes(u))return {family:'count:pcs',factor:1};
  return {family:'unit:'+u,factor:1};
+}
+function unitConversionRatio(fromUnit,toUnit){
+ const from=unitInfo(fromUnit),to=unitInfo(toUnit);
+ if(!from||!to||from.family!==to.family||!Number.isFinite(from.factor)||!Number.isFinite(to.factor)||to.factor<=0)return null;
+ return from.factor/to.factor;
 }
 function productKey(product,spec,unit){const info=unitInfo(unit);return [String(product||'').trim().toLowerCase(),String(spec||'').trim().toLowerCase(),info.family].join('::')}
 function productCatalog(){
@@ -333,12 +357,12 @@ function purchaseLineTemplate(line,index){
  const amountMode=line.amountMode==='quantity'?'quantity':'rate';
  return `<div class="purchase-line" data-line-index="${index}">
   <div class="purchase-line-top"><strong>Product ${index+1}</strong><button type="button" class="delete remove-purchase-line" data-index="${index}" ${purchaseLines.length===1?'disabled':''}>Remove</button></div>
-  <div class="purchase-line-field-row"><label>Product name <input class="pl-product" list="productNameSuggestions" maxlength="80" value="${esc(line.product||'')}" placeholder="e.g. Soap" required></label><button type="button" class="mini-add pl-add-product" data-index="${index}" aria-label="Add product">＋ Add</button></div>
-  <div class="purchase-line-field-row"><label>Product type <select class="pl-product-type" required>${db.productTypes.map(type=>`<option value="${esc(type)}" ${String(line.productType||'Other').toLocaleLowerCase()===type.toLocaleLowerCase()?'selected':''}>${esc(type)}</option>`).join('')}</select></label><button type="button" class="mini-add pl-add-product-type" data-index="${index}">＋ Add</button></div>
-  <label>Size / specification <input class="pl-spec" maxlength="80" value="${esc(line.spec||'')}" placeholder="e.g. 300 gram (optional)"></label>
-  <div class="form-grid"><label>Quantity <input class="pl-quantity" type="number" min="0.001" step="any" value="${Number(line.quantity??1)}" required></label><label>Unit <span class="select-add"><select class="pl-unit">${units}</select><button type="button" class="mini-add pl-add-unit" data-index="${index}">＋ Add</button></span></label></div>
-  <div class="form-grid"><label>Rate per unit <input class="pl-rate" type="number" min="0" step="any" value="${Number(line.rate||0)}" required></label><label>Line amount <input class="pl-amount" type="number" min="0" step="any" value="${purchaseLineAmount(line)}" required></label></div>
-  <label class="pl-amount-mode-label">When line amount is entered, calculate automatically <select class="pl-amount-mode"><option value="rate" ${amountMode==='rate'?'selected':''}>Rate per unit</option><option value="quantity" ${amountMode==='quantity'?'selected':''}>Quantity</option></select><small>Choose whether DayQuest should calculate the rate or quantity from the line amount.</small></label>
+  <div class="purchase-product-category-row"><div class="purchase-line-field-row"><label>Product name <input class="pl-product" list="productNameSuggestions" maxlength="80" value="${esc(line.product||'')}" placeholder="e.g. Soap" required></label><button type="button" class="mini-add pl-add-product" data-index="${index}" aria-label="Add product">＋ Add</button></div><label>Category <select class="pl-category" required>${db.purchaseCategories.map(category=>`<option value="${esc(category)}" ${String(line.category||'Staples').toLocaleLowerCase()===category.toLocaleLowerCase()?'selected':''}>${esc(category)}</option>`).join('')}</select></label></div>
+  <div class="purchase-secondary-fields"><div class="purchase-line-field-row"><label>Product type <select class="pl-product-type" required>${db.productTypes.map(type=>`<option value="${esc(type)}" ${String(line.productType||'Other').toLocaleLowerCase()===type.toLocaleLowerCase()?'selected':''}>${esc(type)}</option>`).join('')}</select></label><button type="button" class="mini-add pl-add-product-type" data-index="${index}">＋ Add</button></div>
+  <label>Size / specification <input class="pl-spec" maxlength="80" value="${esc(line.spec||'')}" placeholder="e.g. 300 gram (optional)"></label></div>
+  <div class="purchase-numbers-grid"><div class="form-grid"><label>Quantity <input class="pl-quantity" type="number" min="0.001" step="any" value="${Number(line.quantity??1)}" required></label><label>Unit <span class="select-add"><select class="pl-unit">${units}</select><button type="button" class="mini-add pl-add-unit" data-index="${index}">＋ Add</button></span></label></div>
+  <div class="form-grid"><label>Rate per unit <input class="pl-rate" type="number" min="0" step="any" value="${Number(line.rate||0)}" required></label><label>Line amount <input class="pl-amount" type="number" min="0" step="any" value="${purchaseLineAmount(line)}" required></label></div></div>
+  <div class="purchase-calc-row"><label>Line amount calculates <select class="pl-amount-mode"><option value="rate" ${amountMode==='rate'?'selected':''}>Rate per unit</option><option value="quantity" ${amountMode==='quantity'?'selected':''}>Quantity</option></select></label><small>Choose which value to calculate from the line amount.</small></div>
   <p class="pl-calc-message" role="status" aria-live="polite">${esc(line.calcError||'')}</p>
  </div>`;
 }
@@ -364,7 +388,7 @@ function applyPurchaseLineAmount(index){
 function renderPurchaseLines(){
  $('purchaseLines').innerHTML=purchaseLines.map(purchaseLineTemplate).join('');
  $('purchaseLines').querySelectorAll('.purchase-line').forEach((node,index)=>node.querySelectorAll('input,select').forEach(el=>{
-  const prop=el.classList.contains('pl-product')?'product':el.classList.contains('pl-product-type')?'productType':el.classList.contains('pl-spec')?'spec':el.classList.contains('pl-quantity')?'quantity':el.classList.contains('pl-unit')?'unit':el.classList.contains('pl-rate')?'rate':el.classList.contains('pl-amount')?'amount':'amountMode';
+  const prop=el.classList.contains('pl-product')?'product':el.classList.contains('pl-product-type')?'productType':el.classList.contains('pl-category')?'category':el.classList.contains('pl-spec')?'spec':el.classList.contains('pl-quantity')?'quantity':el.classList.contains('pl-unit')?'unit':el.classList.contains('pl-rate')?'rate':el.classList.contains('pl-amount')?'amount':'amountMode';
   const handle=()=>{
    const line=purchaseLines[index];if(!line)return;
    if(prop==='amountMode'){
@@ -376,11 +400,20 @@ function renderPurchaseLines(){
     line[prop]=Number(el.value)||0;
     if(line.amountPending)applyPurchaseLineAmount(index);
     else {line.amount=roundPurchaseAmount(Math.max(0,Number(line.quantity||0))*Math.max(0,Number(line.rate||0)));line.calcError=''}
+   }else if(prop==='unit'){
+    const previousUnit=String(line.unit||'pcs'),nextUnit=String(el.value||'pcs');
+    if(previousUnit!==nextUnit&&Number(line.quantity)>0){
+     const ratio=unitConversionRatio(previousUnit,nextUnit);
+     if(ratio!==null){
+      const preservedAmount=purchaseLineAmount(line),convertedQuantity=Number((Number(line.quantity)*ratio).toFixed(6));
+      if(convertedQuantity>0){line.quantity=convertedQuantity;line.rate=Number((preservedAmount/convertedQuantity).toFixed(8));line.amount=preservedAmount;}
+     }
+    }
+    line.unit=nextUnit;
    }else line[prop]=el.value;
    updatePurchaseTotals();
   };
-  el.addEventListener('input',handle);
-  el.addEventListener('change',handle);
+  if(el.tagName==='SELECT')el.addEventListener('change',handle);else el.addEventListener('input',handle);
  }));
  $('purchaseLines').querySelectorAll('.remove-purchase-line').forEach(btn=>btn.onclick=()=>{if(purchaseLines.length>1){purchaseLines.splice(Number(btn.dataset.index),1);renderPurchaseLines();updatePurchaseTotals()}});
  $('purchaseLines').querySelectorAll('.pl-add-product').forEach(btn=>btn.onclick=()=>addNewPurchaseProduct(Number(btn.dataset.index)));
@@ -404,7 +437,7 @@ function updatePurchaseTotals(){
  });
  const subtotal=currentPurchaseSubtotal(),transit=Math.max(0,Number($('purchaseTransitCost')?.value||0)),discount=Math.max(0,Number($('purchaseDiscount')?.value||0)),total=currentPurchaseTotal(),cash=Number($('purchaseCashPaid').value||0),bank=Number($('purchaseBankPaid').value||0),credit=Math.max(0,total-cash-bank);
  if($('purchaseSubtotal'))$('purchaseSubtotal').textContent=money(subtotal);$('purchaseBillTotal').textContent=money(total);$('purchaseCreditTotal').textContent=money(credit);
- const invalid=cash+bank>total+0.000001||discount>subtotal+transit+0.000001;$('purchaseCreditTotal').classList.toggle('invalid-total',invalid);$('purchaseBillSubmit').disabled=invalid;
+ const paymentTooHigh=cash+bank>total+0.000001,discountTooHigh=discount>subtotal+transit+0.000001,invalid=paymentTooHigh||discountTooHigh;$('purchaseCreditTotal').classList.toggle('invalid-total',invalid);$('purchaseBillSubmit').disabled=invalid;if(editingPurchaseBillId&&invalid&&$('purchaseEditHint')){$('purchaseEditHint').textContent=paymentTooHigh?'Cash paid plus bank paid is greater than the corrected bill total. Reduce one of the paid amounts before updating.':'The discount cannot exceed the product subtotal plus transit cost.';$('purchaseEditHint').hidden=false}
  if($('purchaseAdjustmentPreview'))$('purchaseAdjustmentPreview').textContent=`${money(subtotal)} + ${money(transit)} transit − ${money(discount)} discount`;
 }
 
@@ -413,28 +446,57 @@ function updatePurchaseBillNo(){
  if(editingPurchaseBillId&&date===purchaseBillOriginalDate){const original=db.purchaseBills.find(b=>b.id===editingPurchaseBillId);if(original&&original.billNo){field.value=original.billNo;return}}
  field.value=nextPurchaseBillNo(date,editingPurchaseBillId);
 }
-function resetPurchaseForm(){editingPurchaseBillId=null;purchaseBillOriginalDate='';$('purchaseBillForm').reset();$('purchaseDate').value=today();$('purchaseBillNo').value='';updatePurchaseBillNo();$('purchaseCategory').value='';$('purchaseCashPaid').value=0;$('purchaseBankPaid').value=0;if($('purchaseTransitCost'))$('purchaseTransitCost').value=0;if($('purchaseDiscount'))$('purchaseDiscount').value=0;$('purchaseBillSubmit').textContent='Save purchase bill';$('cancelPurchaseEdit').hidden=true;purchaseLines=[defaultPurchaseLine()];renderPurchaseLines();fillChoices()}
+function resetPurchaseForm(){editingPurchaseBillId=null;purchaseBillOriginalDate='';if($('purchaseEditHint'))$('purchaseEditHint').hidden=true;$('purchaseBillForm').reset();$('purchaseDate').value=today();$('purchaseBillNo').value='';updatePurchaseBillNo();$('purchaseCashPaid').value=0;$('purchaseBankPaid').value=0;if($('purchaseTransitCost'))$('purchaseTransitCost').value=0;if($('purchaseDiscount'))$('purchaseDiscount').value=0;$('purchaseBillSubmit').textContent='Save purchase bill';$('cancelPurchaseEdit').hidden=true;purchaseLines=[defaultPurchaseLine()];renderPurchaseLines();fillChoices()}
+function purchaseFormNotice(message){
+ if(editingPurchaseBillId&&$('purchaseEditHint')){$('purchaseEditHint').textContent=message;$('purchaseEditHint').hidden=false;return}
+ alert(message);
+}
 $('purchaseDate').addEventListener('change',updatePurchaseBillNo);
 $('addPurchaseLine').onclick=()=>{purchaseLines.push(defaultPurchaseLine());renderPurchaseLines()};
 $('purchaseCashPaid').oninput=updatePurchaseTotals;$('purchaseBankPaid').oninput=updatePurchaseTotals;$('purchaseTransitCost').oninput=updatePurchaseTotals;$('purchaseDiscount').oninput=updatePurchaseTotals;
-$('addSupplier').onclick=()=>{let n=prompt('Enter supplier / store name:');if(n&&n.trim()){n=n.trim();if(!db.suppliers.includes(n))db.suppliers.push(n);fillChoices();$('purchaseSupplier').value=n;localSaveOnly()}};
+$('addSupplier').onclick=()=>{let n=prompt('Enter supplier / store name:');if(n&&n.trim()){n=n.trim();if(!db.suppliers.includes(n))db.suppliers.push(n);fillChoices();renderMasterLists();$('purchaseSupplier').value=n;localSaveOnly()}};
 $('purchaseBillForm').onsubmit=e=>{
- e.preventDefault();const supplier=$('purchaseSupplier').value.trim(),category=$('purchaseCategory').value,date=$('purchaseDate').value,cashPaid=Number($('purchaseCashPaid').value||0),bankPaid=Number($('purchaseBankPaid').value||0),subtotal=currentPurchaseSubtotal(),transitCost=Math.max(0,Number($('purchaseTransitCost').value||0)),discount=Math.max(0,Number($('purchaseDiscount').value||0)),total=currentPurchaseTotal();
- const lines=purchaseLines.map(l=>({id:l.lineId||crypto.randomUUID(),product:String(l.product||'').trim(),productType:String(l.productType||'Other').trim()||'Other',spec:String(l.spec||'').trim(),quantity:Number(l.quantity),unit:String(l.unit||'pcs'),rate:Number(l.rate),amount:purchaseLineAmount(l),costType:['family','member','unassigned','members'].includes(l.costType)?l.costType:'unassigned',costMember:String(l.costMember||'').trim(),costMembers:Array.isArray(l.costMembers)?uniquePeople(l.costMembers):[]}));
- if(!supplier){alert('Select or add a supplier.');return}
- if(!date){alert('Select the purchase date.');return}
- if(!category){alert('Select a purchase category.');return}
- if(!lines.length||purchaseLines.some(l=>l.calcError)||lines.some(l=>!l.product||!l.productType||!(l.quantity>0)||!(l.rate>=0)||!(l.amount>=0)||!Number.isFinite(l.quantity)||!Number.isFinite(l.rate)||!Number.isFinite(l.amount))){alert('Enter a product name, product type, valid quantity, rate and line amount for every bill line. For amount-based calculation, enter the required quantity or rate first.');return}
- if(transitCost<0||discount<0||discount>subtotal+transitCost+0.000001){alert('Transit cost and discount must be valid, and discount cannot exceed the adjusted purchase subtotal.');return}
- if(cashPaid<0||bankPaid<0||cashPaid+bankPaid>total+0.000001){alert('Cash paid plus bank paid cannot exceed the bill total.');return}
+ e.preventDefault();if(editingPurchaseBillId&&db.settings.allowPurchaseBillEdits===false){if($('purchaseEditHint')){$('purchaseEditHint').textContent='Editing is disabled. Enable “Allow editing saved purchase bills” in Settings, then reopen this bill.';$('purchaseEditHint').hidden=false}return}const supplierInput=$('purchaseSupplier').value.trim(),date=$('purchaseDate').value,cashPaid=Number($('purchaseCashPaid').value||0),bankPaid=Number($('purchaseBankPaid').value||0),subtotal=currentPurchaseSubtotal(),transitCost=Math.max(0,Number($('purchaseTransitCost').value||0)),discount=Math.max(0,Number($('purchaseDiscount').value||0)),total=currentPurchaseTotal(),unpaid=Math.max(0,total-cashPaid-bankPaid);
+ const supplier=supplierInput||(unpaid>0?'Unassigned supplier':'');
+ const lines=purchaseLines.map(l=>({id:l.lineId||crypto.randomUUID(),product:String(l.product||'').trim(),category:String(l.category||db.purchaseCategories[0]||'Staples').trim(),productType:String(l.productType||'Other').trim()||'Other',spec:String(l.spec||'').trim(),quantity:Number(l.quantity),unit:String(l.unit||'pcs'),rate:Number(l.rate),amount:purchaseLineAmount(l),costType:['family','member','unassigned','members'].includes(l.costType)?l.costType:'unassigned',costMember:String(l.costMember||'').trim(),costMembers:Array.isArray(l.costMembers)?uniquePeople(l.costMembers):[]}));
+ if(unpaid>0&&db.settings.requireSupplierForDuePurchase&&!supplierInput){purchaseFormNotice('Select a supplier because this purchase has an unpaid balance. You can change this rule in Settings.');return}
+ if(!date){purchaseFormNotice('Select the purchase date.');return}
+ if(!lines.length||purchaseLines.some(l=>l.calcError)||lines.some(l=>!l.product||!l.productType||!(l.quantity>0)||!(l.rate>=0)||!(l.amount>=0)||!Number.isFinite(l.quantity)||!Number.isFinite(l.rate)||!Number.isFinite(l.amount))){purchaseFormNotice('Enter a product name, product type, valid quantity, rate and line amount for every bill line. For amount-based calculation, enter the required quantity or rate first.');return}
+ if(transitCost<0||discount<0||discount>subtotal+transitCost+0.000001){purchaseFormNotice('Transit cost and discount must be valid, and discount cannot exceed the adjusted purchase subtotal.');return}
+ if(cashPaid<0||bankPaid<0||cashPaid+bankPaid>total+0.000001){purchaseFormNotice('Cash paid plus bank paid cannot exceed the bill total. Adjust the payment amounts or the corrected bill total before updating.');return}
  const old=editingPurchaseBillId?db.purchaseBills.find(b=>b.id===editingPurchaseBillId):null;
  const billNo=old&&date===purchaseBillOriginalDate?String(old.billNo||'').trim():nextPurchaseBillNo(date,editingPurchaseBillId);
- if(!billNo){alert('Could not generate a bill number. Check the purchase date and try again.');return}
- if(db.purchaseBills.some(b=>b.id!==editingPurchaseBillId&&String(b.billNo||'').trim().toLocaleLowerCase()===billNo.toLocaleLowerCase())){alert('This bill number already exists. Please try saving again to generate a unique number.');updatePurchaseBillNo();return}
- const values={supplier,category,billNo,date,lines,subtotal,transitCost,discount,total,cashPaid,bankPaid,credit:Math.max(0,total-cashPaid-bankPaid),note:$('purchaseNote').value.trim()};
- if(editingPurchaseBillId){if(old){if(db.supplierPayments.some(p=>p.supplier===old.supplier||p.supplier===supplier)){alert('This bill has supplier payment history. To protect the supplier ledger, it cannot be edited safely.');return}Object.assign(old,values)}}
+ if(!billNo){purchaseFormNotice('Could not generate a bill number. Check the purchase date and try again.');return}
+ if(db.purchaseBills.some(b=>b.id!==editingPurchaseBillId&&String(b.billNo||'').trim().toLocaleLowerCase()===billNo.toLocaleLowerCase())){purchaseFormNotice('This bill number already exists. A new unique number has been generated; review it and update again.');updatePurchaseBillNo();return}
+ const categories=uniquePeople(lines.map(line=>line.category));const values={supplier,category:categories.length===1?categories[0]:'Multiple categories',billNo,date,lines,subtotal,transitCost,discount,total,cashPaid,bankPaid,credit:unpaid,note:$('purchaseNote').value.trim()};
+ if(editingPurchaseBillId){
+  if(!old){purchaseFormNotice('The original purchase bill could not be found. Refresh the page and reopen the bill.');return}
+  const billConsumptions=db.consumptions.filter(c=>c.billId===editingPurchaseBillId);
+  // Keep stock chronology valid: a source lot cannot be dated after something already consumed from it.
+  if(billConsumptions.length){
+   const firstUse=billConsumptions.map(c=>String(c.date||'')).filter(Boolean).sort()[0];
+   if(firstUse&&date>firstUse){$('purchaseEditHint').textContent=`This bill has stock movements dated from ${fmt(firstUse)}. Set the purchase date to ${fmt(firstUse)} or earlier so stock history remains chronological.`;$('purchaseEditHint').hidden=false;return}
+  }
+  const unitConsumptionUpdates=[];
+  for(const oldLine of (old.lines||[])){
+   const linked=billConsumptions.filter(c=>c.lineId===oldLine.id);
+   if(!linked.length)continue;
+   const nextLine=lines.find(line=>line.id===oldLine.id);
+   if(!nextLine){$('purchaseEditHint').textContent=`${oldLine.product||'A product line'} has already been used or sold. Keep that line in the bill; you can still correct its product name, unit, quantity, rate, amount, category and type.`;$('purchaseEditHint').hidden=false;return}
+   const oldQuantity=Number(oldLine.quantity||0),nextQuantity=Number(nextLine.quantity||0);
+   // Scale historical consumption by the corrected lot quantity. Compatible unit changes
+   // already convert the purchase quantity in the form; custom units keep the entered count.
+   const consumptionScale=oldQuantity>0?nextQuantity/oldQuantity:1;
+   linked.forEach(record=>unitConsumptionUpdates.push({record,quantity:Number((Number(record.quantity||0)*consumptionScale).toFixed(6))}));
+  }
+  // Supplier payments are allocated dynamically against current bill balances (oldest bill first).
+  // Do not block a correction just because the supplier has a payment history.
+  unitConsumptionUpdates.forEach(update=>{update.record.quantity=update.quantity});
+  Object.assign(old,values);
+  recalculateProductionCostsFromInventory();
+ }
  else db.purchaseBills.unshift({id:crypto.randomUUID(),...values});
- if(!db.suppliers.includes(supplier))db.suppliers.push(supplier);lines.forEach(l=>{if(!db.productNames.includes(l.product))db.productNames.push(l.product);if(!db.productTypes.some(type=>type.toLocaleLowerCase()===l.productType.toLocaleLowerCase()))db.productTypes.push(l.productType);if(!db.units.includes(l.unit))db.units.push(l.unit)});
+ if(supplier&&!db.suppliers.includes(supplier))db.suppliers.push(supplier);lines.forEach(l=>{if(!db.productNames.includes(l.product))db.productNames.push(l.product);if(!db.purchaseCategories.includes(l.category))db.purchaseCategories.push(l.category);if(!db.productTypes.some(type=>type.toLocaleLowerCase()===l.productType.toLocaleLowerCase()))db.productTypes.push(l.productType);if(!db.units.includes(l.unit))db.units.push(l.unit)});
  resetPurchaseForm();save();
 };
 function inventoryMemberChecks(line){
@@ -457,6 +519,38 @@ function stockSourceRecords(){
  return records;
 }
 function resolveStockSource(billId,lineId){return stockSourceRecords().find(record=>record.billId===billId&&record.lineId===lineId)||null}
+// Rebuild production material values from the live inventory ledger after a source bill is corrected.
+// DFS recalculation preserves dependencies when a production batch consumes another production batch.
+function recalculateProductionCostsFromInventory(){
+ const completed=new Set(),visiting=new Set();
+ function recalculate(productionId){
+  if(completed.has(productionId)||visiting.has(productionId))return;
+  const batch=db.productions.find(item=>item.id===productionId);if(!batch)return;
+  visiting.add(productionId);
+  const entries=db.consumptions.filter(item=>item.productionId===productionId),groups=new Map(),owners=[];let ingredientCost=0;
+  entries.forEach(entry=>{
+   let source=resolveStockSource(entry.billId,entry.lineId);if(!source)return;
+   if(source.sourceType==='production'){recalculate(source.source.id);source=resolveStockSource(entry.billId,entry.lineId)||source}
+   const quantity=Math.max(0,Number(entry.quantity||0)),unitCost=source.quantity>0?Number(source.amount||0)/Number(source.quantity):0,cost=quantity*unitCost;
+   ingredientCost+=cost;source.costMembers.forEach(name=>owners.push(name));
+   const key=[source.product.toLocaleLowerCase(),source.spec.toLocaleLowerCase(),source.unit.toLocaleLowerCase()].join('::');
+   const current=groups.get(key)||{product:source.product,unit:source.unit,quantity:0,cost:0};current.quantity+=quantity;current.cost+=cost;groups.set(key,current);
+  });
+  if(entries.length){
+   batch.ingredientCost=roundPurchaseAmount(ingredientCost);
+   batch.electricityCost=Math.max(0,Number(batch.electricityCost||0));
+   batch.transitCost=Math.max(0,Number(batch.transitCost||0));
+   batch.overheadCost=roundPurchaseAmount(batch.electricityCost+batch.transitCost);
+   batch.totalCost=roundPurchaseAmount(batch.ingredientCost+batch.overheadCost);
+   batch.unitCost=Number(batch.quantity)>0?batch.totalCost/Number(batch.quantity):0;
+   batch.inputs=[...groups.values()].map(item=>({product:item.product,unit:item.unit,quantity:Number(item.quantity.toFixed(6)),cost:roundPurchaseAmount(item.cost)}));
+   batch.costMembers=uniquePeople(owners);
+   batch.overheadMembers=batch.costMembers.slice();
+  }
+  visiting.delete(productionId);completed.add(productionId);
+ }
+ db.productions.forEach(batch=>recalculate(batch.id));
+}
 function usedStockQuantity(record,{excludeMemoId=null,excludeProductionId=null,asOfDate=null}={}){
  return db.consumptions.filter(c=>c.billId===record.billId&&c.lineId===record.lineId&&(!excludeMemoId||c.salesMemoId!==excludeMemoId)&&(!excludeProductionId||c.productionId!==excludeProductionId)&&(!asOfDate||!c.date||String(c.date)<=asOfDate)).reduce((total,c)=>total+Number(c.quantity||0),0);
 }
@@ -473,12 +567,40 @@ function renderInventory(){
  list.innerHTML=rows.length?rows.map(record=>{
   const {bill,line,used,sold,otherUsed,remaining,amount,costMembers,stockRef,sourceType}=record;
   const assignment=costMembers.length?costMembers.join(', '):'Not assigned',domId=encodeURIComponent(stockRef);
+  const unitCost=Number(record.quantity)>0?Number(amount)/Number(record.quantity):0;
+  const sourceLabel=sourceType==='production'?'In-house production':(bill.supplier||'Cash purchase');
+  const sourceNo=bill.billNo?`${sourceType==='production'?'Production':'Bill'} #${bill.billNo}`:'Not numbered';
   return `<article class="inventory-row" id="inventory-record-${domId}" data-inventory-ref="${esc(stockRef)}">
-   <div class="inventory-row-head"><div><strong>${esc(record.product)}${record.spec?` · ${esc(record.spec)}`:''}</strong><small>${esc(record.productType||'Other')} · ${sourceType==='production'?'Production batch':esc(bill.supplier||'Supplier')} · ${fmt(record.date)}${bill.billNo?` · ${sourceType==='production'?'Production':'Bill'} #${esc(bill.billNo)}`:''}</small></div><strong>${money(amount)}</strong></div>
-   <div class="inventory-row-stats"><span>Added <strong>${numberText(record.quantity)} ${esc(record.unit)}</strong></span><span>Sold <strong>${numberText(sold)} ${esc(record.unit)}</strong></span><span>Other used <strong>${numberText(otherUsed)} ${esc(record.unit)}</strong></span><span>In stock <strong>${numberText(remaining)} ${esc(record.unit)}</strong></span><span>Cost owner <strong>${esc(assignment)}</strong></span>${sourceType==='production'?`<span>Unit cost <strong>${money(Number(record.quantity)>0?amount/record.quantity:0)}</strong></span>`:''}</div>
-   <div class="inventory-row-actions"><div><strong class="assignment-label">Assign product cost (select one or more)</strong><div class="member-check-list" data-inventory-members>${inventoryMemberChecks(line)}</div></div><div class="inventory-buttons"><button type="button" class="edit-btn" data-save-inventory-assignment>Save assignment</button><button type="button" class="secondary" data-use-inventory ${remaining<=0.000001?'disabled':''}>Use stock</button></div></div>
+   <div class="inventory-row-head"><div><strong>${esc(record.product)}</strong></div></div>
+   <div class="inventory-primary-stats">
+    <div class="inventory-primary-stock"><small>In stock</small><strong>${numberText(remaining)} ${esc(record.unit)}</strong></div>
+    <div class="inventory-primary-unit-cost"><small>Unit cost</small><strong>${money(unitCost)} / ${esc(record.unit)}</strong></div>
+    <div class="inventory-primary-owners"><small>Cost owners</small><strong title="${esc(assignment)}">${esc(assignment)}</strong></div>
+    <details class="inventory-row-details"><summary><span>Other details</span><span class="inventory-detail-arrow" aria-hidden="true">▾</span></summary>
+     <div class="inventory-details-content">
+      <div class="inventory-extra-stats">
+       <span>Added<strong>${numberText(record.quantity)} ${esc(record.unit)}</strong></span>
+       <span>Sold<strong>${numberText(sold)} ${esc(record.unit)}</strong></span>
+       <span>Other used<strong>${numberText(otherUsed)} ${esc(record.unit)}</strong></span>
+       <span>Total cost<strong>${money(amount)}</strong></span>
+       <span>Product type<strong>${esc(record.productType||'Other')}</strong></span>
+       <span>Source<strong>${sourceType==='production'?'Production':'Purchase'}</strong></span>
+       <span>Supplier / source<strong>${esc(sourceLabel)}</strong></span>
+       <span>Purchase / production date<strong>${esc(fmt(record.date))}</strong></span>
+       <span>Bill / production no.<strong>${esc(sourceNo)}</strong></span>
+       ${record.spec?`<span>Size / specification<strong>${esc(record.spec)}</strong></span>`:''}
+      </div>
+      <div class="inventory-row-actions"><div><strong class="assignment-label">Assign product cost (select one or more)</strong><div class="member-check-list" data-inventory-members>${inventoryMemberChecks(line)}</div></div><div class="inventory-buttons">
+       ${sourceType==='purchase'&&db.settings.allowPurchaseBillEdits!==false?`<button type="button" class="edit-btn" data-edit-inventory-bill="${esc(bill.id)}">Edit recent bill</button>`:''}
+       <button type="button" class="edit-btn" data-save-inventory-assignment>Save assignment</button>
+       <button type="button" class="secondary" data-use-inventory ${remaining<=0.000001?'disabled':''}>Use stock</button>
+      </div></div>
+     </div>
+    </details>
+   </div>
   </article>`;
  }).join(''):empty('No inventory yet. Save a purchase bill or production batch to add products to your inventory.');
+ list.querySelectorAll('[data-edit-inventory-bill]').forEach(button=>button.onclick=()=>editPurchaseBill(button.dataset.editInventoryBill));
  list.querySelectorAll('[data-save-inventory-assignment]').forEach(button=>button.onclick=()=>{
   const row=button.closest('[data-inventory-ref]'),[billId,lineId]=String(row?.dataset.inventoryRef||'').split('::'),record=resolveStockSource(billId,lineId);if(!record)return;
   const members=[...(row?.querySelectorAll('[data-inventory-members] input:checked')||[])].map(input=>input.value);
@@ -492,6 +614,29 @@ function renderInventory(){
   db.consumptions.push({id:crypto.randomUUID(),billId,lineId,quantity,date:today()});save();
  });
 }
+function inventoryStatementRows(){
+ return inventoryEntries().map(record=>{
+  const unitCost=Number(record.quantity)>0?Number(record.amount||0)/Number(record.quantity):0;
+  return [record.product,record.productType||'Other',record.spec||'',record.sourceType==='production'?'Production':'Purchase',record.bill.supplier||'In-house production',record.bill.billNo||'',record.date,numberText(record.quantity),record.unit,numberText(record.sold),numberText(record.otherUsed),numberText(record.remaining),money(unitCost),money(record.amount),record.costMembers.length?record.costMembers.join(', '):'Not assigned'];
+ });
+}
+function inventoryStatementHtml(){
+ const headers=['Product','Product type','Size / specification','Source','Supplier','Bill / production no.','Date','Added qty','Unit','Sold qty','Other used','In stock','Unit cost','Total cost','Cost owners'];
+ const rows=inventoryStatementRows(),totalLots=rows.length,totalStock=inventoryEntries().reduce((t,r)=>t+Number(r.remaining||0),0),totalCost=inventoryEntries().reduce((t,r)=>t+Number(r.amount||0),0);
+ const head=headers.map(value=>`<th>${esc(value)}</th>`).join(''),body=rows.map(row=>`<tr>${row.map(value=>`<td>${esc(value)}</td>`).join('')}</tr>`).join('');
+ return `<!doctype html><html><head><meta charset="utf-8"><title>DayQuest Inventory Statement</title><style>body{font-family:Arial,sans-serif;color:#182337;padding:22px}h1{font-size:20px;margin:0 0 6px}.meta{color:#667085;font-size:11px;margin-bottom:14px}.summary{display:flex;gap:24px;flex-wrap:wrap;margin:12px 0 18px}.summary strong{display:block;font-size:15px;margin-top:3px}table{border-collapse:collapse;width:100%;font-size:10px}th,td{border:1px solid #d8dee8;padding:6px;text-align:left;vertical-align:top}th{background:#eef2f7}tr:nth-child(even){background:#fafbfd}@media print{body{padding:0}thead{display:table-header-group}tr{break-inside:avoid}}</style></head><body><h1>DayQuest · Inventory Statement</h1><div class="meta">Generated ${esc(fmt(today()))}</div><div class="summary"><div>Product lots<strong>${totalLots}</strong></div><div>Available stock<strong>${esc(numberText(totalStock))}</strong></div><div>Total inventory cost<strong>${esc(money(totalCost))}</strong></div></div><table><thead><tr>${head}</tr></thead><tbody>${body||`<tr><td colspan="${headers.length}">No inventory records</td></tr>`}</tbody></table></body></html>`;
+}
+function exportInventoryStatement(format){
+ const html=inventoryStatementHtml();
+ if(format==='excel'){
+  const blob=new Blob(['\ufeff',html],{type:'application/vnd.ms-excel;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download=`dayquest-inventory-statement-${today()}.xls`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);return;
+ }
+ const popup=window.open('','_blank');if(!popup){alert('Allow pop-ups for DayQuest to print or save this inventory statement as PDF.');return}
+ popup.document.open();popup.document.write(html);popup.document.close();popup.focus();setTimeout(()=>{try{popup.print()}catch{}},350);
+}
+$('inventoryExcelBtn').onclick=()=>exportInventoryStatement('excel');
+$('inventoryPdfBtn').onclick=()=>exportInventoryStatement('pdf');
 
 // Production: consume existing inventory lots by FIFO and create a new finished-goods lot.
 let productionInputs=[];
@@ -509,9 +654,9 @@ function productionInputTemplate(input,index,buckets){
  const available=buckets.find(bucket=>bucket.product.toLocaleLowerCase()===String(input.product||'').toLocaleLowerCase()&&bucket.unit.toLocaleLowerCase()===String(input.unit||'').toLocaleLowerCase())?.available||0;
  return `<div class="production-input-line" data-production-input="${index}">
   <div class="production-input-head"><strong>Material ${index+1}</strong><button type="button" class="delete remove-production-input" data-index="${index}" ${productionInputs.length===1?'disabled':''}>Remove</button></div>
-  <label>Inventory product <select class="production-input-product" required><option value="">${buckets.length?'Select available inventory product':'No available inventory stock'}</option>${options}${input.product&&!buckets.some(bucket=>bucket.product.toLocaleLowerCase()===input.product.toLocaleLowerCase()&&bucket.unit.toLocaleLowerCase()===input.unit.toLocaleLowerCase())?`<option value="${esc(selected)}" selected>${esc(input.product)} (${esc(input.unit)}) · No stock on production date</option>`:''}</select></label>
-  <label>Quantity to use${input.unit?` (${esc(input.unit)})`:''} <input class="production-input-quantity" type="number" min="0.001" step="any" value="${Number(input.quantity||1)}" required></label>
-  <small class="production-input-stock">${input.product?`Available on ${fmt($('productionDate').value)}: ${numberText(available)} ${esc(input.unit)}`:'Select a product to see available stock and material cost.'}</small>
+  <label class="production-input-product-field">Inventory product <select class="production-input-product" required><option value="">${buckets.length?'Select available inventory product':'No available inventory stock'}</option>${options}${input.product&&!buckets.some(bucket=>bucket.product.toLocaleLowerCase()===input.product.toLocaleLowerCase()&&bucket.unit.toLocaleLowerCase()===input.unit.toLocaleLowerCase())?`<option value="${esc(selected)}" selected>${esc(input.product)} (${esc(input.unit)}) · No stock on production date</option>`:''}</select></label>
+  <div class="production-input-measure-row"><label>Quantity to use <input class="production-input-quantity" type="number" min="0.001" step="any" value="${Number(input.quantity||1)}" required></label><label class="production-input-unit-field">Unit <input class="production-input-unit" value="${esc(input.unit||'')}" placeholder="—" readonly aria-readonly="true" tabindex="-1"></label></div>
+  ${input.product?`<small class="production-input-stock">Available on ${fmt($('productionDate').value)}: ${numberText(available)} ${esc(input.unit)}</small>`:''}
  </div>`;
 }
 function renderProductionInputs(){
@@ -612,9 +757,9 @@ function renderSupplierAccounts(){
  $('purchaseBillList').innerHTML=db.purchaseBills.length?db.purchaseBills.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(b=>{
   const billId=esc(b.id),products=(b.lines||[]).map(line=>{
    const lineId=esc(line.id),used=db.consumptions.filter(c=>c.billId===b.id&&c.lineId===line.id).reduce((t,c)=>t+Number(c.quantity||0),0),remaining=Math.max(0,Number(line.quantity||0)-used),amount=purchaseLineCost(b,line),owners=assignedMembers(line);
-   return `<article class="purchase-bill-line" id="purchase-bill-line-${lineId}"><div class="purchase-bill-line-head"><strong>${esc(line.product||'Product')}${line.spec?` · ${esc(line.spec)}`:''}</strong><strong>${money(amount)}</strong></div><small>${esc(line.productType||'Other')} · ${numberText(line.quantity)} ${esc(line.unit||'pcs')} × ${money(line.rate||0)}</small><div class="purchase-bill-stock"><span>Purchased <strong>${numberText(line.quantity)} ${esc(line.unit||'pcs')}</strong></span><span>Used <strong>${numberText(used)} ${esc(line.unit||'pcs')}</strong></span><span>In stock <strong>${numberText(remaining)} ${esc(line.unit||'pcs')}</strong></span><span>Assigned to <strong>${esc(owners.length?owners.join(', '):'Not assigned')}</strong></span></div><button type="button" class="edit-btn" data-view-inventory-line="${esc(stockRefKey(b.id,line.id))}">Open inventory record</button></article>`;
+   return `<article class="purchase-bill-line" id="purchase-bill-line-${lineId}"><div class="purchase-bill-line-head"><strong>${esc(line.product||'Product')}${line.spec?` · ${esc(line.spec)}`:''}</strong><strong>${money(amount)}</strong></div><small>${esc(line.category||b.category||'Uncategorised')} · ${esc(line.productType||'Other')} · ${numberText(line.quantity)} ${esc(line.unit||'pcs')} × ${money(line.rate||0)}</small><div class="purchase-bill-stock"><span>Purchased <strong>${numberText(line.quantity)} ${esc(line.unit||'pcs')}</strong></span><span>Used <strong>${numberText(used)} ${esc(line.unit||'pcs')}</strong></span><span>In stock <strong>${numberText(remaining)} ${esc(line.unit||'pcs')}</strong></span><span>Assigned to <strong>${esc(owners.length?owners.join(', '):'Not assigned')}</strong></span></div><button type="button" class="edit-btn" data-view-inventory-line="${esc(stockRefKey(b.id,line.id))}">Open inventory record</button></article>`;
   }).join('');
-  return `<article class="purchase-bill-card" id="purchase-bill-${billId}"><div class="item bill-summary"><div class="item-main"><div class="item-title">${esc(b.supplier)}${b.billNo?` · #${esc(b.billNo)}`:''}</div><div class="item-sub">${fmt(b.date)} · ${esc(b.category||'Uncategorised')} · ${(b.lines||[]).length} products · Transit ${money(b.transitCost)} · Discount ${money(b.discount)} · Cash ${money(b.cashPaid)} · Bank ${money(b.bankPaid)} · Credit ${money(billCredit(b))}</div></div><div class="expense-right"><div class="item-amount">${money(billTotal(b))}</div><div class="item-actions"><button type="button" class="edit-btn" data-open-supplier="${esc(b.supplier)}">Account</button><button type="button" class="edit-btn" data-edit-bill="${billId}">Edit</button><button type="button" class="delete" data-delete-bill="${billId}" aria-label="Delete purchase bill">×</button></div></div></div><details class="purchase-bill-details" id="purchase-bill-detail-${billId}"><summary>View bill products & inventory</summary><div class="purchase-bill-products">${products||empty('No products on this bill.')}</div></details></article>`;
+  return `<article class="purchase-bill-card" id="purchase-bill-${billId}"><div class="item bill-summary"><div class="item-main"><div class="item-title">${esc(b.supplier||'Cash purchase')}${b.billNo?` · #${esc(b.billNo)}`:''}</div><div class="item-sub">${fmt(b.date)} · ${esc((b.lines||[]).map(line=>line.category||b.category||'Uncategorised').filter((value,index,array)=>array.indexOf(value)===index).join(', '))} · ${(b.lines||[]).length} products · Transit ${money(b.transitCost)} · Discount ${money(b.discount)} · Cash ${money(b.cashPaid)} · Bank ${money(b.bankPaid)} · Credit ${money(billCredit(b))}</div></div><div class="expense-right"><div class="item-amount">${money(billTotal(b))}</div><div class="item-actions">${b.supplier?`<button type="button" class="edit-btn" data-open-supplier="${esc(b.supplier)}">Account</button>`:''}<details class="purchase-bill-details purchase-bill-view-inline" id="purchase-bill-detail-${billId}"><summary class="edit-btn">View</summary><div class="purchase-bill-products">${products||empty('No products on this bill.')}</div></details>${db.settings.allowPurchaseBillEdits!==false?`<button type="button" class="edit-btn" data-edit-bill="${billId}">Edit bill</button>`:'' }<button type="button" class="delete" data-delete-bill="${billId}" aria-label="Delete purchase bill">×</button></div></div></div></article>`;
  }).join(''):empty('No purchase bills saved yet.');
  $('purchaseBillList').querySelectorAll('[data-open-supplier]').forEach(btn=>btn.onclick=()=>openSupplierAccount(btn.dataset.openSupplier));
  $('purchaseBillList').querySelectorAll('[data-edit-bill]').forEach(btn=>btn.onclick=()=>editPurchaseBill(btn.dataset.editBill));
@@ -704,16 +849,14 @@ function renderProductPurchaseReport(from=$('productReportFromDate')?.value||'',
  $('productPurchaseReport').innerHTML=`<div class="product-report-summary"><div><span>Purchase cost · ${esc(rangeLabel)}</span><strong>${money(grandTotal)}</strong></div><div><span>Products purchased</span><strong>${productCount}</strong></div></div>${rows||empty(`No product purchases found from ${esc(fmt(from))} to ${esc(fmt(to))}.`)}`;
 }
 function editPurchaseBill(id){
+ if(db.settings.allowPurchaseBillEdits===false){setTab('settings');const hint=$('purchaseEditHint');if(hint){hint.textContent='Enable “Allow editing saved purchase bills” in Settings before editing this bill.';hint.hidden=false}return}
  const b=db.purchaseBills.find(x=>x.id===id);if(!b)return;
  setTab('purchaseBills');
- const hasSupplierPayments=db.supplierPayments.some(p=>p.supplier===b.supplier);
- if(hasSupplierPayments){alert('This supplier has payment history, so this bill cannot be edited safely without changing the supplier ledger.');return}
- if(db.consumptions.some(c=>c.billId===id)){alert('This bill has stock usage records. Editing it could make the inventory quantity inaccurate, so it is locked.');return}
  editingPurchaseBillId=id;purchaseBillOriginalDate=String(b.date||'');ensureOption($('purchaseSupplier'),b.supplier);$('purchaseSupplier').value=b.supplier;
- const billCategory=b.category||'Uncategorised';if(!db.purchaseCategories.includes(billCategory))db.purchaseCategories.push(billCategory);fillChoices();$('purchaseCategory').value=billCategory;
+ fillChoices();
  $('purchaseBillNo').value=b.billNo||'';$('purchaseDate').value=b.date||today();$('purchaseCashPaid').value=Number(b.cashPaid||0);$('purchaseBankPaid').value=Number(b.bankPaid||0);$('purchaseTransitCost').value=Number(b.transitCost||0);$('purchaseDiscount').value=Number(b.discount||0);$('purchaseNote').value=b.note||'';
- purchaseLines=(b.lines||[]).map(l=>({lineId:l.id||null,product:l.product||'',productType:l.productType||'Other',spec:l.spec||'',quantity:Number(l.quantity||0),unit:l.unit||'pcs',rate:Number(l.rate||0),amount:Number(l.amount??(Number(l.quantity||0)*Number(l.rate||0))),amountMode:'rate',calcError:'',amountPending:false,costType:l.costType||'unassigned',costMember:l.costMember||'',costMembers:assignedMembers(l)}));
- purchaseLines.forEach(l=>{if(!db.units.includes(l.unit))db.units.push(l.unit)});renderPurchaseLines();$('purchaseBillSubmit').textContent='Update purchase bill';$('cancelPurchaseEdit').hidden=false;$('purchaseBillForm').scrollIntoView({behavior:'smooth',block:'start'});
+ purchaseLines=(b.lines||[]).map(l=>({lineId:l.id||null,product:l.product||'',category:l.category||b.category||'Staples',productType:l.productType||'Other',spec:l.spec||'',quantity:Number(l.quantity||0),unit:l.unit||'pcs',rate:Number(l.rate||0),amount:Number(l.amount??(Number(l.quantity||0)*Number(l.rate||0))),amountMode:'rate',calcError:'',amountPending:false,costType:l.costType||'unassigned',costMember:l.costMember||'',costMembers:assignedMembers(l)}));
+ purchaseLines.forEach(l=>{if(!db.units.includes(l.unit))db.units.push(l.unit)});if($('purchaseEditHint')){$('purchaseEditHint').hidden=false;const hasUsedLines=db.consumptions.some(c=>c.billId===id);$('purchaseEditHint').textContent=hasUsedLines?'You are updating a bill already linked to inventory use, production or sales. Keep the used line in place; quantity changes proportionally update linked stock movements, unit/price corrections recalculate downstream production costs, supplier balances and reports.':'You are updating a saved bill. Inventory, supplier balances, production costs and all reports recalculate when you save.';}renderPurchaseLines();$('purchaseBillSubmit').textContent='Update recent bill';$('cancelPurchaseEdit').hidden=false;$('purchaseBillForm').scrollIntoView({behavior:'smooth',block:'start'});
 }
 $('cancelPurchaseEdit').onclick=resetPurchaseForm;
 function deletePurchaseBill(id){const b=db.purchaseBills.find(x=>x.id===id);if(!b)return;if(db.supplierPayments.some(p=>p.supplier===b.supplier)){alert('This supplier has payment history. Keep the bill to preserve the supplier ledger.');return}if(db.consumptions.some(c=>c.billId===id)){alert('This bill has stock usage records. It cannot be deleted because that would break the inventory history.');return}if(confirm('Delete this purchase bill?')){db.purchaseBills=db.purchaseBills.filter(x=>x.id!==id);save()}}
@@ -758,6 +901,76 @@ $('expenseForm').onsubmit=e=>{e.preventDefault();let quantity=Number($('quantity
  if(editingExpenseId){const existing=db.expenses.find(x=>x.id===editingExpenseId);if(existing){const settled=expenseSettledAmount(existing);if(settled>0&&(paymentType!=='Due'||quantity*rate<settled||$('dueDirection').value!==existing.dueDirection)){alert('This due already has payments or collections. Keep the Due type and direction, and set the amount to at least the amount already settled.');return}Object.assign(existing,values)}}
  else db.expenses.unshift({id:crypto.randomUUID(),...values});
  resetExpenseForm();save()};
+function quickSelectedMembers(){return [...($('quickActionMembers')?.querySelectorAll('input[type=checkbox]:checked')||[])].map(input=>input.value)}
+function renderQuickMemberOptions(selectedNames=[]){
+ const list=$('quickActionMembers');if(!list)return;
+ const selected=new Set(uniquePeople(selectedNames).map(n=>n.toLocaleLowerCase()));
+ const names=assignablePeople();
+ list.innerHTML=names.map(name=>`<label class="member-check"><input type="checkbox" value="${esc(name)}" ${selected.has(name.toLocaleLowerCase())?'checked':''}><span>${esc(name)}${db.guestPeople.some(n=>n.toLocaleLowerCase()===name.toLocaleLowerCase())?' · Guest':''}</span></label>`).join('')||'<span class="muted">Add family members in Profile or guest names below.</span>';
+}
+function fillQuickActionOptions(selectedType='',selectedPerson=''){
+ const type=$('quickActionIncomeType'),person=$('quickActionIncomeBy');
+ if(type){type.innerHTML=db.incomeHeads.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(db.incomeHeads.includes(selectedType))type.value=selectedType}
+ if(person){person.innerHTML=db.incomePeople.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('');if(db.incomePeople.includes(selectedPerson))person.value=selectedPerson;else if(db.incomePeople.includes(db.profile.name))person.value=db.profile.name}
+}
+function updateQuickActionTypeFields(){const isIncome=$('quickActionType').value==='income';$('quickExpenseConfig').hidden=isIncome;$('quickIncomeConfig').hidden=!isIncome;}
+function resetQuickActionForm(){
+ editingQuickActionId=null;$('quickActionForm').reset();$('quickActionId').value='';$('quickActionType').value='expense';$('quickActionPayment').value='Cash';$('quickActionFormTitle').textContent='Create quick button';$('quickActionSave').textContent='＋ Create button';$('quickActionCancel').hidden=true;updateQuickActionTypeFields();fillQuickActionOptions();renderQuickMemberOptions([]);
+}
+function editQuickAction(id){
+ const action=db.quickActions.find(x=>x.id===id);if(!action)return;
+ editingQuickActionId=id;$('quickActionId').value=id;$('quickActionName').value=action.name||'';$('quickActionType').value=action.type||'expense';$('quickActionRate').value=Number(action.rate||0);$('quickActionPayment').value=action.paymentType||'Cash';$('quickActionCategory').value=action.category||'Other';
+ fillQuickActionOptions(action.incomeType||'',action.incomeBy||'');renderQuickMemberOptions(action.costMembers||[]);updateQuickActionTypeFields();$('quickActionFormTitle').textContent='Edit quick button';$('quickActionSave').textContent='Save changes';$('quickActionCancel').hidden=false;$('quickActionForm').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function renderQuickActions(){
+ if(!$('quickActionList'))return;
+ $('quickActionCount').textContent=`${db.quickActions.length} button${db.quickActions.length===1?'':'s'}`;
+ fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');
+ $('quickActionList').innerHTML=db.quickActions.length?db.quickActions.map(action=>{
+  const count=quickActionCounts.has(action.id)?quickActionCounts.get(action.id):1,rate=Number(action.rate||0),type=action.type==='income'?'Income':'Expense',meta=action.type==='income'?`${action.incomeType||'Other'} · ${action.incomeBy||'Unassigned'}`:`${action.category||'Other'} · ${(action.costMembers||[]).length?`For ${(action.costMembers||[]).join(', ')}`:'Not assigned'}`;
+  return `<article class="quick-action-card" data-quick-card="${esc(action.id)}"><div class="quick-action-main"><div class="quick-action-title-row"><strong>${esc(action.name)}</strong><span class="quick-action-kind ${action.type==='income'?'income-kind':'expense-kind'}">${type}</span></div><div class="quick-action-meta">${esc(meta)} · ${money(rate)} each</div></div><div class="quick-action-controls"><div class="quick-action-stepper" aria-label="Quantity to record"><button type="button" data-quick-step="${esc(action.id)}" data-step="-1" aria-label="Decrease quantity">−</button><output>${count}</output><button type="button" data-quick-step="${esc(action.id)}" data-step="1" aria-label="Increase quantity">+</button></div><button type="button" class="primary quick-action-record" data-quick-record="${esc(action.id)}" ${count<1?'disabled':''}>Record ${count} · ${money(rate*count)}</button><div class="quick-action-manage"><button type="button" class="edit-btn" data-quick-edit="${esc(action.id)}">Edit</button><button type="button" class="delete" data-quick-delete="${esc(action.id)}" aria-label="Delete quick button ${esc(action.name)}">×</button></div></div></article>`;
+ }).join(''):empty('No quick buttons yet. Create an Expense or Income button above.');
+}
+function saveQuickAction(){
+ const name=$('quickActionName').value.trim(),type=$('quickActionType').value,rate=Number($('quickActionRate').value),paymentType=$('quickActionPayment').value;
+ if(!name||!(rate>0)||!Number.isFinite(rate)){alert('Enter a button name and a fixed rate greater than zero.');return}
+ let values={name,type,rate,paymentType};
+ if(type==='expense'){
+  values.category=$('quickActionCategory').value||'Other';values.costMembers=quickSelectedMembers();
+  if(!db.expenseNames.some(x=>x.toLocaleLowerCase()===name.toLocaleLowerCase()))db.expenseNames.push(name);
+ }else{
+  values.incomeType=$('quickActionIncomeType').value||'Other';values.incomeBy=$('quickActionIncomeBy').value||db.incomePeople[0]||'Unassigned';
+  if(!db.incomeHeads.includes(values.incomeType))db.incomeHeads.push(values.incomeType);
+  if(!db.incomePeople.includes(values.incomeBy))db.incomePeople.push(values.incomeBy);
+ }
+ if(editingQuickActionId){const existing=db.quickActions.find(x=>x.id===editingQuickActionId);if(existing)Object.assign(existing,values)}
+ else db.quickActions.unshift({id:crypto.randomUUID(),...values});
+ resetQuickActionForm();fillChoices();save();setTab('quickExpenses');
+}
+function recordQuickAction(id){
+ const action=db.quickActions.find(x=>x.id===id);if(!action)return;
+ const quantity=Math.max(1,Math.min(999,Math.floor(Number(quickActionCounts.get(id)??1)))),rate=Number(action.rate||0),amount=Number((quantity*rate).toFixed(2)),date=today();
+ if(!(rate>0)||!Number.isFinite(amount))return;
+ if(action.type==='income'){
+  const incomeBy=action.incomeBy||db.incomePeople[0]||'Unassigned';
+  db.incomes.unshift({id:crypto.randomUUID(),source:action.incomeType||'Other',incomeBy,amount,quantity,unit:'times',rate,paymentType:action.paymentType==='Bank'?'Bank':'Cash',duePerson:null,date,note:`Quick income button · ${action.name}`,quickActionId:action.id,quickActionName:action.name,collections:[]});
+  if(!db.incomeHeads.includes(action.incomeType||'Other'))db.incomeHeads.push(action.incomeType||'Other');if(!db.incomePeople.includes(incomeBy))db.incomePeople.push(incomeBy);
+ }else{
+  const costMembers=uniquePeople(action.costMembers||[]);
+  db.expenses.unshift({id:crypto.randomUUID(),name:action.name,amount,quantity,unit:'times',rate,paymentType:action.paymentType==='Bank'?'Bank':'Cash',costType:costMembers.length?'members':'unassigned',costMember:costMembers.length===1?costMembers[0]:'',costMembers,dueDirection:null,duePerson:null,duePaidFrom:null,category:action.category||'Other',date,note:`Quick expense button · ${action.name}`,quickActionId:action.id,quickActionName:action.name});
+ }
+ quickActionCounts.set(id,1);save();
+}
+$('quickActionType').onchange=updateQuickActionTypeFields;
+$('quickActionForm').onsubmit=e=>{e.preventDefault();saveQuickAction()};
+$('quickActionCancel').onclick=resetQuickActionForm;
+$('quickActionList').onclick=e=>{
+ const button=e.target.closest('button');if(!button)return;
+ if(button.dataset.quickStep){const id=button.dataset.quickStep,current=quickActionCounts.has(id)?quickActionCounts.get(id):1,next=Math.max(0,Math.min(999,current+Number(button.dataset.step||0)));quickActionCounts.set(id,next);renderQuickActions();return}
+ if(button.dataset.quickRecord){recordQuickAction(button.dataset.quickRecord);return}
+ if(button.dataset.quickEdit){editQuickAction(button.dataset.quickEdit);return}
+ if(button.dataset.quickDelete){const id=button.dataset.quickDelete,action=db.quickActions.find(x=>x.id===id);if(!action)return;if(confirm(`Delete the quick button “${action.name}”? Existing recorded transactions will remain in Expenses and Income.`)){db.quickActions=db.quickActions.filter(x=>x.id!==id);quickActionCounts.delete(id);if(editingQuickActionId===id)resetQuickActionForm();save()}}
+};
 function openExpenseDueAction(id){
  const x=db.expenses.find(item=>item.id===id);if(!x||expenseOutstanding(x)<=0)return;
  setTab('payExpenseDue');
@@ -972,15 +1185,84 @@ $('reportIncomePersonFilter').onchange=renderReport;
 $('productReportFromDate').onchange=renderReport;
 $('productReportToDate').onchange=renderReport;
 $('memberProductFilter').onchange=renderReport;
+
+const REPORT_TITLES={purchase:'Purchase Reports',assets:'Assets',members:'Members Report',production:'Production Report',creditors:'Creditors',debitors:'Debtors',cost:'Cost Report',income:'Income Report'};
+let reportPresentationReady=false;
+function prepareReportPresentation(){
+ if(reportPresentationReady)return;reportPresentationReady=true;
+ document.querySelectorAll('[data-report-pane]').forEach(pane=>{
+  const key=pane.dataset.reportPane,title=REPORT_TITLES[key]||'Report';
+  const toolbar=document.createElement('div');toolbar.className='report-tools';toolbar.innerHTML=`<strong>${title}</strong><div><button type="button" class="secondary report-export-btn" data-report-export="${key}" data-export-format="pdf">Print / PDF</button><button type="button" class="secondary report-export-btn" data-report-export="${key}" data-export-format="excel">Excel</button></div>`;
+  const detail=document.createElement('details');detail.className='report-detail-disclosure';
+  const summary=document.createElement('summary');summary.className='report-detail-summary';summary.innerHTML=`<span>${title}</span><span class="report-summary-metrics" data-report-summary="${key}">Summary</span><span class="report-summary-arrow" aria-hidden="true">▾</span>`;
+  const content=document.createElement('div');content.className='report-detail-body';
+  while(pane.firstChild)content.appendChild(pane.firstChild);
+  detail.append(summary,content);pane.append(toolbar,detail);
+ });
+ document.querySelectorAll('[data-report-export]').forEach(button=>button.addEventListener('click',()=>exportReport(button.dataset.reportExport,button.dataset.exportFormat)));
+}
+function reportMetricText(id){const node=$(id);return node?node.textContent.trim():''}
+function reportSummaryMetrics(key){
+ const from=$('productReportFromDate')?.value||'',to=$('productReportToDate')?.value||'';
+ if(!from||!to||from>to)return 'Select a valid date range';
+ if(key==='purchase'){const bills=db.purchaseBills.filter(b=>b.date>=from&&b.date<=to),total=bills.reduce((t,b)=>t+billTotal(b),0);return `${money(total)} · ${bills.length} bills`}
+ if(key==='assets')return `${reportMetricText('assetPurchaseTotal')} · ${reportMetricText('assetPurchaseLines')} lines`;
+ if(key==='members')return `${reportMetricText('familyCostTotal')} shared · ${reportMetricText('memberDirectCostTotal')} direct`;
+ if(key==='production')return `${reportMetricText('productionReportCost')} · ${reportMetricText('productionReportBatchCount')} batches`;
+ if(key==='creditors')return `${reportMetricText('iOweTotal')} outstanding`;
+ if(key==='debitors')return `${reportMetricText('owedToMeTotal')} receivable`;
+ if(key==='cost')return `${reportMetricText('reportTotal')} total cost`;
+ if(key==='income')return `${reportMetricText('reportIncomeTotal')} recorded · ${reportMetricText('reportIncomeCollected')} received`;
+ return '';
+}
+function updateReportSummaryMetrics(){
+ Object.keys(REPORT_TITLES).forEach(key=>{const node=document.querySelector(`[data-report-summary="${key}"]`);if(node)node.textContent=reportSummaryMetrics(key)});
+}
+function reportExportRows(keys){
+ const from=$('productReportFromDate')?.value||'',to=$('productReportToDate')?.value||'',rows=[];
+ keys.forEach(key=>{
+  const pane=document.querySelector(`[data-report-pane="${key}"]`);if(!pane)return;
+  rows.push([REPORT_TITLES[key]||key,'Reporting period',`${from} to ${to}`]);
+  const body=pane.querySelector('.report-detail-body')||pane;
+  body.querySelectorAll('.stat').forEach(card=>{
+   const label=card.querySelector('.muted,span')?.textContent?.trim()||'Summary';
+   const value=card.querySelector('strong')?.textContent?.trim()||'';
+   const note=card.querySelector('small')?.textContent?.trim()||'';
+   rows.push([REPORT_TITLES[key],label,[value,note].filter(Boolean).join(' · ')]);
+  });
+  body.querySelectorAll('.list').forEach((list,listIndex)=>[...list.children].forEach((item,index)=>{
+   const text=item.textContent.replace(/\s+/g,' ').trim();if(text&&!item.classList.contains('empty'))rows.push([REPORT_TITLES[key],`List ${listIndex+1} · Item ${index+1}`,text]);
+  }));
+ });
+ return rows;
+}
+function reportDocumentHtml(keys){
+ const from=$('productReportFromDate')?.value||'',to=$('productReportToDate')?.value||'';
+ const rows=reportExportRows(keys).map(row=>`<tr>${row.map(cell=>`<td>${esc(cell)}</td>`).join('')}</tr>`).join('');
+ return `<!doctype html><html><head><meta charset="utf-8"><title>DayQuest Report</title><style>body{font-family:Arial,sans-serif;color:#182337;padding:24px}h1{font-size:22px;margin:0 0 6px}p{color:#667085;margin:0 0 18px}table{border-collapse:collapse;width:100%;font-size:12px}th,td{border:1px solid #d8dee8;padding:8px;text-align:left;vertical-align:top}th{background:#eef2f7} @media print{body{padding:0}thead{display:table-header-group}}</style></head><body><h1>${esc(keys.length===1?REPORT_TITLES[keys[0]]:'DayQuest · All Reports')}</h1><p>Reporting period: ${esc(from)} to ${esc(to)}</p><table><thead><tr><th>Report</th><th>Item</th><th>Details / Amount</th></tr></thead><tbody>${rows||'<tr><td colspan="3">No report data</td></tr>'}</tbody></table></body></html>`;
+}
+function exportReport(key,format){
+ const keys=key==='all'?Object.keys(REPORT_TITLES):[key];
+ if(format==='excel'){
+  const html=reportDocumentHtml(keys),blob=new Blob([html],{type:'application/vnd.ms-excel;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`dayquest-${key}-report-${today()}.xls`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);return;
+ }
+ const popup=window.open('','_blank');if(!popup){alert('Allow pop-ups for DayQuest to print or save this report as PDF.');return}
+ popup.document.open();popup.document.write(reportDocumentHtml(keys));popup.document.close();popup.focus();setTimeout(()=>{try{popup.print()}catch{}},350);
+}
 function activateReportSection(key){
  const known=['members','production','cost','income','creditors','debitors','assets','purchase'];
- const selected=key==='all'?'all':(known.includes(key)?key:'members');
+ const selected=key==='all'?'all':(known.includes(key)?key:'members');prepareReportPresentation();
  document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.toggle('active',item.dataset.reportGo===selected));
- document.querySelectorAll('[data-report-pane]').forEach(pane=>{pane.hidden=selected!=='all'&&pane.dataset.reportPane!==selected});
+ document.querySelectorAll('[data-report-pane]').forEach(pane=>{
+  const visible=selected==='all'||pane.dataset.reportPane===selected;pane.hidden=!visible;pane.classList.toggle('report-pane-all',selected==='all');pane.classList.toggle('report-pane-single',selected!=='all');
+  const detail=pane.querySelector('.report-detail-disclosure');if(detail){detail.open=selected!=='all';}
+ });
  const group=document.querySelector('[data-side-group="reports"]');if(group){group.open=true;group.classList.add('has-active')}
+ updateReportSummaryMetrics();
  const target=selected==='all'?document.querySelector('[data-report-pane="purchase"]'):document.querySelector(`[data-report-pane="${selected}"]`);
  if(target&&$('reports')?.classList.contains('active'))target.scrollIntoView({behavior:'smooth',block:'start'});
 }
+
 document.querySelectorAll('[data-report-go]').forEach(button=>button.addEventListener('click',()=>{
  setTab('reports');activateReportSection(button.dataset.reportGo);
 }));
@@ -992,6 +1274,59 @@ function applyThemeColor(color,persist=true){
  if($('themeColorValue'))$('themeColorValue').textContent=normalized.toUpperCase();
  if(persist){db.settings=db.settings||{};db.settings.themeColor=normalized;localSaveOnly()}
 }
+
+const SETTINGS_MASTER_CONFIG={
+ supplier:{list:'settingsSupplierList',array:'suppliers',input:'newSettingSupplier',form:'addSettingSupplierForm',title:'supplier'},
+ product:{list:'settingsProductList',array:'productNames',input:'newSettingProduct',form:'addSettingProductForm',title:'product'},
+ productType:{list:'settingsProductTypeList',array:'productTypes',input:'newSettingProductType',form:'addSettingProductTypeForm',title:'product type'},
+ unit:{list:'settingsUnitList',array:'units',input:'newSettingUnit',form:'addSettingUnitForm',title:'unit'}
+};
+function renderMasterLists(){
+ Object.entries(SETTINGS_MASTER_CONFIG).forEach(([kind,cfg])=>{
+  const list=$(cfg.list);if(!list)return;const values=db[cfg.array]||[];
+  list.innerHTML=values.map((name,index)=>`<div class="category-setting-row"><span><strong>${esc(name)}</strong><small>Available for new entries</small></span><div><button type="button" class="edit-btn" data-master-rename="${kind}" data-index="${index}">Rename</button><button type="button" class="delete" data-master-delete="${kind}" data-index="${index}" aria-label="Delete ${esc(name)}">×</button></div></div>`).join('')||empty(`No ${cfg.title}s added yet.`);
+  list.querySelectorAll('[data-master-rename]').forEach(button=>button.onclick=()=>renameMasterValue(kind,Number(button.dataset.index)));
+  list.querySelectorAll('[data-master-delete]').forEach(button=>button.onclick=()=>deleteMasterValue(kind,Number(button.dataset.index)));
+ });
+}
+function renameMasterValue(kind,index){
+ const cfg=SETTINGS_MASTER_CONFIG[kind],arr=db[cfg.array]||[],old=arr[index];if(!old)return;
+ const raw=prompt(`Rename ${cfg.title}:`,old);if(raw===null)return;const next=raw.trim();if(!next){alert('Name cannot be empty.');return}
+ if(arr.some((value,i)=>i!==index&&String(value).toLocaleLowerCase()===next.toLocaleLowerCase())){alert(`That ${cfg.title} already exists.`);return}
+ if(kind==='supplier'){
+  db.purchaseBills.forEach(b=>{if(b.supplier===old)b.supplier=next});db.supplierPayments.forEach(p=>{if(p.supplier===old)p.supplier=next});
+ }else if(kind==='product'){
+  db.purchaseBills.forEach(b=>(b.lines||[]).forEach(line=>{if(line.product===old)line.product=next}));
+  db.productions.forEach(p=>{if(p.product===old)p.product=next;(p.inputs||[]).forEach(input=>{if(input.product===old)input.product=next})});
+  db.consumptions.forEach(c=>{if(c.product===old)c.product=next});
+  db.incomes.forEach(item=>(item.salesMemo?.items||[]).forEach(line=>{if(line.product===old)line.product=next}));
+ }else if(kind==='productType'){
+  db.purchaseBills.forEach(b=>(b.lines||[]).forEach(line=>{if(line.productType===old)line.productType=next}));
+  db.productions.forEach(p=>{if(p.productType===old)p.productType=next});
+  db.incomes.forEach(item=>(item.salesMemo?.items||[]).forEach(line=>{if(line.productType===old)line.productType=next}));
+ }else if(kind==='unit'){
+  db.settings.unitAliases=db.settings.unitAliases||{};let canonical=old,guard=0;while(db.settings.unitAliases[canonical]&&guard++<12)canonical=db.settings.unitAliases[canonical];db.settings.unitAliases[next.toLocaleLowerCase()]=canonical;delete db.settings.unitAliases[String(old).toLocaleLowerCase()];
+  db.purchaseBills.forEach(b=>(b.lines||[]).forEach(line=>{if(line.unit===old)line.unit=next}));
+  db.productions.forEach(p=>{if(p.unit===old)p.unit=next;(p.inputs||[]).forEach(input=>{if(input.unit===old)input.unit=next})});
+  db.consumptions.forEach(c=>{if(c.unit===old)c.unit=next});
+  db.incomes.forEach(item=>(item.salesMemo?.items||[]).forEach(line=>{if(line.unit===old)line.unit=next}));
+ }
+ arr[index]=next;fillChoices();renderMasterLists();renderPurchaseCategorySettings();save();
+}
+function deleteMasterValue(kind,index){
+ const cfg=SETTINGS_MASTER_CONFIG[kind],arr=db[cfg.array]||[],name=arr[index];if(!name)return;
+ let used=false;
+ if(kind==='supplier')used=db.purchaseBills.some(b=>b.supplier===name)||db.supplierPayments.some(p=>p.supplier===name);
+ if(kind==='product')used=db.purchaseBills.some(b=>(b.lines||[]).some(line=>line.product===name))||db.productions.some(p=>p.product===name||(p.inputs||[]).some(input=>input.product===name))||db.incomes.some(item=>(item.salesMemo?.items||[]).some(line=>line.product===name));
+ if(kind==='productType')used=db.purchaseBills.some(b=>(b.lines||[]).some(line=>line.productType===name))||db.productions.some(p=>p.productType===name)||db.incomes.some(item=>(item.salesMemo?.items||[]).some(line=>line.productType===name));
+ if(kind==='unit')used=db.purchaseBills.some(b=>(b.lines||[]).some(line=>line.unit===name))||db.productions.some(p=>p.unit===name||(p.inputs||[]).some(input=>input.unit===name))||db.consumptions.some(c=>c.unit===name)||db.incomes.some(item=>(item.salesMemo?.items||[]).some(line=>line.unit===name));
+ if(used){alert(`This ${cfg.title} is used in saved transactions or inventory. Rename it instead; deletion is blocked to preserve history.`);return}
+ if(confirm(`Delete ${cfg.title} “${name}”?`)){arr.splice(index,1);if(kind==='productType'&&!arr.length)arr.push('Other');if(kind==='unit'){if(!arr.length)arr.push('pcs');if(db.settings.unitAliases)delete db.settings.unitAliases[name]}fillChoices();renderMasterLists();save()}
+}
+Object.entries(SETTINGS_MASTER_CONFIG).forEach(([kind,cfg])=>{
+ const form=$(cfg.form);if(!form)return;form.onsubmit=e=>{e.preventDefault();const field=$(cfg.input),name=field.value.trim();if(!name)return;const arr=db[cfg.array];if(arr.some(value=>String(value).toLocaleLowerCase()===name.toLocaleLowerCase())){alert(`That ${cfg.title} already exists.`);return}arr.push(name);field.value='';fillChoices();renderMasterLists();save()};
+});
+
 function renderPurchaseCategorySettings(){
  const list=$('purchaseCategoryList');if(!list)return;
  list.innerHTML=db.purchaseCategories.map((name,index)=>`<div class="category-setting-row"><span><strong>${esc(name)}</strong><small>Used on purchase bills and reports</small></span><div><button type="button" class="edit-btn" data-rename-category="${index}">Rename</button><button type="button" class="delete" data-delete-category="${index}" aria-label="Delete ${esc(name)}">×</button></div></div>`).join('')||empty('No purchase categories. Add one above.');
@@ -999,14 +1334,18 @@ function renderPurchaseCategorySettings(){
   const index=Number(button.dataset.renameCategory),old=db.purchaseCategories[index];if(!old)return;
   const raw=prompt('Rename purchase category:',old);if(raw===null)return;const next=raw.trim();if(!next){alert('Category name cannot be empty.');return}
   if(db.purchaseCategories.some((name,i)=>i!==index&&name.toLowerCase()===next.toLowerCase())){alert('That purchase category already exists.');return}
-  db.purchaseBills.forEach(b=>{if((b.category||'Uncategorised')===old)b.category=next});db.purchaseCategories[index]=next;fillChoices();renderPurchaseCategorySettings();save();
+  db.purchaseBills.forEach(b=>{if((b.category||'Uncategorised')===old)b.category=next;(b.lines||[]).forEach(line=>{if((line.category||b.category||'Uncategorised')===old)line.category=next})});db.purchaseCategories[index]=next;fillChoices();renderPurchaseCategorySettings();save();
  });
  list.querySelectorAll('[data-delete-category]').forEach(button=>button.onclick=()=>{
-  const index=Number(button.dataset.deleteCategory),name=db.purchaseCategories[index];if(!name)return;
-  if(db.purchaseBills.some(b=>(b.category||'Uncategorised')===name)){alert('This category is used by saved purchase bills. Rename it instead, or move those bills to another category before deleting.');return}
+  const index=Number(button.dataset.deleteCategory),name=db.purchaseCategories[index];if(!name)return;if(db.purchaseCategories.length===1){alert('Keep at least one purchase category.');return}
+  if(db.purchaseBills.some(b=>(b.lines||[]).some(line=>(line.category||b.category||'Uncategorised')===name)||(!b.lines?.length&&(b.category||'Uncategorised')===name))){alert('This category is used by saved purchase lines. Rename it instead, or move those lines to another category before deleting.');return}
   if(confirm(`Delete the purchase category “${name}”?`)){db.purchaseCategories.splice(index,1);fillChoices();renderPurchaseCategorySettings();save()}
  });
 }
+$('requireSupplierForDuePurchase').checked=db.settings.requireSupplierForDuePurchase!==false;
+$('requireSupplierForDuePurchase').onchange=e=>{db.settings.requireSupplierForDuePurchase=!!e.target.checked;save()};
+$('allowPurchaseBillEdits').checked=db.settings.allowPurchaseBillEdits!==false;
+$('allowPurchaseBillEdits').onchange=e=>{db.settings.allowPurchaseBillEdits=!!e.target.checked;if(!db.settings.allowPurchaseBillEdits&&editingPurchaseBillId)resetPurchaseForm();save()};
 $('themeColorInput').oninput=e=>applyThemeColor(e.target.value);
 document.querySelectorAll('[data-theme-color]').forEach(button=>button.onclick=()=>applyThemeColor(button.dataset.themeColor));
 $('addPurchaseCategoryForm').onsubmit=e=>{
@@ -1128,7 +1467,7 @@ function render(){
  $('todayQuests').innerHTML=questHTML(qToday.slice(0,4),false);
  $('expenseCount').textContent=`${db.expenses.length} expenses · ${db.purchaseBills.length} bills`;
  let filtered=db.expenses.filter(x=>( $('expenseFilter').value==='all'||x.category===$('expenseFilter').value)&&(`${x.note} ${x.category}`).toLowerCase().includes($('expenseSearch').value.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date));
- $('expenseList').innerHTML=expenseHTML(filtered,true);$('questList').innerHTML=questHTML(dayQuests(d),true);renderSupplierAccounts();renderInventory();renderProductionList();renderExpenseDueList();renderGuestReport();
+ $('expenseList').innerHTML=expenseHTML(filtered,true);$('questList').innerHTML=questHTML(dayQuests(d),true);renderQuickActions();renderSupplierAccounts();renderInventory();renderProductionList();renderExpenseDueList();renderGuestReport();
  $('questSummary').textContent=`${done}/${qToday.length} completed`;$('incomeCount').textContent=`${db.incomes.length} entries`;
  const incomeFilter=$('incomeDateFilter').value,incomeHead=$('incomeHeadFilter').value,incomePerson=$('incomePersonFilter').value;const incomes=[...db.incomes].filter(x=>(!incomeFilter||x.date===incomeFilter)&&(incomeHead==='all'||(x.source||'Other')===incomeHead)&&(incomePerson==='all'||(x.incomeBy||'Unassigned')===incomePerson)).sort((a,b)=>b.date.localeCompare(a.date));$('incomeList').innerHTML=incomeHTML(incomes,true);renderSalesMemoList();
 }
@@ -1317,11 +1656,11 @@ function renderProductionReport(from,to){
 }
 function renderAssetsReport(from,to){
  const list=$('assetPurchaseReportList');if(!list)return;
- const bills=db.purchaseBills.filter(b=>String(b.date||'')>=from&&String(b.date||'')<=to&&(String(b.category||'').toLocaleLowerCase()==='assets'));
- const rows=bills.flatMap(b=>(b.lines||[]).map(line=>({bill:b,line,amount:purchaseLineCost(b,line)})));
+ const bills=db.purchaseBills.filter(b=>String(b.date||'')>=from&&String(b.date||'')<=to);
+ const rows=bills.flatMap(b=>(b.lines||[]).filter(line=>String(line.category||b.category||'').toLocaleLowerCase()==='assets').map(line=>({bill:b,line,amount:purchaseLineCost(b,line)})));
  const total=rows.reduce((sum,row)=>sum+row.amount,0);
- $('assetPurchaseTotal').textContent=money(total);$('assetPurchaseLines').textContent=String(rows.length);$('assetPurchaseBills').textContent=String(bills.length);
- list.innerHTML=rows.length?rows.sort((a,b)=>String(b.bill.date||'').localeCompare(String(a.bill.date||''))).map(({bill,line,amount})=>`<article class="asset-report-row"><div><strong>${esc(line.product||'Asset')}${line.spec?` · ${esc(line.spec)}`:''}</strong><small>${fmt(bill.date)} · ${esc(bill.supplier||'Supplier')} · Bill ${esc(bill.billNo||'')}</small><small>${numberText(line.quantity)} ${esc(line.unit||'pcs')} · ${esc(line.productType||'Other')}</small></div><strong>${money(amount)}</strong></article>`).join(''):empty('No purchase bills with category Assets in the selected date range.');
+ $('assetPurchaseTotal').textContent=money(total);$('assetPurchaseLines').textContent=String(rows.length);$('assetPurchaseBills').textContent=String(new Set(rows.map(row=>row.bill.id)).size);
+ list.innerHTML=rows.length?rows.sort((a,b)=>String(b.bill.date||'').localeCompare(String(a.bill.date||''))).map(({bill,line,amount})=>`<article class="asset-report-row"><div><strong>${esc(line.product||'Asset')}${line.spec?` · ${esc(line.spec)}`:''}</strong><small>${fmt(bill.date)} · ${esc(bill.supplier||'Supplier')} · Bill ${esc(bill.billNo||'')}</small><small>${numberText(line.quantity)} ${esc(line.unit||'pcs')} · ${esc(line.productType||'Other')} · ${esc(line.category||bill.category||'Uncategorised')}</small></div><strong>${money(amount)}</strong></article>`).join(''):empty('No product lines with category Assets in the selected date range.');
 }
 
 function renderReport(){
@@ -1336,6 +1675,7 @@ function renderReport(){
   ['productionReportBatchCount','productionReportQuantity','assetPurchaseLines','assetPurchaseBills'].forEach(id=>{if($(id))$(id).textContent='0'});
   if($('reportRange'))$('reportRange').textContent=message;
   if($('reportBars'))$('reportBars').innerHTML='';
+  updateReportSummaryMetrics();
   return;
  }
  if(hint){hint.textContent='Both dates are included. All report sections use this date range. Creditor and debtor balances are shown as of the To date.';hint.classList.remove('date-range-error')}
@@ -1379,10 +1719,10 @@ function renderReport(){
  const vals=chartBuckets.map(bucket=>sum(items.filter(x=>x.date>=bucket.from&&x.date<=bucket.to))+bills.filter(x=>x.date>=bucket.from&&x.date<=bucket.to).reduce((t,x)=>t+billTotal(x),0));
  const max=Math.max(...vals,1);
  $('reportBars').innerHTML=vals.map((v,i)=>`<div class="bar-wrap"><div class="bar" title="${esc(chartBuckets[i].label)} · ${money(v)}" style="height:${Math.max(v?3:1,v/max*82)}px"></div><span class="bar-label">${esc(chartBuckets[i].label)}</span></div>`).join('');
- let cats={};items.forEach(x=>cats[x.category]=(cats[x.category]||0)+Number(x.amount));bills.forEach(x=>{const cat=x.category||'Uncategorised';cats[cat]=(cats[cat]||0)+billTotal(x)});
+ let cats={};items.forEach(x=>cats[x.category]=(cats[x.category]||0)+Number(x.amount));bills.forEach(b=>(b.lines||[]).forEach(line=>{const cat=line.category||b.category||'Uncategorised';cats[cat]=(cats[cat]||0)+purchaseLineCost(b,line)}));
  $('categoryBreakdown').innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="breakrow"><span>${esc(k)}</span><strong>${money(v)}</strong></div>`).join('')||empty('No costs in this date range.');
  let all=0,done=0;days.forEach(d=>dayQuests(d).forEach(q=>{const state=questCheckState(q,d);all+=state.length;done+=state.filter(Boolean).length}));$('achievementRate').textContent=(all?Math.round(done/all*100):0)+'%';
- renderProductPurchaseReport(from,to);renderDueReport(from,to);
+ renderProductPurchaseReport(from,to);renderDueReport(from,to);updateReportSummaryMetrics();
 }
 
 function supplierBillBalancesAt(supplier,asOf){
@@ -1421,10 +1761,10 @@ function renderDueReport(from,to){
  $('unassignedDueHint').hidden=!legacy.length;$('unassignedDueHint').textContent=legacy.length?`${legacy.length} older Due ${legacy.length===1?'entry is':'entries are'} not assigned to either side. These older records are preserved and excluded from creditor and debtor totals.`:'';
 }
 
-activateReportSection('members');purchaseLines=[defaultPurchaseLine()];renderPurchaseLines();fillChoices();$('purchaseDate').value=today();updatePurchaseBillNo();productionInputs=[defaultProductionInput()];fillProductionOptions();resetProductionForm();applyThemeColor(db.settings.themeColor,false);renderPurchaseCategorySettings();
+activateReportSection('members');purchaseLines=[defaultPurchaseLine()];renderPurchaseLines();fillChoices();renderQuickMemberOptions([]);fillQuickActionOptions();updateQuickActionTypeFields();$('purchaseDate').value=today();updatePurchaseBillNo();productionInputs=[defaultProductionInput()];fillProductionOptions();resetProductionForm();applyThemeColor(db.settings.themeColor,false);renderPurchaseCategorySettings();renderMasterLists();
 $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`dayquest-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href)};
-$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.productTypes))x.productTypes=['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];if(!Array.isArray(x.purchaseCategories))x.purchaseCategories=['Assets','Staples','Fixed Ex.'];if(!x.settings||typeof x.settings!=='object')x.settings={themeColor:'#263b5c'};if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.productions))x.productions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};if(!Array.isArray(x.familyMembers))x.familyMembers=[];if(!Array.isArray(x.guestPeople))x.guestPeople=[];if(!Array.isArray(x.guests))x.guests=[];if(confirm('Replace current data with this backup?')){db=x;db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(item=>{item.costMember=String(item.costMember||'').trim()});db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];
-db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.productions=Array.isArray(db.productions)?db.productions.filter(p=>p&&p.id&&p.product&&Number(p.quantity)>0):[];normalizePurchaseInventory();db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];db.units=Array.isArray(db.units)?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];normalizePurchaseBillNumbers();db.profile=db.profile||{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};db.profile.familyName=String(db.profile.familyName||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestPeople=Array.isArray(db.guestPeople)?db.guestPeople.map(n=>String(n||'').trim()).filter(Boolean):[];db.guestPeople=[...new Map(db.guestPeople.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guests=Array.isArray(db.guests)?db.guests.filter(g=>g&&Array.isArray(g.members)&&g.members.length&&/^\d{4}-\d{2}-\d{2}$/.test(String(g.entryDate||''))):[];db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.members.forEach(n=>{if(!assignablePeople().some(x=>x.toLocaleLowerCase()===String(n).toLocaleLowerCase()))db.guestPeople.push(String(n).trim())})});db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);normalizeMemberAssignments();db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeople.push(name)});db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);renderPurchaseCategorySettings();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
+$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.quickActions))x.quickActions=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.productTypes))x.productTypes=['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];if(!Array.isArray(x.purchaseCategories))x.purchaseCategories=['Assets','Staples','Fixed Ex.'];if(!x.settings||typeof x.settings!=='object')x.settings={themeColor:'#263b5c'};if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.productions))x.productions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};if(!Array.isArray(x.familyMembers))x.familyMembers=[];if(!Array.isArray(x.guestPeople))x.guestPeople=[];if(!Array.isArray(x.guests))x.guests=[];if(confirm('Replace current data with this backup?')){db=x;db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(item=>{item.costMember=String(item.costMember||'').trim()});db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];
+db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.productions=Array.isArray(db.productions)?db.productions.filter(p=>p&&p.id&&p.product&&Number(p.quantity)>0):[];normalizePurchaseInventory();db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;if(typeof db.settings.allowPurchaseBillEdits!=='boolean')db.settings.allowPurchaseBillEdits=true;db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];db.units=Array.isArray(db.units)?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];normalizePurchaseBillNumbers();db.profile=db.profile||{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};db.profile.familyName=String(db.profile.familyName||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestPeople=Array.isArray(db.guestPeople)?db.guestPeople.map(n=>String(n||'').trim()).filter(Boolean):[];db.guestPeople=[...new Map(db.guestPeople.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guests=Array.isArray(db.guests)?db.guests.filter(g=>g&&Array.isArray(g.members)&&g.members.length&&/^\d{4}-\d{2}-\d{2}$/.test(String(g.entryDate||''))):[];db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.members.forEach(n=>{if(!assignablePeople().some(x=>x.toLocaleLowerCase()===String(n).toLocaleLowerCase()))db.guestPeople.push(String(n).trim())})});db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);normalizeMemberAssignments();db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeople.push(name)});db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);renderPurchaseCategorySettings();renderMasterLists();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('installBtn').hidden=false});
 $('installBtn').onclick=async()=>{if(deferredInstall){deferredInstall.prompt();deferredInstall=null;$('installBtn').hidden=true}};
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
