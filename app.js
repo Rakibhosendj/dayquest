@@ -2100,18 +2100,17 @@ function makeSupabaseClient(){
 }
 function showAuthView(view,message=''){
  $('authScreen').hidden=false;$('appShell').hidden=true;hideCloudStatus();
- ['cloudConfigView','authSignupView','authLoginView','authResetView'].forEach(id=>$(id).hidden=true);
- const target={config:'cloudConfigView',signup:'authSignupView',login:'authLoginView',reset:'authResetView'}[view]||'authLoginView';$(target).hidden=false;
+ ['authSignupView','authLoginView','authResetView'].forEach(id=>$(id).hidden=true);
+ // Cloud connection editing is available only after login in Settings → Administrator.
+ const target={signup:'authSignupView',login:'authLoginView',reset:'authResetView'}[view]||'authLoginView';$(target).hidden=false;
  $('authMessage').textContent=message;
- if(view==='config'){
-  const c=getCloudConfig();if(c){$('cloudProjectUrl').value=c.url||'';$('cloudPublishableKey').value=c.key||''}
- }
 }
 function startAppSession(user,{offline=false}={}){
  $('authScreen').hidden=true;$('appShell').hidden=false;
  document.querySelectorAll('.side-group').forEach(group=>{group.open=false;group.classList.remove('has-active')});
  const familyName=String(db.profile?.familyName||user?.user_metadata?.family_name||'').trim();
  $('userGreeting').textContent=`Signed in: ${familyName||user?.email||'Family Account'}`;
+ refreshAdminCloudConfig();
  if(offline)setCloudStatus('Offline — changes are saved on this device and will sync when reconnected.',{offline:true});
  else if(cloudConflict)setCloudStatus('Cloud conflict: another device has newer records. Download this device copy or load the latest cloud data.',{conflict:true});
  else if(cloudRemoteChanged)setCloudStatus('A newer cloud copy is available from another device.',{remote:true});
@@ -2284,20 +2283,70 @@ async function manualCloudSync(){
  await checkCloudForUpdates();if(!cloudRemoteChanged&&!cloudConflict)setCloudStatus('Cloud is up to date · '+new Date().toLocaleTimeString());
 }
 async function initAuth(){
- const config=getCloudConfig();if(!config?.url||!config?.key){showAuthView('config');return}
- try{supabaseClient=makeSupabaseClient()}catch(error){showAuthView('config',error.message);return}
- if(!supabaseClient){showAuthView('config');return}
+ const config=getCloudConfig();
+ if(!config?.url||!config?.key){showAuthView('login','DayQuest cloud connection is not configured. Please contact your administrator.');return}
+ try{supabaseClient=makeSupabaseClient()}catch(error){showAuthView('login','DayQuest could not start its cloud connection. Please contact your administrator. '+(error.message||''));return}
+ if(!supabaseClient){showAuthView('login','DayQuest cloud connection is unavailable. Please contact your administrator.');return}
  supabaseClient.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY'){cloudPasswordRecovery=true;showAuthView('reset','Enter a new password for your Family Account.')}});
  try{const {data,error}=await supabaseClient.auth.getSession();if(error)throw error;if(cloudPasswordRecovery){showAuthView('reset','Enter a new password for your Family Account.');return}if(data.session){await connectCloudSession(data.session.user);return}showAuthView('login')}
  catch(error){showAuthView('login','Could not check your cloud session. Connect to the internet and try again. '+(error.message||''))}
 }
-$('cloudConfigForm').onsubmit=e=>{
+function refreshAdminCloudConfig(){
+ const config=getCloudConfig()||{};
+ $('cloudProjectUrl').value=config.url||'';
+ $('cloudPublishableKey').value=config.key||'';
+ $('adminCloudConnectionStatus').textContent=config.override
+  ?'A browser-specific cloud connection override is active on this device.'
+  :config.source==='deployment'
+   ?'Using the shared DayQuest deployment connection. All devices use cloud-config.js by default.'
+   :'No cloud connection is configured. Ask an administrator to repair the published cloud-config.js file.';
+}
+$('adminCloudUnlockForm').onsubmit=async e=>{
+ e.preventDefault();
+ const password=$('adminCloudPassword').value;
+ $('adminCloudUnlockMessage').textContent='';
+ if(!cloudUser?.email||!supabaseClient){$('adminCloudUnlockMessage').textContent='Sign in to the Family Account before unlocking administrator settings.';return}
+ const button=$('adminCloudUnlockForm').querySelector('button[type="submit"]');button.disabled=true;
+ try{
+  const {data,error}=await supabaseClient.auth.signInWithPassword({email:cloudUser.email,password});
+  if(error)throw error;
+  if(data.user?.id!==cloudUser.id)throw new Error('The confirmed account does not match the active Family Account.');
+  $('adminCloudPassword').value='';
+  $('adminCloudUnlockMessage').textContent='Administrator settings unlocked for this session.';
+  $('adminCloudConnectionLocked').hidden=true;
+  $('cloudConfigForm').hidden=false;
+  refreshAdminCloudConfig();
+ }catch(error){$('adminCloudUnlockMessage').textContent=error.message||'Password confirmation failed.'}
+ finally{button.disabled=false}
+};
+$('adminCloudConnection').addEventListener('toggle',()=>{
+ if(!$('adminCloudConnection').open){
+  $('cloudConfigForm').hidden=true;
+  $('adminCloudConnectionLocked').hidden=false;
+  $('adminCloudPassword').value='';
+  $('adminCloudUnlockMessage').textContent='';
+ }
+});
+$('cloudConfigForm').onsubmit=async e=>{
  e.preventDefault();const url=$('cloudProjectUrl').value.trim().replace(/\/+$/,''),key=$('cloudPublishableKey').value.trim();
- try{const parsed=new URL(url);if(parsed.protocol!=='https:'&&parsed.hostname!=='localhost')throw new Error('Use your HTTPS Supabase project URL.');if(isForbiddenSupabaseKey(key))throw new Error('Use the public publishable key or legacy anon key only. Secret and service-role keys are blocked for safety.');localStorage.setItem(CLOUD_CONFIG_KEY,JSON.stringify({url,key,override:true}));location.reload()}
- catch(error){$('authMessage').textContent=error.message||'Enter a valid Supabase project URL and public key.'}
+ try{
+  const parsed=new URL(url);
+  if(parsed.protocol!=='https:'&&parsed.hostname!=='localhost')throw new Error('Use your HTTPS Supabase project URL.');
+  if(isForbiddenSupabaseKey(key))throw new Error('Use the public publishable key or legacy anon key only. Secret and service-role keys are blocked for safety.');
+  if(!confirm('Save a cloud connection override for this browser? This will sign out and reload DayQuest.'))return;
+  localStorage.setItem(CLOUD_CONFIG_KEY,JSON.stringify({url,key,override:true}));
+  try{await supabaseClient?.auth.signOut()}catch(error){console.warn('Could not sign out before applying the new cloud connection.',error)}
+  location.reload();
+ }catch(error){$('adminCloudUnlockMessage').textContent=error.message||'Enter a valid Supabase project URL and public key.'}
+};
+$('useSharedCloudConfig').onclick=async()=>{
+ if(!confirm('Remove this browser’s cloud override and use the shared cloud-config.js settings? DayQuest will sign out and reload.'))return;
+ localStorage.removeItem(CLOUD_CONFIG_KEY);
+ try{await supabaseClient?.auth.signOut()}catch(error){console.warn('Could not sign out before restoring shared cloud settings.',error)}
+ location.reload();
 };
 $('authSignupForm').onsubmit=async e=>{
- e.preventDefault();if(!supabaseClient){showAuthView('config','Connect your Supabase project first.');return}
+ e.preventDefault();if(!supabaseClient){$('authMessage').textContent='Cloud connection unavailable. Please contact your DayQuest administrator.';return}
  const familyName=$('signupFamilyName').value.trim(),email=$('signupEmail').value.trim().toLowerCase(),password=$('signupPassword').value,confirmPassword=$('signupPasswordConfirm').value;
  if(!familyName){$('authMessage').textContent='Enter your family name.';return}if(password.length<8){$('authMessage').textContent='Use a password with at least 8 characters.';return}if(password!==confirmPassword){$('authMessage').textContent='The passwords do not match.';return}
  const button=$('authSignupForm').querySelector('button[type="submit"]');button.disabled=true;$('authMessage').textContent='Creating your Family Account…';
@@ -2306,7 +2355,7 @@ $('authSignupForm').onsubmit=async e=>{
  finally{button.disabled=false}
 };
 $('authLoginForm').onsubmit=async e=>{
- e.preventDefault();if(!supabaseClient){showAuthView('config','Connect your Supabase project first.');return}
+ e.preventDefault();if(!supabaseClient){$('authMessage').textContent='Cloud connection unavailable. Please contact your DayQuest administrator.';return}
  const email=$('loginEmail').value.trim().toLowerCase(),password=$('loginPassword').value,button=$('authLoginForm').querySelector('button[type="submit"]');button.disabled=true;$('authMessage').textContent='Signing in…';
  try{const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error;$('loginPassword').value='';await connectCloudSession(data.user||data.session.user)}
  catch(error){$('authMessage').textContent=error.message||'Unable to log in. Check your email and password.'}
@@ -2323,7 +2372,6 @@ $('authResetForm').onsubmit=async e=>{
  try{const {error}=await supabaseClient.auth.updateUser({password});if(error)throw error;await supabaseClient.auth.signOut();cloudPasswordRecovery=false;$('recoveryPassword').value='';$('recoveryPasswordConfirm').value='';showAuthView('login','Password updated. Log in with your new password.')}
  catch(error){$('authMessage').textContent=error.message||'Could not update the password.'}
 };
-$('changeCloudConnection').onclick=()=>showAuthView('config','Update the Supabase project URL or public key for this browser.');
 $('logoutBtn').onclick=async()=>{
  try{if(supabaseClient)await supabaseClient.auth.signOut()}catch(error){console.error('Cloud sign out failed',error)}
  cloudReady=false;cloudUser=null;cloudDirty=false;cloudConflict=false;cloudRemoteChanged=false;clearInterval(cloudPollTimer);hideCloudStatus();$('loginPassword').value='';showAuthView('login','You have been logged out. Your local family data remains saved on this device.')
