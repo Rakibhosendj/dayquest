@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v57-admin-cloud-settings';
+const CACHE = 'dayquest-cache-v58-transient-cloud-success';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261116-admin-cloud-settings',
-  './app.js?v=20261116-admin-cloud-settings',
+  './style.css?v=20261116-transient-cloud-success',
+  './app.js?v=20261116-transient-cloud-success',
   './manifest.json',
   './cloud-config.js'
 ];
