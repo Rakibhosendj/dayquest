@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261116-quick-2col-android">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261116-login-collapse-chart-page-tabular-exports">
 <title>DayQuest</title>
 </head>
 <body>
@@ -41,7 +41,7 @@
   <div class="sidebar-caption">MENU</div>
   <nav class="side-nav" aria-label="Sections">
    <button class="tab side-link active" data-tab="home" type="button"><span class="side-link-mark">01</span><span>Overview</span></button>
-   <details class="side-group" open>
+   <details class="side-group">
     <summary class="side-link side-group-title"><span class="side-link-mark">02</span><span>Expenses</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
     <div class="side-submenu">
      <button class="tab side-sub-link" data-tab="quickExpenses" type="button">Quick Expenses</button>
@@ -51,7 +51,7 @@
    <button class="tab side-link" data-tab="inventory" type="button"><span class="side-link-mark">03</span><span>Inventory</span></button>
    <button class="tab side-link" data-tab="production" type="button"><span class="side-link-mark">04</span><span>Production</span></button>
    <button class="tab side-link" data-tab="supplierAccounts" type="button"><span class="side-link-mark">05</span><span>Supplier accounts / creditors</span></button>
-   <details class="side-group" open>
+   <details class="side-group">
     <summary class="side-link side-group-title"><span class="side-link-mark">06</span><span>Outstanding</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
     <div class="side-submenu">
      <button class="tab side-sub-link" data-tab="payExpenseDue" type="button">Pay or collect an expense due</button>
@@ -59,7 +59,7 @@
    </details>
    <button class="tab side-link" data-tab="income" type="button"><span class="side-link-mark">07</span><span>Income</span></button>
    <button class="tab side-link" data-tab="quests" type="button"><span class="side-link-mark">08</span><span>Daily quests</span></button>
-   <details class="side-group" data-side-group="reports" open>
+   <details class="side-group" data-side-group="reports">
     <summary class="side-link side-group-title"><span class="side-link-mark">09</span><span>Reports</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
     <div class="side-submenu report-side-submenu">
      <button type="button" class="side-sub-link report-sub-link active" data-report-go="members">Members Report</button>
@@ -487,8 +487,15 @@
  </section>
 
  <section class="report-pane" data-report-pane="cost" hidden>
-  <article class="report-card"><div class="eyebrow" id="reportLabel">SELECTED DATE RANGE</div><strong class="report-total" id="reportTotal">৳0.00</strong><div class="muted" id="reportRange"></div><div class="bars" id="reportBars"></div></article>
-  <div class="section-head"><h2>Cost by category</h2></div><div id="categoryBreakdown" class="list"></div>
+  <div class="section-head cost-report-head"><h2>Cost Report</h2><button type="button" class="secondary" id="showCostChartBtn">Show Chart</button></div>
+  <article class="report-card"><div class="eyebrow" id="reportLabel">SELECTED DATE RANGE</div><strong class="report-total" id="reportTotal">৳0.00</strong><div class="muted" id="reportRange"></div></article>
+  <div class="cost-report-filter-row">
+   <label>Cost by <select id="costGroupBy"><option value="category">Category</option><option value="type">Type</option><option value="product">Product</option></select></label>
+   <div class="cost-report-date-caption"><small>Selected date range</small><strong id="costReportRangeCaption">Use the From and To dates above</strong></div>
+  </div>
+  <div class="section-head"><h2 id="costBreakdownTitle">Cost by Category</h2><span class="pill">Summary</span></div>
+  <div id="categoryBreakdown" class="list"></div>
+  <p class="hint">The Cost Report PDF and Excel export show itemized costs with paid amount, due amount and inventory stock as of the selected To date.</p>
  </section>
 
  <section class="report-pane" data-report-pane="income" hidden>
@@ -503,10 +510,15 @@
 
 
 </section>
+<section id="costChartPage" class="panel">
+ <div class="section-head cost-chart-page-head"><button type="button" class="secondary" id="costChartBack">← Back to Cost Report</button><h2>Cost Chart</h2></div>
+ <article class="report-card cost-chart-page-card"><div class="eyebrow">SELECTED DATE RANGE</div><strong class="report-total" id="costChartPageTotal">৳0.00</strong><div class="muted" id="costChartPageRange"></div><div class="bars" id="reportBars"></div></article>
+ <p class="hint">Chart uses the selected report date range. Change the dates in Reports → Cost Report to refresh it.</p>
+</section>
 </main>
 <footer>DayQuest · Private by design · Works offline</footer>
 </div>
 </div>
 </div>
-<script src="app.js?v=20261116-quick-2col-android"></script>
+<script src="app.js?v=20261116-login-collapse-chart-page-tabular-exports"></script>
 </body></html>

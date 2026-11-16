@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v52-quick-2col-android';
+const CACHE = 'dayquest-cache-v54-login-collapse-chart-tabular-reports';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261116-quick-2col-android',
-  './app.js?v=20261116-quick-2col-android',
+  './style.css?v=20261116-login-collapse-chart-page-tabular-exports',
+  './app.js?v=20261116-login-collapse-chart-page-tabular-exports',
   './manifest.json'
 ];
 

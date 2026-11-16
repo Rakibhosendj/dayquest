@@ -307,3 +307,20 @@ QUICK EXPENSES — TILE COUNTERS AND ADD / MINUS MODE (2026-11-16)
 - Quick-button creation, editing and deletion remain in Settings. The Quick Expenses page stays focused on the saved transaction tiles.
 - Tile hover, active and keyboard focus feedback added, with responsive two-column/single-column tile layout.
 - Quick-button taps create ordinary DayQuest Expense/Income rows, so balances, Overview, member costs, and all reports continue to update through the normal save/render flow.
+
+Cost Report filters and detail export update (2026-11-16)
+- Added a Cost By selector with Category, Type, and Product grouping.
+- Cost report grouping follows the shared Reports From Date / To Date range (both dates inclusive).
+- Added selected-range caption inside Cost Report.
+- Cost Report Print/PDF and Excel exports now use an itemized table with: Date of Cost, Product Name, Quantity, Rate, Paid Amount, Due Amount, Supplier, and Inventory Stock.
+- Purchase-line paid amounts include direct bill payments and supplier payments allocated FIFO through the report To date. Due amounts reflect outstanding bill credit after payments and discounts through the To date.
+- Inventory Stock shows remaining quantity per purchased lot as of the report To date.
+- Expense rows are included in the itemized Cost Report; Supplier displays the due counterparty where applicable and Inventory Stock is shown as —.
+
+
+2026-11-16 · Login navigation, Cost Chart page, and detailed report exports
+- All expandable sidebar menu groups now start collapsed whenever a user signs in, including a returning authenticated session.
+- Removed the Cost Chart from the Cost Report summary page. Added a Show Chart action that opens a separate Cost Chart page with a Back to Cost Report action; the existing selected date range is retained.
+- Replaced generic Report/Item/Details export output with section-specific column tables for Purchase, Assets, Members, Production, Creditors, Debtors, Cost, and Income reports.
+- All Reports now exports the same detailed column tables as the individual report pages. Member report exports include member totals, individual allocated cost entries, and guest-stay details. Income exports separate income entries from collections to avoid mixing the two entry types.
+- Updated service-worker cache version for the new deployment.

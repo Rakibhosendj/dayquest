@@ -835,3 +835,22 @@ button,input,select,textarea{
  .quick-action-button-stats>span{font-size:9.5px}
  .quick-action-button-kind{top:5px;right:5px;font-size:6px;padding:2px 4px}
 }
+
+
+/* Cost report grouping and date-range controls */
+.cost-report-filter-row{display:grid;grid-template-columns:minmax(130px,.8fr) minmax(180px,1.2fr);gap:10px;align-items:end;margin:8px 0 6px}
+.cost-report-filter-row>label{display:grid;gap:5px;font-size:11px;font-weight:750;color:#566176}
+.cost-report-filter-row select{width:100%;min-width:0;border:1px solid #e1e6ee;border-radius:10px;padding:10px;background:#fbfcfe;color:#172033;font:inherit;font-size:13px}
+.cost-report-date-caption{display:grid;gap:4px;min-width:0;padding:8px 10px;border:1px solid #e7ebf1;border-radius:10px;background:#fafbfd}
+.cost-report-date-caption small{font-size:10px;color:#667085;font-weight:700}
+.cost-report-date-caption strong{font-size:12px;color:#263b5c;overflow-wrap:anywhere}
+@media(max-width:420px){.cost-report-filter-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px}.cost-report-filter-row select{padding:9px;font-size:12px}.cost-report-date-caption{padding:7px}}
+
+/* Cost chart is a separate destination; keep the Cost Report summary compact. */
+.cost-report-head{margin:8px 0 9px}
+.cost-chart-page-head{display:flex;align-items:center;justify-content:flex-start;gap:12px}
+.cost-chart-page-head h2{margin-left:auto;margin-right:auto}
+.cost-chart-page-card{min-height:190px}
+.cost-chart-page-card .bars{height:190px;margin-top:22px}
+.cost-chart-page-card .bar{max-width:38px}
+@media(max-width:520px){.cost-chart-page-card .bars{height:150px;gap:4px}.cost-chart-page-card .bar-label{font-size:8px}}

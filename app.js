@@ -223,6 +223,13 @@ $('menuToggle').onclick=()=>{
  $('sidebar').classList.toggle('open',open);$('sidebarBackdrop').hidden=!open;syncMenuToggle();
 };
 $('sidebarBackdrop').onclick=closeSidebar;
+$('showCostChartBtn').onclick=()=>{
+ renderReport();
+ if($('costChartPageTotal'))$('costChartPageTotal').textContent=$('reportTotal').textContent;
+ if($('costChartPageRange'))$('costChartPageRange').textContent=$('reportRange').textContent;
+ setTab('costChartPage');
+};
+$('costChartBack').onclick=()=>{setTab('reports');activateReportSection('cost')};
 window.addEventListener('resize',()=>{closeSidebar();syncMenuToggle()});
 syncMenuToggle();
 $('todayDate').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'});
@@ -1278,6 +1285,7 @@ $('reportIncomePersonFilter').onchange=renderReport;
 $('productReportFromDate').onchange=renderReport;
 $('productReportToDate').onchange=renderReport;
 $('memberProductFilter').onchange=renderReport;
+$('costGroupBy').onchange=renderReport;
 
 const REPORT_TITLES={purchase:'Purchase Reports',assets:'Assets',members:'Members Report',production:'Production Report',creditors:'Creditors',debitors:'Debtors',cost:'Cost Report',income:'Income Report'};
 let reportPresentationReady=false;
@@ -1311,28 +1319,120 @@ function reportSummaryMetrics(key){
 function updateReportSummaryMetrics(){
  Object.keys(REPORT_TITLES).forEach(key=>{const node=document.querySelector(`[data-report-summary="${key}"]`);if(node)node.textContent=reportSummaryMetrics(key)});
 }
-function reportExportRows(keys){
- const from=$('productReportFromDate')?.value||'',to=$('productReportToDate')?.value||'',rows=[];
- keys.forEach(key=>{
-  const pane=document.querySelector(`[data-report-pane="${key}"]`);if(!pane)return;
-  rows.push([REPORT_TITLES[key]||key,'Reporting period',`${from} to ${to}`]);
-  const body=pane.querySelector('.report-detail-body')||pane;
-  body.querySelectorAll('.stat').forEach(card=>{
-   const label=card.querySelector('.muted,span')?.textContent?.trim()||'Summary';
-   const value=card.querySelector('strong')?.textContent?.trim()||'';
-   const note=card.querySelector('small')?.textContent?.trim()||'';
-   rows.push([REPORT_TITLES[key],label,[value,note].filter(Boolean).join(' · ')]);
+function reportPurchaseRows(from,to){
+ const settlements=supplierBillSettlementByBill(to),out=[];
+ db.purchaseBills.filter(b=>String(b.date||'')>=from&&String(b.date||'')<=to).slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).forEach(bill=>{
+  const total=billTotal(bill),directPaid=Math.max(0,Number(bill.cashPaid||0))+Math.max(0,Number(bill.bankPaid||0));
+  const settlement=settlements.get(String(bill.id))||{paid:0,discount:0,remaining:billCredit(bill)};
+  const paid=Math.min(total,directPaid+Number(settlement.paid||0)),due=Math.max(0,Number(settlement.remaining??billCredit(bill)));
+  (bill.lines||[]).forEach((line,index)=>{
+   const lineAmount=purchaseLineCost(bill,line),share=total>0?lineAmount/total:0,lineId=line.id||String(index),quantity=Math.max(0,Number(line.quantity||0));
+   const used=usedStockQuantity({billId:bill.id,lineId},{asOfDate:to}),stock=Math.max(0,quantity-used);
+   out.push([fmt(bill.date),bill.billNo||'',bill.supplier||'Unassigned Supplier',line.category||bill.category||'Uncategorised',line.productType||'Other',line.product||'Unspecified product',quantity?`${numberText(quantity)} ${line.unit||'pcs'}`:'—',money(Number(line.rate||0)),money(lineAmount),money(paid*share),money(due*share),`${numberText(stock)} ${line.unit||'pcs'}`]);
   });
-  body.querySelectorAll('.list').forEach((list,listIndex)=>[...list.children].forEach((item,index)=>{
-   const text=item.textContent.replace(/\s+/g,' ').trim();if(text&&!item.classList.contains('empty'))rows.push([REPORT_TITLES[key],`List ${listIndex+1} · Item ${index+1}`,text]);
-  }));
+ });
+ return out;
+}
+function reportMemberSections(from,to){
+ const entries=[];
+ db.expenses.filter(x=>String(x.date||'')>=from&&String(x.date||'')<=to).forEach(x=>entries.push({date:x.date,source:'Expense',product:x.name||x.note||x.category||'Expense',quantity:Number(x.quantity||0)?`${numberText(x.quantity)} ${x.unit||''}`.trim():'—',amount:Number(x.amount||0),members:assignedMembers(x)}));
+ db.purchaseBills.filter(b=>String(b.date||'')>=from&&String(b.date||'')<=to).forEach(b=>(b.lines||[]).forEach(line=>entries.push({date:b.date,source:'Purchase',product:line.product||'Product',quantity:`${numberText(line.quantity||0)} ${line.unit||'pcs'}`,amount:purchaseLineCost(b,line),members:assignedMembers(line)})));
+ db.productions.filter(p=>String(p.date||'')>=from&&String(p.date||'')<=to&&Number(p.overheadCost||0)>0).forEach(p=>entries.push({date:p.date,source:'Production overhead',product:p.product||'Produced product',quantity:`${numberText(p.quantity||0)} ${p.unit||'pcs'}`,amount:Number(p.overheadCost||0),members:uniquePeople(p.overheadMembers||[])}));
+ const detail=[],summary=new Map();
+ entries.forEach(entry=>{
+  const owners=uniquePeople(entry.members),share=owners.length?entry.amount/owners.length:0;
+  if(!owners.length){detail.push([fmt(entry.date),'Unassigned',entry.source,entry.product,entry.quantity,money(entry.amount),'—','—']);return}
+  owners.forEach(name=>{
+   detail.push([fmt(entry.date),name,entry.source,entry.product,entry.quantity,money(entry.amount),money(share),owners.join(', ')]);
+   const key=name.toLocaleLowerCase(),row=summary.get(key)||{name,direct:0,shared:0,total:0};
+   if(owners.length===1)row.direct+=share;else row.shared+=share;row.total+=share;summary.set(key,row);
+  });
+ });
+ const summaryRows=[...summary.values()].sort((a,b)=>a.name.localeCompare(b.name)).map(x=>[x.name,money(x.direct),money(x.shared),money(x.total)]);
+ const guestRows=db.guests.filter(g=>guestOverlapsRange(g,from,to)).map(g=>[g.members.join(', '),fmt(g.entryDate),g.outDate?fmt(g.outDate):'Not left yet',g.purpose||'—']);
+ return {summaryRows,detailRows:detail,guestRows};
+}
+function reportProductionRows(from,to){
+ return db.productions.filter(p=>String(p.date||'')>=from&&String(p.date||'')<=to).slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).map(p=>[
+  fmt(p.date),p.productionNo||'',p.product||'',p.productType||'Other',p.spec||'—',`${numberText(p.quantity||0)} ${p.unit||'pcs'}`,money(p.ingredientCost),money(p.electricityCost),money(p.transitCost),money(p.totalCost),money(p.unitCost),(p.inputs||[]).map(i=>`${i.product} ${numberText(i.quantity)} ${i.unit||''} (${money(i.cost)})`).join('; ')
+ ]);
+}
+function reportCreditorRows(from,to){
+ const rows=[],settlements=supplierBillSettlementByBill(to);
+ db.purchaseBills.filter(b=>String(b.date||'')<=to).forEach(b=>{
+  const settlement=settlements.get(String(b.id))||{paid:0,discount:0,remaining:billCredit(b)};
+  if(!(String(b.date||'')>=from&&String(b.date||'')<=to)&&Number(settlement.remaining||0)<=0.000001)return;
+  rows.push([fmt(b.date),b.supplier||'Unassigned Supplier','Purchase bill',b.billNo||'',money(billTotal(b)),money(Math.max(0,Number(b.cashPaid||0))+Math.max(0,Number(b.bankPaid||0))+Number(settlement.paid||0)),money(settlement.discount||0),money(settlement.remaining||0)]);
+ });
+ db.expenses.filter(x=>x.paymentType==='Due'&&x.dueDirection==='i_owe'&&String(x.date||'')<=to).forEach(x=>{
+  const due=expenseOutstandingAt(x,to);if(!(String(x.date||'')>=from&&String(x.date||'')<=to)&&due<=0.000001)return;
+  const settled=expenseSettlements(x).filter(s=>!s.date||String(s.date)<=to).reduce((t,s)=>t+Number(s.amount||0),0);
+  rows.push([fmt(x.date),x.duePerson||'Unknown creditor','Expense due',x.name||x.category||x.note||'',money(x.amount),money(settled),'—',money(due)]);
  });
  return rows;
 }
+function reportDebtorRows(from,to){
+ const rows=[];
+ db.expenses.filter(x=>x.paymentType==='Due'&&x.dueDirection==='owed_to_me'&&String(x.date||'')<=to).forEach(x=>{
+  const due=expenseOutstandingAt(x,to);if(!(String(x.date||'')>=from&&String(x.date||'')<=to)&&due<=0.000001)return;
+  const received=expenseSettlements(x).filter(s=>!s.date||String(s.date)<=to).reduce((t,s)=>t+Number(s.amount||0),0);
+  rows.push([fmt(x.date),x.duePerson||'Unknown debtor','Receivable expense',x.name||x.category||x.note||'',money(x.amount),money(received),money(due)]);
+ });
+ db.incomes.filter(x=>x.paymentType==='Due'&&String(x.date||'')<=to).forEach(x=>{
+  const due=incomeOutstandingAt(x,to);if(!(String(x.date||'')>=from&&String(x.date||'')<=to)&&due<=0.000001)return;
+  const received=incomeCollections(x).filter(c=>!c.date||String(c.date)<=to).reduce((t,c)=>t+Number(c.amount||0),0);
+  rows.push([fmt(x.date),x.duePerson||'Unknown customer','Income due',x.source||'Income',money(x.amount),money(received),money(due)]);
+ });
+ return rows;
+}
+function reportIncomeRows(from,to){
+ return db.incomes.filter(x=>String(x.date||'')>=from&&String(x.date||'')<=to).slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).map(x=>{
+  const received=x.paymentType==='Due'?incomeCollections(x).filter(c=>!c.date||String(c.date)<=to).reduce((t,c)=>t+Number(c.amount||0),0):Number(x.amount||0);
+  return [fmt(x.date),'Income entry',x.source||'Other',x.description||x.note||'—',x.incomeBy||'Unassigned',x.paymentType||'Cash',money(x.amount),money(received),money(x.paymentType==='Due'?incomeOutstandingAt(x,to):0)];
+ });
+}
+function reportIncomeCollectionRows(from,to){
+ const rows=[];
+ db.incomes.forEach(x=>incomeCollections(x).filter(c=>String(c.date||'')>=from&&String(c.date||'')<=to).forEach(c=>rows.push({date:String(c.date||''),row:[fmt(c.date),'Collection',x.source||'Other',x.description||x.note||'—',x.incomeBy||'Unassigned',c.method||'Cash',money(c.amount),money(c.amount),money(incomeOutstandingAt(x,to))]})));
+ return rows.sort((a,b)=>a.date.localeCompare(b.date)).map(item=>item.row);
+}
+function reportAssetRows(from,to){return reportPurchaseRows(from,to).filter((row)=>String(row[3]||'').toLocaleLowerCase()==='assets')}
+function reportCostRows(from,to){
+ return buildCostReportRows(from,to).map(row=>[fmt(row.date),row.product,row.quantity,row.rate,money(row.paidAmount),money(row.dueAmount),row.supplier,row.inventoryStock]);
+}
+function reportTableSections(keys,from,to){
+ const sections=[];
+ keys.forEach(key=>{
+  if(key==='purchase')sections.push({title:REPORT_TITLES[key],headers:['Date','Bill No.','Supplier','Category','Product Type','Product Name','Quantity','Rate','Line Cost','Paid Amount','Due Amount','Inventory Stock'],rows:reportPurchaseRows(from,to)});
+  else if(key==='assets')sections.push({title:REPORT_TITLES[key],headers:['Date','Bill No.','Supplier','Category','Product Type','Asset / Product','Quantity','Rate','Line Cost','Paid Amount','Due Amount','Inventory Stock'],rows:reportAssetRows(from,to)});
+  else if(key==='cost')sections.push({title:REPORT_TITLES[key],headers:['Date of Cost','Product Name','Quantity','Rate','Paid Amount','Due Amount','Supplier','Inventory Stock'],rows:reportCostRows(from,to)});
+  else if(key==='production')sections.push({title:REPORT_TITLES[key],headers:['Production Date','Production No.','Finished Product','Product Type','Size','Produced Quantity','Material Cost','Electricity Cost','Transit Cost','Total Cost','Unit Cost','Materials Used'],rows:reportProductionRows(from,to)});
+  else if(key==='members'){
+   const member=reportMemberSections(from,to);
+   sections.push({title:'Members Report · Member Cost Summary',headers:['Member','Personal Cost','Shared Cost Share','Total Member Cost'],rows:member.summaryRows});
+   sections.push({title:'Members Report · Individual Cost Entries',headers:['Date','Member','Source','Product / Description','Quantity','Full Entry Cost','Member Share','All Cost Owners'],rows:member.detailRows});
+   sections.push({title:'Members Report · Guest Stays',headers:['Guest Members','Entry Date','Out Date','Purpose'],rows:member.guestRows});
+  }
+  else if(key==='creditors')sections.push({title:REPORT_TITLES[key],headers:['Date','Creditor / Supplier','Entry Type','Bill / Description','Original Amount','Paid / Settled','Discount','Outstanding Due'],rows:reportCreditorRows(from,to)});
+  else if(key==='debitors')sections.push({title:REPORT_TITLES[key],headers:['Date','Debtor / Customer','Entry Type','Description','Original Amount','Received / Collected','Outstanding Receivable'],rows:reportDebtorRows(from,to)});
+  else if(key==='income'){
+   const headers=['Date','Entry Type','Income Type','Description','Received From / Person','Payment Method','Recorded Amount','Collected Amount','Due Amount'];
+   sections.push({title:'Income Report · Income Entries',headers,rows:reportIncomeRows(from,to)});
+   sections.push({title:'Income Report · Collections Received',headers,rows:reportIncomeCollectionRows(from,to)});
+  }
+ });
+ return sections;
+}
 function reportDocumentHtml(keys){
  const from=$('productReportFromDate')?.value||'',to=$('productReportToDate')?.value||'';
- const rows=reportExportRows(keys).map(row=>`<tr>${row.map(cell=>`<td>${esc(cell)}</td>`).join('')}</tr>`).join('');
- return `<!doctype html><html><head><meta charset="utf-8"><title>DayQuest Report</title><style>body{font-family:Arial,sans-serif;color:#182337;padding:24px}h1{font-size:22px;margin:0 0 6px}p{color:#667085;margin:0 0 18px}table{border-collapse:collapse;width:100%;font-size:12px}th,td{border:1px solid #d8dee8;padding:8px;text-align:left;vertical-align:top}th{background:#eef2f7} @media print{body{padding:0}thead{display:table-header-group}}</style></head><body><h1>${esc(keys.length===1?REPORT_TITLES[keys[0]]:'DayQuest · All Reports')}</h1><p>Reporting period: ${esc(from)} to ${esc(to)}</p><table><thead><tr><th>Report</th><th>Item</th><th>Details / Amount</th></tr></thead><tbody>${rows||'<tr><td colspan="3">No report data</td></tr>'}</tbody></table></body></html>`;
+ const sections=reportTableSections(keys,from,to),sectionHtml=sections.map(section=>{
+  const headers=section.headers.map(value=>`<th>${esc(value)}</th>`).join('');
+  const rows=section.rows.map(row=>`<tr>${row.map(value=>`<td>${esc(value??'—')}</td>`).join('')}</tr>`).join('');
+  const emptyRow=`<tr><td colspan="${section.headers.length}">No entries in the selected date range.</td></tr>`;
+  return `<section class="report-section"><h2>${esc(section.title)}</h2><table><thead><tr>${headers}</tr></thead><tbody>${rows||emptyRow}</tbody></table></section>`;
+ }).join('');
+ const title=keys.length===1?REPORT_TITLES[keys[0]]:'DayQuest · All Reports';
+ return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>@page{size:landscape;margin:10mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#182337;padding:18px}h1{font-size:21px;margin:0 0 5px}.period{font-size:11px;color:#667085;margin:0 0 16px}.report-section{margin:0 0 22px;break-inside:auto}.report-section h2{font-size:14px;margin:0 0 7px;padding:0 0 5px;border-bottom:1px solid #cbd3df}table{border-collapse:collapse;width:100%;font-size:8px;table-layout:auto}th,td{border:1px solid #cbd3df;padding:5px 5px;text-align:left;vertical-align:top;overflow-wrap:anywhere}th{background:#edf1f6;white-space:normal;font-weight:700}tbody tr:nth-child(even){background:#fafbfd}thead{display:table-header-group}tr{break-inside:avoid}@media print{body{padding:0}h1{font-size:18px}.report-section{break-before:auto}.report-section h2{break-after:avoid}}</style></head><body><h1>${esc(title)}</h1><p class="period">Reporting period: ${esc(from)} to ${esc(to)}</p>${sectionHtml||'<p>No report data available.</p>'}</body></html>`;
 }
 function exportReport(key,format){
  const keys=key==='all'?Object.keys(REPORT_TITLES):[key];
@@ -1756,6 +1856,74 @@ function renderAssetsReport(from,to){
  list.innerHTML=rows.length?rows.sort((a,b)=>String(b.bill.date||'').localeCompare(String(a.bill.date||''))).map(({bill,line,amount})=>`<article class="asset-report-row"><div><strong>${esc(line.product||'Asset')}${line.spec?` · ${esc(line.spec)}`:''}</strong><small>${fmt(bill.date)} · ${esc(bill.supplier||'Supplier')} · Bill ${esc(bill.billNo||'')}</small><small>${numberText(line.quantity)} ${esc(line.unit||'pcs')} · ${esc(line.productType||'Other')} · ${esc(line.category||bill.category||'Uncategorised')}</small></div><strong>${money(amount)}</strong></article>`).join(''):empty('No product lines with category Assets in the selected date range.');
 }
 
+function supplierBillSettlementByBill(asOfDate){
+ const result=new Map();
+ const supplierNames=[...new Set(db.purchaseBills.map(b=>String(b.supplier||'').trim()).filter(Boolean))];
+ supplierNames.forEach(supplier=>{
+  const rows=db.purchaseBills.filter(b=>String(b.supplier||'').trim()===supplier&&String(b.date||'')<=asOfDate).slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||String(a.id).localeCompare(String(b.id))).map(b=>({bill:b,remaining:billCredit(b),paid:0,discount:0}));
+  const payments=db.supplierPayments.filter(p=>p.supplier===supplier&&String(p.date||'')<=asOfDate).slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))||String(a.id).localeCompare(String(b.id)));
+  payments.forEach(payment=>{
+   let cash=Math.max(0,Number(payment.amount||0)),discount=Math.max(0,Number(payment.discount||0));
+   rows.forEach(row=>{
+    if(row.remaining<=0)return;
+    if(cash>0){const applied=Math.min(row.remaining,cash);row.paid+=applied;row.remaining-=applied;cash-=applied}
+    if(discount>0&&row.remaining>0){const applied=Math.min(row.remaining,discount);row.discount+=applied;row.remaining-=applied;discount-=applied}
+   });
+  });
+  rows.forEach(row=>result.set(String(row.bill.id),{paid:row.paid,discount:row.discount,remaining:row.remaining}));
+ });
+ return result;
+}
+function buildCostReportRows(from,to){
+ const rows=[],billSettlements=supplierBillSettlementByBill(to);
+ db.purchaseBills.filter(b=>String(b.date||'')>=from&&String(b.date||'')<=to).forEach(bill=>{
+  const billTotalAmount=billTotal(bill),directPaid=Math.min(billTotalAmount,Math.max(0,Number(bill.cashPaid||0))+Math.max(0,Number(bill.bankPaid||0)));
+  const settlement=billSettlements.get(String(bill.id))||{paid:0,discount:0,remaining:billCredit(bill)};
+  const totalPaid=Math.min(billTotalAmount,directPaid+Number(settlement.paid||0));
+  const totalDue=Math.max(0,Number(settlement.remaining??billCredit(bill)));
+  (bill.lines||[]).forEach((line,index)=>{
+   const lineId=line.id||String(index),lineCost=purchaseLineCost(bill,line),share=billTotalAmount>0?lineCost/billTotalAmount:0;
+   const quantity=Math.max(0,Number(line.quantity||0));
+   const consumed=usedStockQuantity({billId:bill.id,lineId},{asOfDate:to});
+   const stock=Math.max(0,quantity-consumed);
+   rows.push({
+    date:String(bill.date||''),product:String(line.product||'Unspecified product'),quantity:quantity>0?`${numberText(quantity)} ${String(line.unit||'pcs')}`:'—',
+    rate:money(Number(line.rate||0)),paidAmount:totalPaid*share,dueAmount:totalDue*share,supplier:String(bill.supplier||'Unassigned Supplier'),
+    inventoryStock:`${numberText(stock)} ${String(line.unit||'pcs')}`,
+    category:String(line.category||bill.category||'Uncategorised'),type:String(line.productType||'Other'),productGroup:String(line.product||'Unspecified product'),
+    source:'Purchase',discountAllocated:Number(settlement.discount||0)*share
+   });
+  });
+ });
+ db.expenses.filter(item=>String(item.date||'')>=from&&String(item.date||'')<=to).forEach(item=>{
+  const amount=Math.max(0,Number(item.amount||0)),quantity=Math.max(0,Number(item.quantity||0));
+  const paid=item.paymentType==='Due'?expenseSettlements(item).filter(entry=>!entry.date||String(entry.date)<=to).reduce((total,entry)=>total+Number(entry.amount||0),0):amount;
+  const due=item.paymentType==='Due'?expenseOutstandingAt(item,to):0;
+  const product=String(item.name||item.note||item.category||'Expense');
+  rows.push({
+   date:String(item.date||''),product,quantity:quantity>0?`${numberText(quantity)} ${String(item.unit||'')}`.trim():'—',
+   rate:money(Number(item.rate??(quantity>0?amount/quantity:amount))),paidAmount:paid,dueAmount:due,
+   supplier:String(item.duePerson||'—'),inventoryStock:'—',category:String(item.category||'Uncategorised'),type:product,productGroup:product,source:'Expense',discountAllocated:0
+  });
+ });
+ return rows.sort((a,b)=>String(b.date).localeCompare(String(a.date))||a.product.localeCompare(b.product));
+}
+function renderCostReport(from,to){
+ const rows=buildCostReportRows(from,to),mode=$('costGroupBy')?.value||'category';
+ const config={category:{field:'category',title:'Category'},type:{field:'type',title:'Type'},product:{field:'productGroup',title:'Product'}}[mode]||{field:'category',title:'Category'};
+ const totals=new Map();rows.forEach(row=>{const label=row[config.field]||'Uncategorised';totals.set(label,(totals.get(label)||0)+row.paidAmount+row.dueAmount+row.discountAllocated)});
+ $('costBreakdownTitle').textContent=`Cost by ${config.title}`;
+ $('costReportRangeCaption').textContent=`${fmt(from)} – ${fmt(to)}`;
+ $('categoryBreakdown').innerHTML=[...totals.entries()].sort((a,b)=>b[1]-a[1]).map(([name,total])=>`<div class="breakrow"><span>${esc(name)}</span><strong>${money(total)}</strong></div>`).join('')||empty('No costs in this date range.');
+}
+function costReportDocumentHtml(){
+ const from=$('productReportFromDate')?.value||'',to=$('productReportToDate')?.value||'',rows=buildCostReportRows(from,to);
+ const mode=$('costGroupBy')?.value||'category',modeLabel={category:'Category',type:'Type',product:'Product'}[mode]||'Category';
+ const body=rows.map(row=>`<tr><td>${esc(fmt(row.date))}</td><td>${esc(row.product)}</td><td>${esc(row.quantity)}</td><td>${esc(row.rate)}</td><td>${esc(money(row.paidAmount))}</td><td>${esc(money(row.dueAmount))}</td><td>${esc(row.supplier)}</td><td>${esc(row.inventoryStock)}</td></tr>`).join('');
+ const totalPaid=rows.reduce((total,row)=>total+row.paidAmount,0),totalDue=rows.reduce((total,row)=>total+row.dueAmount,0),discounts=rows.reduce((total,row)=>total+row.discountAllocated,0);
+ return `<!doctype html><html><head><meta charset="utf-8"><title>DayQuest Cost Report</title><style>@page{size:landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#182337;padding:18px}h1{font-size:20px;margin:0 0 6px}.meta{font-size:11px;color:#667085;margin:0 0 12px}.summary{display:flex;gap:22px;flex-wrap:wrap;margin:10px 0 16px;font-size:11px}.summary strong{display:block;font-size:14px;margin-top:3px}table{border-collapse:collapse;width:100%;font-size:9px}th,td{border:1px solid #cbd3df;padding:6px 7px;text-align:left;vertical-align:top}th{background:#edf1f6;white-space:nowrap}tbody tr:nth-child(even){background:#fafbfd}tfoot td{font-weight:700;background:#f1f4f8}@media print{body{padding:0}thead{display:table-header-group}tr{break-inside:avoid}}</style></head><body><h1>DayQuest · Cost Report</h1><p class="meta">Date of Cost: ${esc(from)} to ${esc(to)} · Cost grouped by ${esc(modeLabel)} · Inventory stock as of ${esc(fmt(to))}</p><div class="summary"><div>Total paid<strong>${esc(money(totalPaid))}</strong></div><div>Total due<strong>${esc(money(totalDue))}</strong></div><div>Discount settled<strong>${esc(money(discounts))}</strong></div><div>Cost entries<strong>${rows.length}</strong></div></div><table><thead><tr><th>Date of Cost</th><th>Product Name</th><th>Quantity</th><th>Rate</th><th>Paid Amount</th><th>Due Amount</th><th>Supplier</th><th>Inventory Stock</th></tr></thead><tbody>${body||'<tr><td colspan="8">No cost entries in the selected date range.</td></tr>'}</tbody><tfoot><tr><td colspan="4">Total</td><td>${esc(money(totalPaid))}</td><td>${esc(money(totalDue))}</td><td colspan="2">Inventory stock is shown per purchase lot as of the To date.</td></tr></tfoot></table></body></html>`;
+}
+
 function renderReport(){
  const from=$('productReportFromDate')?.value||'',to=$('productReportToDate')?.value||'';
  const hint=$('reportDateHint');
@@ -1768,6 +1936,8 @@ function renderReport(){
   ['productionReportBatchCount','productionReportQuantity','assetPurchaseLines','assetPurchaseBills'].forEach(id=>{if($(id))$(id).textContent='0'});
   if($('reportRange'))$('reportRange').textContent=message;
   if($('reportBars'))$('reportBars').innerHTML='';
+  if($('costReportRangeCaption'))$('costReportRangeCaption').textContent=message;
+  if($('categoryBreakdown'))$('categoryBreakdown').innerHTML=empty(message);
   updateReportSummaryMetrics();
   return;
  }
@@ -1812,8 +1982,9 @@ function renderReport(){
  const vals=chartBuckets.map(bucket=>sum(items.filter(x=>x.date>=bucket.from&&x.date<=bucket.to))+bills.filter(x=>x.date>=bucket.from&&x.date<=bucket.to).reduce((t,x)=>t+billTotal(x),0));
  const max=Math.max(...vals,1);
  $('reportBars').innerHTML=vals.map((v,i)=>`<div class="bar-wrap"><div class="bar" title="${esc(chartBuckets[i].label)} · ${money(v)}" style="height:${Math.max(v?3:1,v/max*82)}px"></div><span class="bar-label">${esc(chartBuckets[i].label)}</span></div>`).join('');
- let cats={};items.forEach(x=>cats[x.category]=(cats[x.category]||0)+Number(x.amount));bills.forEach(b=>(b.lines||[]).forEach(line=>{const cat=line.category||b.category||'Uncategorised';cats[cat]=(cats[cat]||0)+purchaseLineCost(b,line)}));
- $('categoryBreakdown').innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="breakrow"><span>${esc(k)}</span><strong>${money(v)}</strong></div>`).join('')||empty('No costs in this date range.');
+ if($('costChartPageTotal'))$('costChartPageTotal').textContent=money(total);
+ if($('costChartPageRange'))$('costChartPageRange').textContent=`${fmt(from)} – ${fmt(to)}`;
+ renderCostReport(from,to);
  let all=0,done=0;days.forEach(d=>dayQuests(d).forEach(q=>{const state=questCheckState(q,d);all+=state.length;done+=state.filter(Boolean).length}));$('achievementRate').textContent=(all?Math.round(done/all*100):0)+'%';
  renderProductPurchaseReport(from,to);renderDueReport(from,to);updateReportSummaryMetrics();
 }
@@ -1878,6 +2049,7 @@ function showAuthView(view,message=''){
 }
 function startAppSession(username){
  sessionStorage.setItem(SESSION_KEY,'active');$('authScreen').hidden=true;$('appShell').hidden=false;
+ document.querySelectorAll('.side-group').forEach(group=>{group.open=false;group.classList.remove('has-active')});
  $('userGreeting').textContent=`Signed in: ${username}`;$('authMessage').textContent='';
 }
 async function initAuth(){
