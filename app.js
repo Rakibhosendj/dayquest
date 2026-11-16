@@ -1554,12 +1554,12 @@ function updateProfilePhotoPreview(){
 }
 function updateAppBrand(){
  const familyName=String($('familyName')?.value ?? db.profile?.familyName ?? '').trim();
- const title=familyName?`${familyName} DayQuest`:'DayQuest';
+ const title=familyName?`${familyName} Day Quest`:'Day Quest';
  const sideTitle=$('sidebarBrandTitle'),sideSubtitle=$('sidebarBrandSubtitle');
  if(sideTitle)sideTitle.textContent=title;
  if(sideSubtitle)sideSubtitle.textContent=familyName?'Family dashboard':'Personal dashboard';
  document.title=title;
- const authTitle=$('authTitle');if(authTitle)authTitle.textContent=title;
+ const authTitle=$('authTitle');if(authTitle)authTitle.textContent='Day Quest';
 }
 function renderFamilyMembers(){
  const list=$('familyMemberList');if(!list)return;
@@ -2108,7 +2108,7 @@ function makeSupabaseClient(){
  return window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'dayquest-supabase-auth-v1'}});
 }
 function showAuthView(view,message=''){
- $('authScreen').hidden=false;$('appShell').hidden=true;hideCloudStatus();
+ $('authScreen').hidden=false;$('appShell').hidden=true;document.title='Day Quest';hideCloudStatus();
  ['authSignupView','authLoginView','authResetView'].forEach(id=>$(id).hidden=true);
  // Cloud connection editing is available only after login in Settings → Administrator.
  const target={signup:'authSignupView',login:'authLoginView',reset:'authResetView'}[view]||'authLoginView';$(target).hidden=false;
