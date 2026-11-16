@@ -3,23 +3,13 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261116-cloud-account-safe-shared-config">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261116-admin-cloud-settings">
 <title>DayQuest</title>
 </head>
 <body>
 <section id="authScreen" class="auth-screen" hidden aria-labelledby="authTitle">
  <div class="auth-card cloud-auth-card">
   <div class="auth-brand"><span class="auth-mark">✦</span><div><div class="eyebrow">FAMILY FINANCE & DAILY MANAGEMENT</div><h1 id="authTitle">DayQuest</h1></div></div>
-  <div id="cloudConfigView" hidden>
-   <h2>Connect DayQuest Cloud</h2>
-   <p class="auth-copy">Enter your Supabase project URL and public publishable key. This connects DayQuest to your family database.</p>
-   <form id="cloudConfigForm" class="form auth-form">
-    <label>Supabase Project URL <input id="cloudProjectUrl" type="url" inputmode="url" placeholder="https://your-project.supabase.co" autocomplete="url" required></label>
-    <label>Supabase Publishable Key <input id="cloudPublishableKey" type="password" autocomplete="off" placeholder="sb_publishable_… or legacy anon key" required></label>
-    <button class="primary full" type="submit">Save cloud connection</button>
-   </form>
-   <p class="auth-copy auth-small">Use the public publishable key (or legacy anon key) only. Never enter a secret or service-role key here.</p>
-  </div>
   <div id="authSignupView" hidden>
    <h2>Create your Family Account</h2>
    <p class="auth-copy">One shared family login. Use the same email and password on every device.</p>
@@ -52,7 +42,6 @@
    </form>
   </div>
   <p class="auth-message" id="authMessage" role="status" aria-live="polite"></p>
-  <div class="auth-footer-actions"><button id="changeCloudConnection" class="auth-link" type="button">Cloud connection settings</button></div>
   <p class="auth-disclaimer">Your family data is stored in your private cloud account. The browser keeps a local copy for offline use and syncs when you reconnect.</p>
  </div>
 </section>
@@ -423,6 +412,29 @@
    <details class="settings-master-group settings-master-category"><summary>Purchase item categories</summary><form id="addPurchaseCategoryForm" class="category-add-form"><input id="newPurchaseCategory" maxlength="40" placeholder="Add a category name" aria-label="New purchase category" required><button class="primary" type="submit">＋ Add category</button></form><div id="purchaseCategoryList" class="list category-settings-list"></div><p class="hint">These categories are available beside Product Name on purchase lines and are used in cost and asset reports.</p></details>
   </div>
  </section>
+ <section class="settings-card admin-cloud-settings-card">
+  <details id="adminCloudConnection" class="settings-master-group">
+   <summary>Administrator: Cloud connection</summary>
+   <p class="settings-copy">Advanced connection controls. Normal users should not change these settings. The shared Family Account password is required to unlock this section.</p>
+   <p class="hint" id="adminCloudConnectionStatus">Checking the active cloud configuration…</p>
+   <div id="adminCloudConnectionLocked">
+    <form id="adminCloudUnlockForm" class="form admin-cloud-unlock-form">
+     <label>Confirm Family Account password <input id="adminCloudPassword" type="password" autocomplete="current-password" required></label>
+     <button class="secondary" type="submit">Unlock administrator settings</button>
+     <p class="hint" id="adminCloudUnlockMessage" role="status" aria-live="polite"></p>
+    </form>
+   </div>
+   <form id="cloudConfigForm" class="form admin-cloud-config-form" hidden>
+    <label>Supabase Project URL <input id="cloudProjectUrl" type="url" inputmode="url" placeholder="https://your-project.supabase.co" autocomplete="url" required></label>
+    <label>Supabase Publishable Key <input id="cloudPublishableKey" type="password" autocomplete="off" placeholder="sb_publishable_… or legacy anon key" required></label>
+    <div class="quick">
+     <button class="primary" type="submit">Save this device's connection</button>
+     <button class="secondary" id="useSharedCloudConfig" type="button">Use shared deployment settings</button>
+    </div>
+    <p class="hint">A saved override affects this browser only. To change the default connection for every device, an administrator must update cloud-config.js in the published GitHub repository. Never enter a secret or service-role key here.</p>
+   </form>
+  </details>
+ </section>
  <section class="settings-card">
   <div class="section-head settings-section-head"><div><h3>Data & backup</h3><p class="settings-copy">Export a backup regularly before clearing browser data or changing devices.</p></div></div>
   <div class="quick"><button class="secondary" id="exportBtn">Export backup</button><label class="secondary import">Import backup<input id="importFile" type="file" accept="application/json"></label></div>
@@ -552,5 +564,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261116-cloud-account-safe-shared-config"></script>
+<script src="app.js?v=20261116-admin-cloud-settings"></script>
 </body></html>
