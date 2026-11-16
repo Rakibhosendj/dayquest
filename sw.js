@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v56-cloud-account-safe-shared-config';
+const CACHE = 'dayquest-cache-v57-admin-cloud-settings';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261116-cloud-account-safe-shared-config',
-  './app.js?v=20261116-cloud-account-safe-shared-config',
+  './style.css?v=20261116-admin-cloud-settings',
+  './app.js?v=20261116-admin-cloud-settings',
   './manifest.json',
   './cloud-config.js'
 ];
