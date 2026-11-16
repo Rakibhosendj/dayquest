@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261115-quick-actions">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261116-quick-2col-android">
 <title>DayQuest</title>
 </head>
 <body>
@@ -137,30 +137,9 @@
 
 </section>
 <section id="quickExpenses" class="panel">
- <div class="section-head"><div><h2>Quick Expenses</h2><span class="muted">Create fixed-rate expense and income buttons</span></div><span class="pill" id="quickActionCount">0 buttons</span></div>
- <p class="hint quick-action-intro">Set a fixed rate for each button. The counter starts at 1; use − or + to change the quantity, then record it. Each record is saved as a normal expense or income and included in balances and reports.</p>
- <div class="section-head form-section-head"><h3 id="quickActionFormTitle">Create quick button</h3></div>
- <form id="quickActionForm" class="form quick-action-form">
-  <input id="quickActionId" type="hidden">
-  <div class="form-grid">
-   <label>Button name <input id="quickActionName" maxlength="60" placeholder="e.g. Tea, Bus fare, Daily sales" required></label>
-   <label>Button type <select id="quickActionType"><option value="expense">Expense</option><option value="income">Income</option></select></label>
-   <label>Fixed rate per click <input id="quickActionRate" type="number" min="0.01" step="0.01" placeholder="0.00" required></label>
-   <label>Payment method <select id="quickActionPayment"><option>Cash</option><option>Bank</option></select></label>
-  </div>
-  <div id="quickExpenseConfig" class="quick-action-config">
-   <label>Expense category <select id="quickActionCategory"><option>Food</option><option>Transport</option><option>Shopping</option><option>Bills</option><option>Health</option><option>Education</option><option>Entertainment</option><option>Other</option></select></label>
-   <div class="assignment-field"><strong>Assign expense cost to members</strong><div id="quickActionMembers" class="member-check-list"></div><p class="hint">The recorded amount is split equally among the selected people. Leave empty to keep it unassigned.</p></div>
-  </div>
-  <div id="quickIncomeConfig" class="quick-action-config" hidden>
-   <div class="form-grid">
-    <label>Income type <select id="quickActionIncomeType"></select></label>
-    <label>Income earned by <select id="quickActionIncomeBy"></select></label>
-   </div>
-  </div>
-  <div class="quick-action-form-tools"><button class="primary" id="quickActionSave">＋ Create button</button><button class="secondary" type="button" id="quickActionCancel" hidden>Cancel edit</button></div>
- </form>
- <div class="section-head"><h3>Your quick buttons</h3><span class="muted">Tap Record to save</span></div>
+ <div class="section-head quick-expenses-head"><div><h2>Quick Expenses</h2><span class="muted">Tap a tile to add or subtract one transaction</span></div><button type="button" id="quickActionModeToggle" class="quick-action-mode-toggle add-mode" aria-pressed="false">＋ Add</button></div>
+ <p class="hint quick-action-intro">Add mode increases the count and cost. Minus mode removes one of today's entries. T = total count · Day = today's count · TC = total cost · DC = today's cost.</p>
+ <div class="section-head"><h3>Your quick buttons</h3><span class="muted" id="quickActionCount">0 buttons</span></div>
  <div id="quickActionList" class="quick-action-list"></div>
 </section>
 <section id="inventory" class="panel">
@@ -366,6 +345,34 @@
    <button type="button" class="theme-swatch" data-theme-color="#236d91" aria-label="Ocean blue" title="Ocean blue" style="--swatch:#236d91"></button>
   </div>
  </section>
+ <section class="settings-card settings-quick-actions-card">
+  <details id="quickActionSettings" class="settings-master-group settings-quick-action-settings">
+   <summary>Create Quick Button</summary>
+   <p class="settings-copy quick-action-settings-copy">Create or edit the fixed-rate Expense and Income buttons shown on Expenses → Quick Expenses.</p>
+   <div class="section-head form-section-head"><h3 id="quickActionFormTitle">Create quick button</h3></div>
+   <form id="quickActionForm" class="form quick-action-form">
+    <input id="quickActionId" type="hidden">
+    <div class="form-grid">
+     <label>Button name <input id="quickActionName" maxlength="60" placeholder="e.g. Tea, Bus fare, Daily sales" required></label>
+     <label>Button type <select id="quickActionType"><option value="expense">Expense</option><option value="income">Income</option></select></label>
+     <label>Fixed rate per click <input id="quickActionRate" type="number" min="0.01" step="0.01" placeholder="0.00" required></label>
+     <label>Payment method <select id="quickActionPayment"><option>Cash</option><option>Bank</option></select></label>
+    </div>
+    <div id="quickExpenseConfig" class="quick-action-config">
+     <label>Expense category <select id="quickActionCategory"><option>Food</option><option>Transport</option><option>Shopping</option><option>Bills</option><option>Health</option><option>Education</option><option>Entertainment</option><option>Other</option></select></label>
+     <div class="assignment-field"><strong>Assign expense cost to members</strong><div id="quickActionMembers" class="member-check-list"></div><p class="hint">The recorded amount is split equally among the selected people. Leave empty to keep it unassigned.</p></div>
+    </div>
+    <div id="quickIncomeConfig" class="quick-action-config" hidden>
+     <div class="form-grid">
+      <label>Income type <select id="quickActionIncomeType"></select></label>
+      <label>Income earned by <select id="quickActionIncomeBy"></select></label>
+     </div>
+    </div>
+    <div class="quick-action-form-tools"><button class="primary" id="quickActionSave">＋ Create button</button><button class="secondary" type="button" id="quickActionCancel" hidden>Cancel edit</button></div>
+   </form>
+   <div class="quick-action-manager-wrap"><div class="section-head"><h3>Saved quick buttons</h3><span class="muted">Edit or remove a button</span></div><div id="quickActionManagerList" class="quick-action-manager-list"></div></div>
+  </details>
+ </section>
  <section class="settings-card">
   <div class="section-head settings-section-head"><div><h3>Supplier requirement for credit purchases</h3><p class="settings-copy">Choose whether a supplier must be selected when a purchase bill has an unpaid balance.</p></div></div>
   <label class="settings-toggle-row"><input id="requireSupplierForDuePurchase" type="checkbox" checked> <span>Supplier name is mandatory when a purchase has a due balance</span></label>
@@ -501,5 +508,5 @@
 </div>
 </div>
 </div>
-<script src="app.js?v=20261115-quick-actions"></script>
+<script src="app.js?v=20261116-quick-2col-android"></script>
 </body></html>

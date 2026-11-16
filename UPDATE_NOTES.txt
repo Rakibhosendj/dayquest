@@ -291,3 +291,19 @@ PURCHASE BILL EDIT + RECALCULATION REPAIR
 - Income shortcuts support income type, earner, and Cash/Bank payment method.
 - Recording a shortcut creates a standard transaction in the existing expenses or incomes collection, so balance calculations, dashboard totals, date-range reports, member-cost reports, and backup export include it without a separate reporting ledger.
 - Quick-button templates are included in backup export/import.
+
+
+2026-11-16 — Quick button setup & compact recent purchase bills
+- Moved quick Expense/Income button creation and editing into a collapsed Settings → Create Quick Button accordion.
+- Kept configured quick buttons and their quantity steppers/Record actions on Expenses → Quick Expenses.
+- Recent purchase bills now render as compact one-line rows. Account, View details, Edit bill, and Delete actions remain hidden until long-press, right-click, or the keyboard context-menu command reveals them.
+- Added a compact bill detail panel and preserved product inventory navigation and existing bill-edit/delete handlers.
+
+
+QUICK EXPENSES — TILE COUNTERS AND ADD / MINUS MODE (2026-11-16)
+- Replaced the quantity-stepper/Record layout with large rounded quick-action tiles inspired by the supplied Tea mockup. Each tile shows T (all-time count), Day (today's count), TC (all-time total amount), and DC (today's total amount).
+- Added a page-top Add / Minus mode toggle. Add mode records one normal Expense or Income transaction per tile tap. Minus mode removes one of that tile's same-day entries, reducing total/day counts and costs; it cannot reduce below zero.
+- A Minus tile is disabled when there is no matching entry for today. Transactions converted to a due or with settlement history are protected from one-tap removal.
+- Quick-button creation, editing and deletion remain in Settings. The Quick Expenses page stays focused on the saved transaction tiles.
+- Tile hover, active and keyboard focus feedback added, with responsive two-column/single-column tile layout.
+- Quick-button taps create ordinary DayQuest Expense/Income rows, so balances, Overview, member costs, and all reports continue to update through the normal save/render flow.

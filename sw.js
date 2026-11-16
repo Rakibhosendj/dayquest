@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v49-quick-expense-buttons';
+const CACHE = 'dayquest-cache-v52-quick-2col-android';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261115-quick-actions',
-  './app.js?v=20261115-quick-actions',
+  './style.css?v=20261116-quick-2col-android',
+  './app.js?v=20261116-quick-2col-android',
   './manifest.json'
 ];
 

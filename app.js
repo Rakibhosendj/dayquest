@@ -1,7 +1,7 @@
 const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slice(0,10);
 const load=()=>{try{return JSON.parse(localStorage.getItem('dayquest_v1'))||{expenses:[],quests:[],checks:{}}}catch{return{expenses:[],quests:[],checks:{}}}};
 let db=load(),deferredInstall=null,editingExpenseId=null,editingIncomeId=null,collectingIncomeId=null,settlingExpenseId=null,activeSupplierName=null,payingSupplierName=null,purchaseLines=[],editingPurchaseBillId=null,purchaseBillOriginalDate='',salesMemoLines=[],editingSalesMemoId=null,editingQuickActionId=null;
-const quickActionCounts=new Map();
+let quickActionMode='add';
 db.expenses=Array.isArray(db.expenses)?db.expenses:[];
 db.expenses.forEach(x=>{if(!['family','member','unassigned','members'].includes(x.costType))x.costType=x.costMember?'member':'unassigned';x.costMember=String(x.costMember||'').trim();if(x.costType==='member'&&!x.costMember)x.costType='unassigned'});
 db.expenseNames=db.expenseNames||['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];
@@ -203,7 +203,7 @@ function setTab(t){
  if(activeGroup)activeGroup.open=true;
  closeSidebar();
  if(t==='reports'){renderReport();if(!document.querySelector('[data-report-go].active'))activateReportSection('members')}
- if(t==='settings'){renderPurchaseCategorySettings();renderMasterLists();$('requireSupplierForDuePurchase').checked=db.settings.requireSupplierForDuePurchase!==false;$('allowPurchaseBillEdits').checked=db.settings.allowPurchaseBillEdits!==false;}
+ if(t==='settings'){renderPurchaseCategorySettings();renderMasterLists();$('requireSupplierForDuePurchase').checked=db.settings.requireSupplierForDuePurchase!==false;$('allowPurchaseBillEdits').checked=db.settings.allowPurchaseBillEdits!==false;fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickMemberOptions(quickSelectedMembers());updateQuickActionTypeFields();renderQuickActionManager();}
  if(t==='payExpenseDue')renderExpenseDueList();
  if(t==='quickExpenses'){renderQuickMemberOptions(quickSelectedMembers());fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickActions();}
  if(t==='inventory')renderInventory();
@@ -755,17 +755,47 @@ function renderSupplierAccounts(){
  $('supplierList').querySelectorAll('[data-supplier]').forEach(btn=>btn.onclick=()=>openSupplierAccount(btn.dataset.supplier));
  $('purchaseBillCount').textContent=`${db.purchaseBills.length} bills`;
  $('purchaseBillList').innerHTML=db.purchaseBills.length?db.purchaseBills.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(b=>{
-  const billId=esc(b.id),products=(b.lines||[]).map(line=>{
+  const billId=esc(b.id),lines=b.lines||[],products=lines.map(line=>{
    const lineId=esc(line.id),used=db.consumptions.filter(c=>c.billId===b.id&&c.lineId===line.id).reduce((t,c)=>t+Number(c.quantity||0),0),remaining=Math.max(0,Number(line.quantity||0)-used),amount=purchaseLineCost(b,line),owners=assignedMembers(line);
    return `<article class="purchase-bill-line" id="purchase-bill-line-${lineId}"><div class="purchase-bill-line-head"><strong>${esc(line.product||'Product')}${line.spec?` · ${esc(line.spec)}`:''}</strong><strong>${money(amount)}</strong></div><small>${esc(line.category||b.category||'Uncategorised')} · ${esc(line.productType||'Other')} · ${numberText(line.quantity)} ${esc(line.unit||'pcs')} × ${money(line.rate||0)}</small><div class="purchase-bill-stock"><span>Purchased <strong>${numberText(line.quantity)} ${esc(line.unit||'pcs')}</strong></span><span>Used <strong>${numberText(used)} ${esc(line.unit||'pcs')}</strong></span><span>In stock <strong>${numberText(remaining)} ${esc(line.unit||'pcs')}</strong></span><span>Assigned to <strong>${esc(owners.length?owners.join(', '):'Not assigned')}</strong></span></div><button type="button" class="edit-btn" data-view-inventory-line="${esc(stockRefKey(b.id,line.id))}">Open inventory record</button></article>`;
   }).join('');
-  return `<article class="purchase-bill-card" id="purchase-bill-${billId}"><div class="item bill-summary"><div class="item-main"><div class="item-title">${esc(b.supplier||'Cash purchase')}${b.billNo?` · #${esc(b.billNo)}`:''}</div><div class="item-sub">${fmt(b.date)} · ${esc((b.lines||[]).map(line=>line.category||b.category||'Uncategorised').filter((value,index,array)=>array.indexOf(value)===index).join(', '))} · ${(b.lines||[]).length} products · Transit ${money(b.transitCost)} · Discount ${money(b.discount)} · Cash ${money(b.cashPaid)} · Bank ${money(b.bankPaid)} · Credit ${money(billCredit(b))}</div></div><div class="expense-right"><div class="item-amount">${money(billTotal(b))}</div><div class="item-actions">${b.supplier?`<button type="button" class="edit-btn" data-open-supplier="${esc(b.supplier)}">Account</button>`:''}<details class="purchase-bill-details purchase-bill-view-inline" id="purchase-bill-detail-${billId}"><summary class="edit-btn">View</summary><div class="purchase-bill-products">${products||empty('No products on this bill.')}</div></details>${db.settings.allowPurchaseBillEdits!==false?`<button type="button" class="edit-btn" data-edit-bill="${billId}">Edit bill</button>`:'' }<button type="button" class="delete" data-delete-bill="${billId}" aria-label="Delete purchase bill">×</button></div></div></div></article>`;
+  const label=`${b.supplier||'Cash purchase'}${b.billNo?` · #${b.billNo}`:''} · ${fmt(b.date)} · ${lines.length} item${lines.length===1?'':'s'}`;
+  return `<article class="purchase-bill-card" id="purchase-bill-${billId}" data-purchase-bill-card="${billId}"><div class="purchase-bill-compact-row" data-bill-summary tabindex="0" role="button" aria-haspopup="true" aria-expanded="false" aria-label="${esc(label)}. Long press or right-click for actions." title="Long press or right-click for bill actions"><span class="purchase-bill-compact-title">${esc(label)}</span><strong class="purchase-bill-compact-total">${money(billTotal(b))}</strong><span class="purchase-bill-compact-more" aria-hidden="true">⋯</span></div><div class="purchase-bill-actions" data-bill-actions hidden>${b.supplier?`<button type="button" class="edit-btn" data-open-supplier="${esc(b.supplier)}">Account</button>`:''}<button type="button" class="edit-btn" data-bill-detail-toggle>View details</button>${db.settings.allowPurchaseBillEdits!==false?`<button type="button" class="edit-btn" data-edit-bill="${billId}">Edit bill</button>`:''}<button type="button" class="delete" data-delete-bill="${billId}">Delete</button></div><div class="purchase-bill-detail-panel" data-bill-detail hidden><div class="purchase-bill-detail-meta">${esc((lines).map(line=>line.category||b.category||'Uncategorised').filter((value,index,array)=>array.indexOf(value)===index).join(', '))} · Transit ${money(b.transitCost)} · Discount ${money(b.discount)} · Cash ${money(b.cashPaid)} · Bank ${money(b.bankPaid)} · Credit ${money(billCredit(b))}</div><div class="purchase-bill-products">${products||empty('No products on this bill.')}</div></div></article>`;
  }).join(''):empty('No purchase bills saved yet.');
  $('purchaseBillList').querySelectorAll('[data-open-supplier]').forEach(btn=>btn.onclick=()=>openSupplierAccount(btn.dataset.openSupplier));
  $('purchaseBillList').querySelectorAll('[data-edit-bill]').forEach(btn=>btn.onclick=()=>editPurchaseBill(btn.dataset.editBill));
  $('purchaseBillList').querySelectorAll('[data-delete-bill]').forEach(btn=>btn.onclick=()=>deletePurchaseBill(btn.dataset.deleteBill));
  $('purchaseBillList').querySelectorAll('[data-view-inventory-line]').forEach(btn=>btn.onclick=()=>openInventoryLine(btn.dataset.viewInventoryLine));
+ $('purchaseBillList').querySelectorAll('[data-bill-detail-toggle]').forEach(btn=>btn.onclick=()=>{const panel=btn.closest('[data-purchase-bill-card]')?.querySelector('[data-bill-detail]');if(!panel)return;panel.hidden=!panel.hidden;btn.textContent=panel.hidden?'View details':'Hide details'});
 }
+function revealPurchaseBillActions(card,focusFirst=false){
+ if(!card)return;
+ document.querySelectorAll('[data-purchase-bill-card].purchase-bill-actions-visible').forEach(openCard=>{if(openCard!==card)hidePurchaseBillActions(openCard)});
+ const actions=card.querySelector('[data-bill-actions]'),row=card.querySelector('[data-bill-summary]');if(!actions||!row)return;
+ actions.hidden=false;card.classList.add('purchase-bill-actions-visible');row.setAttribute('aria-expanded','true');
+ if(focusFirst)actions.querySelector('button')?.focus({preventScroll:true});
+}
+function hidePurchaseBillActions(card){
+ if(!card)return;const actions=card.querySelector('[data-bill-actions]'),row=card.querySelector('[data-bill-summary]'),detail=card.querySelector('[data-bill-detail]');
+ if(actions)actions.hidden=true;if(detail)detail.hidden=true;card.classList.remove('purchase-bill-actions-visible');row?.setAttribute('aria-expanded','false');
+ const view=card.querySelector('[data-bill-detail-toggle]');if(view)view.textContent='View details';
+}
+let purchaseBillHoldTimer=null,purchaseBillHoldCard=null,purchaseBillHoldPoint=null;
+function cancelPurchaseBillHold(){if(purchaseBillHoldTimer)clearTimeout(purchaseBillHoldTimer);purchaseBillHoldTimer=null;purchaseBillHoldCard=null;purchaseBillHoldPoint=null;}
+const purchaseBillListElement=$('purchaseBillList');
+purchaseBillListElement?.addEventListener('contextmenu',event=>{const card=event.target.closest('[data-purchase-bill-card]');if(!card)return;event.preventDefault();revealPurchaseBillActions(card)});
+purchaseBillListElement?.addEventListener('pointerdown',event=>{
+ const row=event.target.closest('[data-bill-summary]');if(!row||!['touch','pen'].includes(event.pointerType))return;
+ cancelPurchaseBillHold();purchaseBillHoldCard=row.closest('[data-purchase-bill-card]');purchaseBillHoldPoint={x:event.clientX,y:event.clientY};
+ purchaseBillHoldTimer=setTimeout(()=>{revealPurchaseBillActions(purchaseBillHoldCard);purchaseBillHoldTimer=null;},620);
+});
+purchaseBillListElement?.addEventListener('pointermove',event=>{if(!purchaseBillHoldTimer||!purchaseBillHoldPoint)return;if(Math.hypot(event.clientX-purchaseBillHoldPoint.x,event.clientY-purchaseBillHoldPoint.y)>12)cancelPurchaseBillHold()});
+['pointerup','pointercancel','pointerleave'].forEach(type=>purchaseBillListElement?.addEventListener(type,cancelPurchaseBillHold));
+purchaseBillListElement?.addEventListener('keydown',event=>{
+ const row=event.target.closest('[data-bill-summary]');if(!row)return;
+ if(['Enter',' ','ContextMenu'].includes(event.key)||(event.shiftKey&&event.key==='F10')){event.preventDefault();revealPurchaseBillActions(row.closest('[data-purchase-bill-card]'),true)}
+});
+document.addEventListener('click',event=>{const current=event.target.closest('[data-purchase-bill-card]');document.querySelectorAll('[data-purchase-bill-card].purchase-bill-actions-visible').forEach(card=>{if(card!==current)hidePurchaseBillActions(card)})});
 function openSupplierAccount(name){
  setTab('supplierAccounts');
  activeSupplierName=name;$('supplierAccountPanel').hidden=false;$('supplierAccountTitle').textContent=name;$('supplierAccountSubtitle').textContent='Supplier / creditor ledger';
@@ -919,17 +949,59 @@ function resetQuickActionForm(){
 }
 function editQuickAction(id){
  const action=db.quickActions.find(x=>x.id===id);if(!action)return;
+ setTab('settings');const setup=$('quickActionSettings');if(setup)setup.open=true;
  editingQuickActionId=id;$('quickActionId').value=id;$('quickActionName').value=action.name||'';$('quickActionType').value=action.type||'expense';$('quickActionRate').value=Number(action.rate||0);$('quickActionPayment').value=action.paymentType||'Cash';$('quickActionCategory').value=action.category||'Other';
  fillQuickActionOptions(action.incomeType||'',action.incomeBy||'');renderQuickMemberOptions(action.costMembers||[]);updateQuickActionTypeFields();$('quickActionFormTitle').textContent='Edit quick button';$('quickActionSave').textContent='Save changes';$('quickActionCancel').hidden=false;$('quickActionForm').scrollIntoView({behavior:'smooth',block:'start'});
 }
+function quickActionTransactions(action){
+ const id=String(action?.id||'');if(!id)return [];
+ return [
+  ...db.expenses.filter(item=>String(item.quickActionId||'')===id).map(item=>({item,list:db.expenses,kind:'expense'})),
+  ...db.incomes.filter(item=>String(item.quickActionId||'')===id).map(item=>({item,list:db.incomes,kind:'income'}))
+ ];
+}
+function quickActionStats(action){
+ const rows=quickActionTransactions(action),day=today(),todayRows=rows.filter(row=>String(row.item.date||'')===day);
+ const units=row=>Math.max(0,Math.floor(Number(row.item.quantity)||1));
+ const amount=row=>Number(row.item.amount)||0;
+ return {
+  totalCount:rows.reduce((total,row)=>total+units(row),0),
+  dayCount:todayRows.reduce((total,row)=>total+units(row),0),
+  totalCost:rows.reduce((total,row)=>total+amount(row),0),
+  dayCost:todayRows.reduce((total,row)=>total+amount(row),0)
+ };
+}
+function updateQuickActionModeButton(){
+ const button=$('quickActionModeToggle');if(!button)return;
+ const subtract=quickActionMode==='minus';
+ button.textContent=subtract?'− Minus':'＋ Add';
+ button.classList.toggle('minus-mode',subtract);button.classList.toggle('add-mode',!subtract);
+ button.setAttribute('aria-pressed',String(subtract));
+ button.setAttribute('aria-label',`Current quick button mode: ${subtract?'Minus':'Add'}. Click to switch mode.`);
+}
 function renderQuickActions(){
- if(!$('quickActionList'))return;
+ const list=$('quickActionList');if(!list)return;
  $('quickActionCount').textContent=`${db.quickActions.length} button${db.quickActions.length===1?'':'s'}`;
- fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');
- $('quickActionList').innerHTML=db.quickActions.length?db.quickActions.map(action=>{
-  const count=quickActionCounts.has(action.id)?quickActionCounts.get(action.id):1,rate=Number(action.rate||0),type=action.type==='income'?'Income':'Expense',meta=action.type==='income'?`${action.incomeType||'Other'} · ${action.incomeBy||'Unassigned'}`:`${action.category||'Other'} · ${(action.costMembers||[]).length?`For ${(action.costMembers||[]).join(', ')}`:'Not assigned'}`;
-  return `<article class="quick-action-card" data-quick-card="${esc(action.id)}"><div class="quick-action-main"><div class="quick-action-title-row"><strong>${esc(action.name)}</strong><span class="quick-action-kind ${action.type==='income'?'income-kind':'expense-kind'}">${type}</span></div><div class="quick-action-meta">${esc(meta)} · ${money(rate)} each</div></div><div class="quick-action-controls"><div class="quick-action-stepper" aria-label="Quantity to record"><button type="button" data-quick-step="${esc(action.id)}" data-step="-1" aria-label="Decrease quantity">−</button><output>${count}</output><button type="button" data-quick-step="${esc(action.id)}" data-step="1" aria-label="Increase quantity">+</button></div><button type="button" class="primary quick-action-record" data-quick-record="${esc(action.id)}" ${count<1?'disabled':''}>Record ${count} · ${money(rate*count)}</button><div class="quick-action-manage"><button type="button" class="edit-btn" data-quick-edit="${esc(action.id)}">Edit</button><button type="button" class="delete" data-quick-delete="${esc(action.id)}" aria-label="Delete quick button ${esc(action.name)}">×</button></div></div></article>`;
- }).join(''):empty('No quick buttons yet. Create an Expense or Income button above.');
+ updateQuickActionModeButton();
+ list.innerHTML=db.quickActions.length?db.quickActions.map(action=>{
+  const stats=quickActionStats(action),disabled=quickActionMode==='minus'&&stats.dayCount<1;
+  const kind=action.type==='income'?'Income':'Expense';
+  const aria=`${action.name}, ${kind}. Total count ${numberText(stats.totalCount)}, today count ${numberText(stats.dayCount)}, total cost ${numberText(stats.totalCost)}, today's cost ${numberText(stats.dayCost)}. ${quickActionMode==='minus'?'Click to subtract one of today’s entries':'Click to add one'}.`;
+  return `<button type="button" class="quick-action-card ${quickActionMode==='minus'?'quick-action-minus':''}" data-quick-activate="${esc(action.id)}" aria-label="${esc(aria)}" ${disabled?'disabled':''}>
+   <span class="quick-action-button-title">${esc(action.name)}</span>
+   <span class="quick-action-button-stats">
+    <span>T: <strong>${numberText(stats.totalCount)}</strong></span>
+    <span>Day: <strong>${numberText(stats.dayCount)}</strong></span>
+    <span>TC: <strong>${numberText(stats.totalCost)}</strong></span>
+    <span>DC: <strong>${numberText(stats.dayCost)}</strong></span>
+   </span>
+   <span class="quick-action-button-kind">${kind}</span>
+  </button>`;
+ }).join(''):empty('No quick buttons yet. Open Settings → Create Quick Button to add one.');
+}
+function renderQuickActionManager(){
+ const list=$('quickActionManagerList');if(!list)return;
+ list.innerHTML=db.quickActions.length?db.quickActions.map(action=>`<div class="quick-action-manager-row"><div class="quick-action-manager-info"><strong>${esc(action.name)}</strong><span>${action.type==='income'?'Income':'Expense'} · ${money(action.rate)} per click</span></div><div class="quick-action-manager-tools"><button type="button" class="edit-btn" data-quick-edit="${esc(action.id)}">Edit</button><button type="button" class="delete" data-quick-delete="${esc(action.id)}">Delete</button></div></div>`).join(''):empty('No quick buttons created yet.');
 }
 function saveQuickAction(){
  const name=$('quickActionName').value.trim(),type=$('quickActionType').value,rate=Number($('quickActionRate').value),paymentType=$('quickActionPayment').value;
@@ -945,31 +1017,52 @@ function saveQuickAction(){
  }
  if(editingQuickActionId){const existing=db.quickActions.find(x=>x.id===editingQuickActionId);if(existing)Object.assign(existing,values)}
  else db.quickActions.unshift({id:crypto.randomUUID(),...values});
- resetQuickActionForm();fillChoices();save();setTab('quickExpenses');
+ resetQuickActionForm();if($('quickActionSettings'))$('quickActionSettings').open=false;fillChoices();save();setTab('quickExpenses');
 }
-function recordQuickAction(id){
+function addQuickActionOne(id){
  const action=db.quickActions.find(x=>x.id===id);if(!action)return;
- const quantity=Math.max(1,Math.min(999,Math.floor(Number(quickActionCounts.get(id)??1)))),rate=Number(action.rate||0),amount=Number((quantity*rate).toFixed(2)),date=today();
+ const rate=Number(action.rate||0),amount=Number(rate.toFixed(2)),date=today();
  if(!(rate>0)||!Number.isFinite(amount))return;
+ const createdAt=new Date().toISOString();
  if(action.type==='income'){
   const incomeBy=action.incomeBy||db.incomePeople[0]||'Unassigned';
-  db.incomes.unshift({id:crypto.randomUUID(),source:action.incomeType||'Other',incomeBy,amount,quantity,unit:'times',rate,paymentType:action.paymentType==='Bank'?'Bank':'Cash',duePerson:null,date,note:`Quick income button · ${action.name}`,quickActionId:action.id,quickActionName:action.name,collections:[]});
+  db.incomes.unshift({id:crypto.randomUUID(),source:action.incomeType||'Other',incomeBy,amount,quantity:1,unit:'times',rate,paymentType:action.paymentType==='Bank'?'Bank':'Cash',duePerson:null,date,note:`Quick income button · ${action.name}`,quickActionId:action.id,quickActionName:action.name,createdAt,collections:[]});
   if(!db.incomeHeads.includes(action.incomeType||'Other'))db.incomeHeads.push(action.incomeType||'Other');if(!db.incomePeople.includes(incomeBy))db.incomePeople.push(incomeBy);
  }else{
   const costMembers=uniquePeople(action.costMembers||[]);
-  db.expenses.unshift({id:crypto.randomUUID(),name:action.name,amount,quantity,unit:'times',rate,paymentType:action.paymentType==='Bank'?'Bank':'Cash',costType:costMembers.length?'members':'unassigned',costMember:costMembers.length===1?costMembers[0]:'',costMembers,dueDirection:null,duePerson:null,duePaidFrom:null,category:action.category||'Other',date,note:`Quick expense button · ${action.name}`,quickActionId:action.id,quickActionName:action.name});
+  db.expenses.unshift({id:crypto.randomUUID(),name:action.name,amount,quantity:1,unit:'times',rate,paymentType:action.paymentType==='Bank'?'Bank':'Cash',costType:costMembers.length?'members':'unassigned',costMember:costMembers.length===1?costMembers[0]:'',costMembers,dueDirection:null,duePerson:null,duePaidFrom:null,category:action.category||'Other',date,note:`Quick expense button · ${action.name}`,quickActionId:action.id,quickActionName:action.name,createdAt});
  }
- quickActionCounts.set(id,1);save();
+ save();
+}
+function subtractQuickActionOne(id){
+ const action=db.quickActions.find(x=>x.id===id);if(!action)return;
+ const date=today(),preferred=action.type==='income'?db.incomes:db.expenses,other=action.type==='income'?db.expenses:db.incomes;
+ let list=preferred,index=list.findIndex(item=>String(item.quickActionId||'')===String(id)&&String(item.date||'')===date);
+ if(index<0){list=other;index=list.findIndex(item=>String(item.quickActionId||'')===String(id)&&String(item.date||'')===date)}
+ if(index<0)return;
+ const item=list[index];
+ if(item.paymentType==='Due'||(list===db.expenses&&expenseSettledAmount(item)>0.000001)||(list===db.incomes&&Array.isArray(item.collections)&&item.collections.length)){
+  alert('This quick entry has been changed to a due or has settlement history. Please manage it from the Expenses or Income list.');return;
+ }
+ const quantity=Math.max(1,Math.floor(Number(item.quantity)||1)),currentAmount=Number(item.amount)||0;
+ const unitAmount=Number((currentAmount/quantity).toFixed(2));
+ if(quantity>1){
+  item.quantity=quantity-1;item.amount=Number((currentAmount-unitAmount).toFixed(2));item.rate=Number((item.amount/item.quantity).toFixed(4));
+ }else list.splice(index,1);
+ save();
 }
 $('quickActionType').onchange=updateQuickActionTypeFields;
+$('quickActionModeToggle').onclick=()=>{quickActionMode=quickActionMode==='add'?'minus':'add';renderQuickActions()};
 $('quickActionForm').onsubmit=e=>{e.preventDefault();saveQuickAction()};
-$('quickActionCancel').onclick=resetQuickActionForm;
+$('quickActionCancel').onclick=()=>{resetQuickActionForm();if($('quickActionSettings'))$('quickActionSettings').open=false};
 $('quickActionList').onclick=e=>{
+ const tile=e.target.closest('[data-quick-activate]');if(!tile||tile.disabled)return;
+ const id=tile.dataset.quickActivate;if(quickActionMode==='minus')subtractQuickActionOne(id);else addQuickActionOne(id);
+};
+$('quickActionManagerList').onclick=e=>{
  const button=e.target.closest('button');if(!button)return;
- if(button.dataset.quickStep){const id=button.dataset.quickStep,current=quickActionCounts.has(id)?quickActionCounts.get(id):1,next=Math.max(0,Math.min(999,current+Number(button.dataset.step||0)));quickActionCounts.set(id,next);renderQuickActions();return}
- if(button.dataset.quickRecord){recordQuickAction(button.dataset.quickRecord);return}
  if(button.dataset.quickEdit){editQuickAction(button.dataset.quickEdit);return}
- if(button.dataset.quickDelete){const id=button.dataset.quickDelete,action=db.quickActions.find(x=>x.id===id);if(!action)return;if(confirm(`Delete the quick button “${action.name}”? Existing recorded transactions will remain in Expenses and Income.`)){db.quickActions=db.quickActions.filter(x=>x.id!==id);quickActionCounts.delete(id);if(editingQuickActionId===id)resetQuickActionForm();save()}}
+ if(button.dataset.quickDelete){const id=button.dataset.quickDelete,action=db.quickActions.find(x=>x.id===id);if(!action)return;if(confirm(`Delete the quick button “${action.name}”? Existing recorded transactions will remain in Expenses and Income.`)){db.quickActions=db.quickActions.filter(x=>x.id!==id);if(editingQuickActionId===id)resetQuickActionForm();save()}}
 };
 function openExpenseDueAction(id){
  const x=db.expenses.find(item=>item.id===id);if(!x||expenseOutstanding(x)<=0)return;
@@ -1467,7 +1560,7 @@ function render(){
  $('todayQuests').innerHTML=questHTML(qToday.slice(0,4),false);
  $('expenseCount').textContent=`${db.expenses.length} expenses · ${db.purchaseBills.length} bills`;
  let filtered=db.expenses.filter(x=>( $('expenseFilter').value==='all'||x.category===$('expenseFilter').value)&&(`${x.note} ${x.category}`).toLowerCase().includes($('expenseSearch').value.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date));
- $('expenseList').innerHTML=expenseHTML(filtered,true);$('questList').innerHTML=questHTML(dayQuests(d),true);renderQuickActions();renderSupplierAccounts();renderInventory();renderProductionList();renderExpenseDueList();renderGuestReport();
+ $('expenseList').innerHTML=expenseHTML(filtered,true);$('questList').innerHTML=questHTML(dayQuests(d),true);renderQuickActions();renderQuickActionManager();renderSupplierAccounts();renderInventory();renderProductionList();renderExpenseDueList();renderGuestReport();
  $('questSummary').textContent=`${done}/${qToday.length} completed`;$('incomeCount').textContent=`${db.incomes.length} entries`;
  const incomeFilter=$('incomeDateFilter').value,incomeHead=$('incomeHeadFilter').value,incomePerson=$('incomePersonFilter').value;const incomes=[...db.incomes].filter(x=>(!incomeFilter||x.date===incomeFilter)&&(incomeHead==='all'||(x.source||'Other')===incomeHead)&&(incomePerson==='all'||(x.incomeBy||'Unassigned')===incomePerson)).sort((a,b)=>b.date.localeCompare(a.date));$('incomeList').innerHTML=incomeHTML(incomes,true);renderSalesMemoList();
 }

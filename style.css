@@ -743,3 +743,95 @@ button,input,select,textarea{
 .quick-action-manage button{padding:7px 9px;font-size:10px}
 @media(min-width:650px){.quick-action-card{grid-template-columns:minmax(170px,.8fr) minmax(0,1.2fr);align-items:center}.quick-action-controls{justify-content:flex-end}.quick-action-record{flex:0 1 auto}}
 @media(max-width:390px){.quick-action-controls{gap:5px}.quick-action-stepper button{width:27px;height:28px}.quick-action-record{flex-basis:110px;padding:9px 7px;font-size:10px}.quick-action-manage{margin-left:0}}
+
+
+/* Quick-button configuration lives in Settings; shortcuts remain on Quick Expenses. */
+.settings-quick-actions-card{padding:12px}
+.settings-quick-action-settings{background:#fbfcfe}
+.quick-action-settings-copy{margin:0 0 10px;line-height:1.45}
+.settings-quick-action-settings .quick-action-form{max-width:100%;gap:8px}
+.settings-quick-action-settings .quick-action-form .form-grid{gap:8px}
+.settings-quick-action-settings .quick-action-form label{gap:4px}
+.settings-quick-action-settings .quick-action-form input,.settings-quick-action-settings .quick-action-form select{min-height:36px}
+.settings-quick-action-settings .quick-action-config{gap:8px}
+.settings-quick-action-settings .quick-action-form-tools{margin-top:2px}
+
+/* Recent purchase register: one-line rows; reveal commands by long press or context menu. */
+.purchase-bill-card{display:grid;gap:5px;padding:6px 8px;border:1px solid #e6ebf2;border-radius:10px;background:#fff}
+.purchase-bill-compact-row{display:flex;align-items:center;gap:9px;min-width:0;min-height:31px;cursor:context-menu;user-select:none;-webkit-user-select:none;touch-action:pan-y;color:#172033}
+.purchase-bill-compact-title{display:block;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;font-weight:700;color:#33445d}
+.purchase-bill-compact-total{flex:0 0 auto;font-size:11px;color:#172033;white-space:nowrap}
+.purchase-bill-compact-more{flex:0 0 auto;width:20px;height:22px;display:grid;place-items:center;border-radius:6px;background:#f0f3f7;color:#63738a;font-size:17px;line-height:1}
+.purchase-bill-compact-row:focus-visible{outline:2px solid #9aacc4;outline-offset:2px;border-radius:7px}
+.purchase-bill-actions{display:flex;align-items:center;flex-wrap:wrap;gap:5px;padding-top:5px;border-top:1px solid #edf0f4}
+.purchase-bill-actions[hidden],.purchase-bill-detail-panel[hidden]{display:none!important}
+.purchase-bill-actions button{padding:6px 9px;font-size:9px}
+.purchase-bill-actions-visible{border-color:#c8d4e3;box-shadow:0 2px 8px #1720330b}
+.purchase-bill-detail-panel{padding:4px 2px 2px}
+.purchase-bill-detail-meta{margin:0 0 7px;color:#8290a2;font-size:9px;line-height:1.4}
+.purchase-bill-detail-panel .purchase-bill-products{gap:6px}
+.purchase-bill-detail-panel .purchase-bill-line{gap:5px;padding:8px}
+@media(max-width:430px){
+ .purchase-bill-card{padding:5px 7px;gap:4px}
+ .purchase-bill-compact-row{gap:6px;min-height:29px}
+ .purchase-bill-compact-title{font-size:9.5px}
+ .purchase-bill-compact-total{font-size:10px}
+ .purchase-bill-actions{gap:4px}
+ .purchase-bill-actions button{padding:6px 7px;font-size:8.5px}
+}
+
+/* Quick Expenses: image-style transaction tiles with one-tap Add/Minus mode. */
+.quick-expenses-head{align-items:center;gap:10px}
+.quick-action-mode-toggle{flex:0 0 auto;min-width:104px;padding:10px 16px;border:0;border-radius:999px;font-size:12px;font-weight:900;letter-spacing:.01em;cursor:pointer;transition:transform .14s ease,box-shadow .14s ease,background .14s ease}
+.quick-action-mode-toggle.add-mode{background:#e6f4eb;color:#17633d;box-shadow:inset 0 0 0 1px #b8dfc5}
+.quick-action-mode-toggle.minus-mode{background:#fff0e8;color:#a63f23;box-shadow:inset 0 0 0 1px #f0c3ae}
+.quick-action-mode-toggle:hover{transform:translateY(-1px);box-shadow:0 4px 12px #1720331a}
+.quick-action-mode-toggle:focus-visible{outline:3px solid #8da5c3;outline-offset:2px}
+.quick-action-intro{margin:4px 2px 12px;font-size:10px;line-height:1.45}
+.quick-action-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,245px),1fr));gap:13px;align-items:stretch}
+.quick-action-card{appearance:none;-webkit-appearance:none;position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:15px;width:100%;min-width:0;min-height:160px;aspect-ratio:1.55;padding:22px 18px;border:0;border-radius:40px;background:#ee7d2f;color:#fff;text-align:center;font:inherit;cursor:pointer;box-shadow:0 4px 10px #d96b2422;transition:transform .15s ease,box-shadow .15s ease,filter .15s ease,opacity .15s ease}
+.quick-action-card:hover{transform:translateY(-3px) scale(1.012);box-shadow:0 11px 22px #c95b2538;filter:saturate(1.06)}
+.quick-action-card:active{transform:translateY(-1px) scale(.985);box-shadow:0 3px 8px #c95b2535}
+.quick-action-card:focus-visible{outline:3px solid #263b5c;outline-offset:3px}
+.quick-action-card:disabled{cursor:not-allowed;opacity:.48;filter:grayscale(.28);box-shadow:none;transform:none}
+.quick-action-card.quick-action-minus:not(:disabled){background:#e87534}
+.quick-action-button-title{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff;font-size:clamp(19px,2.6vw,25px);font-weight:850;line-height:1.15;text-shadow:0 1px 1px #00000012}
+.quick-action-button-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px 28px;width:min(100%,270px);margin:0 auto;text-align:left}
+.quick-action-button-stats>span{display:block;white-space:nowrap;color:#fff;font-size:clamp(14px,1.8vw,19px);font-weight:750;line-height:1.2}
+.quick-action-button-stats strong{font-weight:850}
+.quick-action-button-kind{position:absolute;right:14px;top:12px;padding:3px 7px;border:1px solid #ffffff55;border-radius:999px;color:#fff;font-size:8px;font-weight:850;letter-spacing:.07em;text-transform:uppercase;opacity:.82}
+.quick-action-manager-wrap{margin-top:14px;padding-top:10px;border-top:1px solid #e9edf2}
+.quick-action-manager-list{display:grid;gap:6px}
+.quick-action-manager-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;padding:7px 8px;border:1px solid #e9edf2;border-radius:9px;background:#fff}
+.quick-action-manager-info{display:grid;gap:2px;min-width:0}
+.quick-action-manager-info strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#26354c;font-size:10px}
+.quick-action-manager-info span{color:#8792a2;font-size:9px}
+.quick-action-manager-tools{display:flex;gap:5px;flex:0 0 auto}
+.quick-action-manager-tools button{padding:6px 8px;font-size:9px}
+@media(max-width:480px){
+ .quick-expenses-head{align-items:flex-start}
+ .quick-action-mode-toggle{min-width:90px;padding:9px 12px}
+ .quick-action-list{grid-template-columns:1fr;gap:11px}
+ .quick-action-card{min-height:0;aspect-ratio:1.58;border-radius:34px;padding:20px 16px;gap:13px}
+ .quick-action-button-stats{width:min(100%,250px);gap:7px 20px}
+ .quick-action-button-stats>span{font-size:17px}
+}
+@media(prefers-reduced-motion:reduce){.quick-action-card,.quick-action-mode-toggle{transition:none}}
+
+/* Android/mobile Quick Expenses: show two compact quick-action tiles per row. */
+@media(max-width:480px){
+ .quick-action-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:stretch}
+ .quick-action-card{min-width:0;min-height:112px;aspect-ratio:1.45;gap:7px;padding:12px 8px 10px;border-radius:22px}
+ .quick-action-button-title{font-size:clamp(14px,4.2vw,17px);line-height:1.1}
+ .quick-action-button-stats{width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 6px}
+ .quick-action-button-stats>span{font-size:clamp(10px,3vw,13px);line-height:1.15;letter-spacing:-.15px}
+ .quick-action-button-kind{top:6px;right:7px;padding:2px 5px;font-size:6.5px}
+}
+@media(max-width:350px){
+ .quick-action-list{gap:6px}
+ .quick-action-card{min-height:106px;padding:10px 6px 8px;border-radius:18px}
+ .quick-action-button-title{font-size:14px}
+ .quick-action-button-stats{gap:4px 4px}
+ .quick-action-button-stats>span{font-size:9.5px}
+ .quick-action-button-kind{top:5px;right:5px;font-size:6px;padding:2px 4px}
+}
