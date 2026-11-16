@@ -117,7 +117,7 @@ db.quickActions.forEach(action=>{
   if(!db.expenseNames.some(name=>name.toLocaleLowerCase()===action.name.toLocaleLowerCase()))db.expenseNames.push(action.name);
  }
 });
-const save=()=>{localStorage.setItem('dayquest_v1',JSON.stringify(db));updateAppBrand();render();renderReport()};
+const save=()=>{localStorage.setItem('dayquest_v1',JSON.stringify(db));queueCloudSave();updateAppBrand();render();renderReport()};
 const money=n=>'৳'+Number(n||0).toLocaleString('en-BD',{minimumFractionDigits:2,maximumFractionDigits:2});
 const dateObj=s=>new Date(s+'T12:00:00');
 const fmt=s=>dateObj(s).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
@@ -291,7 +291,7 @@ $('addUnit').onclick=()=>addUnitName($('unitName'),n=>{$('unitName').value=n});
 $('addProductionUnit').onclick=()=>addUnitName($('productionUnit'),n=>{fillProductionOptions();$('productionUnit').value=n});
 $('addIncomeHead').onclick=()=>{let n=prompt('Add an income type (e.g. Salary, Business, Rent, Freelance):');if(n&&n.trim()){n=n.trim();if(!db.incomeHeads.includes(n))db.incomeHeads.push(n);fillChoices();$('incomeSource').value=n;localSaveOnly()}};
 $('addIncomePerson').onclick=()=>{let n=prompt('Add the person who earned this income:');if(n&&n.trim()){n=n.trim();if(!db.incomePeople.includes(n))db.incomePeople.push(n);fillChoices();$('incomeBy').value=n;localSaveOnly()}};
-function localSaveOnly(){localStorage.setItem('dayquest_v1',JSON.stringify(db))}
+function localSaveOnly(){localStorage.setItem('dayquest_v1',JSON.stringify(db));queueCloudSave()}
 function renderProductNameSuggestions(){
  const list=$('productNameSuggestions');if(list)list.innerHTML=db.productNames.map(n=>`<option value="${esc(n)}"></option>`).join('');
  const count=$('productCatalogCount');if(count)count.textContent=`${db.productNames.length} saved product${db.productNames.length===1?'':'s'}`;
@@ -2032,50 +2032,303 @@ db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocal
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('installBtn').hidden=false});
 $('installBtn').onclick=async()=>{if(deferredInstall){deferredInstall.prompt();deferredInstall=null;$('installBtn').hidden=true}};
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
-// Simple local login for the static GitHub Pages app. This is a device-level screen,
-// not server-side authentication; finance data remains in the existing local database.
-const AUTH_KEY='dayquest_auth_v1',SESSION_KEY='dayquest_session_v1';
-const bytesToBase64=bytes=>btoa(String.fromCharCode(...new Uint8Array(bytes)));
-const base64ToBytes=value=>Uint8Array.from(atob(value),c=>c.charCodeAt(0));
-async function passwordDigest(password,salt){
- if(!window.crypto?.subtle)throw new Error('Secure password storage is unavailable. Open DayQuest using its HTTPS GitHub Pages address.');
- const material=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
- const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations:150000,hash:'SHA-256'},material,256);
- return bytesToBase64(bits);
+// DayQuest cloud authentication and family-wide data sync.
+// The browser contains only the Supabase project URL and publishable/anon key.
+// Authorization is enforced by PostgreSQL Row Level Security; never put a service-role key here.
+const CLOUD_CONFIG_KEY='dayquest_cloud_config_v1';
+const CLOUD_META_KEY='dayquest_cloud_meta_v1';
+let supabaseClient=null,cloudUser=null,cloudVersion=0,cloudReady=false,cloudDirty=false,cloudConflict=false,cloudRemoteChanged=false,cloudHydrating=false,cloudPasswordRecovery=false,cloudSyncTimer=null,cloudPollTimer=null,cloudSyncBusy=false,cloudLocalRevision=0,cloudBackupSnapshot=null;
+function readJsonStore(key,fallback=null){try{return JSON.parse(localStorage.getItem(key)||'null')??fallback}catch{return fallback}}
+function getCloudConfig(){
+ const localConfig=readJsonStore(CLOUD_CONFIG_KEY,null);
+ // A deployment-wide public configuration is shared by every device. A deliberate
+ // per-device override is still available from Cloud connection settings.
+ if(localConfig?.override===true&&localConfig.url&&localConfig.key)return localConfig;
+ const shared=window.DAYQUEST_CLOUD_CONFIG||{};
+ const sharedUrl=String(shared.supabaseUrl||shared.url||'').trim();
+ const sharedKey=String(shared.publishableKey||shared.anonKey||shared.key||'').trim();
+ if(sharedUrl&&sharedKey)return {url:sharedUrl,key:sharedKey,source:'deployment'};
+ return localConfig;
+}
+function isForbiddenSupabaseKey(value){
+ const key=String(value||'').trim();if(!key||/^sb_secret_/i.test(key)||/service_role/i.test(key))return true;
+ const parts=key.split('.');if(parts.length===3){try{const payload=parts[1].replace(/-/g,'+').replace(/_/g,'/');const decoded=JSON.parse(atob(payload.padEnd(Math.ceil(payload.length/4)*4,'=')));if(String(decoded.role||'').toLowerCase()==='service_role')return true}catch{}}
+ return false;
+}
+function getCloudMeta(){return readJsonStore(CLOUD_META_KEY,{userId:null,version:0,dirty:false})||{userId:null,version:0,dirty:false}}
+function writeCloudMeta(patch={}){const current=getCloudMeta();const next={...current,...patch,updatedAt:new Date().toISOString()};localStorage.setItem(CLOUD_META_KEY,JSON.stringify(next));return next}
+function setCloudStatus(message,{conflict=false,remote=false,offline=false}={}){
+ const bar=$('cloudSyncBar');if(!bar)return;bar.hidden=false;$('cloudStatusText').textContent=message;
+ $('cloudLoadLatest').hidden=!(conflict||remote);$('cloudDownloadLocal').hidden=!conflict;
+ $('cloudSyncNow').disabled=offline||cloudSyncBusy;
+ bar.classList.toggle('is-warning',conflict||remote||offline);
+}
+function hideCloudStatus(){const bar=$('cloudSyncBar');if(bar)bar.hidden=true}
+function downloadJsonFile(value,name){const blob=new Blob([JSON.stringify(value,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
+function localHasRecords(value=db){
+ const recordArrays=['expenses','incomes','purchaseBills','supplierPayments','productions','consumptions','guests','quests','quickActions','familyMembers','guestPeople','suppliers','productNames','incomePeople'];
+ if(recordArrays.some(key=>Array.isArray(value?.[key])&&value[key].length>0))return true;
+ if(value?.checks&&Object.keys(value.checks).length>0)return true;
+ const defaultLists={
+  expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'],
+  purchaseCategories:['Assets','Staples','Fixed Ex.'],
+  productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'],
+  units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'],
+  incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other']
+ };
+ if(Object.entries(defaultLists).some(([key,defaults])=>Array.isArray(value?.[key])&&JSON.stringify(value[key])!==JSON.stringify(defaults)))return true;
+ const profile=value?.profile||{};
+ if(['name','phone','familyName','photoData'].some(key=>String(profile[key]||'').trim()))return true;
+ if(Number(profile.openingCash||0)!==0||Number(profile.openingBank||0)!==0)return true;
+ const settings=value?.settings||{};
+ return Object.keys(settings).some(key=>!['themeColor','requireSupplierForDuePurchase','allowPurchaseBillEdits'].includes(key));
+}
+function createEmptyDayQuestDatabase(){
+ return {
+  expenses:[],quests:[],checks:{},expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'],
+  quickActions:[],purchaseCategories:['Assets','Staples','Fixed Ex.'],productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'],
+  settings:{themeColor:'#263b5c',requireSupplierForDuePurchase:true,allowPurchaseBillEdits:true},
+  units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'],incomes:[],incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'],incomePeople:[],
+  profile:{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0},familyMembers:[],guestPeople:[],guests:[],
+  purchaseBills:[],supplierPayments:[],suppliers:[],productNames:[],consumptions:[],productions:[]
+ };
+}
+function makeSupabaseClient(){
+ const config=getCloudConfig();if(!config?.url||!config?.key)return null;
+ if(!window.supabase?.createClient)throw new Error('The Supabase library could not load. Connect to the internet and reload DayQuest.');
+ return window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'dayquest-supabase-auth-v1'}});
 }
 function showAuthView(view,message=''){
- $('authScreen').hidden=false;$('appShell').hidden=true;
- $('authSetupView').hidden=view!=='setup';$('authLoginView').hidden=view!=='login';$('authMessage').textContent=message;
+ $('authScreen').hidden=false;$('appShell').hidden=true;hideCloudStatus();
+ ['cloudConfigView','authSignupView','authLoginView','authResetView'].forEach(id=>$(id).hidden=true);
+ const target={config:'cloudConfigView',signup:'authSignupView',login:'authLoginView',reset:'authResetView'}[view]||'authLoginView';$(target).hidden=false;
+ $('authMessage').textContent=message;
+ if(view==='config'){
+  const c=getCloudConfig();if(c){$('cloudProjectUrl').value=c.url||'';$('cloudPublishableKey').value=c.key||''}
+ }
 }
-function startAppSession(username){
- sessionStorage.setItem(SESSION_KEY,'active');$('authScreen').hidden=true;$('appShell').hidden=false;
+function startAppSession(user,{offline=false}={}){
+ $('authScreen').hidden=true;$('appShell').hidden=false;
  document.querySelectorAll('.side-group').forEach(group=>{group.open=false;group.classList.remove('has-active')});
- $('userGreeting').textContent=`Signed in: ${username}`;$('authMessage').textContent='';
+ const familyName=String(db.profile?.familyName||user?.user_metadata?.family_name||'').trim();
+ $('userGreeting').textContent=`Signed in: ${familyName||user?.email||'Family Account'}`;
+ if(offline)setCloudStatus('Offline — changes are saved on this device and will sync when reconnected.',{offline:true});
+ else if(cloudConflict)setCloudStatus('Cloud conflict: another device has newer records. Download this device copy or load the latest cloud data.',{conflict:true});
+ else if(cloudRemoteChanged)setCloudStatus('A newer cloud copy is available from another device.',{remote:true});
+ else if(cloudReady)setCloudStatus('Cloud connected · all family devices use this account.');
+}
+function normalizeCloudDatabase(raw){
+ const value=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{};
+ db={...db,...value};
+ db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(x=>{if(!['family','member','unassigned','members'].includes(x.costType))x.costType=x.costMember?'member':'unassigned';x.costMember=String(x.costMember||'').trim();if(x.costType==='member'&&!x.costMember)x.costType='unassigned'});
+ db.quests=Array.isArray(db.quests)?db.quests:[];db.checks=db.checks&&typeof db.checks==='object'?db.checks:{};
+ db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];
+ db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];
+ db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];
+ db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];
+ db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];
+ db.units=Array.isArray(db.units)&&db.units.length?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];
+ db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];
+ db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];
+ db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];
+ db.guestPeople=Array.isArray(db.guestPeople)?db.guestPeople.map(n=>String(n||'').trim()).filter(Boolean):[];
+ db.guests=Array.isArray(db.guests)?db.guests.filter(g=>g&&Array.isArray(g.members)&&g.members.length&&/^\d{4}-\d{2}-\d{2}$/.test(String(g.entryDate||''))):[];
+ db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.productions=Array.isArray(db.productions)?db.productions.filter(x=>x&&x.id&&x.product&&Number(x.quantity)>0):[];
+ db.profile=db.profile&&typeof db.profile==='object'?db.profile:{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};
+ db.profile.familyName=String(db.profile.familyName||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';
+ db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};
+ if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.themeColor||'')))db.settings.themeColor='#263b5c';
+ if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;
+ if(typeof db.settings.allowPurchaseBillEdits!=='boolean')db.settings.allowPurchaseBillEdits=true;
+ db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([k,v])=>k&&v))].map(([k,v])=>v);
+ db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([k,v])=>k&&v))].map(([k,v])=>v);
+ db.units=[...new Map(db.units.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([k,v])=>k&&v))].map(([k,v])=>v);
+ if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);
+ db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.members.forEach(n=>{if(!assignablePeople().some(x=>x.toLocaleLowerCase()===n.toLocaleLowerCase()))db.guestPeople.push(n)})});
+ db.supplierPayments.forEach(x=>{if(x.supplier&&!db.suppliers.includes(x.supplier))db.suppliers.push(x.supplier)});
+ db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});
+ db.quickActions=db.quickActions.filter(a=>a&&typeof a==='object'&&String(a.name||'').trim()&&Number(a.rate)>0);
+ db.quickActions.forEach(a=>{a.id=String(a.id||crypto.randomUUID());a.name=String(a.name||'').trim();a.type=a.type==='income'?'income':'expense';a.rate=Number(a.rate||0);a.paymentType=a.paymentType==='Bank'?'Bank':'Cash';if(a.type==='income'){a.incomeType=String(a.incomeType||'Other');a.incomeBy=String(a.incomeBy||'Unassigned');if(!db.incomeHeads.includes(a.incomeType))db.incomeHeads.push(a.incomeType);if(!db.incomePeople.includes(a.incomeBy))db.incomePeople.push(a.incomeBy)}else{a.category=String(a.category||'Other');a.costMembers=uniquePeople(a.costMembers||[]);if(!db.expenseNames.some(n=>n.toLocaleLowerCase()===a.name.toLocaleLowerCase()))db.expenseNames.push(a.name)}});
+ normalizePurchaseBillNumbers();normalizePurchaseInventory();normalizeMemberAssignments();
+ db.familyMembers.forEach(n=>{if(!db.incomePeople.includes(n))db.incomePeople.push(n)});
+ db.incomes.forEach(x=>{x.incomeBy=String(x.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(x.incomeBy))db.incomePeople.push(x.incomeBy)});
+ if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');
+}
+function refreshAfterCloudLoad(){
+ try{fillChoices();fillQuickActionOptions();updateQuickActionTypeFields();renderQuickMemberOptions([]);fillProductionOptions();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);renderPurchaseCategorySettings();renderMasterLists();updateAppBrand();render();renderReport()}catch(error){console.error('DayQuest refresh after cloud load failed',error)}
+}
+function saveCloudMeta(version,dirty){writeCloudMeta({userId:cloudUser?.id||getCloudMeta().userId||null,version:Number(version||0),dirty:!!dirty})}
+async function fetchCloudRow(){
+ const {data,error}=await supabaseClient.from('dayquest_family_data').select('payload,version,updated_at').eq('user_id',cloudUser.id).maybeSingle();
+ if(error)throw error;return data||null;
+}
+async function fetchCloudVersion(){
+ const {data,error}=await supabaseClient.from('dayquest_family_data').select('version,updated_at').eq('user_id',cloudUser.id).maybeSingle();
+ if(error)throw error;return data||null;
+}
+async function writeCloudSnapshot(payload,expectedVersion){
+ const {data,error}=await supabaseClient.rpc('dayquest_save_family_data',{p_payload:payload,p_expected_version:Number(expectedVersion||0)});
+ if(error)throw error;const rawVersion=Array.isArray(data)?data[0]?.dayquest_save_family_data??data[0]?.version??data[0]:data?.version??data;const version=Number(rawVersion);if(!Number.isFinite(version)||version<1)throw new Error('The cloud database returned an invalid version. Check the SQL migration and try again.');return version;
+}
+function queueCloudSave(){
+ if(cloudHydrating)return;
+ if(!cloudUser)return;
+ cloudLocalRevision++;cloudDirty=true;saveCloudMeta(cloudVersion,true);
+ if(cloudConflict||!cloudReady||!navigator.onLine){setCloudStatus(navigator.onLine?'Local changes are waiting for cloud sync.':'Offline — local changes are saved on this device.',{offline:!navigator.onLine,conflict:cloudConflict});return}
+ clearTimeout(cloudSyncTimer);setCloudStatus('Changes waiting to sync…');cloudSyncTimer=setTimeout(pushCloudData,900);
+}
+async function pushCloudData(){
+ if(!cloudReady||!cloudUser||!navigator.onLine||cloudConflict||cloudSyncBusy)return;
+ cloudSyncBusy=true;$('cloudSyncNow').disabled=true;
+ const revision=cloudLocalRevision,expected=cloudVersion,payload=JSON.parse(JSON.stringify(db));setCloudStatus('Saving family data to cloud…');
+ try{
+  const nextVersion=await writeCloudSnapshot(payload,expected);cloudVersion=nextVersion;cloudDirty=cloudLocalRevision!==revision;cloudRemoteChanged=false;saveCloudMeta(cloudVersion,cloudDirty);
+  setCloudStatus(cloudDirty?'New changes are waiting to sync.':'Cloud synced · '+new Date().toLocaleTimeString());
+ }catch(error){
+  if(/DAYQUEST_VERSION_CONFLICT/i.test(String(error.message||error))){cloudConflict=true;cloudReady=false;saveCloudMeta(cloudVersion,true);setCloudStatus('Another device updated the family records. Download this device copy or load the latest cloud data.',{conflict:true})}
+  else{cloudDirty=true;saveCloudMeta(cloudVersion,true);setCloudStatus('Cloud sync failed. Your local changes are saved on this device; tap Sync now when connected.',{offline:!navigator.onLine});console.error('DayQuest cloud save failed',error)}
+ }finally{cloudSyncBusy=false;$('cloudSyncNow').disabled=false;if(cloudReady&&cloudDirty&&!cloudConflict){clearTimeout(cloudSyncTimer);cloudSyncTimer=setTimeout(pushCloudData,500)}}
+}
+function saveLocalSafetyCopy(){cloudBackupSnapshot=JSON.parse(JSON.stringify(db));return cloudBackupSnapshot}
+function downloadCurrentLocalCopy(){downloadJsonFile(cloudBackupSnapshot||db,`dayquest-local-copy-${today()}.json`)}
+function applyRemoteRow(row,{downloadBackup=false}={}){
+ if(downloadBackup)downloadJsonFile(db,`dayquest-before-cloud-restore-${today()}.json`);
+ cloudHydrating=true;db=JSON.parse(JSON.stringify(row.payload||{}));normalizeCloudDatabase(db);localStorage.setItem('dayquest_v1',JSON.stringify(db));cloudVersion=Number(row.version||0);cloudDirty=false;cloudConflict=false;cloudRemoteChanged=false;cloudReady=true;saveCloudMeta(cloudVersion,false);cloudHydrating=false;refreshAfterCloudLoad();
+}
+async function handleCloudConflict(row){
+ const baseVersion=Number(getCloudMeta().version||cloudVersion||0);cloudConflict=true;cloudReady=false;cloudRemoteChanged=false;cloudVersion=baseVersion;saveCloudMeta(baseVersion,true);saveLocalSafetyCopy();startAppSession(cloudUser);setCloudStatus('Conflict detected: another device has newer data. Download this device copy before loading cloud data.',{conflict:true});
+}
+async function connectCloudSession(user,{silent=false}={}){
+ cloudUser=user;const meta=getCloudMeta(),sameUser=meta.userId===user.id,linkedToOtherAccount=!!meta.userId&&!sameUser;
+ let row=null;
+ try{row=await fetchCloudRow()}catch(error){
+  const networkFailure=!navigator.onLine||/failed to fetch|networkerror|load failed|timeout|offline/i.test(String(error.message||error));
+  if(networkFailure&&sameUser){
+   cloudReady=false;cloudVersion=Number(meta.version||0);cloudDirty=!!meta.dirty;
+   startAppSession(user,{offline:true});return;
+  }
+  cloudReady=false;cloudUser=null;
+  const message=networkFailure
+   ?'This device needs an internet connection for the first sign-in or when switching Family Accounts. Your existing local records have not been changed.'
+   :'Cloud database is not ready: '+(error.message||'table access failed')+'. Run the SQL migration from the DayQuest cloud setup folder, then log in again.';
+  showAuthView('login',message);return;
+ }
+ const hasLocal=localHasRecords(db);
+ // Never upload one Family Account's cached local data into a different account.
+ // This matters on shared computers and when multiple family accounts use one browser.
+ if(linkedToOtherAccount&&hasLocal){
+  const message='This browser contains local records linked to a different Family Account. To protect those records, DayQuest will download a backup and will not upload them to this account. Continue switching accounts?';
+  if(!confirm(message)){await supabaseClient.auth.signOut();cloudUser=null;showAuthView('login','Account switch cancelled. The previous family data remains on this device.');return}
+  downloadJsonFile(db,`dayquest-previous-family-backup-${today()}.json`);
+  if(row){applyRemoteRow(row);startAppSession(user);startCloudPolling();return}
+  db=createEmptyDayQuestDatabase();normalizeCloudDatabase(db);localStorage.setItem('dayquest_v1',JSON.stringify(db));
+  cloudVersion=0;cloudReady=true;cloudDirty=true;cloudConflict=false;cloudRemoteChanged=false;saveCloudMeta(0,true);
+  try{const version=await writeCloudSnapshot(JSON.parse(JSON.stringify(db)),0);cloudVersion=version;cloudDirty=false;saveCloudMeta(version,false);refreshAfterCloudLoad();startAppSession(user);startCloudPolling();return}
+  catch(writeError){cloudReady=false;cloudDirty=true;saveCloudMeta(0,true);startAppSession(user,{offline:!navigator.onLine});setCloudStatus('A clean account copy is saved on this device, but the first cloud save failed. Tap Sync now when online.',{offline:!navigator.onLine});console.error(writeError);return}
+ }
+ if(row){
+  const remoteVersion=Number(row.version||0);
+  if(sameUser&&meta.dirty){
+   cloudVersion=Number(meta.version||0);cloudDirty=true;
+   if(remoteVersion!==cloudVersion){await handleCloudConflict(row);return}
+   cloudReady=true;try{await pushCloudData()}catch{}startAppSession(user);startCloudPolling();return;
+  }
+  if(sameUser&&!meta.dirty&&remoteVersion===Number(meta.version||0)){
+   cloudVersion=remoteVersion;cloudReady=true;cloudDirty=false;startAppSession(user);startCloudPolling();return;
+  }
+  if(!sameUser&&hasLocal){
+   const remoteHasRecords=localHasRecords(row.payload||{});
+   if(!remoteHasRecords){
+    if(!confirm('The cloud account is empty, but this device already has unlinked DayQuest records. Upload this device data to start the Family Account?')){await supabaseClient.auth.signOut();cloudUser=null;showAuthView('login','Migration was cancelled. This device data is unchanged.');return}
+    cloudReady=true;cloudVersion=remoteVersion;cloudDirty=true;saveCloudMeta(remoteVersion,true);
+    try{const nextVersion=await writeCloudSnapshot(JSON.parse(JSON.stringify(db)),remoteVersion);cloudVersion=nextVersion;cloudDirty=false;saveCloudMeta(nextVersion,false);startAppSession(user);startCloudPolling();return}
+    catch(writeError){if(/DAYQUEST_VERSION_CONFLICT/i.test(String(writeError.message||writeError))){await handleCloudConflict(await fetchCloudRow());return}cloudReady=false;startAppSession(user,{offline:!navigator.onLine});setCloudStatus('Could not migrate local records: '+(writeError.message||'cloud write failed'),{offline:!navigator.onLine});return}
+   }
+   const message='This device and the cloud both contain DayQuest records. DayQuest will download a backup of this device copy, then load the existing cloud family data. Continue?';
+   if(!confirm(message)){await supabaseClient.auth.signOut();cloudUser=null;showAuthView('login','Cloud data was not changed. Your existing device data remains here.');return}
+   applyRemoteRow(row,{downloadBackup:true});startAppSession(user);startCloudPolling();return;
+  }
+  if(sameUser&&!meta.dirty&&remoteVersion!==Number(meta.version||0)){
+   applyRemoteRow(row);startAppSession(user);startCloudPolling();return;
+  }
+  applyRemoteRow(row);startAppSession(user);startCloudPolling();return;
+ }
+ // No cloud document exists yet. Only unlinked local data (no previous auth user ID)
+ // can be used for first migration. A different account's local data was handled above.
+ if(!db.profile.familyName&&user.user_metadata?.family_name)db.profile.familyName=String(user.user_metadata.family_name);
+ if(hasLocal&&!confirm('No cloud data exists for this Family Account. Upload the existing unlinked DayQuest records on this device as the starting family data?')){
+  await supabaseClient.auth.signOut();cloudUser=null;showAuthView('login','Migration was cancelled. Your existing local DayQuest records were not changed. You can log in again when ready to migrate.');return;
+ }
+ if(!hasLocal&&user.user_metadata?.family_name)db.profile.familyName=String(user.user_metadata.family_name||'');
+ cloudReady=true;cloudVersion=0;cloudDirty=true;saveCloudMeta(0,true);
+ try{const version=await writeCloudSnapshot(JSON.parse(JSON.stringify(db)),0);cloudVersion=version;cloudDirty=false;cloudReady=true;saveCloudMeta(version,false);localStorage.setItem('dayquest_v1',JSON.stringify(db));startAppSession(user);startCloudPolling()}
+ catch(writeError){if(/DAYQUEST_VERSION_CONFLICT/i.test(String(writeError.message||writeError))){const latest=await fetchCloudRow();await handleCloudConflict(latest)}else{cloudReady=false;startAppSession(user,{offline:!navigator.onLine});setCloudStatus('Your records are still saved locally, but the first cloud upload failed. Check cloud setup and tap Sync now.',{offline:!navigator.onLine});console.error(writeError)}}
+}
+
+function startCloudPolling(){clearInterval(cloudPollTimer);cloudPollTimer=setInterval(checkCloudForUpdates,20000)}
+async function checkCloudForUpdates(){
+ if(!cloudUser||!cloudReady||!navigator.onLine||cloudSyncBusy)return;
+ try{const row=await fetchCloudVersion();if(!row)return;const version=Number(row.version||0);if(version>cloudVersion){if(cloudDirty||getCloudMeta().dirty){const fullRow=await fetchCloudRow();if(fullRow)await handleCloudConflict(fullRow)}else{cloudRemoteChanged=true;setCloudStatus('Newer family data is available from another device.',{remote:true})}}}
+ catch(error){console.warn('DayQuest cloud check failed',error)}
+}
+async function loadLatestCloudData(){
+ try{const row=await fetchCloudRow();if(!row){setCloudStatus('No cloud data row was found.');return}if(!confirm('Replace this device’s current DayQuest records with the latest cloud copy? Download a local backup first if you need these unsynced changes.'))return;applyRemoteRow(row,{downloadBackup:true});startAppSession(cloudUser);startCloudPolling()}
+ catch(error){setCloudStatus('Could not load cloud data: '+(error.message||'connection error'),{conflict:true})}
+}
+async function manualCloudSync(){
+ if(!cloudUser){setCloudStatus('Log in to a Family Account to sync.');return}
+ if(!navigator.onLine){setCloudStatus('Offline — changes remain on this device until reconnection.',{offline:true});return}
+ if(cloudConflict||cloudRemoteChanged){await loadLatestCloudData();return}
+ if(!cloudReady){await connectCloudSession(cloudUser,{silent:true});return}
+ if(cloudDirty||getCloudMeta().dirty){await pushCloudData();return}
+ await checkCloudForUpdates();if(!cloudRemoteChanged&&!cloudConflict)setCloudStatus('Cloud is up to date · '+new Date().toLocaleTimeString());
 }
 async function initAuth(){
- let saved=null;try{saved=JSON.parse(localStorage.getItem(AUTH_KEY)||'null')}catch{}
- if(saved&&sessionStorage.getItem(SESSION_KEY)==='active'){startAppSession(saved.username||'User');return}
- if(saved){$('loginUsername').value=saved.username||'';showAuthView('login')}else showAuthView('setup');
+ const config=getCloudConfig();if(!config?.url||!config?.key){showAuthView('config');return}
+ try{supabaseClient=makeSupabaseClient()}catch(error){showAuthView('config',error.message);return}
+ if(!supabaseClient){showAuthView('config');return}
+ supabaseClient.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY'){cloudPasswordRecovery=true;showAuthView('reset','Enter a new password for your Family Account.')}});
+ try{const {data,error}=await supabaseClient.auth.getSession();if(error)throw error;if(cloudPasswordRecovery){showAuthView('reset','Enter a new password for your Family Account.');return}if(data.session){await connectCloudSession(data.session.user);return}showAuthView('login')}
+ catch(error){showAuthView('login','Could not check your cloud session. Connect to the internet and try again. '+(error.message||''))}
 }
-$('authSetupForm').onsubmit=async e=>{
- e.preventDefault();const username=$('setupUsername').value.trim(),password=$('setupPassword').value,confirmPassword=$('setupPasswordConfirm').value;
- if(!username){$('authMessage').textContent='Please choose a username.';return}
- if(password.length<8){$('authMessage').textContent='Use a password with at least 8 characters.';return}
- if(password!==confirmPassword){$('authMessage').textContent='The passwords do not match.';return}
- const submit=$('authSetupForm').querySelector('button');if(submit)submit.disabled=true;
- try{const salt=crypto.getRandomValues(new Uint8Array(16));const hash=await passwordDigest(password,salt);const record={username,salt:bytesToBase64(salt),hash};localStorage.setItem(AUTH_KEY,JSON.stringify(record));$('setupPassword').value='';$('setupPasswordConfirm').value='';startAppSession(username)}
- catch(err){$('authMessage').textContent=err.message||'Could not create the login on this browser.'}
- finally{if(submit)submit.disabled=false}
+$('cloudConfigForm').onsubmit=e=>{
+ e.preventDefault();const url=$('cloudProjectUrl').value.trim().replace(/\/+$/,''),key=$('cloudPublishableKey').value.trim();
+ try{const parsed=new URL(url);if(parsed.protocol!=='https:'&&parsed.hostname!=='localhost')throw new Error('Use your HTTPS Supabase project URL.');if(isForbiddenSupabaseKey(key))throw new Error('Use the public publishable key or legacy anon key only. Secret and service-role keys are blocked for safety.');localStorage.setItem(CLOUD_CONFIG_KEY,JSON.stringify({url,key,override:true}));location.reload()}
+ catch(error){$('authMessage').textContent=error.message||'Enter a valid Supabase project URL and public key.'}
+};
+$('authSignupForm').onsubmit=async e=>{
+ e.preventDefault();if(!supabaseClient){showAuthView('config','Connect your Supabase project first.');return}
+ const familyName=$('signupFamilyName').value.trim(),email=$('signupEmail').value.trim().toLowerCase(),password=$('signupPassword').value,confirmPassword=$('signupPasswordConfirm').value;
+ if(!familyName){$('authMessage').textContent='Enter your family name.';return}if(password.length<8){$('authMessage').textContent='Use a password with at least 8 characters.';return}if(password!==confirmPassword){$('authMessage').textContent='The passwords do not match.';return}
+ const button=$('authSignupForm').querySelector('button[type="submit"]');button.disabled=true;$('authMessage').textContent='Creating your Family Account…';
+ try{const {data,error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:location.href.split('#')[0],data:{family_name:familyName}}});if(error)throw error;$('signupPassword').value='';$('signupPasswordConfirm').value='';if(data.session){await connectCloudSession(data.user||data.session.user)}else{showAuthView('login','Account created. Check your email for the confirmation link, then log in here.')}}
+ catch(error){$('authMessage').textContent=error.message||'Could not create the Family Account.'}
+ finally{button.disabled=false}
 };
 $('authLoginForm').onsubmit=async e=>{
- e.preventDefault();const username=$('loginUsername').value.trim(),password=$('loginPassword').value;
- let saved=null;try{saved=JSON.parse(localStorage.getItem(AUTH_KEY)||'null')}catch{}
- if(!saved){showAuthView('setup','Create a login to protect this browser session.');return}
- const submit=$('authLoginForm').querySelector('button');if(submit)submit.disabled=true;
- try{const hash=await passwordDigest(password,base64ToBytes(saved.salt));if(username.toLowerCase()!==String(saved.username||'').toLowerCase()||hash!==saved.hash){$('authMessage').textContent='Incorrect username or password.';return}$('loginPassword').value='';startAppSession(saved.username||username)}
- catch(err){$('authMessage').textContent=err.message||'Unable to verify the password.'}
- finally{if(submit)submit.disabled=false}
+ e.preventDefault();if(!supabaseClient){showAuthView('config','Connect your Supabase project first.');return}
+ const email=$('loginEmail').value.trim().toLowerCase(),password=$('loginPassword').value,button=$('authLoginForm').querySelector('button[type="submit"]');button.disabled=true;$('authMessage').textContent='Signing in…';
+ try{const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error;$('loginPassword').value='';await connectCloudSession(data.user||data.session.user)}
+ catch(error){$('authMessage').textContent=error.message||'Unable to log in. Check your email and password.'}
+ finally{button.disabled=false}
 };
-$('logoutBtn').onclick=()=>{sessionStorage.removeItem(SESSION_KEY);$('loginPassword').value='';const saved=JSON.parse(localStorage.getItem(AUTH_KEY)||'null');$('loginUsername').value=saved?.username||'';showAuthView('login','You have been logged out.')};
-$('resetLocalLogin').onclick=()=>{if(confirm('Reset the login for this browser? Your DayQuest expenses, income and quests will not be deleted.')){localStorage.removeItem(AUTH_KEY);sessionStorage.removeItem(SESSION_KEY);$('loginPassword').value='';$('setupUsername').value='';$('setupPassword').value='';$('setupPasswordConfirm').value='';showAuthView('setup','Create a new local login. Your saved DayQuest records are kept.')}};
+$('showLoginFromSignup').onclick=()=>showAuthView('login');$('showSignupFromLogin').onclick=()=>showAuthView('signup');
+$('forgotCloudPassword').onclick=async()=>{
+ const email=$('loginEmail').value.trim().toLowerCase();if(!email){$('authMessage').textContent='Enter your email address first.';return}
+ try{const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:location.href.split('#')[0]});if(error)throw error;$('authMessage').textContent='If this email belongs to an account, a password reset link has been sent.'}
+ catch(error){$('authMessage').textContent=error.message||'Could not request a password reset.'}
+};
+$('authResetForm').onsubmit=async e=>{
+ e.preventDefault();const password=$('recoveryPassword').value,confirmPassword=$('recoveryPasswordConfirm').value;if(password.length<8){$('authMessage').textContent='Use at least 8 characters.';return}if(password!==confirmPassword){$('authMessage').textContent='The passwords do not match.';return}
+ try{const {error}=await supabaseClient.auth.updateUser({password});if(error)throw error;await supabaseClient.auth.signOut();cloudPasswordRecovery=false;$('recoveryPassword').value='';$('recoveryPasswordConfirm').value='';showAuthView('login','Password updated. Log in with your new password.')}
+ catch(error){$('authMessage').textContent=error.message||'Could not update the password.'}
+};
+$('changeCloudConnection').onclick=()=>showAuthView('config','Update the Supabase project URL or public key for this browser.');
+$('logoutBtn').onclick=async()=>{
+ try{if(supabaseClient)await supabaseClient.auth.signOut()}catch(error){console.error('Cloud sign out failed',error)}
+ cloudReady=false;cloudUser=null;cloudDirty=false;cloudConflict=false;cloudRemoteChanged=false;clearInterval(cloudPollTimer);hideCloudStatus();$('loginPassword').value='';showAuthView('login','You have been logged out. Your local family data remains saved on this device.')
+};
+$('cloudSyncNow').onclick=manualCloudSync;$('cloudLoadLatest').onclick=loadLatestCloudData;$('cloudDownloadLocal').onclick=downloadCurrentLocalCopy;
+window.addEventListener('online',async()=>{if(!cloudUser)return;if(cloudConflict)return;const meta=getCloudMeta();if(!cloudReady){await connectCloudSession(cloudUser,{silent:true});return}if(meta.dirty||cloudDirty){cloudReady=true;pushCloudData()}else checkCloudForUpdates()});
+window.addEventListener('offline',()=>{if(cloudUser)setCloudStatus('Offline — local changes are saved on this device and will sync when reconnected.',{offline:true})});
 const reportToday=today();$('productReportFromDate').value=reportToday.slice(0,7)+'-01';$('productReportToDate').value=reportToday;fillChoices();loadProfileForm();calcTotal();$('dueFields').hidden=true;$('duePaidFromField').hidden=true;$('incomeDueFields').hidden=true;$('salesMemoWrap').hidden=true;resetSalesMemoForm();$('expenseDueActionForm').hidden=true;$('incomeCollectForm').hidden=true;$('incomeTotalPreview').textContent=money(0);render();initAuth();

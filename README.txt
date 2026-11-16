@@ -26,11 +26,20 @@ ANDROID INSTALL (PWA)
 3. Use Chrome menu (⋮) > Install app or Add to Home screen.
 4. Open DayQuest once while online. After its files are cached, it works offline.
 5. Export a backup from Settings > Data & backup before clearing browser data or changing phones.
+6. For shared Family Account login and cloud sync, complete the steps in CLOUD_SETUP_README.md and run the SQL migration in supabase/migrations.
+
+CLOUD FAMILY ACCOUNT (NEW IN THIS BUILD)
+- DayQuest now supports one shared Family Account using Supabase email/password authentication. Use the same email and password on each device.
+- Configure the shared Supabase Project URL and public publishable key once in cloud-config.js before deployment. All devices then use the same cloud project. Alternatively, enter the same values on each device in Connect DayQuest Cloud. Never enter a service-role or secret key.
+- Family data is stored in one private JSONB document per Supabase Auth user. PostgreSQL Row Level Security allows each authenticated account to read only its own row. Direct table writes are revoked; writes use a version-checked RPC. Run supabase/migrations/202611160001_dayquest_family_data.sql before creating the first account.
+- The first login can upload the current browser's existing DayQuest database after confirmation. Additional devices sign in with the same family email/password and load the cloud copy. JSON backups can also be imported from Settings > Data & backup.
+- Local saves are queued for cloud sync. Offline changes remain on that device until it reconnects. Version checks detect concurrent edits and block silent stale overwrites; review the cloud sync bar to resolve conflicts.
+- Read CLOUD_SETUP_README.md and DATA_MIGRATION_GUIDE.md before deploying or importing real financial records. If more than one old device has local records, export each backup and reconcile them before choosing the master cloud dataset.
 
 PRIVACY / LIMITATIONS
-- A first-use local login screen can be set up with a username and password. The password is stored as a salted PBKDF2 hash in this browser.
-- The login is only a device-level screen. GitHub Pages is static hosting, so this is not server-side authentication, does not create secure multi-user accounts, and does not sync logins or data between devices.
-- No cloud sync or analytics are used by the app itself. All records remain in this browser's local storage. Clearing Chrome/site data can erase them.
+- Authentication and data access are provided by Supabase, not by GitHub Pages. PostgreSQL Row Level Security restricts each account to its own family data row.
+- The Supabase publishable key is public by design; database security depends on the included RLS migration and version-checked RPC. Supabase is transitioning from legacy anon/service_role keys to publishable/secret keys; use the publishable key for browser use. Never place a secret key in browser files.
+- Browser localStorage keeps an offline copy. Clearing Chrome/site data can erase that local cache, so retain regular JSON backups even when cloud sync is enabled.
 - Currency is shown as Bangladeshi taka (৳). Change the money() function in app.js if you
   prefer another currency.
 - This is an installable offline web app (PWA), not a Play Store APK.
@@ -78,12 +87,13 @@ DESKTOP FONT DISPLAY FIX (2026-11-11)
 After uploading to GitHub Pages, open the site and press Ctrl+Shift+R. If an old page remains open, close all DayQuest tabs/windows and reopen the site. This update does not clear localStorage, so it does not remove saved app data.
 
 
-LOCAL LOGIN
-- On first launch, create a username and a password with at least 8 characters.
-- On later visits, enter the username and password to open DayQuest. The session stays open in the current browser tab until you log out or the tab session ends.
-- Open the side menu and use Log out at the bottom to lock the app.
-- If you forget the password, choose 'Forgot password? Reset this device login' on the login screen. This resets only the local login; it does not delete expenses, income, quests or profile data.
-- This local login is for convenience, not high-security protection. Anyone who can access browser storage or developer tools may bypass it. Do not use this as a substitute for server authentication when protecting sensitive or shared financial data.
+CLOUD FAMILY LOGIN
+- Create one shared Family Account using the family's email address and password. Use the same credentials on every Android phone, tablet and computer that should share the family records.
+- Email verification and password reset are handled by Supabase Auth. Configure the deployed DayQuest URL in Supabase Authentication > URL Configuration.
+- Anyone with the shared family email/password can access and change the full family database. This build does not provide separate member-level permissions.
+- If the browser is offline after a successful sign-in on that device, DayQuest can open the same user's cached local data. First sign-in and switching to a different Family Account require internet.
+- If you forget the password, use Forgot password? on the login screen. Supabase sends a reset email; the old local device-only password is no longer used.
+- When switching Family Accounts on one browser, DayQuest downloads a safety copy and will not automatically upload the previous account's local data into the new account.
 
 INCOME TYPE AND INCOME BY PERSON
 - Income Type describes where the money came from, such as Salary, Business, Sales, Freelance, Rent, Gift or a custom type.
@@ -103,7 +113,7 @@ PURCHASE BILLS, SUPPLIER CREDITORS AND PRODUCT PURCHASE REPORT
 - Reports > Purchase Reports uses a From Date / To Date filter. Product type and individual product breakdowns show quantities, landed purchase costs, average rates and bill/line counts in the selected inclusive date range.
 - Product purchase costs are already included in purchase bill spending. Recording a bill deducts the actual Cash/Bank paid portion once; supplier credit reduces Cash/Bank only when paid later.
 - Existing old consumption entries in backups are retained for compatibility, but are no longer needed, displayed or used in product purchase reports.
-- All purchase bills and supplier payments are included in JSON backups and remain on this browser/device (no cloud sync).
+- All purchase bills and supplier payments are included in JSON backups and synced to the shared Family Account when cloud sync is configured and online.
 
 PRODUCT CATALOG
 - In Expenses > Purchase, use the Add button beside Product Name to create or reuse a product and select it on that purchase line.
@@ -121,11 +131,11 @@ SIDE MENU AND SETTINGS (2026-11-12)
 
 FAMILY PROFILE AND FAMILY-MEMBER INCOME ATTRIBUTION (2026-11-12)
 - Open Profile to upload or remove a family/profile photo, set the family name, and manage the family member list.
-- Uploaded photos are resized to a maximum 480-pixel edge and compressed as JPEG before being saved in this browser's local DayQuest data, helping keep storage use smaller. A photo is local to this browser/device and is included in exported JSON backups.
+- Uploaded photos are resized to a maximum 480-pixel edge and compressed as JPEG before being saved in DayQuest data, helping keep storage use smaller. Photos are included in the cloud family document and exported JSON backups.
 - Add each person who can earn income under Profile > Family members. Every listed family member is automatically added to the Income By selector on the Income entry form and to the person filters/reports.
 - The Profile full name is automatically added as a family member if it is not already listed.
 - Removing a member from the family list does not rewrite or delete historical income entries. Existing income records keep the person recorded when they were created.
-- Family name, member list and profile photo are stored in the existing dayquest_v1 localStorage record. No server account, cloud photo storage or multi-device sync is provided by GitHub Pages.
+- Family name, member list and profile photo are stored in the DayQuest database document. With Supabase configured, they sync across devices with the shared Family Account.
 
 
 LATEST NAVIGATION UPDATE (2026-11-14)

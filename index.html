@@ -3,38 +3,68 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261116-login-collapse-chart-page-tabular-exports">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261116-cloud-account-safe-shared-config">
 <title>DayQuest</title>
 </head>
 <body>
 <section id="authScreen" class="auth-screen" hidden aria-labelledby="authTitle">
- <div class="auth-card">
-  <div class="auth-brand"><span class="auth-mark">✦</span><div><div class="eyebrow">PERSONAL FINANCE & DAILY GOALS</div><h1 id="authTitle">DayQuest</h1></div></div>
-  <div id="authSetupView" hidden>
-   <h2>Create your login</h2>
-   <p class="auth-copy">Set a username and password to open DayQuest on this device.</p>
-   <form id="authSetupForm" class="form auth-form">
-    <label>Username <input id="setupUsername" maxlength="40" autocomplete="username" placeholder="Choose a username" required></label>
-    <label>Password <input id="setupPassword" type="password" minlength="8" autocomplete="new-password" placeholder="At least 8 characters" required></label>
-    <label>Confirm password <input id="setupPasswordConfirm" type="password" minlength="8" autocomplete="new-password" placeholder="Enter password again" required></label>
-    <button class="primary full">Create login</button>
+ <div class="auth-card cloud-auth-card">
+  <div class="auth-brand"><span class="auth-mark">✦</span><div><div class="eyebrow">FAMILY FINANCE & DAILY MANAGEMENT</div><h1 id="authTitle">DayQuest</h1></div></div>
+  <div id="cloudConfigView" hidden>
+   <h2>Connect DayQuest Cloud</h2>
+   <p class="auth-copy">Enter your Supabase project URL and public publishable key. This connects DayQuest to your family database.</p>
+   <form id="cloudConfigForm" class="form auth-form">
+    <label>Supabase Project URL <input id="cloudProjectUrl" type="url" inputmode="url" placeholder="https://your-project.supabase.co" autocomplete="url" required></label>
+    <label>Supabase Publishable Key <input id="cloudPublishableKey" type="password" autocomplete="off" placeholder="sb_publishable_… or legacy anon key" required></label>
+    <button class="primary full" type="submit">Save cloud connection</button>
    </form>
+   <p class="auth-copy auth-small">Use the public publishable key (or legacy anon key) only. Never enter a secret or service-role key here.</p>
+  </div>
+  <div id="authSignupView" hidden>
+   <h2>Create your Family Account</h2>
+   <p class="auth-copy">One shared family login. Use the same email and password on every device.</p>
+   <form id="authSignupForm" class="form auth-form">
+    <label>Family name <input id="signupFamilyName" maxlength="80" autocomplete="organization" placeholder="e.g. Rakib Family" required></label>
+    <label>Email address <input id="signupEmail" type="email" autocomplete="email" placeholder="family@example.com" required></label>
+    <label>Password <input id="signupPassword" type="password" minlength="8" autocomplete="new-password" placeholder="At least 8 characters" required></label>
+    <label>Confirm password <input id="signupPasswordConfirm" type="password" minlength="8" autocomplete="new-password" placeholder="Enter password again" required></label>
+    <button class="primary full" type="submit">Create Family Account</button>
+   </form>
+   <button id="showLoginFromSignup" class="auth-link" type="button">Already have an account? Log in</button>
   </div>
   <div id="authLoginView" hidden>
    <h2>Welcome back</h2>
-   <p class="auth-copy">Sign in to continue to your DayQuest dashboard.</p>
+   <p class="auth-copy">Log in to access your family's DayQuest data from this device.</p>
    <form id="authLoginForm" class="form auth-form">
-    <label>Username <input id="loginUsername" maxlength="40" autocomplete="username" required></label>
+    <label>Email address <input id="loginEmail" type="email" autocomplete="username" placeholder="family@example.com" required></label>
     <label>Password <input id="loginPassword" type="password" autocomplete="current-password" required></label>
-    <button class="primary full">Log in</button>
+    <button class="primary full" type="submit">Log in</button>
    </form>
-   <button id="resetLocalLogin" class="auth-reset" type="button">Forgot password? Reset this device login</button>
+   <div class="auth-actions"><button id="forgotCloudPassword" class="auth-link" type="button">Forgot password?</button><button id="showSignupFromLogin" class="auth-link" type="button">Create Family Account</button></div>
+  </div>
+  <div id="authResetView" hidden>
+   <h2>Reset your password</h2>
+   <p class="auth-copy">Choose a new password for your Family Account.</p>
+   <form id="authResetForm" class="form auth-form">
+    <label>New password <input id="recoveryPassword" type="password" minlength="8" autocomplete="new-password" required></label>
+    <label>Confirm new password <input id="recoveryPasswordConfirm" type="password" minlength="8" autocomplete="new-password" required></label>
+    <button class="primary full" type="submit">Update password</button>
+   </form>
   </div>
   <p class="auth-message" id="authMessage" role="status" aria-live="polite"></p>
-  <p class="auth-disclaimer">Device-only login for this browser. GitHub Pages does not provide server-side account security or multi-device sign-in.</p>
+  <div class="auth-footer-actions"><button id="changeCloudConnection" class="auth-link" type="button">Cloud connection settings</button></div>
+  <p class="auth-disclaimer">Your family data is stored in your private cloud account. The browser keeps a local copy for offline use and syncs when you reconnect.</p>
  </div>
 </section>
 <div id="appShell" hidden>
+<div id="cloudSyncBar" class="cloud-sync-bar" hidden role="status" aria-live="polite">
+ <span id="cloudStatusText">Cloud not connected</span>
+ <div class="cloud-sync-actions">
+  <button id="cloudSyncNow" class="secondary compact" type="button">Sync now</button>
+  <button id="cloudLoadLatest" class="secondary compact" type="button" hidden>Load latest cloud data</button>
+  <button id="cloudDownloadLocal" class="secondary compact" type="button" hidden>Download local copy</button>
+ </div>
+</div>
 <div id="appLayout" class="app-layout">
  <aside id="sidebar" class="sidebar" aria-label="Main navigation">
   <div class="sidebar-brand"><span class="sidebar-mark">DQ</span><div><strong id="sidebarBrandTitle">DayQuest</strong><small id="sidebarBrandSubtitle">Personal dashboard</small></div></div>
@@ -396,7 +426,7 @@
  <section class="settings-card">
   <div class="section-head settings-section-head"><div><h3>Data & backup</h3><p class="settings-copy">Export a backup regularly before clearing browser data or changing devices.</p></div></div>
   <div class="quick"><button class="secondary" id="exportBtn">Export backup</button><label class="secondary import">Import backup<input id="importFile" type="file" accept="application/json"></label></div>
-  <p class="hint">Your data stays on this device. Backup files contain your local records and can be restored here.</p>
+  <p class="hint">Your data syncs to your Family Account when online and is cached on this device for offline work. Export a backup before migration or restoring a different copy.</p>
  </section>
 </section>
 <section id="reports" class="panel">
@@ -520,5 +550,7 @@
 </div>
 </div>
 </div>
-<script src="app.js?v=20261116-login-collapse-chart-page-tabular-exports"></script>
+<script src="cloud-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
+<script src="app.js?v=20261116-cloud-account-safe-shared-config"></script>
 </body></html>

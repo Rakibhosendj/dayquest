@@ -1,15 +1,23 @@
-const CACHE = 'dayquest-cache-v54-login-collapse-chart-tabular-reports';
+const CACHE = 'dayquest-cache-v56-cloud-account-safe-shared-config';
+const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261116-login-collapse-chart-page-tabular-exports',
-  './app.js?v=20261116-login-collapse-chart-page-tabular-exports',
-  './manifest.json'
+  './style.css?v=20261116-cloud-account-safe-shared-config',
+  './app.js?v=20261116-cloud-account-safe-shared-config',
+  './manifest.json',
+  './cloud-config.js'
 ];
 
 self.addEventListener('install', event => {
   self.skipWaiting();
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(FILES)));
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    await cache.addAll(FILES);
+    // Cache the Supabase browser SDK when online, but do not block installation if
+    // the CDN is temporarily unavailable. The next online request can cache it.
+    try { await cache.add(SUPABASE_SDK); } catch (error) { console.warn('Supabase SDK will be cached on first successful load.'); }
+  })());
 });
 
 self.addEventListener('activate', event => {
@@ -20,20 +28,22 @@ self.addEventListener('activate', event => {
   })());
 });
 
-// Prefer deployed files while online and retain the latest successfully loaded files offline.
 self.addEventListener('fetch', event => {
   const request = event.request;
   if (request.method !== 'GET') return;
   const requestUrl = new URL(request.url);
-  if (requestUrl.origin !== self.location.origin) return;
+  const isSupabaseSdk = requestUrl.href === SUPABASE_SDK;
+  if (requestUrl.origin !== self.location.origin && !isSupabaseSdk) return;
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
     try {
       const response = await fetch(request);
-      if (response && response.ok) await cache.put(request, response.clone());
+      if (response && response.ok) {
+        try { await cache.put(request, response.clone()); } catch (error) { /* cache is best-effort */ }
+      }
       return response;
     } catch (error) {
-      const cached = await cache.match(request) || await cache.match('./index.html');
+      const cached = await cache.match(request) || (isSupabaseSdk ? null : await cache.match('./index.html'));
       return cached || Response.error();
     }
   })());

@@ -324,3 +324,23 @@ Cost Report filters and detail export update (2026-11-16)
 - Replaced generic Report/Item/Details export output with section-specific column tables for Purchase, Assets, Members, Production, Creditors, Debtors, Cost, and Income reports.
 - All Reports now exports the same detailed column tables as the individual report pages. Member report exports include member totals, individual allocated cost entries, and guest-stay details. Income exports separate income entries from collections to avoid mixing the two entry types.
 - Updated service-worker cache version for the new deployment.
+
+
+2026-11-16 · Supabase Family Account and cloud migration setup
+- Replaced the device-only username/password screen with shared Family Account email/password sign-up and sign-in using Supabase Auth.
+- Added per-browser Supabase project URL + public publishable/anon key configuration, email confirmation messaging, password-reset email flow, and password update after recovery.
+- Added family document synchronization to public.dayquest_family_data via the dayquest_save_family_data version-checked RPC.
+- Added local-first saves, debounced cloud writes, online reconnect sync, 20-second cloud version checks, visible sync status, manual sync, cloud restore, and local-copy download actions.
+- Added safeguards for a new empty cloud account, first-device JSON migration, an empty remote account with existing local data, different local/cloud datasets, and stale concurrent writes.
+- Added SQL migration with Row Level Security policies binding every row to auth.uid(); no service-role key is used by the browser.
+- Added CLOUD_SETUP_README.md and DATA_MIGRATION_GUIDE.md with project setup, email redirects, SQL deployment, existing JSON migration and testing steps.
+- Supabase SDK is loaded from a pinned CDN UMD build and cached by the service worker when available.
+- Cloud activation still requires the owner to create a Supabase project, run the SQL migration, and enter that project's URL and public key in the app.
+
+2026-11-16 — Supabase cloud migration hardening
+- Added shared deployment configuration in cloud-config.js so the public Supabase Project URL and publishable key can be set once for every device; per-device overrides remain available.
+- Added account-switch protection: local data previously linked to a different authenticated Family Account is backed up and is never automatically uploaded into the newly signed-in account.
+- First login / account switching now requires internet unless this browser has a verified local sync marker for the same Supabase user.
+- Expanded first-migration detection to include custom master lists, profile values, family members, guest records, quick actions, and quest completion checks (not just transaction arrays).
+- Reduced background sync polling to request only the cloud document version; the full payload is fetched only when needed.
+- Hardened SQL permissions: authenticated clients can read only their own row; direct table writes are revoked and all writes use the version-checked security-definer RPC with fixed search_path and auth.uid() binding.
