@@ -2037,7 +2037,7 @@ if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.ser
 // Authorization is enforced by PostgreSQL Row Level Security; never put a service-role key here.
 const CLOUD_CONFIG_KEY='dayquest_cloud_config_v1';
 const CLOUD_META_KEY='dayquest_cloud_meta_v1';
-let supabaseClient=null,cloudUser=null,cloudVersion=0,cloudReady=false,cloudDirty=false,cloudConflict=false,cloudRemoteChanged=false,cloudHydrating=false,cloudPasswordRecovery=false,cloudSyncTimer=null,cloudPollTimer=null,cloudSyncBusy=false,cloudLocalRevision=0,cloudBackupSnapshot=null;
+let supabaseClient=null,cloudUser=null,cloudVersion=0,cloudReady=false,cloudDirty=false,cloudConflict=false,cloudRemoteChanged=false,cloudHydrating=false,cloudPasswordRecovery=false,cloudSyncTimer=null,cloudPollTimer=null,cloudSyncBusy=false,cloudLocalRevision=0,cloudBackupSnapshot=null,cloudStatusHideTimer=null;
 function readJsonStore(key,fallback=null){try{return JSON.parse(localStorage.getItem(key)||'null')??fallback}catch{return fallback}}
 function getCloudConfig(){
  const localConfig=readJsonStore(CLOUD_CONFIG_KEY,null);
@@ -2057,13 +2057,22 @@ function isForbiddenSupabaseKey(value){
 }
 function getCloudMeta(){return readJsonStore(CLOUD_META_KEY,{userId:null,version:0,dirty:false})||{userId:null,version:0,dirty:false}}
 function writeCloudMeta(patch={}){const current=getCloudMeta();const next={...current,...patch,updatedAt:new Date().toISOString()};localStorage.setItem(CLOUD_META_KEY,JSON.stringify(next));return next}
-function setCloudStatus(message,{conflict=false,remote=false,offline=false}={}){
+function setCloudStatus(message,{conflict=false,remote=false,offline=false,autoHideMs=0}={}){
+ clearTimeout(cloudStatusHideTimer);cloudStatusHideTimer=null;
  const bar=$('cloudSyncBar');if(!bar)return;bar.hidden=false;$('cloudStatusText').textContent=message;
  $('cloudLoadLatest').hidden=!(conflict||remote);$('cloudDownloadLocal').hidden=!conflict;
  $('cloudSyncNow').disabled=offline||cloudSyncBusy;
  bar.classList.toggle('is-warning',conflict||remote||offline);
+ // Success notifications are temporary; actionable warnings remain visible.
+ if(autoHideMs>0&&!conflict&&!remote&&!offline){
+  const expected=String(message);
+  cloudStatusHideTimer=setTimeout(()=>{
+   const currentBar=$('cloudSyncBar'),currentText=$('cloudStatusText');
+   if(currentBar&&currentText&&currentText.textContent===expected&&!currentBar.classList.contains('is-warning'))hideCloudStatus();
+  },autoHideMs);
+ }
 }
-function hideCloudStatus(){const bar=$('cloudSyncBar');if(bar)bar.hidden=true}
+function hideCloudStatus(){clearTimeout(cloudStatusHideTimer);cloudStatusHideTimer=null;const bar=$('cloudSyncBar');if(bar)bar.hidden=true}
 function downloadJsonFile(value,name){const blob=new Blob([JSON.stringify(value,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
 function localHasRecords(value=db){
  const recordArrays=['expenses','incomes','purchaseBills','supplierPayments','productions','consumptions','guests','quests','quickActions','familyMembers','guestPeople','suppliers','productNames','incomePeople'];
@@ -2114,7 +2123,7 @@ function startAppSession(user,{offline=false}={}){
  if(offline)setCloudStatus('Offline — changes are saved on this device and will sync when reconnected.',{offline:true});
  else if(cloudConflict)setCloudStatus('Cloud conflict: another device has newer records. Download this device copy or load the latest cloud data.',{conflict:true});
  else if(cloudRemoteChanged)setCloudStatus('A newer cloud copy is available from another device.',{remote:true});
- else if(cloudReady)setCloudStatus('Cloud connected · all family devices use this account.');
+ else if(cloudReady)setCloudStatus('Cloud connected · all family devices use this account.',{autoHideMs:3000});
 }
 function normalizeCloudDatabase(raw){
  const value=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{};
@@ -2182,7 +2191,7 @@ async function pushCloudData(){
  const revision=cloudLocalRevision,expected=cloudVersion,payload=JSON.parse(JSON.stringify(db));setCloudStatus('Saving family data to cloud…');
  try{
   const nextVersion=await writeCloudSnapshot(payload,expected);cloudVersion=nextVersion;cloudDirty=cloudLocalRevision!==revision;cloudRemoteChanged=false;saveCloudMeta(cloudVersion,cloudDirty);
-  setCloudStatus(cloudDirty?'New changes are waiting to sync.':'Cloud synced · '+new Date().toLocaleTimeString());
+  setCloudStatus(cloudDirty?'New changes are waiting to sync.':'Cloud synced · '+new Date().toLocaleTimeString(),{autoHideMs:cloudDirty?0:3000});
  }catch(error){
   if(/DAYQUEST_VERSION_CONFLICT/i.test(String(error.message||error))){cloudConflict=true;cloudReady=false;saveCloudMeta(cloudVersion,true);setCloudStatus('Another device updated the family records. Download this device copy or load the latest cloud data.',{conflict:true})}
   else{cloudDirty=true;saveCloudMeta(cloudVersion,true);setCloudStatus('Cloud sync failed. Your local changes are saved on this device; tap Sync now when connected.',{offline:!navigator.onLine});console.error('DayQuest cloud save failed',error)}
@@ -2280,7 +2289,7 @@ async function manualCloudSync(){
  if(cloudConflict||cloudRemoteChanged){await loadLatestCloudData();return}
  if(!cloudReady){await connectCloudSession(cloudUser,{silent:true});return}
  if(cloudDirty||getCloudMeta().dirty){await pushCloudData();return}
- await checkCloudForUpdates();if(!cloudRemoteChanged&&!cloudConflict)setCloudStatus('Cloud is up to date · '+new Date().toLocaleTimeString());
+ await checkCloudForUpdates();if(!cloudRemoteChanged&&!cloudConflict)setCloudStatus('Cloud is up to date · '+new Date().toLocaleTimeString(),{autoHideMs:3000});
 }
 async function initAuth(){
  const config=getCloudConfig();
