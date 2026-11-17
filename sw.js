@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v63-silent-offline-auto-sync';
+const CACHE = 'dayquest-cache-v64-overview-quick-create-button';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261117-silent-offline-auto-sync',
+  './style.css?v=20261117-overview-quick-create-button',
   './app.js?v=20261117-overview-quick-actions-clear-transactions',
   './manifest.json',
   './cloud-config.js'
