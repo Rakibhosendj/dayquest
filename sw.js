@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v67-supplier-entry-page';
+const CACHE = 'dayquest-cache-v68-branded-message-boxes';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
   './style.css?v=20261117-supplier-entry-page',
-  './app.js?v=20261117-supplier-entry-page',
+  './app.js?v=20261117-branded-message-boxes',
   './manifest.json',
   './cloud-config.js'
 ];
