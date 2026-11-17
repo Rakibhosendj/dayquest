@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v79-reliable-startup';
+const CACHE = 'dayquest-cache-v80-login-timeout-fix';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
   './style.css?v=20261117-side-menu-reorder',
-  './app.js?v=20261117-reliable-startup',
+  './app.js?v=20261117-login-timeout-fix',
   './manifest.json',
   './cloud-config.js'
 ];
@@ -43,8 +43,15 @@ self.addEventListener('fetch', event => {
       }
       return response;
     } catch (error) {
-      const cached = await cache.match(request) || (isSupabaseSdk ? null : await cache.match('./index.html'));
-      return cached || Response.error();
+      // Only use index.html as an offline fallback for page navigation.
+      // Returning HTML for a failed JavaScript/CSS request can make the entire app blank.
+      const cached = await cache.match(request);
+      if (cached) return cached;
+      if (request.mode === 'navigate') {
+        const page = await cache.match('./index.html');
+        if (page) return page;
+      }
+      return Response.error();
     }
   })());
 });
