@@ -88,6 +88,7 @@ const purchaseBillNumbersMigrated=normalizePurchaseBillNumbers();
 if(purchaseBillNumbersMigrated)localStorage.setItem('dayquest_v1',JSON.stringify(db));
 db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];
 db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
+db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};
 db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers.filter(name=>db.suppliers.includes(name)))]:[];
 db.productNames=Array.isArray(db.productNames)?db.productNames:[];
 db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);
@@ -221,6 +222,7 @@ function setTab(t){
  if(t==='inventory')renderInventory();
  if(t==='production'){fillProductionOptions();renderProductionList();renderProductionInputs()}
  if(t==='supplierAccounts')renderSupplierAccounts();
+ if(t==='supplierEntry'){renderSupplierEntryList();resetSupplierEntryForm()}
  if(t==='purchaseBills'){fillChoices();renderPurchaseLines();renderSupplierAccounts();}
 }
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
@@ -1068,8 +1070,8 @@ function renderQuickActions(){
 function renderQuickSuppliers(){
  const panel=$('overviewQuickSuppliersPanel'),list=$('overviewQuickSupplierList');if(!panel||!list)return;
  const names=db.suppliers.filter(name=>db.quickSuppliers.includes(name));
- panel.hidden=!names.length;
- list.innerHTML=names.map(name=>{
+ panel.hidden=false;
+ list.innerHTML=names.length?names.map(name=>{
   const bills=db.purchaseBills.filter(b=>b.supplier===name);
   const totalPurchase=bills.reduce((total,bill)=>total+billTotal(bill),0);
   const totalDue=supplierOutstanding(name);
@@ -1085,7 +1087,7 @@ function renderQuickSuppliers(){
     <span>P: <strong>${money(paid)}</strong></span>
    </span>
   </button>`;
- }).join('');
+ }).join(''):empty('No Quick Suppliers yet. Click the Quick Suppliers title to add supplier details, then enable Q in Settings → Custom Lists → Suppliers.');
  list.querySelectorAll('[data-quick-supplier]').forEach(button=>button.onclick=()=>openQuickSupplierPurchase(button.dataset.quickSupplier));
 }
 function openQuickSupplierPurchase(name){
@@ -1096,6 +1098,51 @@ function openQuickSupplierPurchase(name){
  $('purchaseSupplier').value=supplier;
  $('purchaseBillForm').scrollIntoView({behavior:'smooth',block:'start'});
  $('purchaseSupplier').focus({preventScroll:true});
+}
+
+function resetSupplierEntryForm(){
+ $('supplierEntryForm').reset();$('supplierEntryOriginalName').value='';
+ $('supplierEntryFormTitle').textContent='Add supplier';$('supplierEntrySave').textContent='Save supplier';
+ $('supplierEntryCancel').hidden=true;
+}
+function renderSupplierEntryList(){
+ const list=$('supplierEntryList');if(!list)return;
+ const names=db.suppliers.slice().sort((a,b)=>a.localeCompare(b));
+ if($('supplierEntryCount'))$('supplierEntryCount').textContent=`${names.length} supplier${names.length===1?'':'s'}`;
+ list.innerHTML=names.length?names.map(name=>{
+  const detail=db.supplierDetails[name]||{};
+  return `<article class="supplier-entry-row"><div class="supplier-entry-info"><strong>${esc(name)}</strong><span><b>Owner:</b> ${esc(detail.ownerName||'Not entered')}</span><span><b>Address:</b> ${esc(detail.address||'Not entered')}</span></div><button type="button" class="edit-btn" data-edit-supplier-entry="${esc(name)}">Edit details</button></article>`;
+ }).join(''):empty('No suppliers saved yet. Add a supplier company above.');
+ list.querySelectorAll('[data-edit-supplier-entry]').forEach(button=>button.onclick=()=>editSupplierEntry(button.dataset.editSupplierEntry));
+}
+function editSupplierEntry(name){
+ const company=String(name||'').trim();if(!db.suppliers.includes(company))return;
+ const detail=db.supplierDetails[company]||{};
+ $('supplierEntryOriginalName').value=company;$('supplierEntryCompany').value=company;
+ $('supplierEntryOwner').value=detail.ownerName||'';$('supplierEntryAddress').value=detail.address||'';
+ $('supplierEntryFormTitle').textContent='Edit supplier details';$('supplierEntrySave').textContent='Update supplier';
+ $('supplierEntryCancel').hidden=false;$('supplierEntryForm').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function saveSupplierEntry(){
+ const original=$('supplierEntryOriginalName').value.trim(),company=$('supplierEntryCompany').value.trim();
+ const ownerName=$('supplierEntryOwner').value.trim(),address=$('supplierEntryAddress').value.trim();
+ if(!company){alert('Enter the supplier company name.');$('supplierEntryCompany').focus();return}
+ if(db.suppliers.some(name=>name.toLocaleLowerCase()===company.toLocaleLowerCase()&&name!==original)){
+  alert('That supplier company already exists. Open it from the Supplier Directory to edit its details.');return;
+ }
+ if(original&&original!==company){
+  const index=db.suppliers.indexOf(original);if(index<0)return;
+  db.suppliers[index]=company;
+  db.purchaseBills.forEach(bill=>{if(bill.supplier===original)bill.supplier=company});
+  db.supplierPayments.forEach(payment=>{if(payment.supplier===original)payment.supplier=company});
+  db.quickSuppliers=db.quickSuppliers.map(name=>name===original?company:name);
+  const oldDetail=db.supplierDetails[original]||{};delete db.supplierDetails[original];
+  db.supplierDetails[company]={...oldDetail,ownerName,address};
+ }else{
+  if(!db.suppliers.includes(company))db.suppliers.push(company);
+  db.supplierDetails[company]={...(db.supplierDetails[company]||{}),ownerName,address};
+ }
+ resetSupplierEntryForm();fillChoices();renderMasterLists();renderSupplierEntryList();renderQuickSuppliers();renderSupplierAccounts();save();
 }
 function renderQuickActionManager(){
  const list=$('quickActionManagerList');if(!list)return;
@@ -1151,6 +1198,9 @@ function subtractQuickActionOne(id){
 }
 $('quickActionType').onchange=updateQuickActionTypeFields;
 const toggleQuickActionMode=()=>{quickActionMode=quickActionMode==='add'?'minus':'add';renderQuickActions()};
+$('overviewQuickSupplierSetupLink').onclick=()=>{setTab('supplierEntry');$('supplierEntryForm').scrollIntoView({behavior:'smooth',block:'start'})};
+$('supplierEntryForm').onsubmit=e=>{e.preventDefault();saveSupplierEntry()};
+$('supplierEntryCancel').onclick=resetSupplierEntryForm;
 $('overviewQuickSetupLink').onclick=()=>{
  setTab('settings');
  const setup=$('quickActionSettings');
@@ -1588,7 +1638,9 @@ function renderMasterLists(){
   const list=$(cfg.list);if(!list)return;const values=db[cfg.array]||[];
   list.innerHTML=values.map((name,index)=>{
    const quickToggle=kind==='supplier'?(`<label class="quick-supplier-toggle" title="Show this supplier on Overview"><input type="checkbox" data-master-quick-supplier="${esc(name)}" ${db.quickSuppliers.includes(name)?'checked':''}><span>Q</span></label>`):'';
-   return `<div class="category-setting-row"><span><strong>${esc(name)}</strong><small>Available for new entries</small></span><div>${quickToggle}<button type="button" class="edit-btn" data-master-rename="${kind}" data-index="${index}">Rename</button><button type="button" class="delete" data-master-delete="${kind}" data-index="${index}" aria-label="Delete ${esc(name)}">×</button></div></div>`;
+   const supplierDetail=kind==='supplier'?(db.supplierDetails[name]||{}):null;
+   const subline=kind==='supplier'?[supplierDetail.ownerName,supplierDetail.address].filter(Boolean).join(' · '):'Available for new entries';
+   return `<div class="category-setting-row"><span><strong>${esc(name)}</strong><small>${esc(subline||'Available for new entries')}</small></span><div>${quickToggle}<button type="button" class="edit-btn" data-master-rename="${kind}" data-index="${index}">Rename</button><button type="button" class="delete" data-master-delete="${kind}" data-index="${index}" aria-label="Delete ${esc(name)}">×</button></div></div>`;
   }).join('')||empty(`No ${cfg.title}s added yet.`);
   list.querySelectorAll('[data-master-quick-supplier]').forEach(input=>input.onchange=()=>{
    const name=input.dataset.masterQuickSupplier;
@@ -1605,7 +1657,7 @@ function renameMasterValue(kind,index){
  const raw=prompt(`Rename ${cfg.title}:`,old);if(raw===null)return;const next=raw.trim();if(!next){alert('Name cannot be empty.');return}
  if(arr.some((value,i)=>i!==index&&String(value).toLocaleLowerCase()===next.toLocaleLowerCase())){alert(`That ${cfg.title} already exists.`);return}
  if(kind==='supplier'){
-  db.purchaseBills.forEach(b=>{if(b.supplier===old)b.supplier=next});db.supplierPayments.forEach(p=>{if(p.supplier===old)p.supplier=next});db.quickSuppliers=db.quickSuppliers.map(value=>value===old?next:value);
+  db.purchaseBills.forEach(b=>{if(b.supplier===old)b.supplier=next});db.supplierPayments.forEach(p=>{if(p.supplier===old)p.supplier=next});db.quickSuppliers=db.quickSuppliers.map(value=>value===old?next:value);if(db.supplierDetails[old]){db.supplierDetails[next]=db.supplierDetails[old];delete db.supplierDetails[old]}
  }else if(kind==='product'){
   db.purchaseBills.forEach(b=>(b.lines||[]).forEach(line=>{if(line.product===old)line.product=next}));
   db.productions.forEach(p=>{if(p.product===old)p.product=next;(p.inputs||[]).forEach(input=>{if(input.product===old)input.product=next})});
@@ -1632,7 +1684,7 @@ function deleteMasterValue(kind,index){
  if(kind==='productType')used=db.purchaseBills.some(b=>(b.lines||[]).some(line=>line.productType===name))||db.productions.some(p=>p.productType===name)||db.incomes.some(item=>(item.salesMemo?.items||[]).some(line=>line.productType===name));
  if(kind==='unit')used=db.purchaseBills.some(b=>(b.lines||[]).some(line=>line.unit===name))||db.productions.some(p=>p.unit===name||(p.inputs||[]).some(input=>input.unit===name))||db.consumptions.some(c=>c.unit===name)||db.incomes.some(item=>(item.salesMemo?.items||[]).some(line=>line.unit===name));
  if(used){alert(`This ${cfg.title} is used in saved transactions or inventory. Rename it instead; deletion is blocked to preserve history.`);return}
- if(confirm(`Delete ${cfg.title} “${name}”?`)){arr.splice(index,1);if(kind==='supplier')db.quickSuppliers=db.quickSuppliers.filter(value=>value!==name);if(kind==='productType'&&!arr.length)arr.push('Other');if(kind==='unit'){if(!arr.length)arr.push('pcs');if(db.settings.unitAliases)delete db.settings.unitAliases[name]}fillChoices();renderMasterLists();save()}
+ if(confirm(`Delete ${cfg.title} “${name}”?`)){arr.splice(index,1);if(kind==='supplier'){db.quickSuppliers=db.quickSuppliers.filter(value=>value!==name);delete db.supplierDetails[name]}if(kind==='productType'&&!arr.length)arr.push('Other');if(kind==='unit'){if(!arr.length)arr.push('pcs');if(db.settings.unitAliases)delete db.settings.unitAliases[name]}fillChoices();renderMasterLists();save()}
 }
 Object.entries(SETTINGS_MASTER_CONFIG).forEach(([kind,cfg])=>{
  const form=$(cfg.form);if(!form)return;form.onsubmit=e=>{e.preventDefault();const field=$(cfg.input),name=field.value.trim();if(!name)return;const arr=db[cfg.array];if(arr.some(value=>String(value).toLocaleLowerCase()===name.toLocaleLowerCase())){alert(`That ${cfg.title} already exists.`);return}arr.push(name);field.value='';fillChoices();renderMasterLists();save()};
@@ -2149,7 +2201,8 @@ function renderDueReport(from,to){
 
 activateReportSection('members');purchaseLines=[defaultPurchaseLine()];renderPurchaseLines();fillChoices();renderQuickMemberOptions([]);fillQuickActionOptions();updateQuickActionTypeFields();$('purchaseDate').value=today();updatePurchaseBillNo();productionInputs=[defaultProductionInput()];fillProductionOptions();resetProductionForm();applyThemeColor(db.settings.themeColor,false);renderPurchaseCategorySettings();renderMasterLists();
 $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`dayquest-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href)};
-$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.quickActions))x.quickActions=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.productTypes))x.productTypes=['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];if(!Array.isArray(x.purchaseCategories))x.purchaseCategories=['Assets','Staples','Fixed Ex.'];if(!x.settings||typeof x.settings!=='object')x.settings={themeColor:'#263b5c'};if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.productions))x.productions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};if(!Array.isArray(x.familyMembers))x.familyMembers=[];if(!Array.isArray(x.guestPeople))x.guestPeople=[];if(!Array.isArray(x.guests))x.guests=[];if(confirm('Replace current data with this backup?')){db=x;db.productDictionary=normalizeProductDictionary(db.productDictionary);db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(item=>{item.costMember=String(item.costMember||'').trim()});db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
+$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.quickActions))x.quickActions=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.productTypes))x.productTypes=['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];if(!Array.isArray(x.purchaseCategories))x.purchaseCategories=['Assets','Staples','Fixed Ex.'];if(!x.settings||typeof x.settings!=='object')x.settings={themeColor:'#263b5c'};if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.productions))x.productions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};if(!Array.isArray(x.familyMembers))x.familyMembers=[];if(!Array.isArray(x.guestPeople))x.guestPeople=[];if(!Array.isArray(x.guests))x.guests=[];if(confirm('Replace current data with this backup?')){db=x;db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};db.productDictionary=normalizeProductDictionary(db.productDictionary);db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(item=>{item.costMember=String(item.costMember||'').trim()});db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
+db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};
 db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers.filter(name=>db.suppliers.includes(name)))]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];
 db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.productions=Array.isArray(db.productions)?db.productions.filter(p=>p&&p.id&&p.product&&Number(p.quantity)>0):[];normalizePurchaseInventory();db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;if(typeof db.settings.allowPurchaseBillEdits!=='boolean')db.settings.allowPurchaseBillEdits=true;db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];db.units=Array.isArray(db.units)?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];normalizePurchaseBillNumbers();db.profile=db.profile||{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};db.profile.familyName=String(db.profile.familyName||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestPeople=Array.isArray(db.guestPeople)?db.guestPeople.map(n=>String(n||'').trim()).filter(Boolean):[];db.guestPeople=[...new Map(db.guestPeople.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guests=Array.isArray(db.guests)?db.guests.filter(g=>g&&Array.isArray(g.members)&&g.members.length&&/^\d{4}-\d{2}-\d{2}$/.test(String(g.entryDate||''))):[];db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.members.forEach(n=>{if(!assignablePeople().some(x=>x.toLocaleLowerCase()===String(n).toLocaleLowerCase()))db.guestPeople.push(String(n).trim())})});db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);normalizeMemberAssignments();db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeople.push(name)});db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);renderPurchaseCategorySettings();renderMasterLists();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('installBtn').hidden=false});
@@ -2246,6 +2299,7 @@ function startAppSession(user,{offline=false}={}){
 function normalizeCloudDatabase(raw){
  const value=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{};
  db={...db,...value};
+ db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};
  db.productDictionary=normalizeProductDictionary(Array.isArray(value.productDictionary)?value.productDictionary:db.productDictionary);
  db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};
  if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';
@@ -2254,6 +2308,7 @@ function normalizeCloudDatabase(raw){
  db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];
  db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];
  db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
+db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};
 db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers.filter(name=>db.suppliers.includes(name)))]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];
  db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];
  db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];
