@@ -2681,6 +2681,34 @@ $('clearAllExpensesIncomeBtn').onclick=async()=>{
  save();
  alert('All expense and income entries have been cleared. Quick button settings, purchases, inventory, production and profile remain.');
 };
+$('deleteAccountBtn').onclick=async()=>{
+ if(!supabaseClient||!cloudUser||!navigator.onLine){alert('Connect to the internet and sign in to your Family Account before deleting it.');return}
+ if(!await window.dayQuestConfirm('Permanently delete this DayQuest Family Account? This removes the account login and its cloud access for every family member using this shared account. This action cannot be undone. Export a backup first if you need to keep a copy.'))return;
+ const password=window.prompt('Enter the current Family Account password to confirm permanent deletion:');
+ if(password===null)return;
+ if(!String(password).trim()){alert('Password is required. The account was not deleted.');return}
+ const button=$('deleteAccountBtn');button.disabled=true;button.textContent='Deleting account…';
+ try{
+  const email=String(cloudUser.email||'').trim();
+  if(!email)throw new Error('The signed-in Family Account email could not be verified.');
+  const {data:verified,error:verifyError}=await supabaseClient.auth.signInWithPassword({email,password});
+  if(verifyError)throw verifyError;
+  if(verified.user?.id!==cloudUser.id)throw new Error('The confirmed login does not match this Family Account.');
+  const {data,error}=await supabaseClient.functions.invoke('delete-account');
+  if(error)throw error;
+  if(data?.success!==true)throw new Error(data?.error||'The server did not confirm account deletion.');
+  clearInterval(cloudPollTimer);clearTimeout(cloudSyncTimer);clearTimeout(cloudStatusHideTimer);
+  try{await supabaseClient.auth.signOut({scope:'local'})}catch{}
+  localStorage.removeItem('dayquest_v1');localStorage.removeItem(CLOUD_META_KEY);localStorage.removeItem('dayquest-supabase-auth-v1');
+  cloudReady=false;cloudUser=null;cloudDirty=false;cloudConflict=false;cloudRemoteChanged=false;cloudVersion=0;
+  db=createEmptyDayQuestDatabase();showAuthView('login','Your DayQuest Family Account has been permanently deleted.');
+ }catch(error){
+  console.error('DayQuest account deletion failed',error);
+  alert('Account deletion failed: '+(error.message||'Please check your internet connection and try again.'));
+ }finally{
+  button.disabled=false;button.textContent='Permanently Delete Account';
+ }
+};
 $('logoutBtn').onclick=async()=>{
  try{if(supabaseClient)await supabaseClient.auth.signOut()}catch(error){console.error('Cloud sign out failed',error)}
  cloudReady=false;cloudUser=null;cloudDirty=false;cloudConflict=false;cloudRemoteChanged=false;clearInterval(cloudPollTimer);hideCloudStatus();$('loginPassword').value='';showAuthView('login','You have been logged out. Your local family data remains saved on this device.')
