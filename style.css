@@ -953,3 +953,10 @@ button,input,select,textarea{
 .side-nav.side-menu-reordering>[data-menu-item]:not(.side-menu-dragging){transition:transform .08s ease}
 .side-nav>[data-menu-item]:focus-visible{outline:2px solid #f7c76b;outline-offset:2px}
 .side-menu-reorder-hint{padding:5px 10px;color:#9baac0;font-size:9px}
+
+/* Settings: manual newer-cloud-data update notice */
+.settings-cloud-update-btn{display:inline-flex;align-items:center;gap:9px;margin:4px 0 8px;padding:11px 16px;border:1px solid #c62828;border-radius:10px;background:#fff5f5;color:#a31313;font-weight:800;cursor:pointer}
+.settings-cloud-update-btn[hidden]{display:none}
+.settings-cloud-update-btn:hover{background:#ffe8e8}
+.update-red-star{color:#e00000;font-size:1.25em;line-height:1;animation:dayquestUpdatePulse 1.3s ease-in-out infinite}
+@keyframes dayquestUpdatePulse{50%{transform:scale(1.22);opacity:.65}}
