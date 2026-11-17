@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v80-login-timeout-fix';
+const CACHE = 'dayquest-cache-v81-visible-login-session-timeout';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
   './style.css?v=20261117-side-menu-reorder',
-  './app.js?v=20261117-login-timeout-fix',
+  './app.js?v=20261117-visible-login-session-timeout',
   './manifest.json',
   './cloud-config.js'
 ];
