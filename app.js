@@ -77,6 +77,7 @@ const purchaseBillNumbersMigrated=normalizePurchaseBillNumbers();
 if(purchaseBillNumbersMigrated)localStorage.setItem('dayquest_v1',JSON.stringify(db));
 db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];
 db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
+db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers.filter(name=>db.suppliers.includes(name)))]:[];
 db.productNames=Array.isArray(db.productNames)?db.productNames:[];
 db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);
 db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];
@@ -1010,6 +1011,39 @@ function renderQuickActions(){
  if(list)list.innerHTML=html;
  if(overview)overview.innerHTML=html;
 }
+
+function renderQuickSuppliers(){
+ const panel=$('overviewQuickSuppliersPanel'),list=$('overviewQuickSupplierList');if(!panel||!list)return;
+ const names=db.suppliers.filter(name=>db.quickSuppliers.includes(name));
+ panel.hidden=!names.length;
+ list.innerHTML=names.map(name=>{
+  const bills=db.purchaseBills.filter(b=>b.supplier===name);
+  const totalPurchase=bills.reduce((total,bill)=>total+billTotal(bill),0);
+  const totalDue=supplierOutstanding(name);
+  const paidOnBills=bills.reduce((total,bill)=>total+Number(bill.cashPaid||0)+Number(bill.bankPaid||0),0);
+  const laterPayments=db.supplierPayments.filter(payment=>payment.supplier===name).reduce((total,payment)=>total+Number(payment.amount||0),0);
+  const paid=paidOnBills+laterPayments;
+  const aria=`${name}. Total purchase ${money(totalPurchase)}, total due ${money(totalDue)}, paid ${money(paid)}. Open a new purchase form for this supplier.`;
+  return `<button type="button" class="quick-supplier-card" data-quick-supplier="${esc(name)}" aria-label="${esc(aria)}">
+   <span class="quick-supplier-title">${esc(name)}</span>
+   <span class="quick-supplier-stats">
+    <span><small>TP</small><strong>${money(totalPurchase)}</strong></span>
+    <span><small>TD</small><strong>${money(totalDue)}</strong></span>
+    <span><small>P</small><strong>${money(paid)}</strong></span>
+   </span>
+  </button>`;
+ }).join('');
+ list.querySelectorAll('[data-quick-supplier]').forEach(button=>button.onclick=()=>openQuickSupplierPurchase(button.dataset.quickSupplier));
+}
+function openQuickSupplierPurchase(name){
+ const supplier=String(name||'').trim();if(!supplier||!db.suppliers.includes(supplier))return;
+ if(editingPurchaseBillId&&!confirm('Discard the current purchase bill edit and start a new bill?'))return;
+ setTab('purchaseBills');
+ resetPurchaseForm();
+ $('purchaseSupplier').value=supplier;
+ $('purchaseBillForm').scrollIntoView({behavior:'smooth',block:'start'});
+ $('purchaseSupplier').focus({preventScroll:true});
+}
 function renderQuickActionManager(){
  const list=$('quickActionManagerList');if(!list)return;
  list.innerHTML=db.quickActions.length?db.quickActions.map(action=>`<div class="quick-action-manager-row"><div class="quick-action-manager-info"><strong>${esc(action.name)}</strong><span>${action.type==='income'?'Income':'Expense'} · ${money(action.rate)} per click</span></div><div class="quick-action-manager-tools"><button type="button" class="edit-btn" data-quick-edit="${esc(action.id)}">Edit</button><button type="button" class="delete" data-quick-delete="${esc(action.id)}">Delete</button></div></div>`).join(''):empty('No quick buttons created yet.');
@@ -1491,7 +1525,16 @@ const SETTINGS_MASTER_CONFIG={
 function renderMasterLists(){
  Object.entries(SETTINGS_MASTER_CONFIG).forEach(([kind,cfg])=>{
   const list=$(cfg.list);if(!list)return;const values=db[cfg.array]||[];
-  list.innerHTML=values.map((name,index)=>`<div class="category-setting-row"><span><strong>${esc(name)}</strong><small>Available for new entries</small></span><div><button type="button" class="edit-btn" data-master-rename="${kind}" data-index="${index}">Rename</button><button type="button" class="delete" data-master-delete="${kind}" data-index="${index}" aria-label="Delete ${esc(name)}">×</button></div></div>`).join('')||empty(`No ${cfg.title}s added yet.`);
+  list.innerHTML=values.map((name,index)=>{
+   const quickToggle=kind==='supplier'?(`<label class="quick-supplier-toggle" title="Show this supplier on Overview"><input type="checkbox" data-master-quick-supplier="${esc(name)}" ${db.quickSuppliers.includes(name)?'checked':''}><span>Q</span></label>`):'';
+   return `<div class="category-setting-row"><span><strong>${esc(name)}</strong><small>Available for new entries</small></span><div>${quickToggle}<button type="button" class="edit-btn" data-master-rename="${kind}" data-index="${index}">Rename</button><button type="button" class="delete" data-master-delete="${kind}" data-index="${index}" aria-label="Delete ${esc(name)}">×</button></div></div>`;
+  }).join('')||empty(`No ${cfg.title}s added yet.`);
+  list.querySelectorAll('[data-master-quick-supplier]').forEach(input=>input.onchange=()=>{
+   const name=input.dataset.masterQuickSupplier;
+   if(input.checked&&!db.quickSuppliers.includes(name))db.quickSuppliers.push(name);
+   if(!input.checked)db.quickSuppliers=db.quickSuppliers.filter(value=>value!==name);
+   save();
+  });
   list.querySelectorAll('[data-master-rename]').forEach(button=>button.onclick=()=>renameMasterValue(kind,Number(button.dataset.index)));
   list.querySelectorAll('[data-master-delete]').forEach(button=>button.onclick=()=>deleteMasterValue(kind,Number(button.dataset.index)));
  });
@@ -1501,7 +1544,7 @@ function renameMasterValue(kind,index){
  const raw=prompt(`Rename ${cfg.title}:`,old);if(raw===null)return;const next=raw.trim();if(!next){alert('Name cannot be empty.');return}
  if(arr.some((value,i)=>i!==index&&String(value).toLocaleLowerCase()===next.toLocaleLowerCase())){alert(`That ${cfg.title} already exists.`);return}
  if(kind==='supplier'){
-  db.purchaseBills.forEach(b=>{if(b.supplier===old)b.supplier=next});db.supplierPayments.forEach(p=>{if(p.supplier===old)p.supplier=next});
+  db.purchaseBills.forEach(b=>{if(b.supplier===old)b.supplier=next});db.supplierPayments.forEach(p=>{if(p.supplier===old)p.supplier=next});db.quickSuppliers=db.quickSuppliers.map(value=>value===old?next:value);
  }else if(kind==='product'){
   db.purchaseBills.forEach(b=>(b.lines||[]).forEach(line=>{if(line.product===old)line.product=next}));
   db.productions.forEach(p=>{if(p.product===old)p.product=next;(p.inputs||[]).forEach(input=>{if(input.product===old)input.product=next})});
@@ -1528,7 +1571,7 @@ function deleteMasterValue(kind,index){
  if(kind==='productType')used=db.purchaseBills.some(b=>(b.lines||[]).some(line=>line.productType===name))||db.productions.some(p=>p.productType===name)||db.incomes.some(item=>(item.salesMemo?.items||[]).some(line=>line.productType===name));
  if(kind==='unit')used=db.purchaseBills.some(b=>(b.lines||[]).some(line=>line.unit===name))||db.productions.some(p=>p.unit===name||(p.inputs||[]).some(input=>input.unit===name))||db.consumptions.some(c=>c.unit===name)||db.incomes.some(item=>(item.salesMemo?.items||[]).some(line=>line.unit===name));
  if(used){alert(`This ${cfg.title} is used in saved transactions or inventory. Rename it instead; deletion is blocked to preserve history.`);return}
- if(confirm(`Delete ${cfg.title} “${name}”?`)){arr.splice(index,1);if(kind==='productType'&&!arr.length)arr.push('Other');if(kind==='unit'){if(!arr.length)arr.push('pcs');if(db.settings.unitAliases)delete db.settings.unitAliases[name]}fillChoices();renderMasterLists();save()}
+ if(confirm(`Delete ${cfg.title} “${name}”?`)){arr.splice(index,1);if(kind==='supplier')db.quickSuppliers=db.quickSuppliers.filter(value=>value!==name);if(kind==='productType'&&!arr.length)arr.push('Other');if(kind==='unit'){if(!arr.length)arr.push('pcs');if(db.settings.unitAliases)delete db.settings.unitAliases[name]}fillChoices();renderMasterLists();save()}
 }
 Object.entries(SETTINGS_MASTER_CONFIG).forEach(([kind,cfg])=>{
  const form=$(cfg.form);if(!form)return;form.onsubmit=e=>{e.preventDefault();const field=$(cfg.input),name=field.value.trim();if(!name)return;const arr=db[cfg.array];if(arr.some(value=>String(value).toLocaleLowerCase()===name.toLocaleLowerCase())){alert(`That ${cfg.title} already exists.`);return}arr.push(name);field.value='';fillChoices();renderMasterLists();save()};
@@ -1674,7 +1717,7 @@ function render(){
  $('todayQuests').innerHTML=questHTML(qToday.slice(0,4),false);
  $('expenseCount').textContent=`${db.expenses.length} expenses · ${db.purchaseBills.length} bills`;
  let filtered=db.expenses.filter(x=>( $('expenseFilter').value==='all'||x.category===$('expenseFilter').value)&&(`${x.note} ${x.category}`).toLowerCase().includes($('expenseSearch').value.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date));
- $('expenseList').innerHTML=expenseHTML(filtered,true);$('questList').innerHTML=questHTML(dayQuests(d),true);renderQuickActions();renderQuickActionManager();renderSupplierAccounts();renderInventory();renderProductionList();renderExpenseDueList();renderGuestReport();
+ $('expenseList').innerHTML=expenseHTML(filtered,true);$('questList').innerHTML=questHTML(dayQuests(d),true);renderQuickActions();renderQuickSuppliers();renderQuickActionManager();renderSupplierAccounts();renderInventory();renderProductionList();renderExpenseDueList();renderGuestReport();
  $('questSummary').textContent=`${done}/${qToday.length} completed`;$('incomeCount').textContent=`${db.incomes.length} entries`;
  const incomeFilter=$('incomeDateFilter').value,incomeHead=$('incomeHeadFilter').value,incomePerson=$('incomePersonFilter').value;const incomes=[...db.incomes].filter(x=>(!incomeFilter||x.date===incomeFilter)&&(incomeHead==='all'||(x.source||'Other')===incomeHead)&&(incomePerson==='all'||(x.incomeBy||'Unassigned')===incomePerson)).sort((a,b)=>b.date.localeCompare(a.date));$('incomeList').innerHTML=incomeHTML(incomes,true);renderSalesMemoList();
 }
@@ -2041,7 +2084,8 @@ function renderDueReport(from,to){
 
 activateReportSection('members');purchaseLines=[defaultPurchaseLine()];renderPurchaseLines();fillChoices();renderQuickMemberOptions([]);fillQuickActionOptions();updateQuickActionTypeFields();$('purchaseDate').value=today();updatePurchaseBillNo();productionInputs=[defaultProductionInput()];fillProductionOptions();resetProductionForm();applyThemeColor(db.settings.themeColor,false);renderPurchaseCategorySettings();renderMasterLists();
 $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`dayquest-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href)};
-$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.quickActions))x.quickActions=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.productTypes))x.productTypes=['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];if(!Array.isArray(x.purchaseCategories))x.purchaseCategories=['Assets','Staples','Fixed Ex.'];if(!x.settings||typeof x.settings!=='object')x.settings={themeColor:'#263b5c'};if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.productions))x.productions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};if(!Array.isArray(x.familyMembers))x.familyMembers=[];if(!Array.isArray(x.guestPeople))x.guestPeople=[];if(!Array.isArray(x.guests))x.guests=[];if(confirm('Replace current data with this backup?')){db=x;db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(item=>{item.costMember=String(item.costMember||'').trim()});db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];
+$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.quickActions))x.quickActions=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.productTypes))x.productTypes=['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];if(!Array.isArray(x.purchaseCategories))x.purchaseCategories=['Assets','Staples','Fixed Ex.'];if(!x.settings||typeof x.settings!=='object')x.settings={themeColor:'#263b5c'};if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.productions))x.productions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};if(!Array.isArray(x.familyMembers))x.familyMembers=[];if(!Array.isArray(x.guestPeople))x.guestPeople=[];if(!Array.isArray(x.guests))x.guests=[];if(confirm('Replace current data with this backup?')){db=x;db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(item=>{item.costMember=String(item.costMember||'').trim()});db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
+db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers.filter(name=>db.suppliers.includes(name)))]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];
 db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.productions=Array.isArray(db.productions)?db.productions.filter(p=>p&&p.id&&p.product&&Number(p.quantity)>0):[];normalizePurchaseInventory();db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;if(typeof db.settings.allowPurchaseBillEdits!=='boolean')db.settings.allowPurchaseBillEdits=true;db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];db.units=Array.isArray(db.units)?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];normalizePurchaseBillNumbers();db.profile=db.profile||{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};db.profile.familyName=String(db.profile.familyName||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestPeople=Array.isArray(db.guestPeople)?db.guestPeople.map(n=>String(n||'').trim()).filter(Boolean):[];db.guestPeople=[...new Map(db.guestPeople.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guests=Array.isArray(db.guests)?db.guests.filter(g=>g&&Array.isArray(g.members)&&g.members.length&&/^\d{4}-\d{2}-\d{2}$/.test(String(g.entryDate||''))):[];db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.members.forEach(n=>{if(!assignablePeople().some(x=>x.toLocaleLowerCase()===String(n).toLocaleLowerCase()))db.guestPeople.push(String(n).trim())})});db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);normalizeMemberAssignments();db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeople.push(name)});db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);renderPurchaseCategorySettings();renderMasterLists();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('installBtn').hidden=false});
 $('installBtn').onclick=async()=>{if(deferredInstall){deferredInstall.prompt();deferredInstall=null;$('installBtn').hidden=true}};
@@ -2141,7 +2185,8 @@ function normalizeCloudDatabase(raw){
  db.quests=Array.isArray(db.quests)?db.quests:[];db.checks=db.checks&&typeof db.checks==='object'?db.checks:{};
  db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];
  db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];
- db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];
+ db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
+db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers.filter(name=>db.suppliers.includes(name)))]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];
  db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];
  db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];
  db.units=Array.isArray(db.units)&&db.units.length?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];
