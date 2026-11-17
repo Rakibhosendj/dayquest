@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261117-supplier-entry-page">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261117-side-menu-reorder">
 <title>DayQuest</title>
 </head>
 <body>
@@ -57,27 +57,27 @@
 <div id="appLayout" class="app-layout">
  <aside id="sidebar" class="sidebar" aria-label="Main navigation">
   <div class="sidebar-brand"><span class="sidebar-mark">DQ</span><div><strong id="sidebarBrandTitle">DayQuest</strong><small id="sidebarBrandSubtitle">Personal dashboard</small></div></div>
-  <div class="sidebar-caption">MENU</div>
-  <nav class="side-nav" aria-label="Sections">
-   <button class="tab side-link active" data-tab="home" type="button"><span class="side-link-mark">01</span><span>Overview</span></button>
-   <details class="side-group">
+  <div class="sidebar-caption">MENU · HOLD TO REORDER</div>
+  <nav id="sideNav" class="side-nav" aria-label="Sections">
+   <button class="tab side-link active" data-menu-item="home" data-tab="home" type="button"><span class="side-link-mark">01</span><span>Overview</span></button>
+   <details class="side-group" data-menu-item="expenses">
     <summary class="side-link side-group-title"><span class="side-link-mark">02</span><span>Expenses</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
     <div class="side-submenu">
      <button class="tab side-sub-link" data-tab="purchaseBills" type="button">Purchase</button>
     </div>
    </details>
-   <button class="tab side-link" data-tab="inventory" type="button"><span class="side-link-mark">03</span><span>Inventory</span></button>
-   <button class="tab side-link" data-tab="production" type="button"><span class="side-link-mark">04</span><span>Production</span></button>
-   <button class="tab side-link" data-tab="supplierAccounts" type="button"><span class="side-link-mark">05</span><span>Supplier accounts / creditors</span></button>
-   <details class="side-group">
+   <button class="tab side-link" data-menu-item="inventory" data-tab="inventory" type="button"><span class="side-link-mark">03</span><span>Inventory</span></button>
+   <button class="tab side-link" data-menu-item="production" data-tab="production" type="button"><span class="side-link-mark">04</span><span>Production</span></button>
+   <button class="tab side-link" data-menu-item="supplierAccounts" data-tab="supplierAccounts" type="button"><span class="side-link-mark">05</span><span>Supplier accounts / creditors</span></button>
+   <details class="side-group" data-menu-item="outstanding">
     <summary class="side-link side-group-title"><span class="side-link-mark">06</span><span>Outstanding</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
     <div class="side-submenu">
      <button class="tab side-sub-link" data-tab="payExpenseDue" type="button">Pay or collect an expense due</button>
     </div>
    </details>
-   <button class="tab side-link" data-tab="income" type="button"><span class="side-link-mark">07</span><span>Income</span></button>
-   <button class="tab side-link" data-tab="quests" type="button"><span class="side-link-mark">08</span><span>Daily quests</span></button>
-   <details class="side-group" data-side-group="reports">
+   <button class="tab side-link" data-menu-item="income" data-tab="income" type="button"><span class="side-link-mark">07</span><span>Income</span></button>
+   <button class="tab side-link" data-menu-item="quests" data-tab="quests" type="button"><span class="side-link-mark">08</span><span>Daily quests</span></button>
+   <details class="side-group" data-menu-item="reports" data-side-group="reports">
     <summary class="side-link side-group-title"><span class="side-link-mark">09</span><span>Reports</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
     <div class="side-submenu report-side-submenu">
      <button type="button" class="side-sub-link report-sub-link active" data-report-go="members">Members Report</button>
@@ -91,8 +91,8 @@
      <button type="button" class="side-sub-link report-sub-link" data-report-go="all">All Reports</button>
     </div>
    </details>
-   <button class="tab side-link" data-tab="profile" type="button"><span class="side-link-mark">10</span><span>Profile</span></button>
-   <button class="tab side-link" data-tab="settings" type="button"><span class="side-link-mark">11</span><span>Settings</span></button>
+   <button class="tab side-link" data-menu-item="profile" data-tab="profile" type="button"><span class="side-link-mark">10</span><span>Profile</span></button>
+   <button class="tab side-link" data-menu-item="settings" data-tab="settings" type="button"><span class="side-link-mark">11</span><span>Settings</span></button>
   </nav>
   <div class="sidebar-bottom">
    <div class="sidebar-account"><span id="userGreeting" class="user-greeting">Signed in</span><button id="logoutBtn" class="ghost" type="button">Log out</button></div>
@@ -604,5 +604,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261117-branded-message-boxes"></script>
+<script src="app.js?v=20261117-side-menu-reorder"></script>
 </body></html>
