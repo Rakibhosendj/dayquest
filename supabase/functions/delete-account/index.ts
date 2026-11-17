@@ -1,5 +1,5 @@
 // Deploy as Supabase Edge Function: delete-account
-// Add SUPABASE_SERVICE_ROLE_KEY as a server-side function secret.
+// Add DAYQUEST_SERVICE_ROLE_KEY as a server-side function secret.
 // Never put the service-role key in browser code or share it with users.
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,7 +19,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")?.replace(/\/+$/, "");
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const serviceKey = Deno.env.get("DAYQUEST_SERVICE_ROLE_KEY");
     // The Supabase client sends the project's publishable key in the apikey header.
     // Accept it from the request so newer projects do not need a legacy anon-key secret.
     const publicKey = req.headers.get("apikey") || Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
