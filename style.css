@@ -898,3 +898,14 @@ button,input,select,textarea{
  .overview-quick-panel .quick-action-button-stats>span{font-size:9px}
 }
 @media(max-width:360px){.overview-summary{grid-template-columns:1fr 1fr;gap:7px;padding:11px}.overview-summary .money{font-size:19px}.hero-balance-breakdown{gap:6px;font-size:9px}.hero-balance-breakdown strong{font-size:10px}}
+
+/* Overview quick expenses now follow the balance strip; heading opens setup. */
+.overview-quick-title{appearance:none;border:0;background:transparent;padding:0;color:inherit;font:inherit;font-weight:750;cursor:pointer;text-align:left}
+.overview-quick-title:hover{text-decoration:underline}
+.overview-quick-head{margin-top:12px}
+.activity-cards{grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.activity-cards .stat{padding:10px 12px;min-width:0}
+.activity-cards .stat .muted{font-size:11px;font-weight:800;letter-spacing:.06em}
+.activity-cards .stat strong{font-size:clamp(17px,2vw,22px);white-space:nowrap}
+.activity-cards .stat small{font-size:10px}
+@media(max-width:620px){.activity-cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.activity-cards .stat{padding:9px}.activity-cards .stat strong{font-size:17px}}
