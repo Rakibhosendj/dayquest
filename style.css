@@ -869,3 +869,32 @@ button,input,select,textarea{
 
 /* DayQuest Message Alert dialog */
 .dq-message-dialog{border:0;border-radius:18px;padding:0;width:min(92vw,420px);max-width:420px;box-shadow:0 24px 70px #10182755}.dq-message-dialog::backdrop{background:#10182788;backdrop-filter:blur(3px)}.dq-message-card{padding:22px}.dq-message-card h2{font-size:1.12rem;margin:0 0 12px;color:#263b5c}.dq-message-card p{line-height:1.55;white-space:pre-wrap;margin:0 0 20px;color:#263241}.dq-message-actions{display:flex;justify-content:flex-end;gap:10px}.delete-profile-btn{width:100%;border:1px solid #b42318;color:#b42318;background:transparent;border-radius:12px;padding:12px;font-weight:700;cursor:pointer}.delete-profile-btn:hover{background:#fff1f0}
+
+/* Overview: quick-action tiles first, then a compact three-part daily summary. */
+.overview-quick-panel{margin:0 0 10px;padding:0}
+.overview-quick-head{margin:4px 0 9px;align-items:center}
+.overview-quick-panel .quick-action-list{grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:8px}
+.overview-quick-panel .quick-action-card{min-height:112px;aspect-ratio:1.8;border-radius:18px;padding:13px 10px;gap:7px}
+.overview-quick-panel .quick-action-button-title{font-size:clamp(14px,2vw,19px)}
+.overview-quick-panel .quick-action-button-stats{width:min(100%,220px);gap:4px 10px}
+.overview-quick-panel .quick-action-button-stats>span{font-size:clamp(10px,1.3vw,13px)}
+.overview-summary{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(100px,.65fr);align-items:center;gap:14px;margin:10px 0 14px;padding:15px 17px}
+.overview-summary .money{font-size:clamp(21px,2.6vw,29px);margin:4px 0}
+.overview-summary .hero-side{min-width:0}
+.hero-balance-breakdown{display:flex;gap:12px;flex-wrap:wrap;color:#c3ccda;font-size:10px}
+.hero-balance-breakdown span{display:flex;gap:4px;align-items:center}
+.hero-balance-breakdown strong{color:#fff;font-size:11px}
+.clear-transactions-btn{width:100%;border:1px solid #b42318;color:#b42318;background:#fff;border-radius:12px;padding:12px;font-weight:750;cursor:pointer}
+.clear-transactions-btn:hover{background:#fff1f0}
+@media(max-width:620px){
+ .overview-summary{grid-template-columns:1fr 1.1fr;gap:10px;padding:13px}
+ .overview-summary .hero-side{grid-column:1/-1;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px;text-align:left}
+ .overview-summary .hero-side .big{margin:0;font-size:19px}
+ .overview-summary .hero-side .progress{min-width:0}
+ .overview-quick-panel .quick-action-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .overview-quick-panel .quick-action-card{min-height:102px;aspect-ratio:1.45;padding:10px 7px;border-radius:15px}
+ .overview-quick-panel .quick-action-button-title{font-size:13px}
+ .overview-quick-panel .quick-action-button-stats{gap:4px 5px}
+ .overview-quick-panel .quick-action-button-stats>span{font-size:9px}
+}
+@media(max-width:360px){.overview-summary{grid-template-columns:1fr 1fr;gap:7px;padding:11px}.overview-summary .money{font-size:19px}.hero-balance-breakdown{gap:6px;font-size:9px}.hero-balance-breakdown strong{font-size:10px}}
