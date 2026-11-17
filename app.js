@@ -2511,7 +2511,7 @@ async function connectCloudSession(user,{silent=false}={}){
  // This matters on shared computers and when multiple family accounts use one browser.
  if(linkedToOtherAccount&&hasLocal){
   const message='This browser contains local records linked to a different Family Account. To protect those records, DayQuest will download a backup and will not upload them to this account. Continue switching accounts?';
-  if(!confirm(message)){await supabaseClient.auth.signOut();cloudUser=null;showAuthView('login','Account switch cancelled. The previous family data remains on this device.');return}
+  if(!await window.dayQuestConfirm(message)){await supabaseClient.auth.signOut();cloudUser=null;showAuthView('login','Account switch cancelled. The previous family data remains on this device.');return}
   downloadJsonFile(db,`dayquest-previous-family-backup-${today()}.json`);
   if(row){applyRemoteRow(row);startAppSession(user);startCloudPolling();return}
   db=createEmptyDayQuestDatabase();normalizeCloudDatabase(db);localStorage.setItem('dayquest_v1',JSON.stringify(db));
@@ -2727,6 +2727,33 @@ function installDayQuestMessageAlerts(){
   window.alert=value=>withAppTitle(nativeAlert,[cleanMessage(value)]);
  }
  // Keep synchronous return values for existing app workflows while branding browser dialogs.
+ window.dayQuestConfirm=messageText=>{
+  const safeText=cleanMessage(messageText),cancel=$('dqMessageCancel');
+  if(!(dialog&&title&&message&&ok&&cancel&&typeof dialog.showModal==='function'))return Promise.resolve(withAppTitle(nativeConfirm,[safeText]));
+  return new Promise(resolve=>{
+   title.textContent='DayQuest';
+   message.textContent=safeText;
+   ok.textContent='Continue';
+   cancel.textContent='Cancel';
+   cancel.hidden=false;
+   let finished=false;
+   const done=value=>{
+    if(finished)return;finished=true;
+    dialog.close();
+    ok.removeEventListener('click',accept);
+    cancel.removeEventListener('click',reject);
+    dialog.removeEventListener('cancel',onCancel);
+    cancel.hidden=true;ok.textContent='OK';
+    resolve(value);
+   };
+   const accept=()=>done(true),reject=()=>done(false);
+   const onCancel=event=>{event.preventDefault();reject()};
+   ok.addEventListener('click',accept);
+   cancel.addEventListener('click',reject);
+   dialog.addEventListener('cancel',onCancel);
+   dialog.showModal();
+  });
+ };
  window.confirm=messageText=>withAppTitle(nativeConfirm,[cleanMessage(messageText)]);
  window.prompt=function(messageText,defaultValue){
   const args=arguments.length>1?[cleanMessage(messageText),defaultValue]:[cleanMessage(messageText)];
