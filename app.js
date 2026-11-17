@@ -979,18 +979,20 @@ function quickActionStats(action){
  };
 }
 function updateQuickActionModeButton(){
- const button=$('quickActionModeToggle');if(!button)return;
  const subtract=quickActionMode==='minus';
- button.textContent=subtract?'− Minus':'＋ Add';
- button.classList.toggle('minus-mode',subtract);button.classList.toggle('add-mode',!subtract);
- button.setAttribute('aria-pressed',String(subtract));
- button.setAttribute('aria-label',`Current quick button mode: ${subtract?'Minus':'Add'}. Click to switch mode.`);
+ ['quickActionModeToggle','overviewQuickActionModeToggle'].forEach(id=>{
+  const button=$(id);if(!button)return;
+  button.textContent=subtract?'− Minus':'＋ Add';
+  button.classList.toggle('minus-mode',subtract);button.classList.toggle('add-mode',!subtract);
+  button.setAttribute('aria-pressed',String(subtract));
+  button.setAttribute('aria-label',`Current quick button mode: ${subtract?'Minus':'Add'}. Click to switch mode.`);
+ });
 }
 function renderQuickActions(){
- const list=$('quickActionList');if(!list)return;
- $('quickActionCount').textContent=`${db.quickActions.length} button${db.quickActions.length===1?'':'s'}`;
+ const list=$('quickActionList'),overview=$('overviewQuickActionList');
+ if($('quickActionCount'))$('quickActionCount').textContent=`${db.quickActions.length} button${db.quickActions.length===1?'':'s'}`;
  updateQuickActionModeButton();
- list.innerHTML=db.quickActions.length?db.quickActions.map(action=>{
+ const html=db.quickActions.length?db.quickActions.map(action=>{
   const stats=quickActionStats(action),disabled=quickActionMode==='minus'&&stats.dayCount<1;
   const kind=action.type==='income'?'Income':'Expense';
   const aria=`${action.name}, ${kind}. Total count ${numberText(stats.totalCount)}, today count ${numberText(stats.dayCount)}, total cost ${numberText(stats.totalCost)}, today's cost ${numberText(stats.dayCost)}. ${quickActionMode==='minus'?'Click to subtract one of today’s entries':'Click to add one'}.`;
@@ -1005,6 +1007,8 @@ function renderQuickActions(){
    <span class="quick-action-button-kind">${kind}</span>
   </button>`;
  }).join(''):empty('No quick buttons yet. Open Settings → Create Quick Button to add one.');
+ if(list)list.innerHTML=html;
+ if(overview)overview.innerHTML=html;
 }
 function renderQuickActionManager(){
  const list=$('quickActionManagerList');if(!list)return;
@@ -1059,13 +1063,17 @@ function subtractQuickActionOne(id){
  save();
 }
 $('quickActionType').onchange=updateQuickActionTypeFields;
-$('quickActionModeToggle').onclick=()=>{quickActionMode=quickActionMode==='add'?'minus':'add';renderQuickActions()};
+const toggleQuickActionMode=()=>{quickActionMode=quickActionMode==='add'?'minus':'add';renderQuickActions()};
+$('quickActionModeToggle').onclick=toggleQuickActionMode;
+$('overviewQuickActionModeToggle').onclick=toggleQuickActionMode;
 $('quickActionForm').onsubmit=e=>{e.preventDefault();saveQuickAction()};
 $('quickActionCancel').onclick=()=>{resetQuickActionForm();if($('quickActionSettings'))$('quickActionSettings').open=false};
-$('quickActionList').onclick=e=>{
+const handleQuickActionTileClick=e=>{
  const tile=e.target.closest('[data-quick-activate]');if(!tile||tile.disabled)return;
  const id=tile.dataset.quickActivate;if(quickActionMode==='minus')subtractQuickActionOne(id);else addQuickActionOne(id);
 };
+$('quickActionList').onclick=handleQuickActionTileClick;
+$('overviewQuickActionList').onclick=handleQuickActionTileClick;
 $('quickActionManagerList').onclick=e=>{
  const button=e.target.closest('button');if(!button)return;
  if(button.dataset.quickEdit){editQuickAction(button.dataset.quickEdit);return}
@@ -2381,6 +2389,15 @@ $('deleteProfileBtn').onclick=()=>{
  db.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};
  $('profilePhotoInput').value='';loadProfileForm();save();
  alert('Family profile details were cleared. Your transactions and Family Account login are unchanged.');
+};
+$('clearAllExpensesIncomeBtn').onclick=()=>{
+ if(!confirm('Clear ALL expense and income entries, including Quick Expenses transactions and their due/collection history? This cannot be undone.'))return;
+ if(!confirm('Final confirmation: permanently clear all saved expenses and income from this family account? Purchase bills, inventory, production, quick button settings and profile will remain.'))return;
+ const salesMemoIds=db.incomes.filter(item=>item.salesMemo).map(item=>String(item.id));
+ db.expenses=[];db.incomes=[];
+ if(Array.isArray(db.consumptions)&&salesMemoIds.length)db.consumptions=db.consumptions.filter(item=>!salesMemoIds.includes(String(item.salesMemoId||'')));
+ save();
+ alert('All expense and income entries have been cleared. Quick button settings, purchases, inventory, production and profile remain.');
 };
 $('logoutBtn').onclick=async()=>{
  try{if(supabaseClient)await supabaseClient.auth.signOut()}catch(error){console.error('Cloud sign out failed',error)}
