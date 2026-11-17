@@ -2341,11 +2341,15 @@ function getCloudMeta(){return readJsonStore(CLOUD_META_KEY,{userId:null,version
 function writeCloudMeta(patch={}){const current=getCloudMeta();const next={...current,...patch,updatedAt:new Date().toISOString()};localStorage.setItem(CLOUD_META_KEY,JSON.stringify(next));return next}
 function setCloudStatus(message,{conflict=false,remote=false,offline=false,autoHideMs=0}={}){
  clearTimeout(cloudStatusHideTimer);cloudStatusHideTimer=null;
+ const updateButton=$('settingsUpdateCloudData');
+ if(updateButton)updateButton.hidden=!remote;
  const bar=$('cloudSyncBar');if(!bar)return;
- const important=conflict||remote||offline||/failed|error|not ready|not connected|could not|cannot|cancelled|empty|needs an internet/i.test(String(message));
+ // New cloud data is announced only in Settings; do not show a persistent banner.
+ if(remote&&!conflict){hideCloudStatus();return}
+ const important=conflict||offline||/failed|error|not ready|not connected|could not|cannot|cancelled|empty|needs an internet/i.test(String(message));
  if(!important){hideCloudStatus();return;}
  bar.hidden=false;$('cloudStatusText').textContent=message;
- $('cloudLoadLatest').hidden=!(conflict||remote);$('cloudDownloadLocal').hidden=!conflict;
+ $('cloudLoadLatest').hidden=!conflict;$('cloudDownloadLocal').hidden=!conflict;
  $('cloudSyncNow').disabled=offline||cloudSyncBusy;
  bar.classList.toggle('is-warning',true);
 }
@@ -2561,12 +2565,31 @@ async function connectCloudSession(user,{silent=false}={}){
 function startCloudPolling(){clearInterval(cloudPollTimer);cloudPollTimer=setInterval(checkCloudForUpdates,20000)}
 async function checkCloudForUpdates(){
  if(!cloudUser||!cloudReady||!navigator.onLine||cloudSyncBusy)return;
- try{const row=await fetchCloudVersion();if(!row)return;const version=Number(row.version||0);if(version>cloudVersion){if(cloudDirty||getCloudMeta().dirty){const fullRow=await fetchCloudRow();if(fullRow)await handleCloudConflict(fullRow)}else{cloudRemoteChanged=true;setCloudStatus('Newer family data is available from another device.',{remote:true})}}}
- catch(error){console.warn('DayQuest cloud check failed',error)}
+ try{
+  const row=await fetchCloudVersion();if(!row)return;
+  const version=Number(row.version||0);
+  if(version>cloudVersion){
+   if(cloudDirty||getCloudMeta().dirty){
+    const fullRow=await fetchCloudRow();if(fullRow)await handleCloudConflict(fullRow);
+   }else{
+    cloudRemoteChanged=true;
+    setCloudStatus('Newer family data is available from another device.',{remote:true});
+   }
+  }else if(version<=cloudVersion){
+   cloudRemoteChanged=false;
+   const updateButton=$('settingsUpdateCloudData');if(updateButton)updateButton.hidden=true;
+  }
+ }catch(error){console.warn('DayQuest cloud check failed',error)}
 }
 async function loadLatestCloudData(){
- try{const row=await fetchCloudRow();if(!row){setCloudStatus('No cloud data row was found.');return}if(!confirm('Replace this device’s current DayQuest records with the latest cloud copy? Download a local backup first if you need these unsynced changes.'))return;applyRemoteRow(row,{downloadBackup:true});startAppSession(cloudUser);startCloudPolling()}
- catch(error){setCloudStatus('Could not load cloud data: '+(error.message||'connection error'),{conflict:true})}
+ try{
+  const row=await fetchCloudRow();if(!row){setCloudStatus('No cloud data row was found.');return}
+  if(Number(row.version||0)<=cloudVersion){cloudRemoteChanged=false;$('settingsUpdateCloudData').hidden=true;return}
+  // Keep a local safety backup automatically, then load only when the user clicks Update.
+  applyRemoteRow(row,{downloadBackup:true});
+  $('settingsUpdateCloudData').hidden=true;
+  startAppSession(cloudUser);startCloudPolling();
+ }catch(error){setCloudStatus('Could not load cloud data: '+(error.message||'connection error'),{conflict:true})}
 }
 async function manualCloudSync(){
  if(!cloudUser){setCloudStatus('Log in to a Family Account to sync.');return}
@@ -2713,7 +2736,7 @@ $('logoutBtn').onclick=async()=>{
  try{if(supabaseClient)await supabaseClient.auth.signOut()}catch(error){console.error('Cloud sign out failed',error)}
  cloudReady=false;cloudUser=null;cloudDirty=false;cloudConflict=false;cloudRemoteChanged=false;clearInterval(cloudPollTimer);hideCloudStatus();$('loginPassword').value='';showAuthView('login','You have been logged out. Your local family data remains saved on this device.')
 };
-$('cloudSyncNow').onclick=manualCloudSync;$('cloudLoadLatest').onclick=loadLatestCloudData;$('cloudDownloadLocal').onclick=downloadCurrentLocalCopy;
+$('cloudSyncNow').onclick=manualCloudSync;$('cloudLoadLatest').onclick=loadLatestCloudData;$('settingsUpdateCloudData').onclick=loadLatestCloudData;$('cloudDownloadLocal').onclick=downloadCurrentLocalCopy;
 window.addEventListener('online',async()=>{if(!cloudUser)return;if(cloudConflict)return;const meta=getCloudMeta();if(!cloudReady){await connectCloudSession(cloudUser,{silent:true});return}if(meta.dirty||cloudDirty){cloudReady=true;pushCloudData()}else checkCloudForUpdates()});
 window.addEventListener('offline',()=>{if(cloudUser)hideCloudStatus()});
 
