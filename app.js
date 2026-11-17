@@ -2498,18 +2498,7 @@ async function handleCloudConflict(row){
 async function connectCloudSession(user,{silent=false}={}){
  cloudUser=user;const meta=getCloudMeta(),sameUser=meta.userId===user.id,linkedToOtherAccount=!!meta.userId&&!sameUser;
  let row=null;
- try{
-  // Fast path: check only version metadata. Avoid downloading the complete family payload
-  // when this device already has the latest saved cloud version.
-  if(sameUser&&!meta.dirty){
-   const versionRow=await fetchCloudVersion();
-   if(versionRow&&Number(versionRow.version||0)===Number(meta.version||0)){
-    cloudVersion=Number(versionRow.version||0);cloudReady=true;cloudDirty=false;cloudConflict=false;cloudRemoteChanged=false;
-    startAppSession(user);startCloudPolling();return;
-   }
-  }
-  row=await fetchCloudRow();
- }catch(error){
+ try{row=await fetchCloudRow()}catch(error){
   const networkFailure=!navigator.onLine||/failed to fetch|networkerror|load failed|timeout|offline/i.test(String(error.message||error));
   if(networkFailure&&sameUser){
    cloudReady=false;cloudVersion=Number(meta.version||0);cloudDirty=!!meta.dirty;
