@@ -2589,7 +2589,7 @@ function installDayQuestMessageAlerts(){
  const cleanMessage=value=>String(value??'')
   .replace(/\[[^\]]*\]\((?:https?:\/\/|www\.)[^)]+\)/gi,'')
   .replace(/\b(?:https?:\/\/|www\.)[^\s<>"']+/gi,'')
-  .replace(/\b(?:github\.com|github\.io)\/[^\s<>"']+/gi,'')
+  .replace(/\b(?:github\.com|github\.io)(?:\/[^\s<>"']*)?/gi,'')
   .replace(/[ \t]{2,}/g,' ').trim();
  const withAppTitle=(callback,args)=>{
   const previousTitle=document.title;
