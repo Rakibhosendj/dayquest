@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261117-quick-suppliers">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261117-quick-color-product-dictionary">
 <title>DayQuest</title>
 </head>
 <body>
@@ -115,7 +115,7 @@
  </section>
  <section class="overview-quick-panel quick-suppliers-panel" id="overviewQuickSuppliersPanel" hidden>
   <div class="section-head overview-quick-head"><div><h2>Quick Suppliers</h2><span class="muted">Tap a supplier to start a purchase bill</span></div></div>
-  <div id="overviewQuickSupplierList" class="quick-supplier-list"></div>
+  <div id="overviewQuickSupplierList" class="quick-action-list"></div>
  </section>
  <div class="section-head"><h2>Today's Activity</h2><span class="pill" id="todayQuestLabel">0 quests done</span></div>
  <div class="cards activity-cards"><article class="stat"><span class="muted">W</span><strong id="weekTotal">৳0</strong><small>Week expense</small></article><article class="stat"><span class="muted">M</span><strong id="monthTotal">৳0</strong><small>Month expense</small></article><article class="stat"><span class="muted">TIC</span><strong id="todayIncome">৳0</strong><small>Today income</small></article><article class="stat"><span class="muted">MIC</span><strong id="monthIncome">৳0</strong><small>Month income</small></article></div>
@@ -374,6 +374,18 @@
    <button type="button" class="theme-swatch" data-theme-color="#236d91" aria-label="Ocean blue" title="Ocean blue" style="--swatch:#236d91"></button>
   </div>
  </section>
+ <section class="settings-card">
+  <div class="section-head settings-section-head"><div><h3>Quick button color</h3><p class="settings-copy">Choose one color for Quick Expenses and Quick Suppliers buttons on the Overview and Quick Expenses pages.</p></div></div>
+  <div class="theme-picker-row"><label for="quickButtonColorInput">Quick button color</label><input id="quickButtonColorInput" type="color" value="#ee7d2f" aria-label="Choose quick button color"><strong id="quickButtonColorValue">#EE7D2F</strong></div>
+  <div class="theme-presets" aria-label="Quick button color presets">
+   <button type="button" class="theme-swatch" data-quick-button-color="#ee7d2f" aria-label="Orange" title="Orange" style="--swatch:#ee7d2f"></button>
+   <button type="button" class="theme-swatch" data-quick-button-color="#18765b" aria-label="Green" title="Green" style="--swatch:#18765b"></button>
+   <button type="button" class="theme-swatch" data-quick-button-color="#236d91" aria-label="Blue" title="Blue" style="--swatch:#236d91"></button>
+   <button type="button" class="theme-swatch" data-quick-button-color="#6941a5" aria-label="Purple" title="Purple" style="--swatch:#6941a5"></button>
+   <button type="button" class="theme-swatch" data-quick-button-color="#b44358" aria-label="Rose" title="Rose" style="--swatch:#b44358"></button>
+   <button type="button" class="theme-swatch" data-quick-button-color="#263b5c" aria-label="Navy" title="Navy" style="--swatch:#263b5c"></button>
+  </div>
+ </section>
  <section class="settings-card settings-quick-actions-card">
   <details id="quickActionSettings" class="settings-master-group settings-quick-action-settings">
    <summary>Create Quick Button</summary>
@@ -417,6 +429,7 @@
   <div class="settings-master-grid settings-master-accordions">
    <details class="settings-master-group"><summary>Suppliers</summary><form id="addSettingSupplierForm" class="category-add-form"><input id="newSettingSupplier" maxlength="80" placeholder="Add supplier" required><button class="primary" type="submit">＋ Add</button></form><div id="settingsSupplierList" class="list category-settings-list"></div></details>
    <details class="settings-master-group"><summary>Products</summary><form id="addSettingProductForm" class="category-add-form"><input id="newSettingProduct" maxlength="80" placeholder="Add product" required><button class="primary" type="submit">＋ Add</button></form><div id="settingsProductList" class="list category-settings-list"></div></details>
+   <details class="settings-master-group"><summary>Product Dictionary · English / বাংলা</summary><p class="settings-copy">Search, edit or add product names in English and Bangla. Both names are suggested in the Purchase Form product field.</p><form id="addProductDictionaryForm" class="product-dictionary-add-form"><input id="newProductDictionaryEnglish" maxlength="80" placeholder="English product name" required><input id="newProductDictionaryBangla" maxlength="80" placeholder="বাংলা পণ্যের নাম" lang="bn" required><button class="primary" type="submit">＋ Add product</button></form><label class="product-dictionary-search">Search dictionary <input id="productDictionarySearch" type="search" placeholder="Search English or বাংলা"></label><div class="section-head"><span class="muted" id="productDictionaryCount">0 dictionary entries</span></div><div id="productDictionaryList" class="product-dictionary-list"></div></details>
    <details class="settings-master-group"><summary>Product types</summary><form id="addSettingProductTypeForm" class="category-add-form"><input id="newSettingProductType" maxlength="60" placeholder="Add product type" required><button class="primary" type="submit">＋ Add</button></form><div id="settingsProductTypeList" class="list category-settings-list"></div></details>
    <details class="settings-master-group"><summary>Units</summary><form id="addSettingUnitForm" class="category-add-form"><input id="newSettingUnit" maxlength="30" placeholder="Add unit name" required><button class="primary" type="submit">＋ Add</button></form><div id="settingsUnitList" class="list category-settings-list"></div></details>
    <details class="settings-master-group settings-master-category"><summary>Purchase item categories</summary><form id="addPurchaseCategoryForm" class="category-add-form"><input id="newPurchaseCategory" maxlength="40" placeholder="Add a category name" aria-label="New purchase category" required><button class="primary" type="submit">＋ Add category</button></form><div id="purchaseCategoryList" class="list category-settings-list"></div><p class="hint">These categories are available beside Product Name on purchase lines and are used in cost and asset reports.</p></details>
@@ -575,5 +588,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261117-quick-suppliers"></script>
+<script src="app.js?v=20261117-quick-color-product-dictionary"></script>
 </body></html>
