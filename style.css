@@ -168,6 +168,9 @@ button,input,select,textarea{
 .category-settings-list{gap:7px}
 .category-setting-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;background:#f8fafc;border:1px solid #e6ebf2;border-radius:11px}
 .category-setting-row>span{display:grid;gap:4px;min-width:0}.category-setting-row strong{font-size:12px;color:#293a54}.category-setting-row small{font-size:9px;color:#8993a2}.category-setting-row>div{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.quick-supplier-toggle{display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border:1px solid #dbe3ee;border-radius:8px;background:#fff;color:#52627a;font-size:10px;font-weight:850;cursor:pointer}
+.quick-supplier-toggle input{width:14px;height:14px;margin:0;accent-color:var(--accent-color)}
+.quick-supplier-toggle span{line-height:1}
 @media(max-width:460px){.category-add-form{align-items:stretch;flex-direction:column}.category-add-form .primary{width:100%}.category-setting-row{align-items:flex-start}}
 
 
@@ -909,3 +912,14 @@ button,input,select,textarea{
 .activity-cards .stat strong{font-size:clamp(17px,2vw,22px);white-space:nowrap}
 .activity-cards .stat small{font-size:10px}
 @media(max-width:620px){.activity-cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.activity-cards .stat{padding:9px}.activity-cards .stat strong{font-size:17px}}
+
+/* Overview quick supplier tiles with purchase, due and paid totals. */
+.quick-supplier-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:8px}
+.quick-supplier-card{display:grid;gap:10px;width:100%;min-width:0;padding:12px 13px;text-align:left;background:#fff;border:1px solid #e2e8f0;border-radius:15px;color:#1f2e43;cursor:pointer;box-shadow:0 2px 8px rgba(24,42,69,.04)}
+.quick-supplier-card:active{transform:translateY(1px)}
+.quick-supplier-title{font-size:14px;font-weight:850;overflow-wrap:anywhere}
+.quick-supplier-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.quick-supplier-stats>span{display:grid;gap:4px;min-width:0}
+.quick-supplier-stats small{font-size:10px;font-weight:850;color:#7b8798}
+.quick-supplier-stats strong{font-size:clamp(11px,1.25vw,14px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#263b5c}
+.quick-suppliers-panel[hidden]{display:none!important}
