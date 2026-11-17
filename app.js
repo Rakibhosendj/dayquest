@@ -2727,7 +2727,11 @@ $('deleteAccountBtn').onclick=async()=>{
   db=createEmptyDayQuestDatabase();showAuthView('login','Your DayQuest Family Account has been permanently deleted.');
  }catch(error){
   console.error('DayQuest account deletion failed',error);
-  alert('Account deletion failed: '+(error.message||'Please check your internet connection and try again.'));
+  const detail=String(error?.message||error||'');
+  const networkFailure=/failed to send a request|failed to fetch|networkerror|load failed/i.test(detail);
+  alert(networkFailure
+   ? 'DayQuest could not connect to the Supabase delete-account function. It may not be deployed yet. Please deploy the delete-account Edge Function in Supabase, then try again.'
+   : 'Account deletion failed: '+(detail||'Please check the Supabase function settings and try again.'));
  }finally{
   button.disabled=false;button.textContent='Permanently Delete Account';
  }
