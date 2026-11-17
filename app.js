@@ -2611,13 +2611,24 @@ async function manualCloudSync(){
  await checkCloudForUpdates();if(!cloudRemoteChanged&&!cloudConflict)setCloudStatus('Cloud is up to date · '+new Date().toLocaleTimeString(),{autoHideMs:3000});
 }
 async function initAuth(){
+ // Show a usable screen immediately; never leave both the login and app hidden while
+ // the browser restores a Supabase session.
+ showAuthView('login','Connecting to your family account…');
  const config=getCloudConfig();
  if(!config?.url||!config?.key){showAuthView('login','DayQuest cloud connection is not configured. Please contact your administrator.');return}
  try{supabaseClient=makeSupabaseClient()}catch(error){showAuthView('login','DayQuest could not start its cloud connection. Please contact your administrator. '+(error.message||''));return}
  if(!supabaseClient){showAuthView('login','DayQuest cloud connection is unavailable. Please contact your administrator.');return}
  supabaseClient.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY'){cloudPasswordRecovery=true;showAuthView('reset','Enter a new password for your Family Account.')}});
- try{const {data,error}=await supabaseClient.auth.getSession();if(error)throw error;if(cloudPasswordRecovery){showAuthView('reset','Enter a new password for your Family Account.');return}if(data.session){await connectCloudSession(data.session.user);return}showAuthView('login')}
- catch(error){showAuthView('login','Could not check your cloud session. Connect to the internet and try again. '+(error.message||''))}
+ try{
+  const {data,error}=await withCloudRequestTimeout(supabaseClient.auth.getSession(),10000);
+  if(error)throw error;
+  if(cloudPasswordRecovery){showAuthView('reset','Enter a new password for your Family Account.');return}
+  if(data.session){await connectCloudSession(data.session.user);return}
+  showAuthView('login');
+ }catch(error){
+  console.warn('DayQuest session restore failed:',error);
+  showAuthView('login','Could not restore your cloud session. Please log in again. '+(error.message||''));
+ }
 }
 function refreshAdminCloudConfig(){
  const config=getCloudConfig()||{};
