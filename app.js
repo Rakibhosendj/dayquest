@@ -2666,15 +2666,15 @@ $('authResetForm').onsubmit=async e=>{
  try{const {error}=await supabaseClient.auth.updateUser({password});if(error)throw error;await supabaseClient.auth.signOut();cloudPasswordRecovery=false;$('recoveryPassword').value='';$('recoveryPasswordConfirm').value='';showAuthView('login','Password updated. Log in with your new password.')}
  catch(error){$('authMessage').textContent=error.message||'Could not update the password.'}
 };
-$('deleteProfileBtn').onclick=()=>{
- if(!confirm('Delete this family profile from DayQuest? This clears the profile name, phone, family name, photo and opening balances. It does NOT delete transaction history or the cloud login.'))return;
+$('deleteProfileBtn').onclick=async()=>{
+ if(!await window.dayQuestConfirm('Delete this family profile from DayQuest? This clears the profile name, phone, family name, photo and opening balances. It does NOT delete transaction history or the cloud login.'))return;
  db.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};
  $('profilePhotoInput').value='';loadProfileForm();save();
  alert('Family profile details were cleared. Your transactions and Family Account login are unchanged.');
 };
-$('clearAllExpensesIncomeBtn').onclick=()=>{
- if(!confirm('Clear ALL expense and income entries, including Quick Expenses transactions and their due/collection history? This cannot be undone.'))return;
- if(!confirm('Final confirmation: permanently clear all saved expenses and income from this family account? Purchase bills, inventory, production, quick button settings and profile will remain.'))return;
+$('clearAllExpensesIncomeBtn').onclick=async()=>{
+ if(!await window.dayQuestConfirm('Clear ALL expense and income entries, including Quick Expenses transactions and their due/collection history? This cannot be undone.'))return;
+ if(!await window.dayQuestConfirm('Final confirmation: permanently clear all saved expenses and income from this family account? Purchase bills, inventory, production, quick button settings and profile will remain.'))return;
  const salesMemoIds=db.incomes.filter(item=>item.salesMemo).map(item=>String(item.id));
  db.expenses=[];db.incomes=[];
  if(Array.isArray(db.consumptions)&&salesMemoIds.length)db.consumptions=db.consumptions.filter(item=>!salesMemoIds.includes(String(item.salesMemoId||'')));
@@ -2709,7 +2709,7 @@ function installDayQuestMessageAlerts(){
   window.alert=value=>{
    const safeText=cleanMessage(value);
    queue=queue.then(()=>new Promise(resolve=>{
-    title.textContent='Day Quest Message Alert';
+    title.textContent='DayQuest';
     message.textContent=safeText;
     ok.textContent='OK';
     $('dqMessageCancel').hidden=true;
