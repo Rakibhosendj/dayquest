@@ -931,3 +931,18 @@ button,input,select,textarea{
  .product-dictionary-row{grid-template-columns:1fr 1fr}
  .product-dictionary-actions{grid-column:1/-1;justify-content:flex-end}
 }
+
+/* Supplier Entry page and supplier directory. */
+.supplier-entry-form{max-width:760px;padding:14px;background:#fff;border:1px solid #e5eaf1;border-radius:15px}
+.supplier-entry-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.supplier-entry-form>label{display:grid;gap:6px;margin:8px 0;font-size:11px;font-weight:750;color:#526176}
+.supplier-entry-form input,.supplier-entry-form textarea{width:100%;min-width:0;border:1px solid #dfe5ed;border-radius:10px;padding:10px 11px;background:#fbfcfe;color:#172033;font:inherit;font-size:13px}
+.supplier-entry-form textarea{resize:vertical;min-height:72px}
+.supplier-entry-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.supplier-entry-list{gap:8px}
+.supplier-entry-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;background:#fff;border:1px solid #e5eaf1;border-radius:12px}
+.supplier-entry-info{display:grid;gap:4px;min-width:0}
+.supplier-entry-info strong{font-size:13px;color:#263b5c;overflow-wrap:anywhere}
+.supplier-entry-info span{font-size:10px;color:#778497;overflow-wrap:anywhere}
+.supplier-entry-info b{color:#526176}
+@media(max-width:560px){.supplier-entry-grid{grid-template-columns:1fr}.supplier-entry-row{align-items:flex-start;flex-direction:column}.supplier-entry-row .edit-btn{align-self:flex-end}}
