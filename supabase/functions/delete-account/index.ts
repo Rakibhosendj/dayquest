@@ -1,0 +1,58 @@
+// Deploy as Supabase Edge Function: delete-account
+// Required function secrets:
+//   SUPABASE_URL (provided by Supabase)
+//   SUPABASE_SERVICE_ROLE_KEY (add this in Edge Function secrets; never expose it to the browser)
+// SUPABASE_ANON_KEY or SUPABASE_PUBLISHABLE_KEY is used to validate the caller's access token.
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+const json = (body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return json({ error: "Method not allowed." }, 405);
+
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")?.replace(/\/+$/, "");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const publicKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
+    if (!supabaseUrl || !serviceKey || !publicKey) {
+      return json({ error: "The secure account deletion function is not fully configured." }, 500);
+    }
+
+    const authorization = req.headers.get("Authorization") || "";
+    const tokenMatch = /^Bearer\s+(.+)$/i.exec(authorization);
+    if (!tokenMatch) return json({ error: "Sign in again before deleting the account." }, 401);
+
+    // Validate the caller's token with Supabase Auth; never trust a user ID from the browser.
+    const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: { apikey: publicKey, Authorization: `Bearer ${tokenMatch[1]}` },
+    });
+    if (!userResponse.ok) return json({ error: "Your session could not be verified. Please sign in again." }, 401);
+    const user = await userResponse.json();
+    if (!user?.id) return json({ error: "The signed-in account could not be identified." }, 401);
+
+    // The privileged key exists only in this server-side function.
+    const deleteResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(user.id)}`, {
+      method: "DELETE",
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+    });
+    if (!deleteResponse.ok) {
+      const detail = await deleteResponse.text();
+      console.error("Supabase Auth user deletion failed:", deleteResponse.status, detail);
+      return json({ error: "Supabase could not delete this account. Please contact the DayQuest administrator." }, 502);
+    }
+
+    return json({ success: true });
+  } catch (error) {
+    console.error("delete-account function error:", error);
+    return json({ error: "The account deletion request could not be completed." }, 500);
+  }
+});
