@@ -1064,6 +1064,7 @@ function subtractQuickActionOne(id){
 }
 $('quickActionType').onchange=updateQuickActionTypeFields;
 const toggleQuickActionMode=()=>{quickActionMode=quickActionMode==='add'?'minus':'add';renderQuickActions()};
+$('overviewQuickSetupLink').onclick=()=>setTab('quickExpenses');
 $('quickActionModeToggle').onclick=toggleQuickActionMode;
 $('overviewQuickActionModeToggle').onclick=toggleQuickActionMode;
 $('quickActionForm').onsubmit=e=>{e.preventDefault();saveQuickAction()};
