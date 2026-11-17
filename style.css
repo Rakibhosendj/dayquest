@@ -66,7 +66,7 @@ button,input,select,textarea{
 @media(max-width:699px){.cards.balance-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.balance-main{grid-column:1/-1}}
 
 /* Local sign-in screen and header account controls */
-.auth-screen{min-height:100vh;min-height:100svh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#101827 0%,#233957 55%,#eef2f8 55%,#f3f5f9 100%)}
+.auth-screen{position:relative;z-index:99999;min-height:100vh;min-height:100svh;display:grid;place-items:center;padding:24px;background:linear-gradient(145deg,#101827 0%,#233957 55%,#eef2f8 55%,#f3f5f9 100%);pointer-events:auto}.auth-screen *{pointer-events:auto}.auth-card{position:relative;z-index:1}.auth-form input{position:relative;z-index:2;pointer-events:auto;user-select:text;-webkit-user-select:text;touch-action:manipulation}
 .auth-screen[hidden],#appShell[hidden]{display:none!important}
 .auth-card{width:min(100%,440px);background:#fff;border:1px solid #e5e9f0;border-radius:22px;padding:28px;box-shadow:0 24px 70px #0c172833}
 .auth-brand{display:flex;align-items:center;gap:13px;margin-bottom:28px}
