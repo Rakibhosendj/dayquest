@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v69-side-menu-reorder';
+const CACHE = 'dayquest-cache-v70-branded-account-switch';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261117-side-menu-reorder',
-  './app.js?v=20261117-side-menu-reorder',
+  './style.css?v=20261117-branded-account-switch',
+  './app.js?v=20261117-branded-account-switch',
   './manifest.json',
   './cloud-config.js'
 ];
