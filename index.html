@@ -378,6 +378,11 @@
 </section>
 <section id="settings" class="panel">
  <div class="section-head"><h2>Settings</h2><span class="pill">Personalize DayQuest</span></div>
+ <section class="settings-card cloud-update-card" id="cloudUpdateCard">
+  <div class="section-head settings-section-head"><div><h3>Cloud Data Update</h3><p class="settings-copy">When newer family data is available on another device, you can update this device here.</p></div></div>
+  <button id="settingsUpdateCloudData" class="settings-cloud-update-btn" type="button" hidden><span class="update-red-star" aria-hidden="true">★</span> Update Newer Cloud Data</button>
+  <p class="hint">The Update button appears when newer cloud data is detected. Your current device data is backed up before updating.</p>
+ </section>
  <section class="settings-card">
   <div class="section-head settings-section-head"><div><h3>Theme color</h3><p class="settings-copy">Choose the main color for navigation, buttons and highlights.</p></div></div>
   <div class="theme-picker-row"><label for="themeColorInput">Custom color</label><input id="themeColorInput" type="color" value="#263b5c" aria-label="Choose theme color"><strong id="themeColorValue">#263B5C</strong></div>
@@ -610,5 +615,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261117-secure-account-delete"></script>
+<script src="app.js?v=20261117-settings-cloud-update"></script>
 </body></html>
