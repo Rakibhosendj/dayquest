@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v72-quiet-account-switch';
+const CACHE = 'dayquest-cache-v73-desktop-load-fix';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261117-branded-account-switch',
+  './style.css?v=20261117-side-menu-reorder',
   './app.js?v=20261117-quiet-account-switch',
   './manifest.json',
   './cloud-config.js'
