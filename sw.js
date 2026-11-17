@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v65-quick-suppliers';
+const CACHE = 'dayquest-cache-v66-quick-color-product-dictionary';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261117-quick-suppliers',
-  './app.js?v=20261117-quick-suppliers',
+  './style.css?v=20261117-quick-color-product-dictionary',
+  './app.js?v=20261117-quick-color-product-dictionary',
   './manifest.json',
   './cloud-config.js'
 ];
