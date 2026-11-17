@@ -1064,7 +1064,12 @@ function subtractQuickActionOne(id){
 }
 $('quickActionType').onchange=updateQuickActionTypeFields;
 const toggleQuickActionMode=()=>{quickActionMode=quickActionMode==='add'?'minus':'add';renderQuickActions()};
-$('overviewQuickSetupLink').onclick=()=>setTab('quickExpenses');
+$('overviewQuickSetupLink').onclick=()=>{
+ setTab('settings');
+ const setup=$('quickActionSettings');
+ if(setup)setup.open=true;
+ $('quickActionForm')?.scrollIntoView({behavior:'smooth',block:'start'});
+};
 $('quickActionModeToggle').onclick=toggleQuickActionMode;
 $('overviewQuickActionModeToggle').onclick=toggleQuickActionMode;
 $('quickActionForm').onsubmit=e=>{e.preventDefault();saveQuickAction()};
