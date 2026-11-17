@@ -2582,12 +2582,49 @@ $('cloudSyncNow').onclick=manualCloudSync;$('cloudLoadLatest').onclick=loadLates
 window.addEventListener('online',async()=>{if(!cloudUser)return;if(cloudConflict)return;const meta=getCloudMeta();if(!cloudReady){await connectCloudSession(cloudUser,{silent:true});return}if(meta.dirty||cloudDirty){cloudReady=true;pushCloudData()}else checkCloudForUpdates()});
 window.addEventListener('offline',()=>{if(cloudUser)hideCloudStatus()});
 
-// DayQuest-owned alert dialog keeps message headings consistent and avoids browser/GitHub branding.
+// DayQuest-owned alert dialog and branded native confirmation/input dialogs.
 function installDayQuestMessageAlerts(){
  const dialog=$('dqMessageDialog'),title=$('dqMessageTitle'),message=$('dqMessageText'),ok=$('dqMessageOk');
- if(!dialog||!title||!message||!ok)return;
- const nativeAlert=window.alert.bind(window);let queue=Promise.resolve();
- window.alert=(value)=>{queue=queue.then(()=>new Promise(resolve=>{title.textContent='Day Quest Message Alert';message.textContent=String(value??'');ok.textContent='OK';$('dqMessageCancel').hidden=true;const done=()=>{dialog.close();ok.removeEventListener('click',done);resolve()};ok.addEventListener('click',done);dialog.addEventListener('cancel',event=>{event.preventDefault();done()},{once:true});dialog.showModal()})).catch(()=>nativeAlert(String(value??'')))};
+ const nativeAlert=window.alert.bind(window),nativeConfirm=window.confirm.bind(window),nativePrompt=window.prompt.bind(window);
+ const cleanMessage=value=>String(value??'')
+  .replace(/\[[^\]]*\]\((?:https?:\/\/|www\.)[^)]+\)/gi,'')
+  .replace(/\b(?:https?:\/\/|www\.)[^\s<>"']+/gi,'')
+  .replace(/\b(?:github\.com|github\.io)\/[^\s<>"']+/gi,'')
+  .replace(/[ \t]{2,}/g,' ').trim();
+ const withAppTitle=(callback,args)=>{
+  const previousTitle=document.title;
+  document.title='Day Quest';
+  try{return callback(...args)}finally{document.title=previousTitle}
+ };
+ // Alerts use the in-app dialog. Message content is plain text, never HTML or a link.
+ if(dialog&&title&&message&&ok){
+  let queue=Promise.resolve();
+  window.alert=value=>{
+   const safeText=cleanMessage(value);
+   queue=queue.then(()=>new Promise(resolve=>{
+    title.textContent='Day Quest Message Alert';
+    message.textContent=safeText;
+    ok.textContent='OK';
+    $('dqMessageCancel').hidden=true;
+    let finished=false;
+    const done=()=>{
+     if(finished)return;finished=true;
+     dialog.close();ok.removeEventListener('click',done);resolve();
+    };
+    ok.addEventListener('click',done);
+    dialog.addEventListener('cancel',event=>{event.preventDefault();done()},{once:true});
+    dialog.showModal();
+   })).catch(()=>withAppTitle(nativeAlert,[safeText]));
+  };
+ }else{
+  window.alert=value=>withAppTitle(nativeAlert,[cleanMessage(value)]);
+ }
+ // Keep synchronous return values for existing app workflows while branding browser dialogs.
+ window.confirm=messageText=>withAppTitle(nativeConfirm,[cleanMessage(messageText)]);
+ window.prompt=function(messageText,defaultValue){
+  const args=arguments.length>1?[cleanMessage(messageText),defaultValue]:[cleanMessage(messageText)];
+  return withAppTitle(nativePrompt,args);
+ };
 }
 installDayQuestMessageAlerts();
 const reportToday=today();$('productReportFromDate').value=reportToday.slice(0,7)+'-01';$('productReportToDate').value=reportToday;fillChoices();loadProfileForm();calcTotal();$('dueFields').hidden=true;$('duePaidFromField').hidden=true;$('incomeDueFields').hidden=true;$('salesMemoWrap').hidden=true;resetSalesMemoForm();$('expenseDueActionForm').hidden=true;$('incomeCollectForm').hidden=true;$('incomeTotalPreview').textContent=money(0);render();initAuth();
