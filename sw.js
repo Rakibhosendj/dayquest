@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v76-settings-cloud-update';
+const CACHE = 'dayquest-cache-v77-delete-function-connect-fix';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
   './style.css?v=20261117-side-menu-reorder',
-  './app.js?v=20261117-settings-cloud-update',
+  './app.js?v=20261117-delete-function-connect-fix',
   './manifest.json',
   './cloud-config.js'
 ];
