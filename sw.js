@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v71-cloud-dialog-branding';
+const CACHE = 'dayquest-cache-v72-quiet-account-switch';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
   './style.css?v=20261117-branded-account-switch',
-  './app.js?v=20261117-cloud-dialog-branding',
+  './app.js?v=20261117-quiet-account-switch',
   './manifest.json',
   './cloud-config.js'
 ];
