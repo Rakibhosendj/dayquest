@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v61-overview-quick-actions-clear-transactions';
+const CACHE = 'dayquest-cache-v62-quick-after-balance-activity-labels';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261117-overview-quick-actions-clear-transactions',
+  './style.css?v=20261117-quick-after-balance-activity-labels',
   './app.js?v=20261117-overview-quick-actions-clear-transactions',
   './manifest.json',
   './cloud-config.js'
