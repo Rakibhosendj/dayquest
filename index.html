@@ -474,6 +474,12 @@
    </form>
   </details>
  </section>
+ <section class="settings-card settings-danger-card">
+  <div class="section-head settings-section-head"><div><h3>Delete Account</h3><p class="settings-copy">Permanently remove this Family Account login. This affects every family member sharing the same account.</p></div></div>
+  <button class="delete-profile-btn" id="deleteAccountBtn" type="button">Permanently Delete Account</button>
+  <p class="hint">Requires an internet connection and the current Family Account password. Export a backup before deleting. This action cannot be undone.</p>
+  <p class="hint">The secure Supabase delete-account function must be deployed before this option can work.</p>
+ </section>
  <section class="settings-card">
   <div class="section-head settings-section-head"><div><h3>Data & backup</h3><p class="settings-copy">Export a backup regularly before clearing browser data or changing devices.</p></div></div>
   <div class="quick"><button class="secondary" id="exportBtn">Export backup</button><label class="secondary import">Import backup<input id="importFile" type="file" accept="application/json"></label></div>
@@ -604,5 +610,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261117-dayquest-dialog-branding"></script>
+<script src="app.js?v=20261117-secure-account-delete"></script>
 </body></html>
