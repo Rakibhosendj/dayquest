@@ -1,4 +1,13 @@
 const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slice(0,10);
+const DEFAULT_PRODUCT_DICTIONARY=[{"english":"Rice","bangla":"চাল"},{"english":"Miniket Rice","bangla":"মিনিকেট চাল"},{"english":"Nazirshail Rice","bangla":"নাজিরশাইল চাল"},{"english":"Basmati Rice","bangla":"বাসমতী চাল"},{"english":"Brown Rice","bangla":"লাল চাল"},{"english":"Flattened Rice (Chira)","bangla":"চিড়া"},{"english":"Puffed Rice (Muri)","bangla":"মুড়ি"},{"english":"Wheat Flour (Atta)","bangla":"আটা"},{"english":"All-purpose Flour (Maida)","bangla":"ময়দা"},{"english":"Semolina (Suji)","bangla":"সুজি"},{"english":"Vermicelli (Shemai)","bangla":"সেমাই"},{"english":"Lentils (Dal)","bangla":"ডাল"},{"english":"Red Lentils (Masoor Dal)","bangla":"মসুর ডাল"},{"english":"Yellow Split Peas (Moong Dal)","bangla":"মুগ ডাল"},{"english":"Chickpeas (Chhola)","bangla":"ছোলা"},{"english":"Black Gram (Mashkalai Dal)","bangla":"মাষকলাই ডাল"},{"english":"Peas","bangla":"মটরশুঁটি"},{"english":"Soybean Oil","bangla":"সয়াবিন তেল"},{"english":"Mustard Oil","bangla":"সরিষার তেল"},{"english":"Palm Oil","bangla":"পাম তেল"},{"english":"Ghee","bangla":"ঘি"},{"english":"Salt","bangla":"লবণ"},{"english":"Sugar","bangla":"চিনি"},{"english":"Jaggery","bangla":"গুড়"},{"english":"Tea","bangla":"চা"},{"english":"Coffee","bangla":"কফি"},{"english":"Milk","bangla":"দুধ"},{"english":"Powdered Milk","bangla":"গুঁড়া দুধ"},{"english":"Yogurt","bangla":"দই"},{"english":"Butter","bangla":"মাখন"},{"english":"Cheese","bangla":"পনির"},{"english":"Eggs","bangla":"ডিম"},{"english":"Chicken","bangla":"মুরগি"},{"english":"Beef","bangla":"গরুর মাংস"},{"english":"Mutton","bangla":"খাসির মাংস"},{"english":"Fish","bangla":"মাছ"},{"english":"Hilsa Fish","bangla":"ইলিশ মাছ"},{"english":"Rohu Fish","bangla":"রুই মাছ"},{"english":"Tilapia Fish","bangla":"তেলাপিয়া মাছ"},{"english":"Prawns","bangla":"চিংড়ি"},{"english":"Dried Fish","bangla":"শুঁটকি"},{"english":"Potato","bangla":"আলু"},{"english":"Onion","bangla":"পেঁয়াজ"},{"english":"Garlic","bangla":"রসুন"},{"english":"Ginger","bangla":"আদা"},{"english":"Tomato","bangla":"টমেটো"},{"english":"Green Chilli","bangla":"কাঁচা মরিচ"},{"english":"Red Chilli Powder","bangla":"মরিচ গুঁড়া"},{"english":"Turmeric Powder","bangla":"হলুদ গুঁড়া"},{"english":"Cumin","bangla":"জিরা"},{"english":"Coriander","bangla":"ধনিয়া"},{"english":"Cinnamon","bangla":"দারুচিনি"},{"english":"Cardamom","bangla":"এলাচ"},{"english":"Cloves","bangla":"লবঙ্গ"},{"english":"Bay Leaf","bangla":"তেজপাতা"},{"english":"Black Pepper","bangla":"গোলমরিচ"},{"english":"Brinjal (Eggplant)","bangla":"বেগুন"},{"english":"Cucumber","bangla":"শসা"},{"english":"Carrot","bangla":"গাজর"},{"english":"Cauliflower","bangla":"ফুলকপি"},{"english":"Cabbage","bangla":"বাঁধাকপি"},{"english":"Pumpkin","bangla":"মিষ্টি কুমড়া"},{"english":"Bottle Gourd","bangla":"লাউ"},{"english":"Spinach","bangla":"পালং শাক"},{"english":"Red Amaranth","bangla":"লাল শাক"},{"english":"Coriander Leaves","bangla":"ধনেপাতা"},{"english":"Lemon","bangla":"লেবু"},{"english":"Green Banana","bangla":"কাঁচা কলা"},{"english":"Banana","bangla":"কলা"},{"english":"Mango","bangla":"আম"},{"english":"Jackfruit","bangla":"কাঁঠাল"},{"english":"Apple","bangla":"আপেল"},{"english":"Orange","bangla":"কমলা"},{"english":"Papaya","bangla":"পেঁপে"},{"english":"Bread","bangla":"পাউরুটি"},{"english":"Biscuits","bangla":"বিস্কুট"},{"english":"Noodles","bangla":"নুডলস"},{"english":"Pasta","bangla":"পাস্তা"},{"english":"Tomato Sauce","bangla":"টমেটো সস"},{"english":"Chips","bangla":"চিপস"},{"english":"Dates","bangla":"খেজুর"},{"english":"Peanuts","bangla":"চিনাবাদাম"},{"english":"Bathing Soap","bangla":"গোসলের সাবান"},{"english":"Laundry Detergent","bangla":"কাপড় কাচার ডিটারজেন্ট"},{"english":"Dishwashing Liquid","bangla":"বাসন ধোয়ার তরল"},{"english":"Dishwashing Bar","bangla":"বাসন ধোয়ার সাবান"},{"english":"Shampoo","bangla":"শ্যাম্পু"},{"english":"Toothpaste","bangla":"টুথপেস্ট"},{"english":"Toothbrush","bangla":"টুথব্রাশ"},{"english":"Tissue Paper","bangla":"টিস্যু পেপার"},{"english":"Toilet Cleaner","bangla":"টয়লেট ক্লিনার"},{"english":"Floor Cleaner","bangla":"মেঝে পরিষ্কারের তরল"},{"english":"Phenyl","bangla":"ফিনাইল"},{"english":"Drinking Water","bangla":"পানীয় জল"},{"english":"LPG Gas","bangla":"এলপিজি গ্যাস"},{"english":"Matchbox","bangla":"দেশলাই"},{"english":"Mosquito Coil","bangla":"মশার কয়েল"},{"english":"Light Bulb","bangla":"বৈদ্যুতিক বাল্ব"},{"english":"Battery","bangla":"ব্যাটারি"},{"english":"Candle","bangla":"মোমবাতি"},{"english":"Baby Diaper","bangla":"শিশুর ডায়াপার"},{"english":"Sanitary Napkin","bangla":"স্যানিটারি ন্যাপকিন"},{"english":"Garbage Bag","bangla":"ময়লার ব্যাগ"}];
+function normalizeProductDictionary(entries){
+ const source=Array.isArray(entries)?entries:DEFAULT_PRODUCT_DICTIONARY;
+ const seen=new Set();
+ return source.map(item=>({english:String(item?.english??item?.en??'').trim(),bangla:String(item?.bangla??item?.bn??'').trim()})).filter(item=>{
+  if(!item.english||!item.bangla)return false;
+  const key=item.english.toLocaleLowerCase();if(seen.has(key))return false;seen.add(key);return true;
+ });
+}
 const load=()=>{try{return JSON.parse(localStorage.getItem('dayquest_v1'))||{expenses:[],quests:[],checks:{}}}catch{return{expenses:[],quests:[],checks:{}}}};
 let db=load(),deferredInstall=null,editingExpenseId=null,editingIncomeId=null,collectingIncomeId=null,settlingExpenseId=null,activeSupplierName=null,payingSupplierName=null,purchaseLines=[],editingPurchaseBillId=null,purchaseBillOriginalDate='',salesMemoLines=[],editingSalesMemoId=null,editingQuickActionId=null;
 let quickActionMode='add';
@@ -11,6 +20,8 @@ db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.produc
 db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);
 db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};
 if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.themeColor||'')))db.settings.themeColor='#263b5c';
+if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';
+db.productDictionary=normalizeProductDictionary(db.productDictionary);
 if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;if(typeof db.settings.allowPurchaseBillEdits!=='boolean')db.settings.allowPurchaseBillEdits=true;
 db.units=Array.isArray(db.units)&&db.units.length?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];
 db.units=[...new Map(db.units.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);
@@ -204,7 +215,7 @@ function setTab(t){
  if(activeGroup)activeGroup.open=true;
  closeSidebar();
  if(t==='reports'){renderReport();if(!document.querySelector('[data-report-go].active'))activateReportSection('members')}
- if(t==='settings'){renderPurchaseCategorySettings();renderMasterLists();$('requireSupplierForDuePurchase').checked=db.settings.requireSupplierForDuePurchase!==false;$('allowPurchaseBillEdits').checked=db.settings.allowPurchaseBillEdits!==false;fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickMemberOptions(quickSelectedMembers());updateQuickActionTypeFields();renderQuickActionManager();}
+ if(t==='settings'){renderPurchaseCategorySettings();renderMasterLists();renderProductDictionary();$('quickButtonColorInput').value=db.settings.quickButtonColor||'#ee7d2f';$('quickButtonColorValue').textContent=(db.settings.quickButtonColor||'#ee7d2f').toUpperCase();$('requireSupplierForDuePurchase').checked=db.settings.requireSupplierForDuePurchase!==false;$('allowPurchaseBillEdits').checked=db.settings.allowPurchaseBillEdits!==false;fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickMemberOptions(quickSelectedMembers());updateQuickActionTypeFields();renderQuickActionManager();}
  if(t==='payExpenseDue')renderExpenseDueList();
  if(t==='quickExpenses'){renderQuickMemberOptions(quickSelectedMembers());fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickActions();}
  if(t==='inventory')renderInventory();
@@ -293,8 +304,49 @@ $('addProductionUnit').onclick=()=>addUnitName($('productionUnit'),n=>{fillProdu
 $('addIncomeHead').onclick=()=>{let n=prompt('Add an income type (e.g. Salary, Business, Rent, Freelance):');if(n&&n.trim()){n=n.trim();if(!db.incomeHeads.includes(n))db.incomeHeads.push(n);fillChoices();$('incomeSource').value=n;localSaveOnly()}};
 $('addIncomePerson').onclick=()=>{let n=prompt('Add the person who earned this income:');if(n&&n.trim()){n=n.trim();if(!db.incomePeople.includes(n))db.incomePeople.push(n);fillChoices();$('incomeBy').value=n;localSaveOnly()}};
 function localSaveOnly(){localStorage.setItem('dayquest_v1',JSON.stringify(db));queueCloudSave()}
+
+function renderProductDictionary(){
+ const list=$('productDictionaryList');if(!list)return;
+ const query=String($('productDictionarySearch')?.value||'').trim().toLocaleLowerCase();
+ const rows=db.productDictionary.filter(item=>!query||item.english.toLocaleLowerCase().includes(query)||item.bangla.toLocaleLowerCase().includes(query));
+ list.innerHTML=rows.map(item=>{
+  const index=db.productDictionary.indexOf(item);
+  return `<div class="product-dictionary-row"><label>English <input data-dictionary-english value="${esc(item.english)}" maxlength="80"></label><label>বাংলা <input data-dictionary-bangla value="${esc(item.bangla)}" maxlength="80" lang="bn"></label><div class="product-dictionary-actions"><button type="button" class="edit-btn" data-dictionary-save="${index}">Save</button><button type="button" class="delete" data-dictionary-delete="${index}">×</button></div></div>`;
+ }).join('')||empty('No dictionary matches. Add a new English and Bangla product above.');
+ if($('productDictionaryCount'))$('productDictionaryCount').textContent=`${db.productDictionary.length} dictionary entries`;
+ list.querySelectorAll('[data-dictionary-save]').forEach(button=>button.onclick=()=>{
+  const index=Number(button.dataset.dictionarySave),row=button.closest('.product-dictionary-row'),entry=db.productDictionary[index];if(!entry||!row)return;
+  const english=row.querySelector('[data-dictionary-english]').value.trim(),bangla=row.querySelector('[data-dictionary-bangla]').value.trim();
+  if(!english||!bangla){alert('Enter both the English and Bangla product names.');return}
+  if(db.productDictionary.some((item,i)=>i!==index&&item.english.toLocaleLowerCase()===english.toLocaleLowerCase())){alert('That English product name already exists.');return}
+  entry.english=english;entry.bangla=bangla;db.productDictionary=normalizeProductDictionary(db.productDictionary);
+  renderProductDictionary();renderProductNameSuggestions();save();
+ });
+ list.querySelectorAll('[data-dictionary-delete]').forEach(button=>button.onclick=()=>{
+  const index=Number(button.dataset.dictionaryDelete),entry=db.productDictionary[index];if(!entry)return;
+  if(!confirm(`Remove “${entry.english} / ${entry.bangla}” from the Product Dictionary? Saved purchase records will not be changed.`))return;
+  db.productDictionary.splice(index,1);renderProductDictionary();renderProductNameSuggestions();save();
+ });
+}
+function productDictionaryMatch(value){
+ const query=String(value||'').trim().toLocaleLowerCase();if(!query)return null;
+ return db.productDictionary.find(item=>item.english.toLocaleLowerCase()===query||item.bangla.toLocaleLowerCase()===query)||null;
+}
+function updateProductDictionaryMatch(input){
+ const hint=input?.closest('.purchase-line')?.querySelector('.pl-product-dictionary-match');if(!hint)return;
+ const match=productDictionaryMatch(input.value);hint.textContent=match?`Dictionary: ${match.english} · ${match.bangla}`:'';
+ hint.hidden=!match;
+}
 function renderProductNameSuggestions(){
- const list=$('productNameSuggestions');if(list)list.innerHTML=db.productNames.map(n=>`<option value="${esc(n)}"></option>`).join('');
+ const list=$('productNameSuggestions');if(list){
+  const options=new Map();
+  db.productNames.forEach(name=>{const key=String(name||'').trim();if(key&&!options.has(key.toLocaleLowerCase()))options.set(key.toLocaleLowerCase(),`<option value="${esc(key)}"></option>`)});
+  db.productDictionary.forEach(item=>{
+   const english=item.english.trim(),bangla=item.bangla.trim();
+   if(english&&!options.has(english.toLocaleLowerCase()))options.set(english.toLocaleLowerCase(),`<option value="${esc(english)}" label="${esc(english+' · '+bangla)}"></option>`);
+   if(bangla&&!options.has(bangla.toLocaleLowerCase()))options.set(bangla.toLocaleLowerCase(),`<option value="${esc(bangla)}" label="${esc(english+' · '+bangla)}"></option>`);
+  });list.innerHTML=[...options.values()].join('');
+ }
  const count=$('productCatalogCount');if(count)count.textContent=`${db.productNames.length} saved product${db.productNames.length===1?'':'s'}`;
 }
 function defaultPurchaseLine(product=''){
@@ -365,7 +417,7 @@ function purchaseLineTemplate(line,index){
  const amountMode=line.amountMode==='quantity'?'quantity':'rate';
  return `<div class="purchase-line" data-line-index="${index}">
   <div class="purchase-line-top"><strong>Product ${index+1}</strong><button type="button" class="delete remove-purchase-line" data-index="${index}" ${purchaseLines.length===1?'disabled':''}>Remove</button></div>
-  <div class="purchase-product-category-row"><div class="purchase-line-field-row"><label>Product name <input class="pl-product" list="productNameSuggestions" maxlength="80" value="${esc(line.product||'')}" placeholder="e.g. Soap" required></label><button type="button" class="mini-add pl-add-product" data-index="${index}" aria-label="Add product">＋ Add</button></div><label>Category <select class="pl-category" required>${db.purchaseCategories.map(category=>`<option value="${esc(category)}" ${String(line.category||'Staples').toLocaleLowerCase()===category.toLocaleLowerCase()?'selected':''}>${esc(category)}</option>`).join('')}</select></label></div>
+  <div class="purchase-product-category-row"><div class="purchase-line-field-row"><label>Product name <input class="pl-product" list="productNameSuggestions" maxlength="80" value="${esc(line.product||'')}" placeholder="e.g. Rice / চাল" required><small class="pl-product-dictionary-match" hidden aria-live="polite"></small></label><button type="button" class="mini-add pl-add-product" data-index="${index}" aria-label="Add product">＋ Add</button></div><label>Category <select class="pl-category" required>${db.purchaseCategories.map(category=>`<option value="${esc(category)}" ${String(line.category||'Staples').toLocaleLowerCase()===category.toLocaleLowerCase()?'selected':''}>${esc(category)}</option>`).join('')}</select></label></div>
   <div class="purchase-secondary-fields"><div class="purchase-line-field-row"><label>Product type <select class="pl-product-type" required>${db.productTypes.map(type=>`<option value="${esc(type)}" ${String(line.productType||'Other').toLocaleLowerCase()===type.toLocaleLowerCase()?'selected':''}>${esc(type)}</option>`).join('')}</select></label><button type="button" class="mini-add pl-add-product-type" data-index="${index}">＋ Add</button></div>
   <label>Size / specification <input class="pl-spec" maxlength="80" value="${esc(line.spec||'')}" placeholder="e.g. 300 gram (optional)"></label></div>
   <div class="purchase-numbers-grid"><div class="form-grid"><label>Quantity <input class="pl-quantity" type="number" min="0.001" step="any" value="${Number(line.quantity??1)}" required></label><label>Unit <span class="select-add"><select class="pl-unit">${units}</select><button type="button" class="mini-add pl-add-unit" data-index="${index}">＋ Add</button></span></label></div>
@@ -423,6 +475,7 @@ function renderPurchaseLines(){
   };
   if(el.tagName==='SELECT')el.addEventListener('change',handle);else el.addEventListener('input',handle);
  }));
+ $('purchaseLines').querySelectorAll('.pl-product').forEach(input=>{const update=()=>updateProductDictionaryMatch(input);input.addEventListener('input',update);input.addEventListener('change',update);update()});
  $('purchaseLines').querySelectorAll('.remove-purchase-line').forEach(btn=>btn.onclick=()=>{if(purchaseLines.length>1){purchaseLines.splice(Number(btn.dataset.index),1);renderPurchaseLines();updatePurchaseTotals()}});
  $('purchaseLines').querySelectorAll('.pl-add-product').forEach(btn=>btn.onclick=()=>addNewPurchaseProduct(Number(btn.dataset.index)));
  $('purchaseLines').querySelectorAll('.pl-add-product-type').forEach(btn=>btn.onclick=()=>addProductTypeToPurchaseLine(Number(btn.dataset.index)));
@@ -1024,12 +1077,12 @@ function renderQuickSuppliers(){
   const laterPayments=db.supplierPayments.filter(payment=>payment.supplier===name).reduce((total,payment)=>total+Number(payment.amount||0),0);
   const paid=paidOnBills+laterPayments;
   const aria=`${name}. Total purchase ${money(totalPurchase)}, total due ${money(totalDue)}, paid ${money(paid)}. Open a new purchase form for this supplier.`;
-  return `<button type="button" class="quick-supplier-card" data-quick-supplier="${esc(name)}" aria-label="${esc(aria)}">
-   <span class="quick-supplier-title">${esc(name)}</span>
-   <span class="quick-supplier-stats">
-    <span><small>TP</small><strong>${money(totalPurchase)}</strong></span>
-    <span><small>TD</small><strong>${money(totalDue)}</strong></span>
-    <span><small>P</small><strong>${money(paid)}</strong></span>
+  return `<button type="button" class="quick-action-card quick-supplier-card" data-quick-supplier="${esc(name)}" aria-label="${esc(aria)}">
+   <span class="quick-action-button-title">${esc(name)}</span>
+   <span class="quick-action-button-stats">
+    <span>TP: <strong>${money(totalPurchase)}</strong></span>
+    <span>TD: <strong>${money(totalDue)}</strong></span>
+    <span>P: <strong>${money(paid)}</strong></span>
    </span>
   </button>`;
  }).join('');
@@ -1515,6 +1568,14 @@ function applyThemeColor(color,persist=true){
  if($('themeColorValue'))$('themeColorValue').textContent=normalized.toUpperCase();
  if(persist){db.settings=db.settings||{};db.settings.themeColor=normalized;localSaveOnly()}
 }
+function applyQuickButtonColor(color,persist=true){
+ if(!/^#[0-9a-f]{6}$/i.test(String(color||'')))return;
+ const normalized=String(color).toLowerCase();document.documentElement.style.setProperty('--quick-button-color',normalized);
+ if($('quickButtonColorInput'))$('quickButtonColorInput').value=normalized;
+ if($('quickButtonColorValue'))$('quickButtonColorValue').textContent=normalized.toUpperCase();
+ if(persist){db.settings=db.settings||{};db.settings.quickButtonColor=normalized;localSaveOnly()}
+}
+applyQuickButtonColor(db.settings.quickButtonColor,false);
 
 const SETTINGS_MASTER_CONFIG={
  supplier:{list:'settingsSupplierList',array:'suppliers',input:'newSettingSupplier',form:'addSettingSupplierForm',title:'supplier'},
@@ -1598,6 +1659,10 @@ $('allowPurchaseBillEdits').checked=db.settings.allowPurchaseBillEdits!==false;
 $('allowPurchaseBillEdits').onchange=e=>{db.settings.allowPurchaseBillEdits=!!e.target.checked;if(!db.settings.allowPurchaseBillEdits&&editingPurchaseBillId)resetPurchaseForm();save()};
 $('themeColorInput').oninput=e=>applyThemeColor(e.target.value);
 document.querySelectorAll('[data-theme-color]').forEach(button=>button.onclick=()=>applyThemeColor(button.dataset.themeColor));
+$('quickButtonColorInput').oninput=e=>applyQuickButtonColor(e.target.value);
+document.querySelectorAll('[data-quick-button-color]').forEach(button=>button.onclick=()=>applyQuickButtonColor(button.dataset.quickButtonColor));
+$('addProductDictionaryForm').onsubmit=e=>{e.preventDefault();const english=$('newProductDictionaryEnglish').value.trim(),bangla=$('newProductDictionaryBangla').value.trim();if(!english||!bangla)return;if(db.productDictionary.some(item=>item.english.toLocaleLowerCase()===english.toLocaleLowerCase())){alert('That English product name already exists.');return}db.productDictionary.push({english,bangla});$('newProductDictionaryEnglish').value='';$('newProductDictionaryBangla').value='';renderProductDictionary();renderProductNameSuggestions();save()};
+$('productDictionarySearch').oninput=renderProductDictionary;
 $('addPurchaseCategoryForm').onsubmit=e=>{
  e.preventDefault();const name=$('newPurchaseCategory').value.trim();if(!name)return;
  if(db.purchaseCategories.some(item=>item.toLowerCase()===name.toLowerCase())){alert('That purchase category already exists.');return}
@@ -2084,7 +2149,7 @@ function renderDueReport(from,to){
 
 activateReportSection('members');purchaseLines=[defaultPurchaseLine()];renderPurchaseLines();fillChoices();renderQuickMemberOptions([]);fillQuickActionOptions();updateQuickActionTypeFields();$('purchaseDate').value=today();updatePurchaseBillNo();productionInputs=[defaultProductionInput()];fillProductionOptions();resetProductionForm();applyThemeColor(db.settings.themeColor,false);renderPurchaseCategorySettings();renderMasterLists();
 $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`dayquest-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href)};
-$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.quickActions))x.quickActions=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.productTypes))x.productTypes=['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];if(!Array.isArray(x.purchaseCategories))x.purchaseCategories=['Assets','Staples','Fixed Ex.'];if(!x.settings||typeof x.settings!=='object')x.settings={themeColor:'#263b5c'};if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.productions))x.productions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};if(!Array.isArray(x.familyMembers))x.familyMembers=[];if(!Array.isArray(x.guestPeople))x.guestPeople=[];if(!Array.isArray(x.guests))x.guests=[];if(confirm('Replace current data with this backup?')){db=x;db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(item=>{item.costMember=String(item.costMember||'').trim()});db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
+$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.quickActions))x.quickActions=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.productTypes))x.productTypes=['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];if(!Array.isArray(x.purchaseCategories))x.purchaseCategories=['Assets','Staples','Fixed Ex.'];if(!x.settings||typeof x.settings!=='object')x.settings={themeColor:'#263b5c'};if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.productions))x.productions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};if(!Array.isArray(x.familyMembers))x.familyMembers=[];if(!Array.isArray(x.guestPeople))x.guestPeople=[];if(!Array.isArray(x.guests))x.guests=[];if(confirm('Replace current data with this backup?')){db=x;db.productDictionary=normalizeProductDictionary(db.productDictionary);db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(item=>{item.costMember=String(item.costMember||'').trim()});db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
 db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers.filter(name=>db.suppliers.includes(name)))]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];
 db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.productions=Array.isArray(db.productions)?db.productions.filter(p=>p&&p.id&&p.product&&Number(p.quantity)>0):[];normalizePurchaseInventory();db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;if(typeof db.settings.allowPurchaseBillEdits!=='boolean')db.settings.allowPurchaseBillEdits=true;db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];db.units=Array.isArray(db.units)?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];normalizePurchaseBillNumbers();db.profile=db.profile||{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};db.profile.familyName=String(db.profile.familyName||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestPeople=Array.isArray(db.guestPeople)?db.guestPeople.map(n=>String(n||'').trim()).filter(Boolean):[];db.guestPeople=[...new Map(db.guestPeople.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guests=Array.isArray(db.guests)?db.guests.filter(g=>g&&Array.isArray(g.members)&&g.members.length&&/^\d{4}-\d{2}-\d{2}$/.test(String(g.entryDate||''))):[];db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.members.forEach(n=>{if(!assignablePeople().some(x=>x.toLocaleLowerCase()===String(n).toLocaleLowerCase()))db.guestPeople.push(String(n).trim())})});db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);normalizeMemberAssignments();db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeople.push(name)});db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);renderPurchaseCategorySettings();renderMasterLists();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('installBtn').hidden=false});
@@ -2181,6 +2246,9 @@ function startAppSession(user,{offline=false}={}){
 function normalizeCloudDatabase(raw){
  const value=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{};
  db={...db,...value};
+ db.productDictionary=normalizeProductDictionary(Array.isArray(value.productDictionary)?value.productDictionary:db.productDictionary);
+ db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};
+ if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';
  db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(x=>{if(!['family','member','unassigned','members'].includes(x.costType))x.costType=x.costMember?'member':'unassigned';x.costMember=String(x.costMember||'').trim();if(x.costType==='member'&&!x.costMember)x.costType='unassigned'});
  db.quests=Array.isArray(db.quests)?db.quests:[];db.checks=db.checks&&typeof db.checks==='object'?db.checks:{};
  db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];
