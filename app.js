@@ -2532,13 +2532,13 @@ async function connectCloudSession(user,{silent=false}={}){
   if(!sameUser&&hasLocal){
    const remoteHasRecords=localHasRecords(row.payload||{});
    if(!remoteHasRecords){
-    if(!confirm('The cloud account is empty, but this device already has unlinked DayQuest records. Upload this device data to start the Family Account?')){await supabaseClient.auth.signOut();cloudUser=null;showAuthView('login','Migration was cancelled. This device data is unchanged.');return}
+    if(!await window.dayQuestConfirm('The cloud account is empty, but this device already has unlinked DayQuest records. Upload this device data to start the Family Account?')){await supabaseClient.auth.signOut();cloudUser=null;showAuthView('login','Migration was cancelled. This device data is unchanged.');return}
     cloudReady=true;cloudVersion=remoteVersion;cloudDirty=true;saveCloudMeta(remoteVersion,true);
     try{const nextVersion=await writeCloudSnapshot(JSON.parse(JSON.stringify(db)),remoteVersion);cloudVersion=nextVersion;cloudDirty=false;saveCloudMeta(nextVersion,false);startAppSession(user);startCloudPolling();return}
     catch(writeError){if(/DAYQUEST_VERSION_CONFLICT/i.test(String(writeError.message||writeError))){await handleCloudConflict(await fetchCloudRow());return}cloudReady=false;startAppSession(user,{offline:!navigator.onLine});setCloudStatus('Could not migrate local records: '+(writeError.message||'cloud write failed'),{offline:!navigator.onLine});return}
    }
    const message='This device and the cloud both contain DayQuest records. DayQuest will download a backup of this device copy, then load the existing cloud family data. Continue?';
-   if(!confirm(message)){await supabaseClient.auth.signOut();cloudUser=null;showAuthView('login','Cloud data was not changed. Your existing device data remains here.');return}
+   if(!await window.dayQuestConfirm(message)){await supabaseClient.auth.signOut();cloudUser=null;showAuthView('login','Cloud data was not changed. Your existing device data remains here.');return}
    applyRemoteRow(row,{downloadBackup:true});startAppSession(user);startCloudPolling();return;
   }
   if(sameUser&&!meta.dirty&&remoteVersion!==Number(meta.version||0)){
@@ -2549,7 +2549,7 @@ async function connectCloudSession(user,{silent=false}={}){
  // No cloud document exists yet. Only unlinked local data (no previous auth user ID)
  // can be used for first migration. A different account's local data was handled above.
  if(!db.profile.familyName&&user.user_metadata?.family_name)db.profile.familyName=String(user.user_metadata.family_name);
- if(hasLocal&&!confirm('No cloud data exists for this Family Account. Upload the existing unlinked DayQuest records on this device as the starting family data?')){
+ if(hasLocal&&!await window.dayQuestConfirm('No cloud data exists for this Family Account. Upload the existing unlinked DayQuest records on this device as the starting family data?')){
   await supabaseClient.auth.signOut();cloudUser=null;showAuthView('login','Migration was cancelled. Your existing local DayQuest records were not changed. You can log in again when ready to migrate.');return;
  }
  if(!hasLocal&&user.user_metadata?.family_name)db.profile.familyName=String(user.user_metadata.family_name||'');
