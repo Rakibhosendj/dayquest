@@ -2059,18 +2059,13 @@ function getCloudMeta(){return readJsonStore(CLOUD_META_KEY,{userId:null,version
 function writeCloudMeta(patch={}){const current=getCloudMeta();const next={...current,...patch,updatedAt:new Date().toISOString()};localStorage.setItem(CLOUD_META_KEY,JSON.stringify(next));return next}
 function setCloudStatus(message,{conflict=false,remote=false,offline=false,autoHideMs=0}={}){
  clearTimeout(cloudStatusHideTimer);cloudStatusHideTimer=null;
- const bar=$('cloudSyncBar');if(!bar)return;bar.hidden=false;$('cloudStatusText').textContent=message;
+ const bar=$('cloudSyncBar');if(!bar)return;
+ const important=conflict||remote||offline||/failed|error|not ready|not connected|could not|cannot|cancelled|empty|needs an internet/i.test(String(message));
+ if(!important){hideCloudStatus();return;}
+ bar.hidden=false;$('cloudStatusText').textContent=message;
  $('cloudLoadLatest').hidden=!(conflict||remote);$('cloudDownloadLocal').hidden=!conflict;
  $('cloudSyncNow').disabled=offline||cloudSyncBusy;
- bar.classList.toggle('is-warning',conflict||remote||offline);
- // Success notifications are temporary; actionable warnings remain visible.
- if(autoHideMs>0&&!conflict&&!remote&&!offline){
-  const expected=String(message);
-  cloudStatusHideTimer=setTimeout(()=>{
-   const currentBar=$('cloudSyncBar'),currentText=$('cloudStatusText');
-   if(currentBar&&currentText&&currentText.textContent===expected&&!currentBar.classList.contains('is-warning'))hideCloudStatus();
-  },autoHideMs);
- }
+ bar.classList.toggle('is-warning',true);
 }
 function hideCloudStatus(){clearTimeout(cloudStatusHideTimer);cloudStatusHideTimer=null;const bar=$('cloudSyncBar');if(bar)bar.hidden=true}
 function downloadJsonFile(value,name){const blob=new Blob([JSON.stringify(value,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
@@ -2123,7 +2118,7 @@ function startAppSession(user,{offline=false}={}){
  if(offline)setCloudStatus('Offline — changes are saved on this device and will sync when reconnected.',{offline:true});
  else if(cloudConflict)setCloudStatus('Cloud conflict: another device has newer records. Download this device copy or load the latest cloud data.',{conflict:true});
  else if(cloudRemoteChanged)setCloudStatus('A newer cloud copy is available from another device.',{remote:true});
- else if(cloudReady)setCloudStatus('Cloud connected · all family devices use this account.',{autoHideMs:3000});
+ else if(cloudReady)hideCloudStatus();
 }
 function normalizeCloudDatabase(raw){
  const value=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{};
@@ -2183,15 +2178,15 @@ function queueCloudSave(){
  if(!cloudUser)return;
  cloudLocalRevision++;cloudDirty=true;saveCloudMeta(cloudVersion,true);
  if(cloudConflict||!cloudReady||!navigator.onLine){setCloudStatus(navigator.onLine?'Local changes are waiting for cloud sync.':'Offline — local changes are saved on this device.',{offline:!navigator.onLine,conflict:cloudConflict});return}
- clearTimeout(cloudSyncTimer);setCloudStatus('Changes waiting to sync…');cloudSyncTimer=setTimeout(pushCloudData,900);
+ clearTimeout(cloudSyncTimer);hideCloudStatus();cloudSyncTimer=setTimeout(pushCloudData,900);
 }
 async function pushCloudData(){
  if(!cloudReady||!cloudUser||!navigator.onLine||cloudConflict||cloudSyncBusy)return;
  cloudSyncBusy=true;$('cloudSyncNow').disabled=true;
- const revision=cloudLocalRevision,expected=cloudVersion,payload=JSON.parse(JSON.stringify(db));setCloudStatus('Saving family data to cloud…');
+ const revision=cloudLocalRevision,expected=cloudVersion,payload=JSON.parse(JSON.stringify(db));
  try{
   const nextVersion=await writeCloudSnapshot(payload,expected);cloudVersion=nextVersion;cloudDirty=cloudLocalRevision!==revision;cloudRemoteChanged=false;saveCloudMeta(cloudVersion,cloudDirty);
-  setCloudStatus(cloudDirty?'New changes are waiting to sync.':'Cloud synced · '+new Date().toLocaleTimeString(),{autoHideMs:cloudDirty?0:3000});
+  hideCloudStatus();
  }catch(error){
   if(/DAYQUEST_VERSION_CONFLICT/i.test(String(error.message||error))){cloudConflict=true;cloudReady=false;saveCloudMeta(cloudVersion,true);setCloudStatus('Another device updated the family records. Download this device copy or load the latest cloud data.',{conflict:true})}
   else{cloudDirty=true;saveCloudMeta(cloudVersion,true);setCloudStatus('Cloud sync failed. Your local changes are saved on this device; tap Sync now when connected.',{offline:!navigator.onLine});console.error('DayQuest cloud save failed',error)}
@@ -2381,6 +2376,12 @@ $('authResetForm').onsubmit=async e=>{
  try{const {error}=await supabaseClient.auth.updateUser({password});if(error)throw error;await supabaseClient.auth.signOut();cloudPasswordRecovery=false;$('recoveryPassword').value='';$('recoveryPasswordConfirm').value='';showAuthView('login','Password updated. Log in with your new password.')}
  catch(error){$('authMessage').textContent=error.message||'Could not update the password.'}
 };
+$('deleteProfileBtn').onclick=()=>{
+ if(!confirm('Delete this family profile from DayQuest? This clears the profile name, phone, family name, photo and opening balances. It does NOT delete transaction history or the cloud login.'))return;
+ db.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};
+ $('profilePhotoInput').value='';loadProfileForm();save();
+ alert('Family profile details were cleared. Your transactions and Family Account login are unchanged.');
+};
 $('logoutBtn').onclick=async()=>{
  try{if(supabaseClient)await supabaseClient.auth.signOut()}catch(error){console.error('Cloud sign out failed',error)}
  cloudReady=false;cloudUser=null;cloudDirty=false;cloudConflict=false;cloudRemoteChanged=false;clearInterval(cloudPollTimer);hideCloudStatus();$('loginPassword').value='';showAuthView('login','You have been logged out. Your local family data remains saved on this device.')
@@ -2388,4 +2389,13 @@ $('logoutBtn').onclick=async()=>{
 $('cloudSyncNow').onclick=manualCloudSync;$('cloudLoadLatest').onclick=loadLatestCloudData;$('cloudDownloadLocal').onclick=downloadCurrentLocalCopy;
 window.addEventListener('online',async()=>{if(!cloudUser)return;if(cloudConflict)return;const meta=getCloudMeta();if(!cloudReady){await connectCloudSession(cloudUser,{silent:true});return}if(meta.dirty||cloudDirty){cloudReady=true;pushCloudData()}else checkCloudForUpdates()});
 window.addEventListener('offline',()=>{if(cloudUser)setCloudStatus('Offline — local changes are saved on this device and will sync when reconnected.',{offline:true})});
+
+// DayQuest-owned alert dialog keeps message headings consistent and avoids browser/GitHub branding.
+function installDayQuestMessageAlerts(){
+ const dialog=$('dqMessageDialog'),title=$('dqMessageTitle'),message=$('dqMessageText'),ok=$('dqMessageOk');
+ if(!dialog||!title||!message||!ok)return;
+ const nativeAlert=window.alert.bind(window);let queue=Promise.resolve();
+ window.alert=(value)=>{queue=queue.then(()=>new Promise(resolve=>{title.textContent='Day Quest Message Alert';message.textContent=String(value??'');ok.textContent='OK';$('dqMessageCancel').hidden=true;const done=()=>{dialog.close();ok.removeEventListener('click',done);resolve()};ok.addEventListener('click',done);dialog.addEventListener('cancel',event=>{event.preventDefault();done()},{once:true});dialog.showModal()})).catch(()=>nativeAlert(String(value??'')))};
+}
+installDayQuestMessageAlerts();
 const reportToday=today();$('productReportFromDate').value=reportToday.slice(0,7)+'-01';$('productReportToDate').value=reportToday;fillChoices();loadProfileForm();calcTotal();$('dueFields').hidden=true;$('duePaidFromField').hidden=true;$('incomeDueFields').hidden=true;$('salesMemoWrap').hidden=true;resetSalesMemoForm();$('expenseDueActionForm').hidden=true;$('incomeCollectForm').hidden=true;$('incomeTotalPreview').textContent=money(0);render();initAuth();
