@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261117-quick-after-balance-activity-labels">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261117-quick-suppliers">
 <title>DayQuest</title>
 </head>
 <body>
@@ -112,6 +112,10 @@
  <section class="overview-quick-panel">
   <div class="section-head overview-quick-head"><div><h2><button type="button" class="overview-quick-title" id="overviewQuickSetupLink">Quick Expenses</button></h2><span class="muted">Tap a button to record one transaction</span></div><button type="button" id="overviewQuickActionModeToggle" class="quick-action-mode-toggle add-mode" aria-pressed="false">＋ Add</button></div>
   <div id="overviewQuickActionList" class="quick-action-list"></div>
+ </section>
+ <section class="overview-quick-panel quick-suppliers-panel" id="overviewQuickSuppliersPanel" hidden>
+  <div class="section-head overview-quick-head"><div><h2>Quick Suppliers</h2><span class="muted">Tap a supplier to start a purchase bill</span></div></div>
+  <div id="overviewQuickSupplierList" class="quick-supplier-list"></div>
  </section>
  <div class="section-head"><h2>Today's Activity</h2><span class="pill" id="todayQuestLabel">0 quests done</span></div>
  <div class="cards activity-cards"><article class="stat"><span class="muted">W</span><strong id="weekTotal">৳0</strong><small>Week expense</small></article><article class="stat"><span class="muted">M</span><strong id="monthTotal">৳0</strong><small>Month expense</small></article><article class="stat"><span class="muted">TIC</span><strong id="todayIncome">৳0</strong><small>Today income</small></article><article class="stat"><span class="muted">MIC</span><strong id="monthIncome">৳0</strong><small>Month income</small></article></div>
@@ -571,5 +575,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261116-login-title-day-quest"></script>
+<script src="app.js?v=20261117-quick-suppliers"></script>
 </body></html>
