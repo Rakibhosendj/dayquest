@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261116-admin-cloud-settings">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261117-overview-quick-actions-clear-transactions">
 <title>DayQuest</title>
 </head>
 <body>
@@ -104,13 +104,16 @@
  <div class="app-main">
 <header class="top" aria-label="App controls"><button id="menuToggle" class="menu-toggle" type="button" aria-label="Open side menu" title="Open side menu" aria-expanded="false" aria-controls="sidebar"><span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button><div class="header-actions"><button id="installBtn" class="ghost" hidden>Install</button></div></header>
 <main>
-<section class="hero">
- <div><div class="eyebrow">TODAY'S SPENDING</div><div class="money" id="todayTotal">৳0.00</div><div class="muted" id="todayDate"></div></div>
- <div class="hero-side"><div class="eyebrow">QUEST PROGRESS</div><div class="big" id="questProgress">0/0</div><div class="progress"><i id="questBar"></i></div></div>
-</section>
 <section id="home" class="panel active">
- <div class="section-head"><h2>Available balance</h2><span class="pill">Live</span></div>
- <div class="cards balance-cards"><article class="stat balance-main"><span class="muted">Earned balance</span><strong id="earnedBalance">৳0.00</strong><small>Cash + bank after recorded expenses</small></article><article class="stat"><span class="muted">Cash balance</span><strong id="cashBalance">৳0.00</strong><small>Available cash</small></article><article class="stat"><span class="muted">Bank balance</span><strong id="bankBalance">৳0.00</strong><small>Available in bank</small></article></div>
+ <section class="overview-quick-panel">
+  <div class="section-head overview-quick-head"><div><h2>Quick Expenses</h2><span class="muted">Tap a button to record one transaction</span></div><button type="button" id="overviewQuickActionModeToggle" class="quick-action-mode-toggle add-mode" aria-pressed="false">＋ Add</button></div>
+  <div id="overviewQuickActionList" class="quick-action-list"></div>
+ </section>
+ <section class="hero overview-summary">
+  <div class="hero-metric"><div class="eyebrow">TODAY'S SPENDING</div><div class="money" id="todayTotal">৳0.00</div><div class="muted" id="todayDate"></div></div>
+  <div class="hero-metric hero-balance"><div class="eyebrow">AVAILABLE BALANCE</div><div class="money" id="earnedBalance">৳0.00</div><div class="hero-balance-breakdown"><span>Cash <strong id="cashBalance">৳0.00</strong></span><span>Bank <strong id="bankBalance">৳0.00</strong></span></div></div>
+  <div class="hero-side"><div class="eyebrow">QUEST PROGRESS</div><div class="big" id="questProgress">0/0</div><div class="progress"><i id="questBar"></i></div></div>
+ </section>
  <div class="section-head"><h2>Today's activity</h2><span class="pill" id="todayQuestLabel">0 quests done</span></div>
  <div class="cards"><article class="stat"><span class="muted">This week</span><strong id="weekTotal">৳0</strong><small>expenses</small></article><article class="stat"><span class="muted">This month</span><strong id="monthTotal">৳0</strong><small>expenses</small></article><article class="stat"><span class="muted">Income received today</span><strong id="todayIncome">৳0</strong><small>cash, bank & due collections</small></article><article class="stat"><span class="muted">Income received this month</span><strong id="monthIncome">৳0</strong><small>cash, bank & due collections</small></article></div>
  <div class="section-head"><h2>Quick actions</h2></div>
@@ -348,6 +351,8 @@
   <button class="primary full">Save profile</button>
   <button class="delete-profile-btn" id="deleteProfileBtn" type="button">Delete Profile</button>
   <p class="hint">Delete Profile clears profile details and starting balances only. Transaction history and your Family Account login remain.</p>
+  <button class="clear-transactions-btn" id="clearAllExpensesIncomeBtn" type="button">Clear All Expenses &amp; Income</button>
+  <p class="hint">Permanently clears expense and income entries, including Quick Expenses history and related due/collection records. Keeps quick button settings, family members, purchases, inventory, production and profile.</p>
  </form>
  <div class="section-head"><h2>Current balance</h2></div>
  <div class="cards balance-cards"><article class="stat balance-main"><span class="muted">Earned balance</span><strong id="profileEarnedBalance">৳0.00</strong><small>Cash + bank after recorded transactions</small></article><article class="stat"><span class="muted">Cash balance</span><strong id="profileCashBalance">৳0.00</strong></article><article class="stat"><span class="muted">Bank balance</span><strong id="profileBankBalance">৳0.00</strong></article></div>
