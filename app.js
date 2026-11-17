@@ -2510,8 +2510,8 @@ async function connectCloudSession(user,{silent=false}={}){
  // Never upload one Family Account's cached local data into a different account.
  // This matters on shared computers and when multiple family accounts use one browser.
  if(linkedToOtherAccount&&hasLocal){
-  const message='This browser contains local records linked to a different Family Account. To protect those records, DayQuest will download a backup and will not upload them to this account. Continue switching accounts?';
-  if(!await window.dayQuestConfirm(message)){await supabaseClient.auth.signOut();cloudUser=null;showAuthView('login','Account switch cancelled. The previous family data remains on this device.');return}
+  // Switch accounts without showing a backup warning or Continue/Cancel prompt.
+  // Preserve the previous account's local records by downloading a safety copy automatically.
   downloadJsonFile(db,`dayquest-previous-family-backup-${today()}.json`);
   if(row){applyRemoteRow(row);startAppSession(user);startCloudPolling();return}
   db=createEmptyDayQuestDatabase();normalizeCloudDatabase(db);localStorage.setItem('dayquest_v1',JSON.stringify(db));
