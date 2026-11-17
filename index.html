@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261117-overview-quick-actions-clear-transactions">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261117-quick-after-balance-activity-labels">
 <title>DayQuest</title>
 </head>
 <body>
@@ -63,7 +63,6 @@
    <details class="side-group">
     <summary class="side-link side-group-title"><span class="side-link-mark">02</span><span>Expenses</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
     <div class="side-submenu">
-     <button class="tab side-sub-link" data-tab="quickExpenses" type="button">Quick Expenses</button>
      <button class="tab side-sub-link" data-tab="purchaseBills" type="button">Purchase</button>
     </div>
    </details>
@@ -105,17 +104,17 @@
 <header class="top" aria-label="App controls"><button id="menuToggle" class="menu-toggle" type="button" aria-label="Open side menu" title="Open side menu" aria-expanded="false" aria-controls="sidebar"><span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button><div class="header-actions"><button id="installBtn" class="ghost" hidden>Install</button></div></header>
 <main>
 <section id="home" class="panel active">
- <section class="overview-quick-panel">
-  <div class="section-head overview-quick-head"><div><h2>Quick Expenses</h2><span class="muted">Tap a button to record one transaction</span></div><button type="button" id="overviewQuickActionModeToggle" class="quick-action-mode-toggle add-mode" aria-pressed="false">＋ Add</button></div>
-  <div id="overviewQuickActionList" class="quick-action-list"></div>
- </section>
  <section class="hero overview-summary">
   <div class="hero-metric"><div class="eyebrow">TODAY'S SPENDING</div><div class="money" id="todayTotal">৳0.00</div><div class="muted" id="todayDate"></div></div>
   <div class="hero-metric hero-balance"><div class="eyebrow">AVAILABLE BALANCE</div><div class="money" id="earnedBalance">৳0.00</div><div class="hero-balance-breakdown"><span>Cash <strong id="cashBalance">৳0.00</strong></span><span>Bank <strong id="bankBalance">৳0.00</strong></span></div></div>
   <div class="hero-side"><div class="eyebrow">QUEST PROGRESS</div><div class="big" id="questProgress">0/0</div><div class="progress"><i id="questBar"></i></div></div>
  </section>
- <div class="section-head"><h2>Today's activity</h2><span class="pill" id="todayQuestLabel">0 quests done</span></div>
- <div class="cards"><article class="stat"><span class="muted">This week</span><strong id="weekTotal">৳0</strong><small>expenses</small></article><article class="stat"><span class="muted">This month</span><strong id="monthTotal">৳0</strong><small>expenses</small></article><article class="stat"><span class="muted">Income received today</span><strong id="todayIncome">৳0</strong><small>cash, bank & due collections</small></article><article class="stat"><span class="muted">Income received this month</span><strong id="monthIncome">৳0</strong><small>cash, bank & due collections</small></article></div>
+ <section class="overview-quick-panel">
+  <div class="section-head overview-quick-head"><div><h2><button type="button" class="overview-quick-title" id="overviewQuickSetupLink">Quick Expenses</button></h2><span class="muted">Tap a button to record one transaction</span></div><button type="button" id="overviewQuickActionModeToggle" class="quick-action-mode-toggle add-mode" aria-pressed="false">＋ Add</button></div>
+  <div id="overviewQuickActionList" class="quick-action-list"></div>
+ </section>
+ <div class="section-head"><h2>Today's Activity</h2><span class="pill" id="todayQuestLabel">0 quests done</span></div>
+ <div class="cards activity-cards"><article class="stat"><span class="muted">W</span><strong id="weekTotal">৳0</strong><small>Week expense</small></article><article class="stat"><span class="muted">M</span><strong id="monthTotal">৳0</strong><small>Month expense</small></article><article class="stat"><span class="muted">TIC</span><strong id="todayIncome">৳0</strong><small>Today income</small></article><article class="stat"><span class="muted">MIC</span><strong id="monthIncome">৳0</strong><small>Month income</small></article></div>
  <div class="section-head"><h2>Quick actions</h2></div>
  <div class="quick"><button class="primary" data-go="expenseEntries">＋ Add expense</button><button class="secondary" data-go="income">＋ Add income</button><button class="secondary" data-go="quests">＋ Add daily quest</button></div>
  <div class="section-head"><h2>Recent expenses</h2><button class="link" data-go="expenseEntries">See all</button></div><div id="recentExpenses" class="list"></div>
