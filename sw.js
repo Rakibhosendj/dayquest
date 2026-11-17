@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v59-login-title-day-quest';
+const CACHE = 'dayquest-cache-v60-message-alert-profile-delete-sync-quiet';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261116-login-title-day-quest',
+  './style.css?v=20261117-message-alert-profile-delete-sync-quiet',
   './app.js?v=20261116-login-title-day-quest',
   './manifest.json',
   './cloud-config.js'
