@@ -866,3 +866,6 @@ button,input,select,textarea{
 .cloud-sync-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .cloud-sync-actions .compact{min-height:32px;padding:5px 9px;font-size:.76rem}
 @media(max-width:620px){.cloud-sync-bar{align-items:flex-start;flex-direction:column;margin:7px 8px 0;padding:9px 10px}.cloud-sync-actions{width:100%}.cloud-sync-actions button{flex:1}}
+
+/* DayQuest Message Alert dialog */
+.dq-message-dialog{border:0;border-radius:18px;padding:0;width:min(92vw,420px);max-width:420px;box-shadow:0 24px 70px #10182755}.dq-message-dialog::backdrop{background:#10182788;backdrop-filter:blur(3px)}.dq-message-card{padding:22px}.dq-message-card h2{font-size:1.12rem;margin:0 0 12px;color:#263b5c}.dq-message-card p{line-height:1.55;white-space:pre-wrap;margin:0 0 20px;color:#263241}.dq-message-actions{display:flex;justify-content:flex-end;gap:10px}.delete-profile-btn{width:100%;border:1px solid #b42318;color:#b42318;background:transparent;border-radius:12px;padding:12px;font-weight:700;cursor:pointer}.delete-profile-btn:hover{background:#fff1f0}
