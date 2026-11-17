@@ -2454,12 +2454,23 @@ function refreshAfterCloudLoad(){
  try{fillChoices();fillQuickActionOptions();updateQuickActionTypeFields();renderQuickMemberOptions([]);fillProductionOptions();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);renderPurchaseCategorySettings();renderMasterLists();updateAppBrand();render();renderReport()}catch(error){console.error('DayQuest refresh after cloud load failed',error)}
 }
 function saveCloudMeta(version,dirty){writeCloudMeta({userId:cloudUser?.id||getCloudMeta().userId||null,version:Number(version||0),dirty:!!dirty})}
+async function withCloudRequestTimeout(request,ms=20000){
+ let timer;
+ try{
+  return await Promise.race([
+   request,
+   new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Cloud request timed out after 20 seconds. Check your internet connection and Supabase availability.')),ms)})
+  ]);
+ }finally{clearTimeout(timer)}
+}
 async function fetchCloudRow(){
- const {data,error}=await supabaseClient.from('dayquest_family_data').select('payload,version,updated_at').eq('user_id',cloudUser.id).maybeSingle();
+ const request=supabaseClient.from('dayquest_family_data').select('payload,version,updated_at').eq('user_id',cloudUser.id).maybeSingle();
+ const {data,error}=await withCloudRequestTimeout(request);
  if(error)throw error;return data||null;
 }
 async function fetchCloudVersion(){
- const {data,error}=await supabaseClient.from('dayquest_family_data').select('version,updated_at').eq('user_id',cloudUser.id).maybeSingle();
+ const request=supabaseClient.from('dayquest_family_data').select('version,updated_at').eq('user_id',cloudUser.id).maybeSingle();
+ const {data,error}=await withCloudRequestTimeout(request);
  if(error)throw error;return data||null;
 }
 async function writeCloudSnapshot(payload,expectedVersion){
@@ -2674,7 +2685,7 @@ $('authSignupForm').onsubmit=async e=>{
 $('authLoginForm').onsubmit=async e=>{
  e.preventDefault();if(!supabaseClient){$('authMessage').textContent='Cloud connection unavailable. Please contact your DayQuest administrator.';return}
  const email=$('loginEmail').value.trim().toLowerCase(),password=$('loginPassword').value,button=$('authLoginForm').querySelector('button[type="submit"]');button.disabled=true;$('authMessage').textContent='Signing in…';
- try{const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error;$('loginPassword').value='';await connectCloudSession(data.user||data.session.user)}
+ try{const {data,error}=await withCloudRequestTimeout(supabaseClient.auth.signInWithPassword({email,password}),20000);if(error)throw error;$('loginPassword').value='';$('authMessage').textContent='Signed in. Loading your family data…';await connectCloudSession(data.user||data.session.user)}
  catch(error){$('authMessage').textContent=error.message||'Unable to log in. Check your email and password.'}
  finally{button.disabled=false}
 };
