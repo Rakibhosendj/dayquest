@@ -2124,7 +2124,7 @@ function startAppSession(user,{offline=false}={}){
  const familyName=String(db.profile?.familyName||user?.user_metadata?.family_name||'').trim();
  $('userGreeting').textContent=`Signed in: ${familyName||user?.email||'Family Account'}`;
  refreshAdminCloudConfig();
- if(offline)setCloudStatus('Offline — changes are saved on this device and will sync when reconnected.',{offline:true});
+ if(offline)hideCloudStatus();
  else if(cloudConflict)setCloudStatus('Cloud conflict: another device has newer records. Download this device copy or load the latest cloud data.',{conflict:true});
  else if(cloudRemoteChanged)setCloudStatus('A newer cloud copy is available from another device.',{remote:true});
  else if(cloudReady)hideCloudStatus();
@@ -2186,7 +2186,8 @@ function queueCloudSave(){
  if(cloudHydrating)return;
  if(!cloudUser)return;
  cloudLocalRevision++;cloudDirty=true;saveCloudMeta(cloudVersion,true);
- if(cloudConflict||!cloudReady||!navigator.onLine){setCloudStatus(navigator.onLine?'Local changes are waiting for cloud sync.':'Offline — local changes are saved on this device.',{offline:!navigator.onLine,conflict:cloudConflict});return}
+ if(cloudConflict){setCloudStatus('Cloud conflict: another device has newer records. Download this device copy or load the latest cloud data.',{conflict:true});return}
+ if(!cloudReady||!navigator.onLine){hideCloudStatus();return}
  clearTimeout(cloudSyncTimer);hideCloudStatus();cloudSyncTimer=setTimeout(pushCloudData,900);
 }
 async function pushCloudData(){
@@ -2406,7 +2407,7 @@ $('logoutBtn').onclick=async()=>{
 };
 $('cloudSyncNow').onclick=manualCloudSync;$('cloudLoadLatest').onclick=loadLatestCloudData;$('cloudDownloadLocal').onclick=downloadCurrentLocalCopy;
 window.addEventListener('online',async()=>{if(!cloudUser)return;if(cloudConflict)return;const meta=getCloudMeta();if(!cloudReady){await connectCloudSession(cloudUser,{silent:true});return}if(meta.dirty||cloudDirty){cloudReady=true;pushCloudData()}else checkCloudForUpdates()});
-window.addEventListener('offline',()=>{if(cloudUser)setCloudStatus('Offline — local changes are saved on this device and will sync when reconnected.',{offline:true})});
+window.addEventListener('offline',()=>{if(cloudUser)hideCloudStatus()});
 
 // DayQuest-owned alert dialog keeps message headings consistent and avoids browser/GitHub branding.
 function installDayQuestMessageAlerts(){
