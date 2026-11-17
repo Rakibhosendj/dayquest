@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v62-quick-after-balance-activity-labels';
+const CACHE = 'dayquest-cache-v63-silent-offline-auto-sync';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261117-quick-after-balance-activity-labels',
+  './style.css?v=20261117-silent-offline-auto-sync',
   './app.js?v=20261117-overview-quick-actions-clear-transactions',
   './manifest.json',
   './cloud-config.js'
