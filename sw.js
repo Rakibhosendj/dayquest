@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v81-visible-login-session-timeout';
+const CACHE = 'dayquest-cache-v82-login-input-interaction-fix';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261117-side-menu-reorder',
-  './app.js?v=20261117-visible-login-session-timeout',
+  './style.css?v=20261117-login-input-interaction-fix',
+  './app.js?v=20261117-login-input-interaction-fix',
   './manifest.json',
   './cloud-config.js'
 ];
