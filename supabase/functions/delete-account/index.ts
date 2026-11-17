@@ -20,9 +20,11 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")?.replace(/\/+$/, "");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const publicKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
+    // The Supabase client sends the project's publishable key in the apikey header.
+    // Accept it from the request so newer projects do not need a legacy anon-key secret.
+    const publicKey = req.headers.get("apikey") || Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY");
     if (!supabaseUrl || !serviceKey || !publicKey) {
-      return json({ error: "The secure account deletion function is not fully configured." }, 500);
+      return json({ error: "The secure account deletion function is not fully configured. Check its server-side service-role secret." }, 500);
     }
 
     const authorization = req.headers.get("Authorization") || "";
