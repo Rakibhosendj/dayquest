@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261117-quick-color-product-dictionary">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261117-supplier-entry-page">
 <title>DayQuest</title>
 </head>
 <body>
@@ -114,7 +114,7 @@
   <div id="overviewQuickActionList" class="quick-action-list"></div>
  </section>
  <section class="overview-quick-panel quick-suppliers-panel" id="overviewQuickSuppliersPanel" hidden>
-  <div class="section-head overview-quick-head"><div><h2>Quick Suppliers</h2><span class="muted">Tap a supplier to start a purchase bill</span></div></div>
+  <div class="section-head overview-quick-head"><div><h2><button type="button" class="overview-quick-title" id="overviewQuickSupplierSetupLink">Quick Suppliers</button></h2><span class="muted">Tap a supplier to start a purchase bill</span></div></div>
   <div id="overviewQuickSupplierList" class="quick-action-list"></div>
  </section>
  <div class="section-head"><h2>Today's Activity</h2><span class="pill" id="todayQuestLabel">0 quests done</span></div>
@@ -124,6 +124,22 @@
  <div class="section-head"><h2>Recent expenses</h2><button class="link" data-go="expenseEntries">See all</button></div><div id="recentExpenses" class="list"></div>
  <div class="section-head"><h2>Recent income</h2><button class="link" data-go="income">See all</button></div><div id="recentIncome" class="list"></div>
  <div class="section-head"><h2>Today's quests</h2><button class="link" data-go="quests">Manage</button></div><div id="todayQuests" class="list"></div>
+</section>
+<section id="supplierEntry" class="panel">
+ <div class="section-head"><div><h2>Supplier Entry</h2><span class="muted">Save supplier company details for purchases and supplier accounts</span></div><button type="button" class="secondary" data-go="overview">Back to Overview</button></div>
+ <form id="supplierEntryForm" class="form supplier-entry-form">
+  <input id="supplierEntryOriginalName" type="hidden">
+  <div class="section-head form-section-head"><h3 id="supplierEntryFormTitle">Add supplier</h3></div>
+  <div class="form-grid supplier-entry-grid">
+   <label>Supplier company name <input id="supplierEntryCompany" maxlength="80" placeholder="Enter supplier / company name" required></label>
+   <label>Owner name <input id="supplierEntryOwner" maxlength="80" placeholder="Enter owner name"></label>
+  </div>
+  <label>Company address <textarea id="supplierEntryAddress" rows="3" maxlength="300" placeholder="Enter supplier company address"></textarea></label>
+  <div class="supplier-entry-actions"><button class="primary" id="supplierEntrySave">Save supplier</button><button type="button" class="secondary" id="supplierEntryCancel" hidden>Cancel edit</button></div>
+  <p class="hint">After saving, the supplier becomes available in Purchase. To show its Quick Supplier button on Overview, enable Q beside its name in Settings → Custom Lists → Suppliers.</p>
+ </form>
+ <div class="section-head history-section-head"><div><h3>Supplier directory</h3><span class="muted" id="supplierEntryCount">0 suppliers</span></div></div>
+ <div id="supplierEntryList" class="list supplier-entry-list"></div>
 </section>
 <section id="purchaseBills" class="panel">
 
@@ -588,5 +604,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261117-quick-color-product-dictionary"></script>
+<script src="app.js?v=20261117-supplier-entry-page"></script>
 </body></html>
