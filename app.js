@@ -2390,6 +2390,8 @@ function makeSupabaseClient(){
 }
 function showAuthView(view,message=''){
  $('authScreen').hidden=false;$('appShell').hidden=true;document.title='Day Quest';hideCloudStatus();
+ // Keep login fields directly interactive even after a failed session restore.
+ ['loginEmail','loginPassword','signupFamilyName','signupEmail','signupPassword','signupPasswordConfirm','recoveryPassword','recoveryPasswordConfirm'].forEach(id=>{const field=$(id);if(field){field.disabled=false;field.readOnly=false;field.removeAttribute('aria-disabled');field.style.pointerEvents='auto';field.style.userSelect='text'}});
  ['authSignupView','authLoginView','authResetView'].forEach(id=>$(id).hidden=true);
  // Cloud connection editing is available only after login in Settings → Administrator.
  const target={signup:'authSignupView',login:'authLoginView',reset:'authResetView'}[view]||'authLoginView';$(target).hidden=false;
