@@ -346,6 +346,8 @@
    <label>Opening bank balance <input id="openingBank" type="number" min="0" step="0.01" value="0"></label>
   </div>
   <button class="primary full">Save profile</button>
+  <button class="delete-profile-btn" id="deleteProfileBtn" type="button">Delete Profile</button>
+  <p class="hint">Delete Profile clears profile details and starting balances only. Transaction history and your Family Account login remain.</p>
  </form>
  <div class="section-head"><h2>Current balance</h2></div>
  <div class="cards balance-cards"><article class="stat balance-main"><span class="muted">Earned balance</span><strong id="profileEarnedBalance">৳0.00</strong><small>Cash + bank after recorded transactions</small></article><article class="stat"><span class="muted">Cash balance</span><strong id="profileCashBalance">৳0.00</strong></article><article class="stat"><span class="muted">Bank balance</span><strong id="profileBankBalance">৳0.00</strong></article></div>
@@ -559,6 +561,7 @@
 </section>
 </main>
 <footer>DayQuest · Private by design · Works offline</footer>
+<dialog id="dqMessageDialog" class="dq-message-dialog" aria-labelledby="dqMessageTitle"><div class="dq-message-card"><h2 id="dqMessageTitle">Day Quest Message Alert</h2><p id="dqMessageText"></p><div class="dq-message-actions"><button id="dqMessageCancel" class="secondary" type="button" hidden>Cancel</button><button id="dqMessageOk" class="primary" type="button">OK</button></div></div></dialog>
 </div>
 </div>
 </div>
