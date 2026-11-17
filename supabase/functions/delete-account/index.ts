@@ -1,8 +1,6 @@
 // Deploy as Supabase Edge Function: delete-account
-// Required function secrets:
-//   SUPABASE_URL (provided by Supabase)
-//   SUPABASE_SERVICE_ROLE_KEY (add this in Edge Function secrets; never expose it to the browser)
-// SUPABASE_ANON_KEY or SUPABASE_PUBLISHABLE_KEY is used to validate the caller's access token.
+// Add SUPABASE_SERVICE_ROLE_KEY as a server-side function secret.
+// Never put the service-role key in browser code or share it with users.
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -31,13 +29,31 @@ Deno.serve(async (req: Request) => {
     const tokenMatch = /^Bearer\s+(.+)$/i.exec(authorization);
     if (!tokenMatch) return json({ error: "Sign in again before deleting the account." }, 401);
 
-    // Validate the caller's token with Supabase Auth; never trust a user ID from the browser.
+    // Validate the caller's access token with Supabase Auth. Never trust a user ID from the browser.
     const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
       headers: { apikey: publicKey, Authorization: `Bearer ${tokenMatch[1]}` },
     });
     if (!userResponse.ok) return json({ error: "Your session could not be verified. Please sign in again." }, 401);
     const user = await userResponse.json();
     if (!user?.id) return json({ error: "The signed-in account could not be identified." }, 401);
+
+    // Remove the shared DayQuest cloud payload before removing its owner.
+    const dataResponse = await fetch(
+      `${supabaseUrl}/rest/v1/dayquest_family_data?user_id=eq.${encodeURIComponent(user.id)}`,
+      {
+        method: "DELETE",
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          Prefer: "return=minimal",
+        },
+      },
+    );
+    if (!dataResponse.ok) {
+      const detail = await dataResponse.text();
+      console.error("DayQuest cloud data deletion failed:", dataResponse.status, detail);
+      return json({ error: "DayQuest could not remove the family's cloud records. The login account was not deleted." }, 502);
+    }
 
     // The privileged key exists only in this server-side function.
     const deleteResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(user.id)}`, {
@@ -47,7 +63,7 @@ Deno.serve(async (req: Request) => {
     if (!deleteResponse.ok) {
       const detail = await deleteResponse.text();
       console.error("Supabase Auth user deletion failed:", deleteResponse.status, detail);
-      return json({ error: "Supabase could not delete this account. Please contact the DayQuest administrator." }, 502);
+      return json({ error: "Cloud records were removed, but Supabase could not delete the login. Please contact the DayQuest administrator." }, 502);
     }
 
     return json({ success: true });
