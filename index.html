@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261118-cross-platform">
+<link rel="stylesheet" href="style.css?v=20261118-budget">
 <title>DayQuest</title>
 </head>
 <body>
@@ -75,6 +75,7 @@
     </div>
    </details>
    <button class="tab side-link" data-menu-item="inventory" data-tab="inventory" type="button"><span class="side-link-mark">03</span><span>Inventory</span></button>
+   <button class="tab side-link" data-menu-item="budget" data-tab="budget" type="button"><span class="side-link-mark">04</span><span>Budget</span></button>
    <button class="tab side-link" data-menu-item="production" data-tab="production" type="button"><span class="side-link-mark">04</span><span>Production</span></button>
    <button class="tab side-link" data-menu-item="supplierAccounts" data-tab="supplierAccounts" type="button"><span class="side-link-mark">05</span><span>Supplier accounts / creditors</span></button>
    <details class="side-group" data-menu-item="outstanding">
@@ -203,6 +204,20 @@
 <section id="inventory" class="panel">
  <div class="section-head inventory-section-head"><div><h2>Inventory & product assignment</h2><span class="muted" id="inventoryCount">0 product lots · 0 assigned</span></div><div class="inventory-tools"><button type="button" class="secondary" id="inventoryExcelBtn">Excel</button><button type="button" class="secondary" id="inventoryPdfBtn">Statement PDF</button></div></div>
  <div id="inventoryList" class="list"></div>
+</section>
+<section id="budget" class="panel">
+ <div class="section-head"><div><h2>Budget</h2><span class="muted">Plan future product quantities using average purchase rates</span></div></div>
+ <div class="form budget-filter-form">
+  <div class="budget-date-row">
+   <label>From <input id="budgetFromDate" type="date"></label>
+   <label>To <input id="budgetToDate" type="date"></label>
+   <button type="button" class="primary" id="buildBudgetBtn">Budget</button>
+  </div>
+  <p class="hint">The list consolidates products purchased in the selected date range. Quantity starts with the total purchased quantity and can be changed for future planning. Budget quantities and totals are separate from all purchase, inventory, expense, income and report transactions.</p>
+ </div>
+ <div class="section-head budget-result-head"><div><h3>Budget product list</h3><span class="muted" id="budgetRangeLabel">Choose a date range</span></div><span class="pill" id="budgetProductCount">0 products</span></div>
+ <div id="budgetList" class="budget-list"><div class="empty">Select a From and To date, then click Budget.</div></div>
+ <div class="budget-total-row"><span>Budget Total</span><strong id="budgetGrandTotal">৳0.00</strong></div>
 </section>
 <section id="production" class="panel">
  <div class="section-head"><div><h2>Production</h2><span class="muted">Use inventory materials to create a finished product</span></div><span class="pill" id="productionCount">0 batches</span></div>
@@ -666,5 +681,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261118-cross-platform"></script>
+<script src="app.js?v=20261118-budget"></script>
 </body></html>
