@@ -2781,25 +2781,72 @@ db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Ar
 db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers.filter(name=>db.suppliers.includes(name)))]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];
 db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.productions=Array.isArray(db.productions)?db.productions.filter(p=>p&&p.id&&p.product&&Number(p.quantity)>0):[];normalizePurchaseInventory();db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;if(typeof db.settings.allowPurchaseBillEdits!=='boolean')db.settings.allowPurchaseBillEdits=true;db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];db.units=Array.isArray(db.units)?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];normalizePurchaseBillNumbers();db.profile=db.profile||{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};db.profile.familyName=String(db.profile.familyName||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestPeople=Array.isArray(db.guestPeople)?db.guestPeople.map(n=>String(n||'').trim()).filter(Boolean):[];db.guestPeople=[...new Map(db.guestPeople.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guests=Array.isArray(db.guests)?db.guests.filter(g=>g&&Array.isArray(g.members)&&g.members.length&&/^\d{4}-\d{2}-\d{2}$/.test(String(g.entryDate||''))):[];db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.members.forEach(n=>{if(!assignablePeople().some(x=>x.toLocaleLowerCase()===String(n).toLocaleLowerCase()))db.guestPeople.push(String(n).trim())})});db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);normalizeMemberAssignments();db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeople.push(name)});db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);renderPurchaseCategorySettings();renderMasterLists();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
 const isAppleTouchDevice=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
-const isDayQuestStandalone=()=>window.matchMedia?.('(display-mode: standalone)').matches||navigator.standalone===true;
-if(isAppleTouchDevice&&!isDayQuestStandalone()){
- $('installBtn').hidden=false;
- $('installBtn').textContent='Install';
- $('installBtn').setAttribute('aria-label','Instructions to add DayQuest to the iPhone or iPad Home Screen');
+const isAndroidDevice=/Android/i.test(navigator.userAgent);
+const isMobileInstallDevice=isAppleTouchDevice||isAndroidDevice;
+const isDayQuestStandalone=()=>window.matchMedia?.('(display-mode: standalone)').matches||window.matchMedia?.('(display-mode: fullscreen)').matches||navigator.standalone===true;
+function updateDayQuestInstallButton(){
+ const button=$('installBtn');if(!button)return;
+ const installed=isDayQuestStandalone();
+ button.hidden=installed||(!isMobileInstallDevice&&!deferredInstall);
+ button.textContent='Install App';
+ button.disabled=false;
+ button.setAttribute('aria-label','Install DayQuest on this device');
 }
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('installBtn').hidden=false;$('installBtn').textContent='Install'});
-$('installBtn').onclick=async()=>{
- if(deferredInstall){
-  deferredInstall.prompt();
-  deferredInstall=null;
-  $('installBtn').hidden=true;
+function showDayQuestInstallHelp(){
+ if(isAppleTouchDevice){
+  alert('To install DayQuest on your iPhone or iPad:\n\n1. Open this page in Safari.\n2. Tap Share.\n3. Choose “Add to Home Screen”.\n4. Turn on “Open as Web App” if shown.\n5. Tap “Add”.');
   return;
  }
- if(isAppleTouchDevice&&!isDayQuestStandalone()){
-  alert('To add DayQuest to your iPhone or iPad Home Screen:\n\n1. Open DayQuest in Safari.\n2. Tap the Share button.\n3. Choose “Add to Home Screen”.\n4. Tap “Add”.');
+ if(isAndroidDevice){
+  alert('To install DayQuest on Android:\n\n1. Open DayQuest in Chrome or Samsung Internet.\n2. Open the browser menu (⋮).\n3. Choose “Install app” or “Add to Home screen”.\n4. Confirm the installation.\n\nIf you do not see that option, open DayQuest directly in Chrome instead of an in-app browser, then refresh and try again.');
+  return;
  }
+ alert('Open DayQuest in your mobile browser and use the browser menu to choose “Install app” or “Add to Home screen”.');
+}
+updateDayQuestInstallButton();
+window.addEventListener('beforeinstallprompt',event=>{
+ event.preventDefault();
+ deferredInstall=event;
+ updateDayQuestInstallButton();
+});
+window.addEventListener('appinstalled',()=>{
+ deferredInstall=null;
+ updateDayQuestInstallButton();
+});
+$('installBtn').onclick=async()=>{
+ const button=$('installBtn');
+ if(isDayQuestStandalone()){updateDayQuestInstallButton();return}
+ if(deferredInstall){
+  const installEvent=deferredInstall;
+  deferredInstall=null;
+  button.disabled=true;
+  button.textContent='Opening…';
+  try{
+   await installEvent.prompt();
+   const choice=await installEvent.userChoice;
+   if(choice?.outcome==='accepted'){
+    button.hidden=true;
+   }else{
+    button.textContent='Install App';
+    button.hidden=false;
+   }
+  }catch(error){
+   console.warn('DayQuest install prompt could not be opened:',error);
+   button.textContent='Install App';
+   button.hidden=false;
+   showDayQuestInstallHelp();
+  }finally{
+   button.disabled=false;
+  }
+  return;
+ }
+ showDayQuestInstallHelp();
 };
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').then(registration=>{
+ console.info('DayQuest offline support is ready:',registration.scope);
+}).catch(error=>{
+ console.warn('DayQuest offline support could not be registered:',error);
+}));
 // DayQuest cloud authentication and family-wide data sync.
 // The browser contains only the Supabase project URL and publishable/anon key.
 // Authorization is enforced by PostgreSQL Row Level Security; never put a service-role key here.
