@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261118-budget">
+<link rel="stylesheet" href="style.css?v=20261118-budget-view">
 <title>DayQuest</title>
 </head>
 <body>
@@ -215,9 +215,22 @@
   </div>
   <p class="hint">The list consolidates products purchased in the selected date range. Quantity starts with the total purchased quantity and can be changed for future planning. Budget quantities and totals are separate from all purchase, inventory, expense, income and report transactions.</p>
  </div>
- <div class="section-head budget-result-head"><div><h3>Budget product list</h3><span class="muted" id="budgetRangeLabel">Choose a date range</span></div><span class="pill" id="budgetProductCount">0 products</span></div>
+ <div class="section-head budget-result-head"><div><h3>Budget product list</h3><span class="muted" id="budgetRangeLabel">Choose a date range</span></div><div class="budget-result-actions"><span class="pill" id="budgetProductCount">0 products</span><button type="button" class="secondary" id="budgetViewBtn" disabled>View</button></div></div>
  <div id="budgetList" class="budget-list"><div class="empty">Select a From and To date, then click Budget.</div></div>
  <div class="budget-total-row"><span>Budget Total</span><strong id="budgetGrandTotal">৳0.00</strong></div>
+</section>
+<section id="budgetViewPage" class="panel budget-view-page">
+ <div class="section-head budget-view-toolbar"><div><h2>Budget View</h2><span class="muted" id="budgetViewRange">Selected date range</span></div><button type="button" class="secondary" id="budgetViewBack">← Back to Budget</button></div>
+ <div class="budget-view-document">
+  <div class="budget-view-heading"><div><h2>DayQuest · Budget Statement</h2><span id="budgetViewPeriod"></span></div><strong id="budgetViewTotal">৳0.00</strong></div>
+  <div id="budgetViewTable" class="budget-view-table"></div>
+  <div class="budget-view-grand-total"><span>Budget Total</span><strong id="budgetViewGrandTotal">৳0.00</strong></div>
+ </div>
+ <div class="budget-view-actions">
+  <button type="button" class="secondary" id="budgetViewPrint">Print</button>
+  <button type="button" class="primary" id="budgetViewPdf">PDF</button>
+  <button type="button" class="secondary" id="budgetViewExcel">Excel</button>
+ </div>
 </section>
 <section id="production" class="panel">
  <div class="section-head"><div><h2>Production</h2><span class="muted">Use inventory materials to create a finished product</span></div><span class="pill" id="productionCount">0 batches</span></div>
@@ -681,5 +694,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261118-budget"></script>
+<script src="app.js?v=20261118-budget-view"></script>
 </body></html>
