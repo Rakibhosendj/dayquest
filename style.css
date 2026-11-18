@@ -1086,3 +1086,6 @@ button,input,select,textarea{
  #mealMemberControls .meal-slot-check input{width:15px;height:15px}
  #mealMemberControls .meal-member-total{font-size:11px}
 }
+
+/* Member Meal: Active toggle label */
+#mealMemberControls .meal-toggle{min-width:38px;justify-content:center}
