@@ -1938,7 +1938,7 @@ $('dailyQuestSetupLink').onclick=()=>setTab('questSetup');
 $('questList').onclick=e=>{const tile=e.target.closest('[data-quest-advance]');if(!tile||tile.disabled)return;const q=db.quests.find(item=>item.id===tile.dataset.questAdvance);if(!q)return;const state=questCheckState(q,today()),next=state.findIndex(value=>!value);if(next>=0)toggleQuest(q.id,next)};
 $('questForm').onsubmit=e=>{
  e.preventDefault();
- const title=$('questTitle').value.trim(),times=Math.max(1,Math.min(30,Math.floor(Number($('questTimes').value)||1))),eachTime=Number($('questEachTime').value),startDate=$('questStartDate').value;
+ const title=$('questTitle').value.trim(),times=Math.max(1,Math.floor(Number($('questTimes').value)||1)),eachTime=Number($('questEachTime').value),startDate=$('questStartDate').value;
  const repeatDays=[...document.querySelectorAll('[name="questDays"]:checked')].map(input=>input.value);
  if(!title||!(eachTime>0)||!Number.isFinite(eachTime)){alert('Enter a quest name and a valid Value greater than 0.');return}
  if(!startDate){alert('Choose the Daily Quest setup date.');return}
@@ -1948,13 +1948,13 @@ $('questForm').onsubmit=e=>{
  document.querySelectorAll('[name="questDays"]').forEach(input=>input.checked=true);save()
 };
 function questCheckState(q,d){
- const count=Math.max(1,Math.min(30,Math.floor(Number(q.times)||1))),state=(db.checks[d]||{})[q.id];
+ const count=Math.max(1,Math.floor(Number(q.times)||1)),state=(db.checks[d]||{})[q.id];
  if(Array.isArray(state))return Array.from({length:count},(_,i)=>!!state[i]);
  return Array(count).fill(state===true);
 }
 function questCheckedCount(q,d){return questCheckState(q,d).filter(Boolean).length}
 function questAchieved(q,d){return questCheckedCount(q,d)*Number(q.eachTime??1)}
-function questTarget(q){return Math.max(1,Math.min(30,Math.floor(Number(q.times)||1)))*Number(q.eachTime??1)}
+function questTarget(q){return Math.max(1,Math.floor(Number(q.times)||1))*Number(q.eachTime??1)}
 function numberText(n){return Number(n).toLocaleString(undefined,{maximumFractionDigits:2})}
 function completed(q,d){const state=questCheckState(q,d);return state.every(Boolean)}
 function toggleQuest(id,index){
