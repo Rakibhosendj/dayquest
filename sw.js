@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v108-cross-platform-mobile';
+const CACHE = 'dayquest-cache-v109-budget';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261118-cross-platform',
-  './app.js?v=20261118-cross-platform',
+  './style.css?v=20261118-budget',
+  './app.js?v=20261118-budget',
   './manifest.json',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',
