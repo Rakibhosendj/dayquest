@@ -1147,3 +1147,37 @@ button,input,select,textarea{
  .member-report-guest-checks label{font-size:9px;gap:2px}
  .member-report-guest-checks input{width:14px;height:14px}
 }
+
+
+/* Keep All Reports summary titles, metrics and dropdown arrows on one line. */
+.report-pane-all .report-detail-summary{
+  display:flex;
+  flex-wrap:nowrap;
+  align-items:center;
+  gap:7px;
+  min-width:0;
+  white-space:nowrap;
+}
+.report-pane-all .report-detail-summary>span:first-child{
+  flex:0 1 auto;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.report-pane-all .report-summary-metrics{
+  flex:1 1 auto;
+  min-width:0;
+  margin-left:auto;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.report-pane-all .report-summary-arrow{
+  flex:0 0 auto;
+  margin-left:0;
+}
+@media(max-width:520px){
+  .report-pane-all .report-detail-summary{gap:5px;padding:10px 8px;font-size:11px}
+  .report-pane-all .report-summary-metrics{font-size:9px}
+}
