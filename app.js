@@ -368,7 +368,7 @@ function setTab(t){
  const tabs=[...document.querySelectorAll('.tab')];
  tabs.forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===t));
- const activeTab=tabs.find(b=>b.dataset.tab===t),activeGroup=activeTab?.closest('.side-group')||(t==='reports'?document.querySelector('[data-side-group="reports"]'):null);
+ const activeTab=tabs.find(b=>b.dataset.tab===(t==='budgetViewPage'?'budget':t)),activeGroup=activeTab?.closest('.side-group')||(t==='reports'?document.querySelector('[data-side-group="reports"]'):null);
  document.querySelectorAll('.side-group').forEach(group=>group.classList.toggle('has-active',group===activeGroup));
  if(t!=='reports')document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.remove('active'));
  if(activeGroup)activeGroup.open=true;
@@ -622,6 +622,7 @@ function renderBudget(){
  const from=$('budgetFromDate')?$('budgetFromDate').value:'',to=$('budgetToDate')?$('budgetToDate').value:'',list=$('budgetList');
  if(!list)return;
  const plan=from&&to&&from<=to?db.budgetPlans[budgetRangeKey(from,to)]:null;
+ if($('budgetViewBtn'))$('budgetViewBtn').disabled=!plan||!Array.isArray(plan.rows)||!plan.rows.length;
  if($('budgetRangeLabel'))$('budgetRangeLabel').textContent=from&&to?fmt(from)+' – '+fmt(to):'Choose a date range';
  if(!from||!to||from>to){
   list.innerHTML=empty('Choose a valid From and To date, then click Budget.');
@@ -651,6 +652,54 @@ function buildBudget(){
  db.budgetPlans[key]={from,to,rows,builtAt:new Date().toISOString()};
  localSaveOnly();
  renderBudget();
+}
+
+
+function currentBudgetPlan(){
+ const from=$('budgetFromDate')?.value||'',to=$('budgetToDate')?.value||'';
+ if(!from||!to||from>to)return null;
+ const plan=db.budgetPlans[budgetRangeKey(from,to)];
+ return plan&&Array.isArray(plan.rows)?plan:null;
+}
+function budgetViewRows(plan){
+ return (plan?.rows||[]).map((row,index)=>({
+  sl:index+1,product:String(row.product||''),spec:String(row.spec||''),rate:Number(row.rate||0),
+  quantity:Math.max(0,Number(row.quantity||0)),unit:String(row.unit||''),total:budgetAmount(row.rate,row.quantity)
+ }));
+}
+function renderBudgetView(){
+ const plan=currentBudgetPlan();
+ if(!plan){$('budgetViewTable').innerHTML=empty('No saved budget is available. Return to Budget and click Budget to generate a list.');$('budgetViewTotal').textContent=money(0);$('budgetViewGrandTotal').textContent=money(0);$('budgetViewRange').textContent='No budget selected';$('budgetViewPeriod').textContent='';return}
+ const rows=budgetViewRows(plan),total=rows.reduce((sum,row)=>sum+row.total,0),period=fmt(plan.from)+' – '+fmt(plan.to);
+ $('budgetViewRange').textContent=period;
+ $('budgetViewPeriod').textContent='From '+fmt(plan.from)+' to '+fmt(plan.to);
+ $('budgetViewTotal').textContent=money(total);
+ $('budgetViewGrandTotal').textContent=money(total);
+ $('budgetViewTable').innerHTML='<div class="budget-table-wrap"><table class="budget-table budget-view-readonly"><thead><tr><th>SL</th><th>Products</th><th>Rate</th><th>Quantity</th><th>Unit</th><th>Total Cost</th></tr></thead><tbody>'+
+  rows.map(row=>'<tr><td>'+row.sl+'</td><td><strong>'+esc(row.product)+'</strong>'+(row.spec?'<small>'+esc(row.spec)+'</small>':'')+'</td><td>'+money(row.rate)+'</td><td>'+numberText(row.quantity)+'</td><td>'+esc(row.unit)+'</td><td>'+money(row.total)+'</td></tr>').join('')+
+  '</tbody></table></div>';
+}
+function budgetStatementHtml(plan){
+ const rows=budgetViewRows(plan),total=rows.reduce((sum,row)=>sum+row.total,0);
+ const body=rows.map(row=>'<tr><td>'+row.sl+'</td><td>'+esc(row.product)+(row.spec?' · '+esc(row.spec):'')+'</td><td>'+money(row.rate)+'</td><td>'+esc(numberText(row.quantity))+'</td><td>'+esc(row.unit)+'</td><td>'+money(row.total)+'</td></tr>').join('');
+ return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DayQuest Budget Statement</title><style>'+
+ 'body{font-family:Arial,sans-serif;color:#182337;padding:24px}h1{font-size:21px;margin:0 0 6px}.period{font-size:12px;color:#667085;margin-bottom:18px}.grand{display:flex;justify-content:space-between;font-size:16px;font-weight:bold;margin-top:16px;padding:12px;background:#eef2f7}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #d8dee8;padding:8px;text-align:left}th{background:#eef2f7}td:nth-child(1){text-align:center;width:38px}td:nth-child(3),td:nth-child(6){white-space:nowrap;text-align:right}td:nth-child(4){text-align:right}@media print{body{padding:0}thead{display:table-header-group}tr{break-inside:avoid}}'+
+ '</style></head><body><h1>DayQuest · Budget Statement</h1><div class="period">From '+esc(fmt(plan.from))+' to '+esc(fmt(plan.to))+'</div><table><thead><tr><th>SL</th><th>Products</th><th>Rate</th><th>Quantity</th><th>Unit</th><th>Total Cost</th></tr></thead><tbody>'+
+ (body||'<tr><td colspan="6">No budget products.</td></tr>')+
+ '</tbody></table><div class="grand"><span>Budget Total</span><strong>'+money(total)+'</strong></div></body></html>';
+}
+function exportBudgetStatement(format){
+ const plan=currentBudgetPlan();
+ if(!plan){alert('No saved budget is available for the selected date range.');return}
+ const html=budgetStatementHtml(plan),period=String(plan.from||'')+'-'+String(plan.to||'');
+ if(format==='excel'){
+  const blob=new Blob(['\ufeff',html],{type:'application/vnd.ms-excel;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='dayquest-budget-'+period+'.xls';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);return;
+ }
+ const popup=window.open('','_blank');
+ if(!popup){alert('Allow pop-ups for DayQuest to print or save this Budget as PDF.');return}
+ popup.document.open();popup.document.write(html);popup.document.close();popup.focus();
+ setTimeout(()=>{try{popup.print()}catch{}},350);
 }
 
 function purchaseLineAmount(line){
@@ -757,6 +806,14 @@ function purchaseFormNotice(message){
  if(editingPurchaseBillId&&$('purchaseEditHint')){$('purchaseEditHint').textContent=message;$('purchaseEditHint').hidden=false;return}
  alert(message);
 }
+$('budgetViewBtn').addEventListener('click',()=>{
+ if(!currentBudgetPlan()){alert('Generate a budget first by selecting a date range and clicking Budget.');return}
+ setTab('budgetViewPage');renderBudgetView();
+});
+$('budgetViewBack').addEventListener('click',()=>setTab('budget'));
+$('budgetViewPrint').addEventListener('click',()=>exportBudgetStatement('print'));
+$('budgetViewPdf').addEventListener('click',()=>exportBudgetStatement('pdf'));
+$('budgetViewExcel').addEventListener('click',()=>exportBudgetStatement('excel'));
 $('budgetFromDate').addEventListener('change',renderBudget);
 $('budgetToDate').addEventListener('change',renderBudget);
 $('buildBudgetBtn').addEventListener('click',buildBudget);
