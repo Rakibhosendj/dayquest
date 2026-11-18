@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261118-meals-and-suppliers">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261118-meal-cost-per-member">
 <title>DayQuest</title>
 </head>
 <body>
@@ -144,11 +144,12 @@
  <div id="supplierEntryList" class="list supplier-entry-list"></div>
 </section>
 <section id="meals" class="panel">
- <div class="section-head"><div><h2>Meals</h2><span class="muted">Set daily meals and manage each member by date</span></div><button type="button" class="secondary" data-go="overview">Back to Overview</button></div>
+ <div class="section-head"><div><h2>Meals</h2><span class="muted">Set daily meals and manage each member by date</span></div><button type="button" class="secondary" id="mealsBackOverview">Back to Overview</button></div>
  <section class="settings-card meal-settings-card"><h3>Everyday meal count</h3><div class="meal-form-row"><label>Meals per member each day <input id="mealDefaultCount" type="number" min="0" step="1" value="3"></label><button type="button" class="primary" id="mealDefaultSave">Save everyday count</button></div></section>
  <section class="settings-card meal-settings-card"><h3>Particular date meal count</h3><div class="meal-form-row"><label>Date <input id="mealControlDate" type="date"></label><label>Meals per member <input id="mealDateCount" type="number" min="0" step="1" value="3"></label><button type="button" class="primary" id="mealDateSave">Save date count</button></div><p class="hint">A date-specific count overrides the everyday count for that date.</p></section>
+ <section class="settings-card meal-settings-card"><h3>Meal cost</h3><div class="meal-form-row"><label>Cost per meal <input id="mealCostPerMeal" type="number" min="0" step="0.01" value="0"></label><button type="button" class="primary" id="mealCostSave">Save meal cost</button></div><p class="hint">Total meal cost is calculated as assigned meals multiplied by cost per meal.</p></section>
  <section class="settings-card meal-settings-card"><div class="section-head"><h3>Member meal ON / OFF</h3><span class="muted">Selected date</span></div><div id="mealMemberControls" class="meal-member-list"></div></section>
- <section class="settings-card meal-settings-card"><h3>Member meal totals by date range</h3><div class="meal-form-row"><label>From date <input id="mealFromDate" type="date"></label><label>To date <input id="mealToDate" type="date"></label></div><div id="mealMemberTotals" class="meal-member-list"></div></section>
+ <section class="settings-card meal-settings-card"><h3>Member meal totals by date range</h3><div class="meal-form-row"><label>From date <input id="mealFromDate" type="date"></label><label>To date <input id="mealToDate" type="date"></label></div><div id="mealMemberTotals" class="meal-member-list"></div><strong id="mealRangeTotal" class="meal-range-total">0 meals · Total cost 0</strong></section>
 </section>
 <section id="purchaseBills" class="panel">
 
@@ -655,5 +656,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261118-meals-and-suppliers"></script>
+<script src="app.js?v=20261118-meal-cost-per-member"></script>
 </body></html>
