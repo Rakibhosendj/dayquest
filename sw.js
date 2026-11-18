@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v84-login-cloud-timeout-fix';
+const CACHE = 'dayquest-cache-v85-quick-vibration-pointerdown-fix';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261118-login-cloud-timeout-fix',
-  './app.js?v=20261118-login-cloud-timeout-fix',
+  './style.css?v=20261118-quick-vibration-pointerdown-fix',
+  './app.js?v=20261118-quick-vibration-pointerdown-fix',
   './manifest.json',
   './cloud-config.js'
 ];
