@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v113-budget-mobile-fit';
+const CACHE = 'dayquest-cache-v114-install-flow-fix';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261118-budget-mobile-fit',
-  './app.js?v=20261118-budget-mobile-fit',
+  './style.css?v=20261118-install-flow-fix',
+  './app.js?v=20261118-install-flow-fix',
   './manifest.json',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',
