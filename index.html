@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261118-active-meal-default-checked">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261118-member-guest-meal-dates">
 <title>DayQuest</title>
 </head>
 <body>
@@ -495,6 +495,10 @@
    <details class="settings-master-group settings-master-category"><summary>Purchase item categories</summary><form id="addPurchaseCategoryForm" class="category-add-form"><input id="newPurchaseCategory" maxlength="40" placeholder="Add a category name" aria-label="New purchase category" required><button class="primary" type="submit">＋ Add category</button></form><div id="purchaseCategoryList" class="list category-settings-list"></div><p class="hint">These categories are available beside Product Name on purchase lines and are used in cost and asset reports.</p></details>
   </div>
  </section>
+ <section class="settings-card meal-person-date-settings-card">
+  <div class="section-head settings-section-head"><div><h3>Member &amp; Guest Meal Dates</h3><p class="settings-copy">Set when each family member or guest is included in Meals. Guest dates can follow their Guest Entry and Out dates until you set custom dates.</p></div></div>
+  <div id="mealPersonDateSettings" class="meal-person-date-settings"></div>
+ </section>
  <section class="settings-card admin-cloud-settings-card">
   <details id="adminCloudConnection" class="settings-master-group">
    <summary>Administrator: Cloud connection</summary>
@@ -655,5 +659,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261118-active-meal-default-checked"></script>
+<script src="app.js?v=20261118-member-guest-meal-dates"></script>
 </body></html>
