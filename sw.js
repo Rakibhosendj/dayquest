@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v112-overview-quick-toggle';
+const CACHE = 'dayquest-cache-v113-budget-mobile-fit';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261118-overview-quick-toggle',
-  './app.js?v=20261118-overview-quick-toggle',
+  './style.css?v=20261118-budget-mobile-fit',
+  './app.js?v=20261118-budget-mobile-fit',
   './manifest.json',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',
