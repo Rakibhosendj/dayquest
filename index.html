@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261118-guest-assignment-dd-mmm-date">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261118-members-report-guest-assign">
 <title>DayQuest</title>
 </head>
 <body>
@@ -496,7 +496,7 @@
   </div>
  </section>
  <section class="settings-card meal-person-date-settings-card">
-  <div class="section-head settings-section-head"><div><h3>Member &amp; Guest Meal Dates</h3><p class="settings-copy">Set when each family member or guest is included in Meals. Guest dates can follow their Guest Entry and Out dates until you set custom dates.</p></div></div>
+  <div class="section-head settings-section-head"><div><h3>Member &amp; Guest Meal Dates</h3></div></div>
   <div id="mealPersonDateSettings" class="meal-person-date-settings"></div>
  </section>
  <section class="settings-card admin-cloud-settings-card">
@@ -575,6 +575,8 @@
   <label class="report-filter-label">Show product consumption for <select id="memberProductFilter"><option value="all">All products</option></select></label>
   <p class="hint member-consumption-hint" id="memberConsumptionHint">Choose an individual member to see their consumed products, quantities and allocated costs for the selected report dates.</p>
   <div id="memberProductConsumption" class="list"></div>
+  <div class="section-head"><h2>Guest Assign</h2><span class="pill">Assign guests to family members</span></div>
+  <div id="memberReportGuestAssignments" class="member-report-guest-assignments"></div>
   <div class="section-head"><h2>Guest entry & stay register</h2><span class="pill">Entry / out date</span></div>
   <form id="guestForm" class="form guest-form">
    <div class="family-member-add"><input id="newGuestName" maxlength="80" placeholder="Add a guest name" aria-label="New guest name"><button class="secondary" type="button" id="addGuestName">＋ Add guest</button></div>
@@ -659,5 +661,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261118-guest-assignment-dd-mmm-date"></script>
+<script src="app.js?v=20261118-members-report-guest-assign"></script>
 </body></html>
