@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261118-quest-date-time-windows">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261118-meals-and-suppliers">
 <title>DayQuest</title>
 </head>
 <body>
@@ -76,7 +76,8 @@
     </div>
    </details>
    <button class="tab side-link" data-menu-item="income" data-tab="income" type="button"><span class="side-link-mark">07</span><span>Income</span></button>
-   <button class="tab side-link" data-menu-item="quests" data-tab="quests" type="button"><span class="side-link-mark">08</span><span>Daily Quest</span></button>
+   <button class="tab side-link" data-menu-item="meals" data-tab="meals" type="button"><span class="side-link-mark">08</span><span>Meals</span></button>
+   <button class="tab side-link" data-menu-item="quests" data-tab="quests" type="button"><span class="side-link-mark">09</span><span>Daily Quest</span></button>
    <details class="side-group" data-menu-item="reports" data-side-group="reports">
     <summary class="side-link side-group-title"><span class="side-link-mark">09</span><span>Reports</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
     <div class="side-submenu report-side-submenu">
@@ -135,11 +136,19 @@
    <label>Owner name <input id="supplierEntryOwner" maxlength="80" placeholder="Enter owner name"></label>
   </div>
   <label>Company address <textarea id="supplierEntryAddress" rows="3" maxlength="300" placeholder="Enter supplier company address"></textarea></label>
+  <label class="supplier-quick-check"><input id="supplierEntryQuick" type="checkbox"> <strong>Q</strong> Show this supplier as a Quick Supplier button on Overview</label>
   <div class="supplier-entry-actions"><button class="primary" id="supplierEntrySave">Save supplier</button><button type="button" class="secondary" id="supplierEntryCancel" hidden>Cancel edit</button></div>
   <p class="hint">After saving, the supplier becomes available in Purchase. To show its Quick Supplier button on Overview, enable Q beside its name in Settings → Custom Lists → Suppliers.</p>
  </form>
  <div class="section-head history-section-head"><div><h3>Supplier directory</h3><span class="muted" id="supplierEntryCount">0 suppliers</span></div></div>
  <div id="supplierEntryList" class="list supplier-entry-list"></div>
+</section>
+<section id="meals" class="panel">
+ <div class="section-head"><div><h2>Meals</h2><span class="muted">Set daily meals and manage each member by date</span></div><button type="button" class="secondary" data-go="overview">Back to Overview</button></div>
+ <section class="settings-card meal-settings-card"><h3>Everyday meal count</h3><div class="meal-form-row"><label>Meals per member each day <input id="mealDefaultCount" type="number" min="0" step="1" value="3"></label><button type="button" class="primary" id="mealDefaultSave">Save everyday count</button></div></section>
+ <section class="settings-card meal-settings-card"><h3>Particular date meal count</h3><div class="meal-form-row"><label>Date <input id="mealControlDate" type="date"></label><label>Meals per member <input id="mealDateCount" type="number" min="0" step="1" value="3"></label><button type="button" class="primary" id="mealDateSave">Save date count</button></div><p class="hint">A date-specific count overrides the everyday count for that date.</p></section>
+ <section class="settings-card meal-settings-card"><div class="section-head"><h3>Member meal ON / OFF</h3><span class="muted">Selected date</span></div><div id="mealMemberControls" class="meal-member-list"></div></section>
+ <section class="settings-card meal-settings-card"><h3>Member meal totals by date range</h3><div class="meal-form-row"><label>From date <input id="mealFromDate" type="date"></label><label>To date <input id="mealToDate" type="date"></label></div><div id="mealMemberTotals" class="meal-member-list"></div></section>
 </section>
 <section id="purchaseBills" class="panel">
 
@@ -646,5 +655,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261118-quest-date-time-windows"></script>
+<script src="app.js?v=20261118-meals-and-suppliers"></script>
 </body></html>
