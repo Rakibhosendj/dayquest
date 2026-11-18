@@ -28,6 +28,7 @@ db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocal
 db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};
 if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.themeColor||'')))db.settings.themeColor='#263b5c';
 if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';
+if(typeof db.settings.quickButtonVibration!=='boolean')db.settings.quickButtonVibration=true;
 db.productDictionary=normalizeProductDictionary(db.productDictionary);
 if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;if(typeof db.settings.allowPurchaseBillEdits!=='boolean')db.settings.allowPurchaseBillEdits=true;
 db.units=Array.isArray(db.units)&&db.units.length?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];
@@ -320,9 +321,10 @@ function setTab(t){
  if(activeGroup)activeGroup.open=true;
  closeSidebar();
  if(t==='reports'){renderReport();if(!document.querySelector('[data-report-go].active'))activateReportSection('members')}
- if(t==='settings'){renderPurchaseCategorySettings();renderMasterLists();renderProductDictionary();$('quickButtonColorInput').value=db.settings.quickButtonColor||'#ee7d2f';$('quickButtonColorValue').textContent=(db.settings.quickButtonColor||'#ee7d2f').toUpperCase();$('requireSupplierForDuePurchase').checked=db.settings.requireSupplierForDuePurchase!==false;$('allowPurchaseBillEdits').checked=db.settings.allowPurchaseBillEdits!==false;fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickMemberOptions(quickSelectedMembers());updateQuickActionTypeFields();renderQuickActionManager();}
+ if(t==='settings'){renderPurchaseCategorySettings();renderMasterLists();renderProductDictionary();$('quickButtonColorInput').value=db.settings.quickButtonColor||'#ee7d2f';$('quickButtonColorValue').textContent=(db.settings.quickButtonColor||'#ee7d2f').toUpperCase();if($('quickButtonVibration'))$('quickButtonVibration').checked=db.settings.quickButtonVibration!==false;$('requireSupplierForDuePurchase').checked=db.settings.requireSupplierForDuePurchase!==false;$('allowPurchaseBillEdits').checked=db.settings.allowPurchaseBillEdits!==false;fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickMemberOptions(quickSelectedMembers());updateQuickActionTypeFields();renderQuickActionManager();}
  if(t==='payExpenseDue')renderExpenseDueList();
  if(t==='quickExpenses'){renderQuickMemberOptions(quickSelectedMembers());fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickActions();}
+ if(t==='questSetup'){if($('questSetupList'))$('questSetupList').innerHTML=questHTML(dayQuests(today()),true);}
  if(t==='inventory')renderInventory();
  if(t==='production'){fillProductionOptions();renderProductionList();renderProductionInputs()}
  if(t==='supplierAccounts')renderSupplierAccounts();
@@ -1149,6 +1151,11 @@ function updateQuickActionModeButton(){
   button.setAttribute('aria-label',`Current quick button mode: ${subtract?'Minus':'Add'}. Click to switch mode.`);
  });
 }
+function vibrateQuickButton(){
+ if(db.settings?.quickButtonVibration!==false&&typeof navigator!=='undefined'&&typeof navigator.vibrate==='function'){
+  try{navigator.vibrate(25)}catch(error){}
+ }
+}
 function renderQuickActions(){
  const list=$('quickActionList'),overview=$('overviewQuickActionList');
  if($('quickActionCount'))$('quickActionCount').textContent=`${db.quickActions.length} button${db.quickActions.length===1?'':'s'}`;
@@ -1193,7 +1200,7 @@ function renderQuickSuppliers(){
    </span>
   </button>`;
  }).join(''):empty('No Quick Suppliers yet. Click the Quick Suppliers title to add supplier details, then enable Q in Settings → Custom Lists → Suppliers.');
- list.querySelectorAll('[data-quick-supplier]').forEach(button=>button.onclick=()=>openQuickSupplierPurchase(button.dataset.quickSupplier));
+ list.querySelectorAll('[data-quick-supplier]').forEach(button=>button.onclick=()=>{vibrateQuickButton();openQuickSupplierPurchase(button.dataset.quickSupplier)});
 }
 function openQuickSupplierPurchase(name){
  const supplier=String(name||'').trim();if(!supplier||!db.suppliers.includes(supplier))return;
@@ -1318,7 +1325,7 @@ $('quickActionForm').onsubmit=e=>{e.preventDefault();saveQuickAction()};
 $('quickActionCancel').onclick=()=>{resetQuickActionForm();if($('quickActionSettings'))$('quickActionSettings').open=false};
 const handleQuickActionTileClick=e=>{
  const tile=e.target.closest('[data-quick-activate]');if(!tile||tile.disabled)return;
- const id=tile.dataset.quickActivate;if(quickActionMode==='minus')subtractQuickActionOne(id);else addQuickActionOne(id);
+ vibrateQuickButton();const id=tile.dataset.quickActivate;if(quickActionMode==='minus')subtractQuickActionOne(id);else addQuickActionOne(id);
 };
 $('quickActionList').onclick=handleQuickActionTileClick;
 $('overviewQuickActionList').onclick=handleQuickActionTileClick;
@@ -1817,6 +1824,7 @@ $('allowPurchaseBillEdits').onchange=e=>{db.settings.allowPurchaseBillEdits=!!e.
 $('themeColorInput').oninput=e=>applyThemeColor(e.target.value);
 document.querySelectorAll('[data-theme-color]').forEach(button=>button.onclick=()=>applyThemeColor(button.dataset.themeColor));
 $('quickButtonColorInput').oninput=e=>applyQuickButtonColor(e.target.value);
+$('quickButtonVibration').onchange=e=>{db.settings.quickButtonVibration=!!e.target.checked;save()};
 document.querySelectorAll('[data-quick-button-color]').forEach(button=>button.onclick=()=>applyQuickButtonColor(button.dataset.quickButtonColor));
 $('addProductDictionaryForm').onsubmit=e=>{e.preventDefault();const english=$('newProductDictionaryEnglish').value.trim(),bangla=$('newProductDictionaryBangla').value.trim();if(!english||!bangla)return;if(db.productDictionary.some(item=>item.english.toLocaleLowerCase()===english.toLocaleLowerCase())){alert('That English product name already exists.');return}db.productDictionary.push({english,bangla});$('newProductDictionaryEnglish').value='';$('newProductDictionaryBangla').value='';renderProductDictionary();renderProductNameSuggestions();save()};
 $('productDictionarySearch').oninput=renderProductDictionary;
@@ -1903,6 +1911,8 @@ $('guestForm').onsubmit=e=>{
 };
 $('guestEntryDate').value=today();
 
+$('dailyQuestSetupLink').onclick=()=>setTab('questSetup');
+$('questList').onclick=e=>{const tile=e.target.closest('[data-quest-advance]');if(!tile||tile.disabled)return;vibrateQuickButton();const q=db.quests.find(item=>item.id===tile.dataset.questAdvance);if(!q)return;const state=questCheckState(q,today()),next=state.findIndex(value=>!value);if(next>=0)toggleQuest(q.id,next)};
 $('questForm').onsubmit=e=>{
  e.preventDefault();
  const title=$('questTitle').value.trim(),times=Math.max(1,Math.min(30,Math.floor(Number($('questTimes').value)||1))),eachTime=Number($('questEachTime').value);
@@ -1940,7 +1950,7 @@ function render(){
  $('todayQuests').innerHTML=questHTML(qToday.slice(0,4),false);
  $('expenseCount').textContent=`${db.expenses.length} expenses · ${db.purchaseBills.length} bills`;
  let filtered=db.expenses.filter(x=>( $('expenseFilter').value==='all'||x.category===$('expenseFilter').value)&&(`${x.note} ${x.category}`).toLowerCase().includes($('expenseSearch').value.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date));
- $('expenseList').innerHTML=expenseHTML(filtered,true);$('questList').innerHTML=questHTML(dayQuests(d),true);renderQuickActions();renderQuickSuppliers();renderQuickActionManager();renderSupplierAccounts();renderInventory();renderProductionList();renderExpenseDueList();renderGuestReport();
+ $('expenseList').innerHTML=expenseHTML(filtered,true);$('questList').innerHTML=questTileHTML(dayQuests(d));if($('questSetupList'))$('questSetupList').innerHTML=questHTML(dayQuests(d),true);renderQuickActions();renderQuickSuppliers();renderQuickActionManager();renderSupplierAccounts();renderInventory();renderProductionList();renderExpenseDueList();renderGuestReport();
  $('questSummary').textContent=`${done}/${qToday.length} completed`;$('incomeCount').textContent=`${db.incomes.length} entries`;
  const incomeFilter=$('incomeDateFilter').value,incomeHead=$('incomeHeadFilter').value,incomePerson=$('incomePersonFilter').value;const incomes=[...db.incomes].filter(x=>(!incomeFilter||x.date===incomeFilter)&&(incomeHead==='all'||(x.source||'Other')===incomeHead)&&(incomePerson==='all'||(x.incomeBy||'Unassigned')===incomePerson)).sort((a,b)=>b.date.localeCompare(a.date));$('incomeList').innerHTML=incomeHTML(incomes,true);renderSalesMemoList();
 }
@@ -1991,6 +2001,16 @@ function incomeHTML(items,actions){
  }).join('');
 }
 
+function questTileHTML(items){
+ return items.length?items.map(q=>{
+  const d=today(),state=questCheckState(q,d),checked=state.filter(Boolean).length,achieved=questAchieved(q,d),target=questTarget(q),next=state.findIndex(value=>!value);
+  return `<button type="button" class="quick-action-card daily-quest-tile" data-quest-advance="${esc(q.id)}" aria-label="${esc(q.title)}. ${checked} of ${state.length} completed. Tap to mark the next check."${next<0?' disabled':''}>
+   <span class="quick-action-button-title">${esc(q.title)}</span>
+   <span class="quick-action-button-stats"><span>Done: <strong>${checked}/${state.length}</strong></span><span>Achieved: <strong>${numberText(achieved)}/${numberText(target)}</strong></span></span>
+   <span class="quick-action-button-kind">${next<0?'Completed':'Tap to check'}</span>
+  </button>`;
+ }).join(''):empty('No Daily Quest buttons yet. Click the Daily Quest title to set up your quests.');
+}
 function questHTML(items,del){return items.length?items.map(q=>{
  const d=today(),state=questCheckState(q,d),checked=state.filter(Boolean).length,achieved=questAchieved(q,d),target=questTarget(q);
  return `<div class="quest-item ${completed(q,d)?'done':''}">
@@ -2699,7 +2719,17 @@ $('authLoginForm').onsubmit=async e=>{
  e.preventDefault();if(!supabaseClient){$('authMessage').textContent='Cloud connection unavailable. Please contact your DayQuest administrator.';return}
  const email=$('loginEmail').value.trim().toLowerCase(),password=$('loginPassword').value,button=$('authLoginForm').querySelector('button[type="submit"]');button.disabled=true;$('authMessage').textContent='Signing in…';
  try{const {data,error}=await withCloudRequestTimeout(supabaseClient.auth.signInWithPassword({email,password}),20000);if(error)throw error;$('loginPassword').value='';$('authMessage').textContent='Signed in. Loading your family data…';await connectCloudSession(data.user||data.session.user)}
- catch(error){$('authMessage').textContent=error.message||'Unable to log in. Check your email and password.'}
+ catch(error){
+  const code=String(error.code||'').toLowerCase(),message=String(error.message||'');
+  const accountMissing=['user_not_found','email_not_found','account_not_found'].includes(code)||/user (does not exist|not found)|email (does not exist|not found)|account not found|not registered/i.test(message);
+  if(accountMissing){$('signupEmail').value=email;showAuthView('signup','No registered Family Account was found for this email. Please create your Family Account.')}
+  else{
+   const connectionProblem=/fetch failed|failed to fetch|network|timeout|503|502|500|database|server error|temporarily unavailable/i.test(message)||!navigator.onLine;
+   const text=connectionProblem?'DayQuest could not connect to the family database. Check your internet connection and Supabase service status, then try logging in again.':(code==='invalid_credentials'?'Email or password is incorrect. If you have not registered yet, select Create Family Account.':(message||'Unable to log in. Please try again.'));
+   $('authMessage').textContent=text;
+   if(connectionProblem)alert(text);
+  }
+ }
  finally{button.disabled=false}
 };
 $('showLoginFromSignup').onclick=()=>showAuthView('login');$('showSignupFromLogin').onclick=()=>showAuthView('signup');
