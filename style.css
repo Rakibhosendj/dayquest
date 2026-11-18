@@ -969,3 +969,7 @@ button,input,select,textarea{
 #dailyQuestSetupLink{display:inline-flex;align-items:center}
 #dailyQuestSetupLink h2{margin:0;font:inherit;font-size:inherit}
 @media(max-width:480px){.daily-quest-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.daily-quest-tile{min-height:108px;aspect-ratio:1.45;padding:12px 8px;border-radius:18px;gap:7px}.daily-quest-tile .quick-action-button-stats{gap:5px 4px}.daily-quest-tile .quick-action-button-stats>span{font-size:10px}}
+
+
+/* Daily Quest schedule setup */
+.quest-repeat-days{border:1px solid var(--line,#e5eaf1);border-radius:12px;padding:12px;margin:0}.quest-repeat-days legend{font-weight:700;padding:0 5px}.quest-day-options{display:flex;flex-wrap:wrap;gap:9px}.quest-day-options label{display:flex;align-items:center;gap:5px;background:#f3f5f8;border-radius:9px;padding:8px 10px;font-size:13px}.quest-progress-track{height:7px;background:#edf0f4;border-radius:99px;overflow:hidden;margin-top:10px}.quest-progress-track span{display:block;height:100%;background:var(--quick-button-color,#ee7d2f);border-radius:99px}
