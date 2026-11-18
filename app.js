@@ -2129,12 +2129,11 @@ $('guestEntryDate').value=today();
 $('dailyQuestSetupLink').onclick=()=>setTab('questSetup');
 $('addQuestTimeRange').onclick=()=>{
  const row=document.createElement('div');row.className='quest-time-range-row';row.dataset.timeRangeRow='';
- row.innerHTML='<label>Start <input type="time" name="questRangeStart" value="09:00" required></label><label>End <input type="time" name="questRangeEnd" value="10:00" required></label><button type="button" class="secondary compact" data-remove-time-range>Remove</button>';
+ row.innerHTML='<label>Start <input type="time" name="questRangeStart" value="09:00"></label><label>End <input type="time" name="questRangeEnd" value="10:00"></label><button type="button" class="secondary compact" data-remove-time-range>Remove</button>';
  $('questTimeRanges').appendChild(row);
 };
 $('questTimeRanges').onclick=e=>{
  const remove=e.target.closest('[data-remove-time-range]');if(!remove)return;
- if($('questTimeRanges').querySelectorAll('[data-time-range-row]').length<=1){alert('At least one time range is required.');return}
  remove.closest('[data-time-range-row]').remove();
 };
 $('questList').onclick=e=>{
@@ -2146,11 +2145,12 @@ $('questForm').onsubmit=e=>{
  e.preventDefault();
  const title=$('questTitle').value.trim(),times=Math.max(1,Math.floor(Number($('questTimes').value)||1)),eachTime=Number($('questEachTime').value),startDate=$('questStartDate').value,endDate=$('questEndDate').value;
  const repeatDays=[...document.querySelectorAll('[name="questDays"]:checked')].map(input=>input.value);
- const timeRanges=[...$('questTimeRanges').querySelectorAll('[data-time-range-row]')].map(row=>({start:row.querySelector('[name="questRangeStart"]').value,end:row.querySelector('[name="questRangeEnd"]').value})).sort((a,b)=>a.start.localeCompare(b.start));
+ const timeRangeRows=[...$('questTimeRanges').querySelectorAll('[data-time-range-row]')];
+ const timeRanges=timeRangeRows.map(row=>({start:row.querySelector('[name="questRangeStart"]').value,end:row.querySelector('[name="questRangeEnd"]').value})).filter(r=>r.start||r.end).sort((a,b)=>a.start.localeCompare(b.start));
  if(!title||!(eachTime>0)||!Number.isFinite(eachTime)){alert('Enter a quest name and a valid Value greater than 0.');return}
  if(!startDate||!endDate||endDate<startDate){alert('Choose a valid Achievement Start Date and End Date.');return}
  if(!repeatDays.length){alert('Select at least one repeat day.');return}
- if(!timeRanges.length||timeRanges.some(r=>!r.start||!r.end||r.start===r.end)){alert('Add valid time ranges. Start and End times cannot be the same.');return}
+ if(timeRanges.some(r=>!r.start||!r.end||r.start===r.end)){alert('Complete both Start and End times, or remove the time range. Start and End times cannot be the same.');return}
  const intervals=timeRanges.map(r=>{const start=Number(r.start.slice(0,2))*60+Number(r.start.slice(3,5));let end=Number(r.end.slice(0,2))*60+Number(r.end.slice(3,5));if(end<=start)end+=1440;return{start,end}});
  for(let i=0;i<intervals.length;i++)for(let j=i+1;j<intervals.length;j++)for(const shift of [-1440,0,1440]){
   if(Math.max(intervals[i].start,intervals[j].start+shift)<Math.min(intervals[i].end,intervals[j].end+shift)){alert('Time ranges must not overlap. Please adjust their start and end times.');return}
@@ -2158,7 +2158,7 @@ $('questForm').onsubmit=e=>{
  db.quests.push({id:crypto.randomUUID(),title,date:startDate,startDate,endDate,repeat:'weekly',repeatDays,times,eachTime,timeRanges});
  e.target.reset();$('questTitle').value='Namaz';$('questTimes').value=5;$('questEachTime').value=2;$('questStartDate').value=questLocalDate();$('questEndDate').value=questLocalDate();
  document.querySelectorAll('[name="questDays"]').forEach(input=>input.checked=true);
- $('questTimeRanges').innerHTML='<div class="quest-time-range-row" data-time-range-row><label>Start <input type="time" name="questRangeStart" value="06:00" required></label><label>End <input type="time" name="questRangeEnd" value="10:00" required></label><button type="button" class="secondary compact" data-remove-time-range>Remove</button></div><div class="quest-time-range-row" data-time-range-row><label>Start <input type="time" name="questRangeStart" value="14:00" required></label><label>End <input type="time" name="questRangeEnd" value="17:00" required></label><button type="button" class="secondary compact" data-remove-time-range>Remove</button></div><div class="quest-time-range-row" data-time-range-row><label>Start <input type="time" name="questRangeStart" value="20:00" required></label><label>End <input type="time" name="questRangeEnd" value="05:00" required></label><button type="button" class="secondary compact" data-remove-time-range>Remove</button></div>';
+ $('questTimeRanges').innerHTML='<div class="quest-time-range-row" data-time-range-row><label>Start <input type="time" name="questRangeStart" value="06:00"></label><label>End <input type="time" name="questRangeEnd" value="10:00"></label><button type="button" class="secondary compact" data-remove-time-range>Remove</button></div><div class="quest-time-range-row" data-time-range-row><label>Start <input type="time" name="questRangeStart" value="14:00"></label><label>End <input type="time" name="questRangeEnd" value="17:00"></label><button type="button" class="secondary compact" data-remove-time-range>Remove</button></div><div class="quest-time-range-row" data-time-range-row><label>Start <input type="time" name="questRangeStart" value="20:00"></label><label>End <input type="time" name="questRangeEnd" value="05:00"></label><button type="button" class="secondary compact" data-remove-time-range>Remove</button></div>';
  save()
 };
 $('questStartDate').value=questLocalDate();$('questEndDate').value=questLocalDate();
