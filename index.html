@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261118-pwa-launch-fix">
+<link rel="stylesheet" href="style.css?v=20261118-overview-quick-toggle">
 <title>DayQuest</title>
 </head>
 <body>
@@ -120,7 +120,7 @@
   <div class="hero-side"><div class="eyebrow">QUEST PROGRESS</div><div class="big" id="questProgress">0/0</div><div class="progress"><i id="questBar"></i></div></div>
  </section>
  <section class="overview-quick-panel">
-  <div class="section-head overview-quick-head"><div><h2><button type="button" class="overview-quick-title" id="overviewQuickSetupLink">Quick Expenses</button></h2><span class="muted">Tap a button to record one transaction</span></div><button type="button" id="overviewQuickActionModeToggle" class="quick-action-mode-toggle add-mode" aria-pressed="false">＋ Add</button></div>
+  <div class="section-head overview-quick-head"><div><h2><button type="button" class="overview-quick-title" id="overviewQuickSetupLink">Quick Expenses</button></h2><small class="overview-quick-hint">Tap 1 · Record 1</small></div><div class="overview-quick-controls"><button type="button" id="overviewQuickActionTapToggle" class="quick-action-tap-toggle is-on" aria-pressed="true">ON</button><button type="button" id="overviewQuickActionModeToggle" class="quick-action-mode-toggle add-mode" aria-pressed="false">＋ Add</button></div></div>
   <div id="overviewQuickActionList" class="quick-action-list"></div>
  </section>
  <section class="overview-quick-panel quick-suppliers-panel" id="overviewQuickSuppliersPanel" hidden>
@@ -693,5 +693,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261118-pwa-launch-fix"></script>
+<script src="app.js?v=20261118-overview-quick-toggle"></script>
 </body></html>
