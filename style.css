@@ -1013,3 +1013,37 @@ button,input,select,textarea{
 
 #meals .meal-total-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;column-gap:14px}
 #meals .meal-total-row .meal-member-cost{min-width:92px;text-align:right;font-variant-numeric:tabular-nums}
+
+/* Compact Meals setup controls */
+.meal-inline-row{display:flex;align-items:center;gap:10px;flex-wrap:nowrap}
+.meal-inline-row>strong,.meal-date-count-grid>strong{white-space:nowrap;font-size:13px}
+.meal-inline-row .meal-count-field{flex:0 1 130px}
+.meal-count-field{display:flex;align-items:center;gap:6px;min-width:0}
+.meal-count-field input{width:100%;min-width:55px}
+.meal-date-count-grid{display:grid;grid-template-columns:auto minmax(130px,1fr) minmax(95px,.55fr);gap:9px;align-items:center}
+.meal-date-count-grid>label{min-width:0}
+.meal-date-count-grid input{width:100%;min-width:0}
+.meal-date-count-grid .meal-count-field{display:flex;align-items:center;gap:6px}
+.meal-date-save-row{display:flex;justify-content:flex-end;margin-top:8px}
+.meal-date-save-row button{min-width:110px}
+.meal-member-control-head{align-items:center;gap:12px;flex-wrap:wrap}
+.meal-member-control-head h3{margin:0}
+.meal-date-select{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;white-space:nowrap}
+.meal-date-select input{width:auto;min-width:135px}
+#mealMemberControls .meal-member-row{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(76px,100px);align-items:center;gap:10px;padding:8px 10px}
+#mealMemberControls .meal-toggle{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:800}
+#mealMemberControls .meal-toggle input{width:18px;height:18px}
+#mealMemberControls .meal-member-count-input{width:100%;min-width:0;padding:7px 8px}
+@media(max-width:520px){
+ .meal-inline-row{gap:7px}
+ .meal-inline-row .meal-count-field{flex:1 1 70px}
+ .meal-inline-row button{padding:9px 12px}
+ .meal-date-count-grid{grid-template-columns:auto minmax(0,1fr) minmax(70px,.65fr);gap:6px}
+ .meal-date-count-grid>strong{font-size:12px}
+ .meal-date-count-grid input{padding:8px 6px;font-size:12px}
+ .meal-date-save-row button{width:100%}
+ .meal-member-control-head{align-items:flex-start}
+ .meal-date-select{width:100%;justify-content:space-between}
+ .meal-date-select input{flex:1}
+ #mealMemberControls .meal-member-row{grid-template-columns:minmax(0,1fr) auto 72px;gap:7px;padding:7px}
+}
