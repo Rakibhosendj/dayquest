@@ -9,7 +9,7 @@ const DEFAULT_PRODUCT_DICTIONARY=[{"english":"Rice","bangla":"চাল"},{"engl
 function normalizeProductDictionary(entries){
  const source=Array.isArray(entries)?entries:DEFAULT_PRODUCT_DICTIONARY;
  const seen=new Set();
- return source.map(item=>({english:String(item?.english??item?.en??'').trim(),bangla:String(item?.bangla??item?.bn??'').trim()})).filter(item=>{
+ return source.map(item=>({english:String(item?.english??item?.en??'').trim(),bangla:String(item?.bangla??item?.bn??'').trim(),meal:!!item?.meal})).filter(item=>{
   if(!item.english||!item.bangla)return false;
   const key=item.english.toLocaleLowerCase();if(seen.has(key))return false;seen.add(key);return true;
  });
@@ -444,7 +444,7 @@ function renderProductDictionary(){
  const rows=db.productDictionary.filter(item=>!query||item.english.toLocaleLowerCase().includes(query)||item.bangla.toLocaleLowerCase().includes(query));
  list.innerHTML=rows.map(item=>{
   const index=db.productDictionary.indexOf(item);
-  return `<div class="product-dictionary-row"><label>English <input data-dictionary-english value="${esc(item.english)}" maxlength="80"></label><label>বাংলা <input data-dictionary-bangla value="${esc(item.bangla)}" maxlength="80" lang="bn"></label><div class="product-dictionary-actions"><button type="button" class="edit-btn" data-dictionary-save="${index}">Save</button><button type="button" class="delete" data-dictionary-delete="${index}">×</button></div></div>`;
+  return `<div class="product-dictionary-row"><label>English <input data-dictionary-english value="${esc(item.english)}" maxlength="80"></label><label>বাংলা <input data-dictionary-bangla value="${esc(item.bangla)}" maxlength="80" lang="bn"></label><label class="dictionary-meal-check"><input type="checkbox" data-dictionary-meal ${item.meal?'checked':''}> Meals</label><div class="product-dictionary-actions"><button type="button" class="edit-btn" data-dictionary-save="${index}">Save</button><button type="button" class="delete" data-dictionary-delete="${index}">×</button></div></div>`;
  }).join('')||empty('No dictionary matches. Add a new English and Bangla product above.');
  if($('productDictionaryCount'))$('productDictionaryCount').textContent=`${db.productDictionary.length} dictionary entries`;
  list.querySelectorAll('[data-dictionary-save]').forEach(button=>button.onclick=()=>{
@@ -452,7 +452,7 @@ function renderProductDictionary(){
   const english=row.querySelector('[data-dictionary-english]').value.trim(),bangla=row.querySelector('[data-dictionary-bangla]').value.trim();
   if(!english||!bangla){alert('Enter both the English and Bangla product names.');return}
   if(db.productDictionary.some((item,i)=>i!==index&&item.english.toLocaleLowerCase()===english.toLocaleLowerCase())){alert('That English product name already exists.');return}
-  entry.english=english;entry.bangla=bangla;db.productDictionary=normalizeProductDictionary(db.productDictionary);
+  entry.english=english;entry.bangla=bangla;entry.meal=!!row.querySelector('[data-dictionary-meal]').checked;db.productDictionary=normalizeProductDictionary(db.productDictionary);
   renderProductDictionary();renderProductNameSuggestions();save();
  });
  list.querySelectorAll('[data-dictionary-delete]').forEach(button=>button.onclick=()=>{
@@ -1298,16 +1298,23 @@ function saveSupplierEntry(){
 function mealCountForDate(date){return Math.max(0,Math.floor(Number(db.mealPlan.dateCounts[date]??db.mealPlan.defaultCount)||0))}
 function mealCountForMember(member,date){return Math.max(0,Math.floor(Number(db.mealPlan.memberCounts?.[date]?.[member]??mealCountForDate(date))||0))}
 function mealMemberEnabled(member,date){return db.mealPlan.memberStatus?.[date]?.[member]!==false}
+function mealProductCostForRange(from,to){
+ let cost=0;
+ db.purchaseBills.filter(b=>b.date>=from&&b.date<=to).forEach(b=>(b.lines||[]).forEach(line=>{
+  const item=productDictionaryMatch(line.product);
+  if(item?.meal)cost+=Number(line.amount??(Number(line.quantity||0)*Number(line.rate||0)))||0;
+ }));
+ return cost;
+}
 function renderMeals(){
  const from=$('mealFromDate')?.value||today(),to=$('mealToDate')?.value||today(),date=$('mealControlDate')?.value||today();
  if($('mealDefaultCount'))$('mealDefaultCount').value=db.mealPlan.defaultCount;
  if($('mealDateCount'))$('mealDateCount').value=db.mealPlan.dateCounts[date]??db.mealPlan.defaultCount;
- if($('mealCostPerMeal'))$('mealCostPerMeal').value=db.mealPlan.costPerMeal;
- const list=$('mealMemberControls');if(list)list.innerHTML=db.familyMembers.length?db.familyMembers.map(member=>{const on=mealMemberEnabled(member,date),count=on?mealCountForMember(member,date):0;return '<div class="meal-member-row"><strong>'+esc(member)+'</strong><label class="meal-toggle"><input type="checkbox" data-meal-member="'+esc(member)+'" '+(on?'checked':'')+'> Meals ON</label><label class="meal-member-count">Meals <input type="number" min="0" step="1" value="'+count+'" data-meal-count="'+esc(member)+'" '+(!on?'disabled':'')+'></label><span>'+money(count*db.mealPlan.costPerMeal)+'</span></div>'}).join(''):empty('Add family members in Profile first.');
- const totals=db.familyMembers.map(member=>{let total=0;if(from&&to&&from<=to){for(let d=dateObj(from),end=dateObj(to);d<=end;d.setDate(d.getDate()+1)){const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');if(mealMemberEnabled(member,key))total+=mealCountForMember(member,key)}}return {member,total,cost:total*db.mealPlan.costPerMeal}});
- if($('mealMemberTotals'))$('mealMemberTotals').innerHTML=totals.length?totals.map(x=>'<div class="meal-total-row"><strong>'+esc(x.member)+'</strong><span>'+numberText(x.total)+' meals · '+money(x.cost)+'</span></div>').join(''):empty('No family members added.');
- const allMeals=totals.reduce((n,x)=>n+x.total,0),allCost=allMeals*db.mealPlan.costPerMeal;
- if($('mealRangeTotal'))$('mealRangeTotal').textContent=numberText(allMeals)+' meals · Total cost '+money(allCost);
+ const list=$('mealMemberControls');if(list)list.innerHTML=db.familyMembers.length?db.familyMembers.map(member=>{const on=mealMemberEnabled(member,date),count=on?mealCountForMember(member,date):0;return '<div class="meal-member-row"><strong>'+esc(member)+'</strong><label class="meal-toggle"><input type="checkbox" data-meal-member="'+esc(member)+'" '+(on?'checked':'')+'> Meals ON</label><label class="meal-member-count">Meals <input type="number" min="0" step="1" value="'+count+'" data-meal-count="'+esc(member)+'" '+(!on?'disabled':'')+'></label></div>'}).join(''):empty('Add family members in Profile first.');
+ const totals=db.familyMembers.map(member=>{let total=0;if(from&&to&&from<=to){for(let d=dateObj(from),end=dateObj(to);d<=end;d.setDate(d.getDate()+1)){const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');if(mealMemberEnabled(member,key))total+=mealCountForMember(member,key)}}return {member,total}});
+ if($('mealMemberTotals'))$('mealMemberTotals').innerHTML=totals.length?totals.map(x=>'<div class="meal-total-row"><strong>'+esc(x.member)+'</strong><span>'+numberText(x.total)+' meals</span></div>').join(''):empty('No family members added.');
+ const totalMeals=totals.reduce((n,x)=>n+x.total,0),mealProductCost=from&&to&&from<=to?mealProductCostForRange(from,to):0,costPerMeal=totalMeals?mealProductCost/totalMeals:0;
+ if($('mealRangeTotal'))$('mealRangeTotal').textContent=numberText(totalMeals)+' meals · Meal products cost '+money(mealProductCost)+' · Cost per meal '+money(costPerMeal);
 }
 function saveMealDefault(){const n=Number($('mealDefaultCount').value);if(!Number.isInteger(n)||n<0){alert('Enter a whole number of meals, zero or more.');return}db.mealPlan.defaultCount=n;save();renderMeals()}
 
@@ -1803,7 +1810,6 @@ applyQuickButtonColor(db.settings.quickButtonColor,false);
 
 const SETTINGS_MASTER_CONFIG={
  supplier:{list:'settingsSupplierList',array:'suppliers',input:'newSettingSupplier',form:'addSettingSupplierForm',title:'supplier'},
- product:{list:'settingsProductList',array:'productNames',input:'newSettingProduct',form:'addSettingProductForm',title:'product'},
  productType:{list:'settingsProductTypeList',array:'productTypes',input:'newSettingProductType',form:'addSettingProductTypeForm',title:'product type'},
  unit:{list:'settingsUnitList',array:'units',input:'newSettingUnit',form:'addSettingUnitForm',title:'unit'}
 };
@@ -1888,7 +1894,7 @@ document.querySelectorAll('[data-theme-color]').forEach(button=>button.onclick=(
 $('quickButtonColorInput').oninput=e=>applyQuickButtonColor(e.target.value);
 $('quickButtonVibration').onchange=e=>{db.settings.quickButtonVibration=!!e.target.checked;save()};
 document.querySelectorAll('[data-quick-button-color]').forEach(button=>button.onclick=()=>applyQuickButtonColor(button.dataset.quickButtonColor));
-$('addProductDictionaryForm').onsubmit=e=>{e.preventDefault();const english=$('newProductDictionaryEnglish').value.trim(),bangla=$('newProductDictionaryBangla').value.trim();if(!english||!bangla)return;if(db.productDictionary.some(item=>item.english.toLocaleLowerCase()===english.toLocaleLowerCase())){alert('That English product name already exists.');return}db.productDictionary.push({english,bangla});$('newProductDictionaryEnglish').value='';$('newProductDictionaryBangla').value='';renderProductDictionary();renderProductNameSuggestions();save()};
+$('addProductDictionaryForm').onsubmit=e=>{e.preventDefault();const english=$('newProductDictionaryEnglish').value.trim(),bangla=$('newProductDictionaryBangla').value.trim();if(!english||!bangla)return;if(db.productDictionary.some(item=>item.english.toLocaleLowerCase()===english.toLocaleLowerCase())){alert('That English product name already exists.');return}db.productDictionary.push({english,bangla,meal:$('newProductDictionaryMeal').checked});$('newProductDictionaryEnglish').value='';$('newProductDictionaryBangla').value='';$('newProductDictionaryMeal').checked=false;renderProductDictionary();renderProductNameSuggestions();save()};
 $('productDictionarySearch').oninput=renderProductDictionary;
 $('addPurchaseCategoryForm').onsubmit=e=>{
  e.preventDefault();const name=$('newPurchaseCategory').value.trim();if(!name)return;
