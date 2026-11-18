@@ -1,5 +1,5 @@
 const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slice(0,10);
-const SIDE_MENU_DEFAULT_ORDER=['home','expenses','inventory','production','supplierAccounts','outstanding','income','meals','quests','reports','profile','settings'];
+const SIDE_MENU_DEFAULT_ORDER=['home','expenses','inventory','budget','production','supplierAccounts','outstanding','income','meals','quests','reports','profile','settings'];
 function normalizeSideMenuOrder(value){
  const valid=new Set(SIDE_MENU_DEFAULT_ORDER);
  const picked=Array.isArray(value)?value.filter(key=>valid.has(key)):[];
@@ -62,6 +62,7 @@ function normalizeMemberAssignments(){
 }
 db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];
 db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];
+db.budgetPlans=db.budgetPlans&&typeof db.budgetPlans==='object'&&!Array.isArray(db.budgetPlans)?db.budgetPlans:{};
 // Purchase bill numbers use MM-YYYY-N and remain unique across the entire bill register.
 function purchaseBillPrefix(date){
  const match=/^(\d{4})-(\d{2})-\d{2}$/.exec(String(date||''));
@@ -378,6 +379,11 @@ function setTab(t){
  if(t==='quickExpenses'){renderQuickMemberOptions(quickSelectedMembers());fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickActions();}
  if(t==='questSetup'){if($('questSetupList'))$('questSetupList').innerHTML=questHTML(dayQuests(questLocalDate()),true);}
  if(t==='inventory')renderInventory();
+ if(t==='budget'){
+  if(!$('budgetFromDate').value)$('budgetFromDate').value=today().slice(0,8)+'01';
+  if(!$('budgetToDate').value)$('budgetToDate').value=today();
+  renderBudget();
+ }
  if(t==='production'){fillProductionOptions();renderProductionList();renderProductionInputs()}
  if(t==='supplierAccounts')renderSupplierAccounts();
  if(t==='supplierEntry'){renderSupplierEntryList();resetSupplierEntryForm()}
@@ -580,6 +586,73 @@ function productCatalog(){
  return [...map.values()].sort((a,b)=>a.product.localeCompare(b.product)||a.spec.localeCompare(b.spec));
 }
 function roundPurchaseAmount(value){return Math.round((Number(value||0)+Number.EPSILON)*100)/100}
+
+function budgetRangeKey(from,to){return String(from||'')+'__'+String(to||'')}
+function budgetPurchaseProducts(from,to){
+ const groups=new Map();
+ db.purchaseBills.filter(bill=>String(bill.date||'')>=from&&String(bill.date||'')<=to).forEach(bill=>(bill.lines||[]).forEach(line=>{
+  const product=String(line.product||'').trim(),spec=String(line.spec||'').trim(),unit=String(line.unit||'pcs').trim()||'pcs';
+  const quantity=Math.max(0,Number(line.quantity||0)),info=unitInfo(unit);
+  if(!product||!(quantity>0)||!Number.isFinite(quantity))return;
+  const key=productKey(product,spec,unit);
+  let row=groups.get(key);
+  if(!row){row={key,product,spec,unit,factor:info.factor,purchasedNorm:0,purchaseCost:0};groups.set(key,row)}
+  row.purchasedNorm+=quantity*info.factor;
+  row.purchaseCost+=purchaseLineCost(bill,line);
+ }));
+ return [...groups.values()].map(row=>{
+  const purchasedQuantity=row.factor>0?row.purchasedNorm/row.factor:0;
+  return {...row,purchasedQuantity,rate:purchasedQuantity>0?row.purchaseCost/purchasedQuantity:0,quantity:purchasedQuantity};
+ }).sort((a,b)=>a.product.localeCompare(b.product,undefined,{sensitivity:'base'})||a.spec.localeCompare(b.spec,undefined,{sensitivity:'base'}));
+}
+function budgetAmount(rate,quantity){return roundPurchaseAmount(Math.max(0,Number(rate)||0)*Math.max(0,Number(quantity)||0))}
+function updateBudgetTotals(){
+ const list=$('budgetList');if(!list)return;
+ let total=0;
+ list.querySelectorAll('[data-budget-quantity]').forEach(input=>{
+  const quantity=input.value.trim()===''?0:Number(input.value),rate=Number(input.dataset.budgetRate||0);
+  const amount=Number.isFinite(quantity)&&quantity>=0?budgetAmount(rate,quantity):0;
+  const row=input.closest('tr'),amountCell=row&&row.querySelector('[data-budget-line-total]');
+  if(amountCell)amountCell.textContent=money(amount);
+  total+=amount;
+ });
+ if($('budgetGrandTotal'))$('budgetGrandTotal').textContent=money(total);
+}
+function renderBudget(){
+ const from=$('budgetFromDate')?$('budgetFromDate').value:'',to=$('budgetToDate')?$('budgetToDate').value:'',list=$('budgetList');
+ if(!list)return;
+ const plan=from&&to&&from<=to?db.budgetPlans[budgetRangeKey(from,to)]:null;
+ if($('budgetRangeLabel'))$('budgetRangeLabel').textContent=from&&to?fmt(from)+' – '+fmt(to):'Choose a date range';
+ if(!from||!to||from>to){
+  list.innerHTML=empty('Choose a valid From and To date, then click Budget.');
+  if($('budgetProductCount'))$('budgetProductCount').textContent='0 products';
+  if($('budgetGrandTotal'))$('budgetGrandTotal').textContent=money(0);
+  return;
+ }
+ if(!plan){
+  list.innerHTML=empty('No budget has been generated for this date range. Click Budget to build the consolidated product list.');
+  if($('budgetProductCount'))$('budgetProductCount').textContent='0 products';
+  if($('budgetGrandTotal'))$('budgetGrandTotal').textContent=money(0);
+  return;
+ }
+ const rows=Array.isArray(plan.rows)?plan.rows:[];
+ if($('budgetProductCount'))$('budgetProductCount').textContent=rows.length+' product'+(rows.length===1?'':'s');
+ list.innerHTML=rows.length?'<div class="budget-table-wrap"><table class="budget-table"><thead><tr><th>SL</th><th>Products</th><th>Rate</th><th>Quantity</th><th>Unit</th><th>Total Cost</th></tr></thead><tbody>'+
+  rows.map((row,index)=>'<tr><td>'+String(index+1)+'</td><td><strong>'+esc(row.product)+'</strong>'+(row.spec?'<small>'+esc(row.spec)+'</small>':'')+'</td><td class="budget-rate">'+money(row.rate)+'</td><td><input class="budget-quantity-input" type="number" min="0" step="any" inputmode="decimal" value="'+Number(row.quantity??0)+'" data-budget-quantity data-budget-key="'+esc(row.key)+'" data-budget-rate="'+Number(row.rate||0)+'" aria-label="Budget quantity for '+esc(row.product)+'"></td><td>'+esc(row.unit)+'</td><td class="budget-line-total" data-budget-line-total>'+money(budgetAmount(row.rate,row.quantity))+'</td></tr>').join('')+
+  '</tbody></table></div>':empty('No product purchases were found in this date range.');
+ updateBudgetTotals();
+}
+function buildBudget(){
+ const from=$('budgetFromDate').value,to=$('budgetToDate').value;
+ if(!from||!to){alert('Select both the From and To dates before clicking Budget.');return}
+ if(from>to){alert('The From date cannot be later than the To date.');return}
+ const key=budgetRangeKey(from,to),existing=db.budgetPlans[key],oldQuantities=new Map((Array.isArray(existing&&existing.rows)?existing.rows:[]).map(row=>[String(row.key),Number(row.quantity??0)]));
+ const rows=budgetPurchaseProducts(from,to).map(row=>({...row,quantity:oldQuantities.has(row.key)?oldQuantities.get(row.key):row.purchasedQuantity}));
+ db.budgetPlans[key]={from,to,rows,builtAt:new Date().toISOString()};
+ localSaveOnly();
+ renderBudget();
+}
+
 function purchaseLineAmount(line){
  const amount=Number(line.amount);
  return Number.isFinite(amount)?Math.max(0,amount):roundPurchaseAmount(Math.max(0,Number(line.quantity||0))*Math.max(0,Number(line.rate||0)));
@@ -684,6 +757,24 @@ function purchaseFormNotice(message){
  if(editingPurchaseBillId&&$('purchaseEditHint')){$('purchaseEditHint').textContent=message;$('purchaseEditHint').hidden=false;return}
  alert(message);
 }
+$('budgetFromDate').addEventListener('change',renderBudget);
+$('budgetToDate').addEventListener('change',renderBudget);
+$('buildBudgetBtn').addEventListener('click',buildBudget);
+$('budgetList').addEventListener('input',event=>{
+ const input=event.target.closest('[data-budget-quantity]');if(!input)return;
+ updateBudgetTotals();
+});
+$('budgetList').addEventListener('change',event=>{
+ const input=event.target.closest('[data-budget-quantity]');if(!input)return;
+ const quantity=input.value.trim()===''?0:Number(input.value);
+ if(!Number.isFinite(quantity)||quantity<0){alert('Enter a valid budget quantity of zero or more.');renderBudget();return}
+ const from=$('budgetFromDate').value,to=$('budgetToDate').value,plan=db.budgetPlans[budgetRangeKey(from,to)];
+ const row=plan&&Array.isArray(plan.rows)?plan.rows.find(item=>String(item.key)===String(input.dataset.budgetKey)):null;
+ if(!row)return;
+ row.quantity=quantity;
+ localSaveOnly();
+ updateBudgetTotals();
+});
 $('purchaseDate').addEventListener('change',updatePurchaseBillNo);
 $('addPurchaseLine').onclick=()=>{purchaseLines.push(defaultPurchaseLine());renderPurchaseLines()};
 $('purchaseCashPaid').oninput=updatePurchaseTotals;$('purchaseBankPaid').oninput=updatePurchaseTotals;$('purchaseTransitCost').oninput=updatePurchaseTotals;$('purchaseDiscount').oninput=updatePurchaseTotals;
