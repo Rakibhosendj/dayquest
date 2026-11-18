@@ -1,11 +1,14 @@
-const CACHE = 'dayquest-cache-v107-members-report-guest-assign';
+const CACHE = 'dayquest-cache-v108-cross-platform-mobile';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261118-members-report-guest-assign',
-  './app.js?v=20261118-members-report-guest-assign',
+  './style.css?v=20261118-cross-platform',
+  './app.js?v=20261118-cross-platform',
   './manifest.json',
+  './icons/apple-touch-icon.png',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
   './cloud-config.js'
 ];
 
