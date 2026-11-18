@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v100-member-meal-cost';
+const CACHE = 'dayquest-cache-v101-meals-layout2';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261118-member-meal-cost',
-  './app.js?v=20261118-member-meal-cost',
+  './style.css?v=20261118-meals-layout2',
+  './app.js?v=20261118-meals-layout2',
   './manifest.json',
   './cloud-config.js'
 ];
