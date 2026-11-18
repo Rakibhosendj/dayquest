@@ -1089,3 +1089,20 @@ button,input,select,textarea{
 
 /* Member Meal: Active toggle label */
 #mealMemberControls .meal-toggle{min-width:38px;justify-content:center}
+
+/* Settings: family and guest meal start/close dates */
+.meal-person-date-settings{display:grid;gap:14px}
+.meal-person-date-group{display:grid;gap:7px}
+.meal-person-date-group h4{margin:0;color:#34445b;font-size:12px}
+.meal-person-date-row{display:grid;grid-template-columns:minmax(100px,1fr) minmax(125px,.8fr) minmax(125px,.8fr);align-items:center;gap:8px;padding:8px 10px;border:1px solid #e7ebf1;border-radius:10px;background:#fafbfd}
+.meal-person-date-row>strong{font-size:12px;overflow-wrap:anywhere}
+.meal-person-date-row>label{display:grid;gap:3px;min-width:0;font-size:10px;font-weight:750;color:#667085}
+.meal-person-date-row input{width:100%;min-width:0;padding:7px 6px;font-size:11px}
+.meal-person-date-empty{margin:0;padding:7px 2px;font-size:11px}
+.meal-guest-row{border-style:dashed}
+@media(max-width:520px){
+ .meal-person-date-row{grid-template-columns:minmax(78px,.8fr) minmax(100px,1fr) minmax(100px,1fr);gap:5px;padding:7px 5px}
+ .meal-person-date-row>strong{font-size:10px}
+ .meal-person-date-row>label{font-size:9px}
+ .meal-person-date-row input{font-size:10px;padding:6px 3px}
+}
