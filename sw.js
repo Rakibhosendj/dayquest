@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v89-auto-cloud-conflict';
+const CACHE = 'dayquest-cache-v90-daily-quest-stacked';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261118-daily-quest-centered',
+  './style.css?v=20261118-daily-quest-stacked',
   './app.js?v=20261118-auto-cloud-conflict',
   './manifest.json',
   './cloud-config.js'
