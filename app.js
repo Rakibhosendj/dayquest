@@ -1,5 +1,5 @@
 const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slice(0,10);
-const SIDE_MENU_DEFAULT_ORDER=['home','expenses','inventory','production','supplierAccounts','outstanding','income','quests','reports','profile','settings'];
+const SIDE_MENU_DEFAULT_ORDER=['home','expenses','inventory','production','supplierAccounts','outstanding','income','meals','quests','reports','profile','settings'];
 function normalizeSideMenuOrder(value){
  const valid=new Set(SIDE_MENU_DEFAULT_ORDER);
  const picked=Array.isArray(value)?value.filter(key=>valid.has(key)):[];
@@ -98,6 +98,7 @@ db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];
 db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
 db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};
 db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers.filter(name=>db.suppliers.includes(name)))]:[];
+db.mealPlan=db.mealPlan&&typeof db.mealPlan==='object'?db.mealPlan:{};db.mealPlan.defaultCount=Math.max(0,Math.floor(Number(db.mealPlan.defaultCount??3)||0));db.mealPlan.dateCounts=db.mealPlan.dateCounts&&typeof db.mealPlan.dateCounts==='object'?db.mealPlan.dateCounts:{};db.mealPlan.memberStatus=db.mealPlan.memberStatus&&typeof db.mealPlan.memberStatus==='object'?db.mealPlan.memberStatus:{};
 db.productNames=Array.isArray(db.productNames)?db.productNames:[];
 db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);
 db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];
@@ -351,6 +352,7 @@ function setTab(t){
  if(t==='production'){fillProductionOptions();renderProductionList();renderProductionInputs()}
  if(t==='supplierAccounts')renderSupplierAccounts();
  if(t==='supplierEntry'){renderSupplierEntryList();resetSupplierEntryForm()}
+ if(t==='meals'){if(!$('mealControlDate').value)$('mealControlDate').value=today();if(!$('mealFromDate').value)$('mealFromDate').value=today();if(!$('mealToDate').value)$('mealToDate').value=today();renderMeals()}
  if(t==='purchaseBills'){fillChoices();renderPurchaseLines();renderSupplierAccounts();}
 }
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
@@ -1249,7 +1251,7 @@ function openQuickSupplierPurchase(name){
 }
 
 function resetSupplierEntryForm(){
- $('supplierEntryForm').reset();$('supplierEntryOriginalName').value='';
+ $('supplierEntryForm').reset();$('supplierEntryOriginalName').value='';$('supplierEntryQuick').checked=false;
  $('supplierEntryFormTitle').textContent='Add supplier';$('supplierEntrySave').textContent='Save supplier';
  $('supplierEntryCancel').hidden=true;
 }
@@ -1259,7 +1261,7 @@ function renderSupplierEntryList(){
  if($('supplierEntryCount'))$('supplierEntryCount').textContent=`${names.length} supplier${names.length===1?'':'s'}`;
  list.innerHTML=names.length?names.map(name=>{
   const detail=db.supplierDetails[name]||{};
-  return `<article class="supplier-entry-row"><div class="supplier-entry-info"><strong>${esc(name)}</strong><span><b>Owner:</b> ${esc(detail.ownerName||'Not entered')}</span><span><b>Address:</b> ${esc(detail.address||'Not entered')}</span></div><button type="button" class="edit-btn" data-edit-supplier-entry="${esc(name)}">Edit details</button></article>`;
+  return `<article class="supplier-entry-row"><div class="supplier-entry-info"><strong>${esc(name)}</strong><span><b>Owner:</b> ${esc(detail.ownerName||'Not entered')}</span><span><b>Address:</b> ${esc(detail.address||'Not entered')}</span><span><b>Quick button:</b> ${db.quickSuppliers.includes(name)?'Q enabled':'Q disabled'}</span></div><button type="button" class="edit-btn" data-edit-supplier-entry="${esc(name)}">Edit details</button></article>`;
  }).join(''):empty('No suppliers saved yet. Add a supplier company above.');
  list.querySelectorAll('[data-edit-supplier-entry]').forEach(button=>button.onclick=()=>editSupplierEntry(button.dataset.editSupplierEntry));
 }
@@ -1267,13 +1269,13 @@ function editSupplierEntry(name){
  const company=String(name||'').trim();if(!db.suppliers.includes(company))return;
  const detail=db.supplierDetails[company]||{};
  $('supplierEntryOriginalName').value=company;$('supplierEntryCompany').value=company;
- $('supplierEntryOwner').value=detail.ownerName||'';$('supplierEntryAddress').value=detail.address||'';
+ $('supplierEntryOwner').value=detail.ownerName||'';$('supplierEntryAddress').value=detail.address||'';$('supplierEntryQuick').checked=db.quickSuppliers.includes(company);
  $('supplierEntryFormTitle').textContent='Edit supplier details';$('supplierEntrySave').textContent='Update supplier';
  $('supplierEntryCancel').hidden=false;$('supplierEntryForm').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function saveSupplierEntry(){
  const original=$('supplierEntryOriginalName').value.trim(),company=$('supplierEntryCompany').value.trim();
- const ownerName=$('supplierEntryOwner').value.trim(),address=$('supplierEntryAddress').value.trim();
+ const ownerName=$('supplierEntryOwner').value.trim(),address=$('supplierEntryAddress').value.trim(),showQuick=$('supplierEntryQuick').checked;
  if(!company){alert('Enter the supplier company name.');$('supplierEntryCompany').focus();return}
  if(db.suppliers.some(name=>name.toLocaleLowerCase()===company.toLocaleLowerCase()&&name!==original)){
   alert('That supplier company already exists. Open it from the Supplier Directory to edit its details.');return;
@@ -1290,8 +1292,21 @@ function saveSupplierEntry(){
   if(!db.suppliers.includes(company))db.suppliers.push(company);
   db.supplierDetails[company]={...(db.supplierDetails[company]||{}),ownerName,address};
  }
- resetSupplierEntryForm();fillChoices();renderMasterLists();renderSupplierEntryList();renderQuickSuppliers();renderSupplierAccounts();save();
+ if(showQuick){if(!db.quickSuppliers.includes(company))db.quickSuppliers.push(company)}else db.quickSuppliers=db.quickSuppliers.filter(name=>name!==company);resetSupplierEntryForm();fillChoices();renderMasterLists();renderSupplierEntryList();renderQuickSuppliers();renderSupplierAccounts();save();
 }
+
+function mealCountForDate(date){return Math.max(0,Math.floor(Number(db.mealPlan.dateCounts[date]??db.mealPlan.defaultCount)||0))}
+function mealMemberEnabled(member,date){return db.mealPlan.memberStatus?.[date]?.[member]!==false}
+function renderMeals(){
+ const from=$('mealFromDate')?.value||today(),to=$('mealToDate')?.value||today(),date=$('mealControlDate')?.value||today();
+ if($('mealDefaultCount'))$('mealDefaultCount').value=db.mealPlan.defaultCount;
+ if($('mealDateCount'))$('mealDateCount').value=db.mealPlan.dateCounts[date]??db.mealPlan.defaultCount;
+ const list=$('mealMemberControls');if(list)list.innerHTML=db.familyMembers.length?db.familyMembers.map(member=>{const on=mealMemberEnabled(member,date),count=on?mealCountForDate(date):0;return '<div class="meal-member-row"><strong>'+esc(member)+'</strong><label class="meal-toggle"><input type="checkbox" data-meal-member="'+esc(member)+'" '+(on?'checked':'')+'> Meals ON</label><span>'+count+' meals</span></div>'}).join(''):empty('Add family members in Profile first.');
+ const totals=db.familyMembers.map(member=>{let total=0;if(from&&to&&from<=to){for(let d=dateObj(from),end=dateObj(to);d<=end;d.setDate(d.getDate()+1)){const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');if(mealMemberEnabled(member,key))total+=mealCountForDate(key)}}return {member,total}});
+ if($('mealMemberTotals'))$('mealMemberTotals').innerHTML=totals.length?totals.map(x=>'<div class="meal-total-row"><strong>'+esc(x.member)+'</strong><span>'+numberText(x.total)+' meals</span></div>').join(''):empty('No family members added.');
+}
+function saveMealDefault(){const n=Number($('mealDefaultCount').value);if(!Number.isInteger(n)||n<0){alert('Enter a whole number of meals, zero or more.');return}db.mealPlan.defaultCount=n;save();renderMeals()}
+
 function renderQuickActionManager(){
  const list=$('quickActionManagerList');if(!list)return;
  list.innerHTML=db.quickActions.length?db.quickActions.map(action=>`<div class="quick-action-manager-row"><div class="quick-action-manager-info"><strong>${esc(action.name)}</strong><span>${action.type==='income'?'Income':'Expense'} · ${money(action.rate)} per click</span></div><div class="quick-action-manager-tools"><button type="button" class="edit-btn" data-quick-edit="${esc(action.id)}">Edit</button><button type="button" class="delete" data-quick-delete="${esc(action.id)}">Delete</button></div></div>`).join(''):empty('No quick buttons created yet.');
@@ -1348,6 +1363,10 @@ $('quickActionType').onchange=updateQuickActionTypeFields;
 const toggleQuickActionMode=()=>{quickActionMode=quickActionMode==='add'?'minus':'add';renderQuickActions()};
 $('overviewQuickSupplierSetupLink').onclick=()=>{setTab('supplierEntry');$('supplierEntryForm').scrollIntoView({behavior:'smooth',block:'start'})};
 $('supplierEntryForm').onsubmit=e=>{e.preventDefault();saveSupplierEntry()};
+$('mealDefaultSave').onclick=saveMealDefault;
+$('mealDateSave').onclick=()=>{const date=$('mealControlDate').value,n=Number($('mealDateCount').value);if(!date||!Number.isInteger(n)||n<0){alert('Choose a date and enter a whole number of meals, zero or more.');return}db.mealPlan.dateCounts[date]=n;save();renderMeals()};
+['mealFromDate','mealToDate','mealControlDate'].forEach(id=>$(id).addEventListener('change',renderMeals));
+$('mealMemberControls').onchange=e=>{const input=e.target.closest('[data-meal-member]');if(!input)return;const date=$('mealControlDate').value,member=input.dataset.mealMember;db.mealPlan.memberStatus[date]=db.mealPlan.memberStatus[date]||{};db.mealPlan.memberStatus[date][member]=input.checked;save();renderMeals()};
 $('supplierEntryCancel').onclick=resetSupplierEntryForm;
 $('overviewQuickSetupLink').onclick=()=>{
  setTab('settings');
