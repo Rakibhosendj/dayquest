@@ -2397,7 +2397,7 @@ function setCloudStatus(message,{conflict=false,remote=false,offline=false,autoH
  const important=conflict||offline||/failed|error|not ready|not connected|could not|cannot|cancelled|empty|needs an internet/i.test(String(message));
  if(!important){hideCloudStatus();return;}
  bar.hidden=false;$('cloudStatusText').textContent=message;
- $('cloudLoadLatest').hidden=!conflict;$('cloudDownloadLocal').hidden=!conflict;
+ $('cloudLoadLatest').hidden=!conflict;$('cloudDownloadLocal').hidden=true;
  $('cloudSyncNow').disabled=offline||cloudSyncBusy;
  bar.classList.toggle('is-warning',true);
 }
@@ -2452,7 +2452,7 @@ function startAppSession(user,{offline=false}={}){
  $('userGreeting').textContent=`Signed in: ${familyName||user?.email||'Family Account'}`;
  refreshAdminCloudConfig();
  if(offline)hideCloudStatus();
- else if(cloudConflict)setCloudStatus('Cloud conflict: another device has newer records. Download this device copy or load the latest cloud data.',{conflict:true});
+ else if(cloudConflict)setCloudStatus('Cloud conflict: another device has newer records. Automatically loading the latest cloud data.',{conflict:true});
  else if(cloudRemoteChanged)setCloudStatus('A newer cloud copy is available from another device.',{remote:true});
  else if(cloudReady)hideCloudStatus();
 }
@@ -2559,7 +2559,13 @@ function applyRemoteRow(row,{downloadBackup=false}={}){
  cloudHydrating=true;db=JSON.parse(JSON.stringify(row.payload||{}));normalizeCloudDatabase(db);localStorage.setItem('dayquest_v1',JSON.stringify(db));cloudVersion=Number(row.version||0);cloudDirty=false;cloudConflict=false;cloudRemoteChanged=false;cloudReady=true;saveCloudMeta(cloudVersion,false);cloudHydrating=false;refreshAfterCloudLoad();
 }
 async function handleCloudConflict(row){
- const baseVersion=Number(getCloudMeta().version||cloudVersion||0);cloudConflict=true;cloudReady=false;cloudRemoteChanged=false;cloudVersion=baseVersion;saveCloudMeta(baseVersion,true);saveLocalSafetyCopy();startAppSession(cloudUser);setCloudStatus('Conflict detected: another device has newer data. Download this device copy before loading cloud data.',{conflict:true});
+ const baseVersion=Number(getCloudMeta().version||cloudVersion||0);
+ if(!row||!row.payload){cloudConflict=true;cloudReady=false;cloudRemoteChanged=false;cloudVersion=baseVersion;saveCloudMeta(baseVersion,true);startAppSession(cloudUser);setCloudStatus('A sync conflict was detected, but the latest cloud data could not be loaded. Tap Load latest cloud data to retry.',{conflict:true});return}
+ // Cloud data wins on conflicts: automatically download a safety copy, then replace this device's older/conflicting data.
+ saveLocalSafetyCopy();
+ applyRemoteRow(row,{downloadBackup:true});
+ setCloudStatus('Conflict resolved. Latest cloud data has been synced to this device.',{autoHideMs:2500});
+ startAppSession(cloudUser);startCloudPolling();
 }
 async function connectCloudSession(user,{silent=false}={}){
  cloudUser=user;const meta=getCloudMeta(),sameUser=meta.userId===user.id,linkedToOtherAccount=!!meta.userId&&!sameUser;
