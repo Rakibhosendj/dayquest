@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v106-guest-assignment-dd-mmm-date';
+const CACHE = 'dayquest-cache-v107-members-report-guest-assign';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261118-guest-assignment-dd-mmm-date',
-  './app.js?v=20261118-guest-assignment-dd-mmm-date',
+  './style.css?v=20261118-members-report-guest-assign',
+  './app.js?v=20261118-members-report-guest-assign',
   './manifest.json',
   './cloud-config.js'
 ];
