@@ -1010,3 +1010,6 @@ button,input,select,textarea{
 .new-product-entry-dialog input:not([type=checkbox]){width:100%;min-width:0}
 .new-product-meal-check{display:flex!important;align-items:center;gap:8px;font-weight:750}
 .new-product-meal-check input{width:18px;height:18px;accent-color:#18765b}
+
+#meals .meal-total-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;column-gap:14px}
+#meals .meal-total-row .meal-member-cost{min-width:92px;text-align:right;font-variant-numeric:tabular-nums}
