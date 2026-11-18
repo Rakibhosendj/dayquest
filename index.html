@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261117-login-input-interaction-fix">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261118-daily-quest-vibration-login-status">
 <title>DayQuest</title>
 </head>
 <body>
@@ -76,7 +76,7 @@
     </div>
    </details>
    <button class="tab side-link" data-menu-item="income" data-tab="income" type="button"><span class="side-link-mark">07</span><span>Income</span></button>
-   <button class="tab side-link" data-menu-item="quests" data-tab="quests" type="button"><span class="side-link-mark">08</span><span>Daily quests</span></button>
+   <button class="tab side-link" data-menu-item="quests" data-tab="quests" type="button"><span class="side-link-mark">08</span><span>Daily Quest</span></button>
    <details class="side-group" data-menu-item="reports" data-side-group="reports">
     <summary class="side-link side-group-title"><span class="side-link-mark">09</span><span>Reports</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
     <div class="side-submenu report-side-submenu">
@@ -332,18 +332,23 @@
  <div id="incomeList" class="list"></div>
 </section>
 <section id="quests" class="panel">
- <div class="section-head"><h2>Daily quests</h2><span class="pill" id="questSummary">0 completed</span></div>
+ <div class="section-head"><button type="button" id="dailyQuestSetupLink" class="overview-quick-title"><h2>Daily Quest</h2></button><span class="pill" id="questSummary">0 completed</span></div>
+ <p class="hint">Tap a Daily Quest button to mark its next check. Your progress resets each day for repeating quests.</p>
+ <div id="questList" class="quick-action-list daily-quest-list"></div>
+</section>
+<section id="questSetup" class="panel">
+ <div class="section-head"><h2>Daily Quest Setup</h2><button type="button" class="secondary" data-go="quests">Back to Daily Quest</button></div>
  <form id="questForm" class="form">
   <label>Quest name <input id="questTitle" maxlength="70" value="Namaz" placeholder="e.g. Read 10 pages" required></label>
   <div class="form-grid">
-   <label>Time (number of checkboxes) <input id="questTimes" type="number" min="1" max="30" step="1" value="5" required></label>
+   <label>Time (number of checks) <input id="questTimes" type="number" min="1" max="30" step="1" value="5" required></label>
    <label>Each Time (achievement value) <input id="questEachTime" type="number" min="0.01" step="0.01" value="2" required></label>
   </div>
   <label>Repeat <select id="questRepeat"><option value="daily">Every day</option><option value="once">Today only</option></select></label>
-  <button class="primary full">＋ Add quest</button>
+  <button class="primary full">＋ Add Daily Quest</button>
  </form>
- <p class="hint">Set how many times the quest can be checked and the value earned by each check. Every checked box adds its Each Time value to Total achieved. Daily quests reset automatically each new day.</p>
- <div id="questList" class="list"></div>
+ <p class="hint">Set how many times the quest can be checked and the achievement value for each check.</p>
+ <div id="questSetupList" class="list"></div>
 </section>
 <section id="profile" class="panel">
  <div class="section-head"><h2>User profile</h2><span class="pill">Stored on this device</span></div>
@@ -406,6 +411,10 @@
    <button type="button" class="theme-swatch" data-quick-button-color="#b44358" aria-label="Rose" title="Rose" style="--swatch:#b44358"></button>
    <button type="button" class="theme-swatch" data-quick-button-color="#263b5c" aria-label="Navy" title="Navy" style="--swatch:#263b5c"></button>
   </div>
+ </section>
+ <section class="settings-card">
+  <div class="section-head settings-section-head"><div><h3>Quick button vibration</h3><p class="settings-copy">Vibrate briefly when a Quick Expense, Quick Supplier or Daily Quest button is tapped.</p></div></div>
+  <label class="settings-toggle-row"><input id="quickButtonVibration" type="checkbox" checked> <span>Enable vibration on quick buttons</span></label>
  </section>
  <section class="settings-card settings-quick-actions-card">
   <details id="quickActionSettings" class="settings-master-group settings-quick-action-settings">
@@ -615,5 +624,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261117-login-input-interaction-fix"></script>
+<script src="app.js?v=20261118-daily-quest-vibration-login-status"></script>
 </body></html>
