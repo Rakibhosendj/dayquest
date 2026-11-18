@@ -1454,6 +1454,15 @@ $('mealDateSave').onclick=()=>{const date=$('mealDateEntry').value,n=Number($('m
 $('mealsBackOverview').onclick=()=>{setTab('home');document.getElementById('home')?.scrollIntoView({behavior:'instant',block:'start'})};
 ['mealFromDate','mealToDate','mealControlDate'].forEach(id=>$(id).addEventListener('change',renderMeals));
 $('mealDateEntry').addEventListener('change',()=>{const date=$('mealDateEntry').value;$('mealControlDate').value=date;renderMeals()});
+$('memberReportGuestAssignments').onchange=e=>{
+ const input=e.target.closest('[data-report-meal-assign-guest]');if(!input)return;
+ const guest=input.dataset.reportMealAssignGuest,member=input.dataset.reportMealAssignMember,key=mealPersonKey(guest);
+ db.mealPlan.guestAssignments=db.mealPlan.guestAssignments||{};
+ const current=db.mealPlan.guestAssignments[key]||[];
+ db.mealPlan.guestAssignments[key]=input.checked?uniquePeople([...current,member]):current.filter(name=>mealPersonKey(name)!==mealPersonKey(member));
+ if(!db.mealPlan.guestAssignments[key].length)delete db.mealPlan.guestAssignments[key];
+ save();renderMealPersonDates();renderMeals();
+};
 $('mealPersonDateSettings').onchange=e=>{
  const assign=e.target.closest('[data-meal-assign-guest]');
  if(assign){
@@ -2489,8 +2498,17 @@ function costReportDocumentHtml(){
  return `<!doctype html><html><head><meta charset="utf-8"><title>DayQuest Cost Report</title><style>@page{size:landscape;margin:12mm}body{font-family:Arial,sans-serif;color:#182337;padding:18px}h1{font-size:20px;margin:0 0 6px}.meta{font-size:11px;color:#667085;margin:0 0 12px}.summary{display:flex;gap:22px;flex-wrap:wrap;margin:10px 0 16px;font-size:11px}.summary strong{display:block;font-size:14px;margin-top:3px}table{border-collapse:collapse;width:100%;font-size:9px}th,td{border:1px solid #cbd3df;padding:6px 7px;text-align:left;vertical-align:top}th{background:#edf1f6;white-space:nowrap}tbody tr:nth-child(even){background:#fafbfd}tfoot td{font-weight:700;background:#f1f4f8}@media print{body{padding:0}thead{display:table-header-group}tr{break-inside:avoid}}</style></head><body><h1>DayQuest · Cost Report</h1><p class="meta">Date of Cost: ${esc(from)} to ${esc(to)} · Cost grouped by ${esc(modeLabel)} · Inventory stock as of ${esc(fmt(to))}</p><div class="summary"><div>Total paid<strong>${esc(money(totalPaid))}</strong></div><div>Total due<strong>${esc(money(totalDue))}</strong></div><div>Discount settled<strong>${esc(money(discounts))}</strong></div><div>Cost entries<strong>${rows.length}</strong></div></div><table><thead><tr><th>Date of Cost</th><th>Product Name</th><th>Quantity</th><th>Rate</th><th>Paid Amount</th><th>Due Amount</th><th>Supplier</th><th>Inventory Stock</th></tr></thead><tbody>${body||'<tr><td colspan="8">No cost entries in the selected date range.</td></tr>'}</tbody><tfoot><tr><td colspan="4">Total</td><td>${esc(money(totalPaid))}</td><td>${esc(money(totalDue))}</td><td colspan="2">Inventory stock is shown per purchase lot as of the To date.</td></tr></tfoot></table></body></html>`;
 }
 
+function renderMemberReportGuestAssignments(){
+ const host=$('memberReportGuestAssignments');if(!host)return;
+ host.innerHTML=db.guestPeople.length?db.guestPeople.map(guest=>{
+  const key=mealPersonKey(guest),assigned=db.mealPlan.guestAssignments?.[key]||[];
+  const checks=db.familyMembers.map(member=>'<label><input type="checkbox" data-report-meal-assign-guest="'+esc(guest)+'" data-report-meal-assign-member="'+esc(member)+'" '+(assigned.some(name=>mealPersonKey(name)===mealPersonKey(member))?'checked':'')+'><span>'+esc(member)+'</span></label>').join('');
+  return '<div class="member-report-guest-row"><strong>'+esc(guest)+'</strong><div class="member-report-guest-checks">'+(checks||'<span class="muted">Add family members first.</span>')+'</div></div>';
+ }).join(''):empty('No guest members added yet.');
+}
 function renderReport(){
  const from=$('productReportFromDate')?.value||'',to=$('productReportToDate')?.value||'';
+ renderMemberReportGuestAssignments();
  const hint=$('reportDateHint');
  const reportOutputs=['productTypePurchaseReport','productPurchaseReport','supplierCreditorReport','iOweList','owedToMeList','incomeDueList','categoryBreakdown','memberCostBreakdown','memberProductConsumption','guestReport','incomePersonBreakdown','incomeHeadBreakdown','productionReportList','assetPurchaseReportList'];
  if(!from||!to||from>to){
