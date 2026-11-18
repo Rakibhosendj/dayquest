@@ -1072,3 +1072,17 @@ button,input,select,textarea{
  #mealMemberControls .meal-member-total{gap:3px}
  #mealMemberControls .meal-member-total input{width:52px;padding:6px 4px}
 }
+
+/* Member Meal individual meal checkboxes */
+#mealMemberControls .meal-member-row{display:grid;grid-template-columns:minmax(90px,1fr) auto minmax(0,2fr) auto;align-items:center;gap:9px}
+#mealMemberControls .meal-slot-list{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+#mealMemberControls .meal-slot-check{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:750}
+#mealMemberControls .meal-slot-check input{width:17px;height:17px;accent-color:#18765b}
+#mealMemberControls .meal-member-total{white-space:nowrap;font-size:12px;font-weight:850}
+@media(max-width:520px){
+ #mealMemberControls .meal-member-row{grid-template-columns:minmax(65px,.9fr) auto minmax(0,1.5fr) auto;gap:5px;padding:7px 5px}
+ #mealMemberControls .meal-slot-list{gap:4px}
+ #mealMemberControls .meal-slot-check{gap:2px;font-size:10px}
+ #mealMemberControls .meal-slot-check input{width:15px;height:15px}
+ #mealMemberControls .meal-member-total{font-size:11px}
+}
