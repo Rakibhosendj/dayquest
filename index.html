@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261118-budget-view">
+<link rel="stylesheet" href="style.css?v=20261118-budget-view-no-hint">
 <title>DayQuest</title>
 </head>
 <body>
@@ -213,7 +213,6 @@
    <label>To <input id="budgetToDate" type="date"></label>
    <button type="button" class="primary" id="buildBudgetBtn">Budget</button>
   </div>
-  <p class="hint">The list consolidates products purchased in the selected date range. Quantity starts with the total purchased quantity and can be changed for future planning. Budget quantities and totals are separate from all purchase, inventory, expense, income and report transactions.</p>
  </div>
  <div class="section-head budget-result-head"><div><h3>Budget product list</h3><span class="muted" id="budgetRangeLabel">Choose a date range</span></div><div class="budget-result-actions"><span class="pill" id="budgetProductCount">0 products</span><button type="button" class="secondary" id="budgetViewBtn" disabled>View</button></div></div>
  <div id="budgetList" class="budget-list"><div class="empty">Select a From and To date, then click Budget.</div></div>
@@ -694,5 +693,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261118-budget-view"></script>
+<script src="app.js?v=20261118-budget-view-no-hint"></script>
 </body></html>
