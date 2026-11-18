@@ -1270,3 +1270,35 @@ img,canvas,svg{max-width:100%}
 @supports(padding:max(0px)){
   body{padding-bottom:max(12px,env(safe-area-inset-bottom,0px))}
 }
+
+
+/* Budget page: isolated planning table with editable quantities. */
+.budget-date-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:end;gap:9px}
+.budget-date-row label{display:grid;gap:5px;min-width:0;font-size:11px;font-weight:750;color:#566176}
+.budget-date-row input{width:100%;min-width:0;border:1px solid #e1e6ee;border-radius:10px;padding:11px 9px;background:#fbfcfe;color:#172033;font:inherit;font-size:13px}
+.budget-date-row button{white-space:nowrap;min-width:82px}
+.budget-filter-form{gap:8px}
+.budget-filter-form .hint{margin:2px 1px 0}
+.budget-result-head{align-items:center}
+.budget-result-head h3{font-size:14px;margin:0}
+.budget-table-wrap{width:100%;overflow-x:auto;border:1px solid #e5eaf1;border-radius:12px;background:#fff;-webkit-overflow-scrolling:touch}
+.budget-table{width:100%;min-width:650px;border-collapse:collapse;font-size:12px}
+.budget-table th,.budget-table td{padding:10px 9px;border-bottom:1px solid #edf0f4;text-align:left;vertical-align:middle}
+.budget-table th{background:#f4f6f9;color:#526176;font-size:11px;font-weight:800;white-space:nowrap}
+.budget-table tbody tr:last-child td{border-bottom:0}
+.budget-table td:first-child,.budget-table th:first-child{text-align:center;width:42px}
+.budget-table td strong{display:block;font-size:12px;color:#23344d}
+.budget-table td small{display:block;margin-top:3px;color:#8b95a5;font-size:10px}
+.budget-table .budget-rate,.budget-table .budget-line-total{white-space:nowrap;font-weight:750;font-variant-numeric:tabular-nums}
+.budget-quantity-input{width:105px;max-width:100%;padding:8px 7px;border:1px solid #dce3eb;border-radius:8px;background:#fbfcfe;font:inherit;font-size:12px;font-variant-numeric:tabular-nums}
+.budget-total-row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;padding:14px;border-radius:11px;background:#edf2f8;color:#263b5c;font-size:13px;font-weight:800}
+.budget-total-row strong{font-size:17px;white-space:nowrap;font-variant-numeric:tabular-nums}
+@media(max-width:520px){
+ .budget-date-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px}
+ .budget-date-row button{grid-column:1/-1;width:100%}
+ .budget-date-row input{padding:9px 6px;font-size:12px}
+ .budget-table th,.budget-table td{padding:8px 7px}
+ .budget-quantity-input{width:88px;padding:7px 5px}
+ .budget-total-row{padding:12px;font-size:12px}
+ .budget-total-row strong{font-size:15px}
+}
