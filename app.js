@@ -195,14 +195,28 @@ function calculateBalances(){
 }
 function showBalances(){const b=calculateBalances();[['earnedBalance',b.total],['cashBalance',b.cash],['bankBalance',b.bank],['reportEarnedBalance',b.total],['reportCashBalance',b.cash],['reportBankBalance',b.bank],['profileEarnedBalance',b.total],['profileCashBalance',b.cash],['profileBankBalance',b.bank]].forEach(([id,v])=>{if($(id))$(id).textContent=money(v)});}
 const startWeek=d=>{let x=dateObj(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return x.toISOString().slice(0,10)};
-function dayQuests(d){
- const date=new Date(`${d}T12:00:00`),day=String(date.getDay());
- return db.quests.filter(q=>{
-  const start=String(q.startDate||q.date||'');
-  if(start&&d<start)return false;
-  if(Array.isArray(q.repeatDays)&&q.repeatDays.length)return q.repeatDays.map(String).includes(day);
-  return q.repeat==='daily'||q.date===d;
+function questLocalDate(date=new Date()){
+ const y=date.getFullYear(),m=String(date.getMonth()+1).padStart(2,'0'),d=String(date.getDate()).padStart(2,'0');
+ return `${y}-${m}-${d}`;
+}
+function addQuestDays(date,days){const d=new Date(`${date}T12:00:00`);d.setDate(d.getDate()+days);return questLocalDate(d)}
+function questIsScheduled(q,d){
+ const start=String(q.startDate||q.date||''),end=String(q.endDate||'9999-12-31');
+ if(start&&d<start||d>end)return false;
+ const day=String(new Date(`${d}T12:00:00`).getDay());
+ if(Array.isArray(q.repeatDays)&&q.repeatDays.length)return q.repeatDays.map(String).includes(day);
+ return q.repeat==='daily'||q.date===d;
+}
+function dayQuests(d){return db.quests.filter(q=>questIsScheduled(q,d))}
+function dayQuestsForNow(d){
+ const now=new Date(),previous=addQuestDays(d,-1),carry=[];
+ db.quests.forEach(q=>{
+  if(!questIsScheduled(q,previous)||!questRanges(q).some(r=>String(r.end)<=String(r.start)))return;
+  const status=questActiveRange(q,previous,now);
+  if(status.status==='active'&&String(questRanges(q)[status.index].end)<=String(questRanges(q)[status.index].start))carry.push({...q,_occurrenceDate:previous});
  });
+ const carryIds=new Set(carry.map(q=>q.id));
+ return [...carry,...dayQuests(d).filter(q=>!carryIds.has(q.id)).map(q=>({...q,_occurrenceDate:d}))];
 }
 function completed(q,d){return !!(db.checks[d]||{})[q.id]}
 const SIDEBAR_PREF_KEY='dayquest_sidebar_hidden_v1';
@@ -332,7 +346,7 @@ function setTab(t){
  if(t==='settings'){renderPurchaseCategorySettings();renderMasterLists();renderProductDictionary();$('quickButtonColorInput').value=db.settings.quickButtonColor||'#ee7d2f';$('quickButtonColorValue').textContent=(db.settings.quickButtonColor||'#ee7d2f').toUpperCase();if($('quickButtonVibration'))$('quickButtonVibration').checked=db.settings.quickButtonVibration!==false;$('requireSupplierForDuePurchase').checked=db.settings.requireSupplierForDuePurchase!==false;$('allowPurchaseBillEdits').checked=db.settings.allowPurchaseBillEdits!==false;fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickMemberOptions(quickSelectedMembers());updateQuickActionTypeFields();renderQuickActionManager();}
  if(t==='payExpenseDue')renderExpenseDueList();
  if(t==='quickExpenses'){renderQuickMemberOptions(quickSelectedMembers());fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickActions();}
- if(t==='questSetup'){if($('questSetupList'))$('questSetupList').innerHTML=questHTML(dayQuests(today()),true);}
+ if(t==='questSetup'){if($('questSetupList'))$('questSetupList').innerHTML=questHTML(dayQuests(questLocalDate()),true);}
  if(t==='inventory')renderInventory();
  if(t==='production'){fillProductionOptions();renderProductionList();renderProductionInputs()}
  if(t==='supplierAccounts')renderSupplierAccounts();
@@ -1935,40 +1949,89 @@ $('guestForm').onsubmit=e=>{
 $('guestEntryDate').value=today();
 
 $('dailyQuestSetupLink').onclick=()=>setTab('questSetup');
-$('questList').onclick=e=>{const tile=e.target.closest('[data-quest-advance]');if(!tile||tile.disabled)return;const q=db.quests.find(item=>item.id===tile.dataset.questAdvance);if(!q)return;const state=questCheckState(q,today()),next=state.findIndex(value=>!value);if(next>=0)toggleQuest(q.id,next)};
+$('addQuestTimeRange').onclick=()=>{
+ const row=document.createElement('div');row.className='quest-time-range-row';row.dataset.timeRangeRow='';
+ row.innerHTML='<label>Start <input type="time" name="questRangeStart" value="09:00" required></label><label>End <input type="time" name="questRangeEnd" value="10:00" required></label><button type="button" class="secondary compact" data-remove-time-range>Remove</button>';
+ $('questTimeRanges').appendChild(row);
+};
+$('questTimeRanges').onclick=e=>{
+ const remove=e.target.closest('[data-remove-time-range]');if(!remove)return;
+ if($('questTimeRanges').querySelectorAll('[data-time-range-row]').length<=1){alert('At least one time range is required.');return}
+ remove.closest('[data-time-range-row]').remove();
+};
+$('questList').onclick=e=>{
+ const tile=e.target.closest('[data-quest-advance]');if(!tile||tile.disabled)return;
+ const q=db.quests.find(item=>item.id===tile.dataset.questAdvance);if(!q)return;
+ toggleQuest(q.id,Number(tile.dataset.rangeIndex),tile.dataset.questDate||questLocalDate());
+};
 $('questForm').onsubmit=e=>{
  e.preventDefault();
- const title=$('questTitle').value.trim(),times=Math.max(1,Math.floor(Number($('questTimes').value)||1)),eachTime=Number($('questEachTime').value),startDate=$('questStartDate').value;
+ const title=$('questTitle').value.trim(),times=Math.max(1,Math.floor(Number($('questTimes').value)||1)),eachTime=Number($('questEachTime').value),startDate=$('questStartDate').value,endDate=$('questEndDate').value;
  const repeatDays=[...document.querySelectorAll('[name="questDays"]:checked')].map(input=>input.value);
+ const timeRanges=[...$('questTimeRanges').querySelectorAll('[data-time-range-row]')].map(row=>({start:row.querySelector('[name="questRangeStart"]').value,end:row.querySelector('[name="questRangeEnd"]').value})).sort((a,b)=>a.start.localeCompare(b.start));
  if(!title||!(eachTime>0)||!Number.isFinite(eachTime)){alert('Enter a quest name and a valid Value greater than 0.');return}
- if(!startDate){alert('Choose the Daily Quest setup date.');return}
+ if(!startDate||!endDate||endDate<startDate){alert('Choose a valid Achievement Start Date and End Date.');return}
  if(!repeatDays.length){alert('Select at least one repeat day.');return}
- db.quests.push({id:crypto.randomUUID(),title,date:startDate,startDate,repeat:'weekly',repeatDays,times,eachTime});
- e.target.reset();$('questTitle').value='Namaz';$('questTimes').value=5;$('questEachTime').value=2;$('questStartDate').value=today();
- document.querySelectorAll('[name="questDays"]').forEach(input=>input.checked=true);save()
+ if(!timeRanges.length||timeRanges.some(r=>!r.start||!r.end||r.start===r.end)){alert('Add valid time ranges. Start and End times cannot be the same.');return}
+ const intervals=timeRanges.map(r=>{const start=Number(r.start.slice(0,2))*60+Number(r.start.slice(3,5));let end=Number(r.end.slice(0,2))*60+Number(r.end.slice(3,5));if(end<=start)end+=1440;return{start,end}});
+ for(let i=0;i<intervals.length;i++)for(let j=i+1;j<intervals.length;j++)for(const shift of [-1440,0,1440]){
+  if(Math.max(intervals[i].start,intervals[j].start+shift)<Math.min(intervals[i].end,intervals[j].end+shift)){alert('Time ranges must not overlap. Please adjust their start and end times.');return}
+ }
+ db.quests.push({id:crypto.randomUUID(),title,date:startDate,startDate,endDate,repeat:'weekly',repeatDays,times,eachTime,timeRanges});
+ e.target.reset();$('questTitle').value='Namaz';$('questTimes').value=5;$('questEachTime').value=2;$('questStartDate').value=questLocalDate();$('questEndDate').value=questLocalDate();
+ document.querySelectorAll('[name="questDays"]').forEach(input=>input.checked=true);
+ $('questTimeRanges').innerHTML='<div class="quest-time-range-row" data-time-range-row><label>Start <input type="time" name="questRangeStart" value="06:00" required></label><label>End <input type="time" name="questRangeEnd" value="10:00" required></label><button type="button" class="secondary compact" data-remove-time-range>Remove</button></div><div class="quest-time-range-row" data-time-range-row><label>Start <input type="time" name="questRangeStart" value="14:00" required></label><label>End <input type="time" name="questRangeEnd" value="17:00" required></label><button type="button" class="secondary compact" data-remove-time-range>Remove</button></div><div class="quest-time-range-row" data-time-range-row><label>Start <input type="time" name="questRangeStart" value="20:00" required></label><label>End <input type="time" name="questRangeEnd" value="05:00" required></label><button type="button" class="secondary compact" data-remove-time-range>Remove</button></div>';
+ save()
 };
-function questCheckState(q,d){
- const count=Math.max(1,Math.floor(Number(q.times)||1)),state=(db.checks[d]||{})[q.id];
- if(Array.isArray(state))return Array.from({length:count},(_,i)=>!!state[i]);
- return Array(count).fill(state===true);
+$('questStartDate').value=questLocalDate();$('questEndDate').value=questLocalDate();
+setInterval(()=>{
+ const d=questLocalDate(),items=dayQuestsForNow(d);
+ if($('questList'))$('questList').innerHTML=questTileHTML(items);
+},30000);
+function questRanges(q){return Array.isArray(q.timeRanges)&&q.timeRanges.length?q.timeRanges:[{start:'00:00',end:'23:59'}]}
+function questRangeState(q,d,index){
+ const count=Math.max(1,Math.floor(Number(q.times)||1)),raw=(db.checks[d]||{})[q.id];
+ if(raw&&typeof raw==='object'&&!Array.isArray(raw)&&raw.ranges&&Array.isArray(raw.ranges[index]))return Array.from({length:count},(_,i)=>!!raw.ranges[index][i]);
+ if(index===0&&Array.isArray(raw))return Array.from({length:count},(_,i)=>!!raw[i]);
+ if(index===0&&raw===true)return Array(count).fill(true);
+ return Array(count).fill(false);
 }
+function questCheckState(q,d){return questRanges(q).flatMap((r,i)=>questRangeState(q,d,i))}
 function questCheckedCount(q,d){return questCheckState(q,d).filter(Boolean).length}
 function questAchieved(q,d){return questCheckedCount(q,d)*Number(q.eachTime??1)}
-function questTarget(q){return Math.max(1,Math.floor(Number(q.times)||1))*Number(q.eachTime??1)}
+function questTarget(q){return Math.max(1,Math.floor(Number(q.times)||1))*Number(q.eachTime??1)*questRanges(q).length}
 function numberText(n){return Number(n).toLocaleString(undefined,{maximumFractionDigits:2})}
-function completed(q,d){const state=questCheckState(q,d);return state.every(Boolean)}
-function toggleQuest(id,index){
+function completed(q,d){const state=questCheckState(q,d);return state.length>0&&state.every(Boolean)}
+function questActiveRange(q,d,now=new Date()){
+ const nowMs=now.getTime(),ranges=questRanges(q);
+ for(let i=0;i<ranges.length;i++){
+  const r=ranges[i],startAt=new Date(`${d}T${r.start}:00`),endAt=new Date(`${d}T${r.end}:00`);
+  if(endAt<=startAt)endAt.setDate(endAt.getDate()+1);
+  const state=questRangeState(q,d,i);
+  if(state.every(Boolean))continue;
+  if(nowMs>endAt.getTime())continue;
+  if(nowMs<startAt.getTime())return{status:'waiting',index:i,startAt,endAt,checked:state.filter(Boolean).length};
+  return{status:'active',index:i,startAt,endAt,checked:state.filter(Boolean).length};
+ }
+ return{status:completed(q,d)?'completed':'expired',index:-1};
+}
+function questTimeText(value){
+ const [h,m]=String(value||'00:00').split(':').map(Number),hour=h%12||12;
+ return `${hour}:${String(m).padStart(2,"0")} ${h>=12?"PM":"AM"}`;
+}
+function toggleQuest(id,rangeIndex,d){
  const q=db.quests.find(x=>x.id===id);if(!q)return;
- db.checks[today()]??={};const state=questCheckState(q,today());
- if(index<0||index>=state.length)return;
- state[index]=!state[index];db.checks[today()][id]=state;save()
+ const active=questActiveRange(q,d,new Date());if(active.status!=='active'||active.index!==rangeIndex)return;
+ const state=questRangeState(q,d,rangeIndex),next=state.findIndex(value=>!value);if(next<0)return;
+ state[next]=true;db.checks[d]??={};const raw=db.checks[d][id],ranges=raw&&typeof raw==='object'&&!Array.isArray(raw)&&raw.ranges?raw.ranges:{};
+ ranges[rangeIndex]=state;db.checks[d][id]={ranges};save()
 }
 function delExpense(id){if(confirm('Delete this expense?')){if(editingExpenseId===id)resetExpenseForm();if(settlingExpenseId===id)closeExpenseDueAction();db.expenses=db.expenses.filter(x=>x.id!==id);save()}}
 function delQuest(id){if(confirm('Delete this quest?')){db.quests=db.quests.filter(x=>x.id!==id);Object.values(db.checks).forEach(v=>delete v[id]);save()}}
 function empty(msg){return `<div class="empty">${msg}</div>`}
 function render(){
  applySideMenuOrder();
- let d=today(),exToday=db.expenses.filter(x=>x.date===d),billsToday=db.purchaseBills.filter(x=>x.date===d),qToday=dayQuests(d),done=qToday.filter(q=>completed(q,d)).length;
+ let d=today(),questDate=questLocalDate(),exToday=db.expenses.filter(x=>x.date===d),billsToday=db.purchaseBills.filter(x=>x.date===d),qToday=dayQuestsForNow(questDate),done=qToday.filter(q=>completed(q,q._occurrenceDate||questDate)).length;
  $('todayTotal').textContent=money(sum(exToday)+billsToday.reduce((t,b)=>t+billTotal(b),0));$('questProgress').textContent=`${done}/${qToday.length}`;$('questBar').style.width=(qToday.length?done/qToday.length*100:0)+'%';$('todayQuestLabel').textContent=`${done} quests done`;
  let ws=startWeek(d),ms=d.slice(0,7);$('weekTotal').textContent=money(sum(db.expenses.filter(x=>x.date>=ws&&x.date<=d))+db.purchaseBills.filter(b=>b.date>=ws&&b.date<=d).reduce((t,b)=>t+billTotal(b),0));$('monthTotal').textContent=money(sum(db.expenses.filter(x=>x.date.startsWith(ms)))+db.purchaseBills.filter(b=>b.date.startsWith(ms)).reduce((t,b)=>t+billTotal(b),0));
  $('todayIncome').textContent=money(db.incomes.reduce((t,x)=>t+incomeReceivedOn(x,d),0));$('monthIncome').textContent=money(incomeReceivedBetween(ms+'-01',d));showBalances();
@@ -1977,7 +2040,7 @@ function render(){
  $('todayQuests').innerHTML=questHTML(qToday.slice(0,4),false);
  $('expenseCount').textContent=`${db.expenses.length} expenses · ${db.purchaseBills.length} bills`;
  let filtered=db.expenses.filter(x=>( $('expenseFilter').value==='all'||x.category===$('expenseFilter').value)&&(`${x.note} ${x.category}`).toLowerCase().includes($('expenseSearch').value.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date));
- $('expenseList').innerHTML=expenseHTML(filtered,true);$('questList').innerHTML=questTileHTML(dayQuests(d));if($('questSetupList'))$('questSetupList').innerHTML=questHTML(dayQuests(d),true);renderQuickActions();renderQuickSuppliers();renderQuickActionManager();renderSupplierAccounts();renderInventory();renderProductionList();renderExpenseDueList();renderGuestReport();
+ $('expenseList').innerHTML=expenseHTML(filtered,true);$('questList').innerHTML=questTileHTML(dayQuestsForNow(questDate));if($('questSetupList'))$('questSetupList').innerHTML=questHTML(dayQuests(questDate),true);renderQuickActions();renderQuickSuppliers();renderQuickActionManager();renderSupplierAccounts();renderInventory();renderProductionList();renderExpenseDueList();renderGuestReport();
  $('questSummary').textContent=`${done}/${qToday.length} completed`;$('incomeCount').textContent=`${db.incomes.length} entries`;
  const incomeFilter=$('incomeDateFilter').value,incomeHead=$('incomeHeadFilter').value,incomePerson=$('incomePersonFilter').value;const incomes=[...db.incomes].filter(x=>(!incomeFilter||x.date===incomeFilter)&&(incomeHead==='all'||(x.source||'Other')===incomeHead)&&(incomePerson==='all'||(x.incomeBy||'Unassigned')===incomePerson)).sort((a,b)=>b.date.localeCompare(a.date));$('incomeList').innerHTML=incomeHTML(incomes,true);renderSalesMemoList();
 }
@@ -2030,19 +2093,24 @@ function incomeHTML(items,actions){
 
 function questTileHTML(items){
  return items.length?items.map(q=>{
-  const d=today(),state=questCheckState(q,d),checked=state.filter(Boolean).length,achieved=questAchieved(q,d),target=questTarget(q),next=state.findIndex(value=>!value);
-  return `<button type="button" class="quick-action-card daily-quest-tile" data-quest-advance="${esc(q.id)}" aria-label="${esc(q.title)}. ${checked} of ${state.length} completed. Tap to mark the next check."${next<0?' disabled':''}>
+  const d=q._occurrenceDate||questLocalDate(),state=questCheckState(q,d),checked=state.filter(Boolean).length,achieved=questAchieved(q,d),target=questTarget(q),active=questActiveRange(q,d,new Date()),ranges=questRanges(q),range=active.index>=0?ranges[active.index]:null;
+  const rangeState=active.index>=0?questRangeState(q,d,active.index):[];
+  const doneInRange=rangeState.filter(Boolean).length,rangeLabel=range?questTimeText(range.start)+' – '+questTimeText(range.end):'';
+  const buttonText=active.status==='active'?'Tap to record · '+rangeLabel:active.status==='waiting'?'Next: '+rangeLabel:active.status==='completed'?'Completed for this date range':'All time ranges ended';
+  const activeIndex=active.index>=0?active.index:0;
+  return `<button type="button" class="quick-action-card daily-quest-tile" data-quest-advance="${esc(q.id)}" data-range-index="${activeIndex}" data-quest-date="${d}" aria-label="${esc(q.title)}. ${buttonText}"${active.status!=='active'?' disabled':''}>
    <span class="quick-action-button-title">${esc(q.title)}</span>
-   <span class="quick-action-button-stats"><span>Done: <strong>${checked}/${state.length}</strong></span><span>Achieved: <strong>${numberText(achieved)}/${numberText(target)}</strong></span></span>
-   <span class="quick-action-button-kind">${next<0?'Completed':'Tap to check'}</span>
+   <span class="quick-action-button-stats"><span>Done: <strong>${doneInRange}/${Math.max(1,Math.floor(Number(q.times)||1))}</strong></span><span>Achieved: <strong>${numberText(achieved)}/${numberText(target)}</strong></span></span>
+   <span class="quick-action-button-kind">${buttonText}</span>
   </button>`;
- }).join(''):empty('No Daily Quest buttons yet. Click the Daily Quest title to set up your quests.');
+ }).join(''):empty('No Daily Quests scheduled for this date.');
 }
 function questHTML(items,del){return items.length?items.map(q=>{
- const d=today(),state=questCheckState(q,d),checked=state.filter(Boolean).length,achieved=questAchieved(q,d),target=questTarget(q);
+ const d=q._occurrenceDate||questLocalDate(),state=questCheckState(q,d),checked=state.filter(Boolean).length,achieved=questAchieved(q,d),target=questTarget(q);
  const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],days=Array.isArray(q.repeatDays)&&q.repeatDays.length?q.repeatDays.map(Number).sort((a,b)=>[6,0,1,2,3,4,5].indexOf(a)-[6,0,1,2,3,4,5].indexOf(b)).map(day=>dayNames[day]).join(', '):(q.repeat==='daily'?'Every day':'One day');
+ const ranges=questRanges(q).map(r=>questTimeText(r.start)+' – '+questTimeText(r.end)).join(', ');
  return `<div class="quest-item ${completed(q,d)?'done':''}">
-  <div class="quest-item-head"><div class="item-main"><div class="item-title">${esc(q.title)}</div><div class="item-sub">Repeat: ${esc(days)} · Setup date: ${esc(q.startDate||q.date||'—')} · Times: ${numberText(Number(q.times||1))} · Value: ${numberText(Number(q.eachTime??1))}</div></div>
+  <div class="quest-item-head"><div class="item-main"><div class="item-title">${esc(q.title)}</div><div class="item-sub">Repeat: ${esc(days)} · Dates: ${esc(q.startDate||q.date||'—')} to ${esc(q.endDate||'No end date')} · Times/range: ${numberText(Number(q.times||1))} · Value: ${numberText(Number(q.eachTime??1))} · ${esc(ranges)}</div></div>
    <div class="quest-score"><strong>Achieved: ${numberText(achieved)} / ${numberText(target)}</strong><span>${checked} / ${state.length} Times</span></div>
    ${del?`<button class="delete" onclick="delQuest('${q.id}')" aria-label="Delete ${esc(q.title)}">×</button>`:''}
   </div>
