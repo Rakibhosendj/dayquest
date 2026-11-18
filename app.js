@@ -1362,6 +1362,15 @@ function updateQuickActionModeButton(){
   button.setAttribute('aria-label',`Current quick button mode: ${subtract?'Minus':'Add'}. Click to switch mode.`);
  });
 }
+function updateOverviewQuickTapButton(){
+ const button=$('overviewQuickActionTapToggle');if(!button)return;
+ const enabled=db.settings?.overviewQuickActionsEnabled!==false;
+ button.textContent=enabled?'ON':'OFF';
+ button.classList.toggle('is-on',enabled);
+ button.classList.toggle('is-off',!enabled);
+ button.setAttribute('aria-pressed',String(enabled));
+ button.setAttribute('aria-label',`Overview Quick Expenses tap is ${enabled?'ON':'OFF'}. Click to switch.`);
+}
 function vibrateQuickButton(){
  if(db.settings?.quickButtonVibration===false||typeof navigator==='undefined')return false;
  // The Vibration API is supported by many Android browsers, but not iOS Safari.
@@ -1378,6 +1387,7 @@ function bindQuickButtonHaptics(container){
   if(event.pointerType==='mouse')return;
   const tile=event.target.closest('[data-quick-activate],[data-quick-supplier],[data-quest-advance]');
   if(!tile||tile.disabled)return;
+  if(container.id==='overviewQuickActionList'&&db.settings?.overviewQuickActionsEnabled===false)return;
   vibrateQuickButton();
  },{passive:true});
 }
@@ -1385,10 +1395,12 @@ function renderQuickActions(){
  const list=$('quickActionList'),overview=$('overviewQuickActionList');
  if($('quickActionCount'))$('quickActionCount').textContent=`${db.quickActions.length} button${db.quickActions.length===1?'':'s'}`;
  updateQuickActionModeButton();
- const html=db.quickActions.length?db.quickActions.map(action=>{
-  const stats=quickActionStats(action),disabled=quickActionMode==='minus'&&stats.dayCount<1;
+ updateOverviewQuickTapButton();
+ const makeHtml=(isOverview=false)=>db.quickActions.length?db.quickActions.map(action=>{
+  const stats=quickActionStats(action),tapDisabled=isOverview&&db.settings?.overviewQuickActionsEnabled===false;
+  const disabled=(quickActionMode==='minus'&&stats.dayCount<1)||tapDisabled;
   const kind=action.type==='income'?'Income':'Expense';
-  const aria=`${action.name}, ${kind}. Total count ${numberText(stats.totalCount)}, today count ${numberText(stats.dayCount)}, total cost ${numberText(stats.totalCost)}, today's cost ${numberText(stats.dayCost)}. ${quickActionMode==='minus'?'Click to subtract one of today’s entries':'Click to add one'}.`;
+  const aria=`${action.name}, ${kind}. Total count ${numberText(stats.totalCount)}, today count ${numberText(stats.dayCount)}, total cost ${numberText(stats.totalCost)}, today's cost ${numberText(stats.dayCost)}. ${tapDisabled?'Overview quick tap is OFF':quickActionMode==='minus'?'Click to subtract one of today’s entries':'Click to add one'}.`;
   return `<button type="button" class="quick-action-card ${quickActionMode==='minus'?'quick-action-minus':''}" data-quick-activate="${esc(action.id)}" aria-label="${esc(aria)}" ${disabled?'disabled':''}>
    <span class="quick-action-button-title">${esc(action.name)}</span>
    <span class="quick-action-button-stats">
@@ -1400,8 +1412,8 @@ function renderQuickActions(){
    <span class="quick-action-button-kind">${kind}</span>
   </button>`;
  }).join(''):empty('No quick buttons yet. Open Settings → Create Quick Button to add one.');
- if(list)list.innerHTML=html;
- if(overview)overview.innerHTML=html;
+ if(list)list.innerHTML=makeHtml(false);
+ if(overview)overview.innerHTML=makeHtml(true);
 }
 
 function renderQuickSuppliers(){
@@ -1646,10 +1658,16 @@ $('overviewQuickSetupLink').onclick=()=>{
 };
 $('quickActionModeToggle').onclick=toggleQuickActionMode;
 $('overviewQuickActionModeToggle').onclick=toggleQuickActionMode;
+$('overviewQuickActionTapToggle').onclick=()=>{
+ db.settings=db.settings||{};
+ db.settings.overviewQuickActionsEnabled=db.settings.overviewQuickActionsEnabled===false;
+ save();
+};
 $('quickActionForm').onsubmit=e=>{e.preventDefault();saveQuickAction()};
 $('quickActionCancel').onclick=()=>{resetQuickActionForm();if($('quickActionSettings'))$('quickActionSettings').open=false};
 const handleQuickActionTileClick=e=>{
  const tile=e.target.closest('[data-quick-activate]');if(!tile||tile.disabled)return;
+ if(tile.closest('#overviewQuickActionList')&&db.settings?.overviewQuickActionsEnabled===false)return;
  const id=tile.dataset.quickActivate;if(quickActionMode==='minus')subtractQuickActionOne(id);else addQuickActionOne(id);
 };
 $('quickActionList').onclick=handleQuickActionTileClick;
