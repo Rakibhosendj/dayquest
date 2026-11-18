@@ -1354,3 +1354,28 @@ img,canvas,svg{max-width:100%}
  .overview-quick-controls .quick-action-mode-toggle{min-width:78px;padding:8px 9px;font-size:11px}
  .overview-quick-hint{font-size:9px}
 }
+
+
+/* Budget product table: fit all six columns on one line on phone screens. */
+@media(max-width:520px){
+ #budget .budget-table-wrap{overflow-x:hidden}
+ #budget .budget-table{width:100%;min-width:0;table-layout:fixed;font-size:9px}
+ #budget .budget-table th,#budget .budget-table td{padding:6px 2px;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ #budget .budget-table th{font-size:8px;letter-spacing:-.25px}
+ #budget .budget-table th:nth-child(1),#budget .budget-table td:nth-child(1){width:6%;padding-left:1px;padding-right:1px}
+ #budget .budget-table th:nth-child(2),#budget .budget-table td:nth-child(2){width:25%}
+ #budget .budget-table th:nth-child(3),#budget .budget-table td:nth-child(3){width:15%}
+ #budget .budget-table th:nth-child(4),#budget .budget-table td:nth-child(4){width:19%}
+ #budget .budget-table th:nth-child(5),#budget .budget-table td:nth-child(5){width:10%}
+ #budget .budget-table th:nth-child(6),#budget .budget-table td:nth-child(6){width:25%}
+ #budget .budget-table td strong{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px}
+ #budget .budget-table td small{display:none}
+ #budget .budget-table .budget-rate,#budget .budget-table .budget-line-total{font-size:8px;letter-spacing:-.35px}
+ #budget .budget-quantity-input{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;padding:5px 1px;border-radius:5px;font-size:9px;text-align:center}
+}
+@media(max-width:360px){
+ #budget .budget-table th,#budget .budget-table td{padding-left:1px;padding-right:1px;font-size:8px}
+ #budget .budget-table th{font-size:7px}
+ #budget .budget-table .budget-rate,#budget .budget-table .budget-line-total{font-size:7px;letter-spacing:-.45px}
+ #budget .budget-quantity-input{font-size:8px;padding:4px 0}
+}
