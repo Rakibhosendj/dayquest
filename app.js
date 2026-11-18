@@ -98,7 +98,7 @@ db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];
 db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
 db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};
 db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers.filter(name=>db.suppliers.includes(name)))]:[];
-db.mealPlan=db.mealPlan&&typeof db.mealPlan==='object'?db.mealPlan:{};db.mealPlan.defaultCount=Math.max(0,Math.floor(Number(db.mealPlan.defaultCount??3)||0));db.mealPlan.dateCounts=db.mealPlan.dateCounts&&typeof db.mealPlan.dateCounts==='object'?db.mealPlan.dateCounts:{};db.mealPlan.memberStatus=db.mealPlan.memberStatus&&typeof db.mealPlan.memberStatus==='object'?db.mealPlan.memberStatus:{};db.mealPlan.memberCounts=db.mealPlan.memberCounts&&typeof db.mealPlan.memberCounts==='object'?db.mealPlan.memberCounts:{};db.mealPlan.memberChecks=db.mealPlan.memberChecks&&typeof db.mealPlan.memberChecks==='object'?db.mealPlan.memberChecks:{};db.mealPlan.costPerMeal=Math.max(0,Number(db.mealPlan.costPerMeal)||0);
+db.mealPlan=db.mealPlan&&typeof db.mealPlan==='object'?db.mealPlan:{};db.mealPlan.defaultCount=Math.max(0,Math.floor(Number(db.mealPlan.defaultCount??3)||0));db.mealPlan.dateCounts=db.mealPlan.dateCounts&&typeof db.mealPlan.dateCounts==='object'?db.mealPlan.dateCounts:{};db.mealPlan.memberStatus=db.mealPlan.memberStatus&&typeof db.mealPlan.memberStatus==='object'?db.mealPlan.memberStatus:{};db.mealPlan.memberCounts=db.mealPlan.memberCounts&&typeof db.mealPlan.memberCounts==='object'?db.mealPlan.memberCounts:{};db.mealPlan.memberChecks=db.mealPlan.memberChecks&&typeof db.mealPlan.memberChecks==='object'?db.mealPlan.memberChecks:{};db.mealPlan.personDates=db.mealPlan.personDates&&typeof db.mealPlan.personDates==='object'?db.mealPlan.personDates:{};db.mealPlan.guestStatus=db.mealPlan.guestStatus&&typeof db.mealPlan.guestStatus==='object'?db.mealPlan.guestStatus:{};db.mealPlan.costPerMeal=Math.max(0,Number(db.mealPlan.costPerMeal)||0);
 db.productNames=Array.isArray(db.productNames)?db.productNames:[];
 db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);
 db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];
@@ -344,7 +344,7 @@ function setTab(t){
  if(activeGroup)activeGroup.open=true;
  closeSidebar();
  if(t==='reports'){renderReport();if(!document.querySelector('[data-report-go].active'))activateReportSection('members')}
- if(t==='settings'){renderPurchaseCategorySettings();renderMasterLists();renderProductDictionary();$('quickButtonColorInput').value=db.settings.quickButtonColor||'#ee7d2f';$('quickButtonColorValue').textContent=(db.settings.quickButtonColor||'#ee7d2f').toUpperCase();if($('quickButtonVibration'))$('quickButtonVibration').checked=db.settings.quickButtonVibration!==false;$('requireSupplierForDuePurchase').checked=db.settings.requireSupplierForDuePurchase!==false;$('allowPurchaseBillEdits').checked=db.settings.allowPurchaseBillEdits!==false;fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickMemberOptions(quickSelectedMembers());updateQuickActionTypeFields();renderQuickActionManager();}
+ if(t==='settings'){renderPurchaseCategorySettings();renderMasterLists();renderProductDictionary();renderMealPersonDates();$('quickButtonColorInput').value=db.settings.quickButtonColor||'#ee7d2f';$('quickButtonColorValue').textContent=(db.settings.quickButtonColor||'#ee7d2f').toUpperCase();if($('quickButtonVibration'))$('quickButtonVibration').checked=db.settings.quickButtonVibration!==false;$('requireSupplierForDuePurchase').checked=db.settings.requireSupplierForDuePurchase!==false;$('allowPurchaseBillEdits').checked=db.settings.allowPurchaseBillEdits!==false;fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickMemberOptions(quickSelectedMembers());updateQuickActionTypeFields();renderQuickActionManager();}
  if(t==='payExpenseDue')renderExpenseDueList();
  if(t==='quickExpenses'){renderQuickMemberOptions(quickSelectedMembers());fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickActions();}
  if(t==='questSetup'){if($('questSetupList'))$('questSetupList').innerHTML=questHTML(dayQuests(questLocalDate()),true);}
@@ -1321,17 +1321,32 @@ function renderMeals(){
  if($('mealDefaultCount'))$('mealDefaultCount').value=db.mealPlan.defaultCount;
  if($('mealDateEntry')&&$('mealDateEntry').value!==date)$('mealDateEntry').value=date;
  if($('mealDateCount'))$('mealDateCount').value=db.mealPlan.dateCounts[date]??db.mealPlan.defaultCount;
- const list=$('mealMemberControls');if(list)list.innerHTML=db.familyMembers.length?db.familyMembers.map(member=>{
-  const enabled=mealMemberEnabled(member,date),count=enabled?mealCountForMember(member,date):0;
-  const savedChecks=db.mealPlan.memberChecks?.[date]?.[member]||[];
+ const allPeople=uniquePeople([...db.familyMembers,...db.guestPeople]);
+ const list=$('mealMemberControls');if(list)list.innerHTML=allPeople.length?allPeople.map(name=>{
+  const isGuest=db.guestPeople.some(n=>mealPersonKey(n)===mealPersonKey(name))&&!db.familyMembers.some(n=>mealPersonKey(n)===mealPersonKey(name));
+  const withinRange=mealPersonInDateRange(name,date,isGuest),enabled=mealPersonEnabled(name,date,isGuest),count=enabled?mealCountForMember(name,date):0;
+  const savedChecks=db.mealPlan.memberChecks?.[date]?.[name]||[];
   const checks=Array.from({length:count},(_,idx)=>savedChecks[idx]!==false);
-  const boxes=Array.from({length:count},(_,idx)=>'<label class="meal-slot-check"><input type="checkbox" data-meal-slot="'+idx+'" data-meal-slot-member="'+esc(member)+'" '+(checks[idx]?'checked':'')+'><span>M</span></label>').join('');
-  const checked=checks.filter(Boolean).length;
-  return '<div class="meal-member-row"><strong>'+esc(member)+'</strong><label class="meal-toggle"><input type="checkbox" data-meal-member="'+esc(member)+'" '+(enabled?'checked':'')+'> A</label>'+(enabled?'<div class="meal-slot-list">'+boxes+'</div><strong class="meal-member-total">T '+checked+'</strong>':'')+'</div>';
- }).join(''):empty('Add family members in Profile first.');
- const totals=db.familyMembers.map(member=>{let total=0;if(from&&to&&from<=to){for(let d=dateObj(from),end=dateObj(to);d<=end;d.setDate(d.getDate()+1)){const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');if(mealMemberEnabled(member,key)){const saved=db.mealPlan.memberChecks?.[key]?.[member];total+=Array.from({length:mealCountForMember(member,key)},(_,idx)=>!Array.isArray(saved)||saved[idx]!==false).filter(Boolean).length}}}return {member,total}});
+  const boxes=Array.from({length:count},(_,idx)=>'<label class="meal-slot-check"><input type="checkbox" data-meal-slot="'+idx+'" data-meal-slot-member="'+esc(name)+'" '+(checks[idx]?'checked':'')+'><span>M</span></label>').join('');
+  const checked=checks.filter(Boolean).length,toggleAttribute=isGuest?'data-meal-guest':'data-meal-member',toggleLabel=isGuest?'G':'A';
+  return '<div class="meal-member-row '+(isGuest?'meal-guest-row':'')+'"><strong>'+esc(name)+'</strong><label class="meal-toggle"><input type="checkbox" '+toggleAttribute+'="'+esc(name)+'" '+(enabled?'checked':'')+(!withinRange?' disabled':'')+'> '+toggleLabel+'</label>'+(enabled?'<div class="meal-slot-list">'+boxes+'</div><strong class="meal-member-total">T '+checked+'</strong>':'')+'</div>';
+ }).join(''):empty('Add family members in Profile or guest names in Guest entry first.');
+ const totals=allPeople.map(name=>{
+  const isGuest=db.guestPeople.some(n=>mealPersonKey(n)===mealPersonKey(name))&&!db.familyMembers.some(n=>mealPersonKey(n)===mealPersonKey(name));
+  let total=0;
+  if(from&&to&&from<=to){
+   for(let d=dateObj(from),end=dateObj(to);d<=end;d.setDate(d.getDate()+1)){
+    const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(mealPersonEnabled(name,key,isGuest)){
+     const saved=db.mealPlan.memberChecks?.[key]?.[name];
+     total+=Array.from({length:mealCountForMember(name,key)},(_,idx)=>!Array.isArray(saved)||saved[idx]!==false).filter(Boolean).length;
+    }
+   }
+  }
+  return {member:name,total,isGuest};
+ });
  const totalMeals=totals.reduce((n,x)=>n+x.total,0),mealProductCost=from&&to&&from<=to?mealProductCostForRange(from,to):0,costPerMeal=totalMeals?mealProductCost/totalMeals:0;
- if($('mealMemberTotals'))$('mealMemberTotals').innerHTML=totals.length?totals.map(x=>'<div class="meal-total-row"><strong>'+esc(x.member)+'</strong><span class="meal-total-count">T '+numberText(x.total)+'</span><strong class="meal-member-cost">'+money(x.total*costPerMeal)+'</strong></div>').join(''):empty('No family members added.');
+ if($('mealMemberTotals'))$('mealMemberTotals').innerHTML=totals.length?totals.map(x=>'<div class="meal-total-row"><strong>'+esc(x.member)+(x.isGuest?' · Guest':'')+'</strong><span class="meal-total-count">T '+numberText(x.total)+'</span><strong class="meal-member-cost">'+money(x.total*costPerMeal)+'</strong></div>').join(''):empty('No family or guest members added.');
  if($('mealRangeTotal'))$('mealRangeTotal').textContent='Meal Cost: '+money(mealProductCost)+' · Cost per meal '+money(costPerMeal);
 }
 
@@ -1399,9 +1414,26 @@ $('mealDateSave').onclick=()=>{const date=$('mealDateEntry').value,n=Number($('m
 $('mealsBackOverview').onclick=()=>{setTab('home');document.getElementById('home')?.scrollIntoView({behavior:'instant',block:'start'})};
 ['mealFromDate','mealToDate','mealControlDate'].forEach(id=>$(id).addEventListener('change',renderMeals));
 $('mealDateEntry').addEventListener('change',()=>{const date=$('mealDateEntry').value;$('mealControlDate').value=date;renderMeals()});
+$('mealPersonDateSettings').onchange=e=>{
+ const input=e.target.closest('[data-meal-person-start],[data-meal-person-close]');if(!input)return;
+ const row=input.closest('[data-meal-person-row]');if(!row)return;
+ const name=row.dataset.mealPersonRow,key=mealPersonKey(name),startDate=row.querySelector('[data-meal-person-start]').value,closeDate=row.querySelector('[data-meal-person-close]').value;
+ if(startDate&&closeDate&&closeDate<startDate){alert('Meal Close Date cannot be earlier than Meal Start Date.');renderMealPersonDates();return}
+ db.mealPlan.personDates=db.mealPlan.personDates||{};
+ if(!startDate&&!closeDate)delete db.mealPlan.personDates[key];
+ else db.mealPlan.personDates[key]={startDate,closeDate,configured:true};
+ save();renderMealPersonDates();renderMeals();
+};
 $('mealMemberControls').onchange=e=>{
- const toggle=e.target.closest('[data-meal-member]'),slot=e.target.closest('[data-meal-slot]'),countInput=e.target.closest('[data-meal-count]'),date=$('mealControlDate').value;
- if(toggle){const member=toggle.dataset.mealMember;db.mealPlan.memberStatus[date]=db.mealPlan.memberStatus[date]||{};db.mealPlan.memberStatus[date][member]=toggle.checked;if(toggle.checked){db.mealPlan.memberChecks[date]=db.mealPlan.memberChecks[date]||{};db.mealPlan.memberChecks[date][member]=Array(mealCountForMember(member,date)).fill(true)}save();renderMeals();return}
+ const memberToggle=e.target.closest('[data-meal-member]'),guestToggle=e.target.closest('[data-meal-guest]'),slot=e.target.closest('[data-meal-slot]'),countInput=e.target.closest('[data-meal-count]'),date=$('mealControlDate').value;
+ const toggle=memberToggle||guestToggle;
+ if(toggle){
+  const member=toggle.dataset.mealMember||toggle.dataset.mealGuest;
+  if(guestToggle){db.mealPlan.guestStatus[date]=db.mealPlan.guestStatus[date]||{};db.mealPlan.guestStatus[date][member]=toggle.checked}
+  else{db.mealPlan.memberStatus[date]=db.mealPlan.memberStatus[date]||{};db.mealPlan.memberStatus[date][member]=toggle.checked}
+  if(toggle.checked){db.mealPlan.memberChecks[date]=db.mealPlan.memberChecks[date]||{};db.mealPlan.memberChecks[date][member]=Array(mealCountForMember(member,date)).fill(true)}
+  save();renderMeals();return;
+ }
  if(slot){const member=slot.dataset.mealSlotMember,index=Number(slot.dataset.mealSlot);db.mealPlan.memberChecks[date]=db.mealPlan.memberChecks[date]||{};const count=mealCountForMember(member,date),saved=db.mealPlan.memberChecks[date][member]||[];db.mealPlan.memberChecks[date][member]=Array.from({length:count},(_,idx)=>saved[idx]!==false);db.mealPlan.memberChecks[date][member][index]=slot.checked;save();renderMeals();return}
  if(countInput){const member=countInput.dataset.mealCount,n=Number(countInput.value);if(!Number.isInteger(n)||n<0){alert('Enter a whole number of meals, zero or more.');renderMeals();return}db.mealPlan.memberCounts[date]=db.mealPlan.memberCounts[date]||{};db.mealPlan.memberCounts[date][member]=n;save();renderMeals()}
 };
@@ -1941,6 +1973,42 @@ function updateAppBrand(){
  document.title=title;
  const authTitle=$('authTitle');if(authTitle)authTitle.textContent='Day Quest';
 }
+function mealPersonKey(name){return String(name||'').trim().toLocaleLowerCase()}
+function guestStayRangesForPerson(name){
+ const key=mealPersonKey(name);
+ return db.guests.filter(g=>(g.members||[]).some(person=>mealPersonKey(person)===key));
+}
+function mealPersonDateValues(name,isGuest=false){
+ const saved=db.mealPlan.personDates?.[mealPersonKey(name)];
+ if(saved&&saved.configured)return {startDate:String(saved.startDate||''),closeDate:String(saved.closeDate||'')};
+ if(!isGuest)return {startDate:'',closeDate:''};
+ const stays=guestStayRangesForPerson(name);
+ if(!stays.length)return {startDate:'',closeDate:''};
+ const startDate=stays.map(g=>String(g.entryDate||'')).filter(Boolean).sort()[0]||'';
+ const activeStay=stays.some(g=>!g.outDate);
+ const closeDate=activeStay?'':(stays.map(g=>String(g.outDate||'')).filter(Boolean).sort().slice(-1)[0]||'');
+ return {startDate,closeDate};
+}
+function mealPersonInDateRange(name,date,isGuest=false){
+ const saved=db.mealPlan.personDates?.[mealPersonKey(name)];
+ if(saved?.configured||saved?.startDate||saved?.closeDate){
+  return (!saved.startDate||date>=saved.startDate)&&(!saved.closeDate||date<=saved.closeDate);
+ }
+ if(!isGuest)return true;
+ return guestStayRangesForPerson(name).some(g=>date>=String(g.entryDate||'')&&(!g.outDate||date<=g.outDate));
+}
+function mealPersonEnabled(name,date,isGuest=false){
+ if(!mealPersonInDateRange(name,date,isGuest))return false;
+ return isGuest?(db.mealPlan.guestStatus?.[date]?.[name]!==false):mealMemberEnabled(name,date);
+}
+function renderMealPersonDates(){
+ const host=$('mealPersonDateSettings');if(!host)return;
+ const makeRows=(names,isGuest)=>names.map(name=>{
+  const dates=mealPersonDateValues(name,isGuest);
+  return '<div class="meal-person-date-row" data-meal-person-row="'+esc(name)+'" data-meal-person-guest="'+(isGuest?'1':'0')+'"><strong>'+esc(name)+'</strong><label>Meal Start<input type="date" data-meal-person-start value="'+esc(dates.startDate)+'"></label><label>Meal Close<input type="date" data-meal-person-close value="'+esc(dates.closeDate)+'"></label></div>';
+ }).join('')||'<p class="muted meal-person-date-empty">No '+(isGuest?'guest members':'family members')+' added.</p>';
+ host.innerHTML='<div class="meal-person-date-group"><h4>Members</h4>'+makeRows(db.familyMembers,false)+'</div><div class="meal-person-date-group"><h4>Guest Members</h4>'+makeRows(db.guestPeople,true)+'</div>';
+}
 function renderFamilyMembers(){
  const list=$('familyMemberList');if(!list)return;
  list.innerHTML=db.familyMembers.map((name,index)=>`<div class="family-member-row"><span class="family-member-avatar">${esc(name.trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase())}</span><span class="family-member-name"><strong>${esc(name)}</strong><small>Available in Income By</small></span><button type="button" class="delete" data-remove-family-member="${index}" aria-label="Remove ${esc(name)}">×</button></div>`).join('')||empty('No family members added yet.');
@@ -1953,7 +2021,7 @@ function renderFamilyMembers(){
 function loadProfileForm(){
  $('profileName').value=db.profile.name||'';$('profilePhone').value=db.profile.phone||'';$('familyName').value=db.profile.familyName||'';
  $('openingCash').value=Number(db.profile.openingCash||0);$('openingBank').value=Number(db.profile.openingBank||0);
- updateAppBrand();updateProfilePhotoPreview();renderFamilyMembers();
+ updateAppBrand();updateProfilePhotoPreview();renderFamilyMembers();renderMealPersonDates();
 }
 $('profilePhotoInput').onchange=async e=>{
  const file=e.target.files?.[0];if(!file)return;
@@ -1977,7 +2045,7 @@ $('addFamilyMember').onclick=()=>{
  const input=$('newFamilyMember'),name=input.value.trim();if(!name){alert('Enter a family member name.');input.focus();return}
  if(db.familyMembers.some(n=>n.toLocaleLowerCase()===name.toLocaleLowerCase())){alert('This family member is already listed.');return}
  db.familyMembers.push(name);if(!db.incomePeople.includes(name))db.incomePeople.push(name);
- input.value='';renderFamilyMembers();fillChoices();save();
+ input.value='';renderFamilyMembers();renderMealPersonDates();fillChoices();save();
 };
 $('profileForm').onsubmit=e=>{
  e.preventDefault();const openingCash=Number($('openingCash').value),openingBank=Number($('openingBank').value);
@@ -1993,14 +2061,14 @@ function renderGuestMemberControls(){fillGuestMemberOptions(selectedGuestMembers
 $('addGuestName').onclick=()=>{
  const input=$('newGuestName'),name=input.value.trim();if(!name){alert('Enter a guest name.');input.focus();return}
  if(assignablePeople().some(n=>n.toLocaleLowerCase()===name.toLocaleLowerCase())){alert('That name is already available in the member list.');return}
- db.guestPeople.push(name);input.value='';renderGuestMemberControls();fillChoices();save();
+ db.guestPeople.push(name);input.value='';renderGuestMemberControls();renderMealPersonDates();fillChoices();save();
 };
 $('guestForm').onsubmit=e=>{
  e.preventDefault();const members=selectedGuestMembers(),entryDate=$('guestEntryDate').value,purpose=$('guestPurpose').value.trim();
  if(!members.length){alert('Select at least one guest member.');return}
  if(!entryDate){alert('Choose the guest entry date.');return}
  db.guests.unshift({id:crypto.randomUUID(),entryDate,outDate:'',members,purpose});
- $('guestForm').reset();$('guestEntryDate').value=today();fillGuestMemberOptions([]);renderGuestReport();save();
+ $('guestForm').reset();$('guestEntryDate').value=today();fillGuestMemberOptions([]);renderGuestReport();renderMealPersonDates();save();
 };
 $('guestEntryDate').value=today();
 
@@ -2276,7 +2344,7 @@ function renderGuestReport(rangeStart='',rangeEnd=''){
   const row=button.closest('[data-guest-id]'),g=db.guests.find(x=>x.id===row?.dataset.guestId);if(!g)return;
   const outDate=row.querySelector('[data-guest-out]').value;
   if(outDate&&outDate<g.entryDate){alert('Guest out date cannot be earlier than the entry date.');return}
-  g.outDate=outDate;save();
+  g.outDate=outDate;renderMealPersonDates();renderMeals();save();
  });
  const filteredGuests=db.guests.filter(g=>guestOverlapsRange(g,rangeStart,rangeEnd));
  report.innerHTML=filteredGuests.slice().sort((a,b)=>String(b.entryDate).localeCompare(String(a.entryDate))).map(g=>{
