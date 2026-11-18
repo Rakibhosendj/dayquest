@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v85-quick-vibration-pointerdown-fix';
+const CACHE = 'dayquest-cache-v86-daily-quest-weekday-schedule';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261118-quick-vibration-pointerdown-fix',
-  './app.js?v=20261118-quick-vibration-pointerdown-fix',
+  './style.css?v=20261118-daily-quest-weekday-schedule',
+  './app.js?v=20261118-daily-quest-weekday-schedule',
   './manifest.json',
   './cloud-config.js'
 ];
