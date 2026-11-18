@@ -195,7 +195,15 @@ function calculateBalances(){
 }
 function showBalances(){const b=calculateBalances();[['earnedBalance',b.total],['cashBalance',b.cash],['bankBalance',b.bank],['reportEarnedBalance',b.total],['reportCashBalance',b.cash],['reportBankBalance',b.bank],['profileEarnedBalance',b.total],['profileCashBalance',b.cash],['profileBankBalance',b.bank]].forEach(([id,v])=>{if($(id))$(id).textContent=money(v)});}
 const startWeek=d=>{let x=dateObj(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return x.toISOString().slice(0,10)};
-function dayQuests(d){return db.quests.filter(q=>q.repeat==='daily'||q.date===d)}
+function dayQuests(d){
+ const date=new Date(`${d}T12:00:00`),day=String(date.getDay());
+ return db.quests.filter(q=>{
+  const start=String(q.startDate||q.date||'');
+  if(start&&d<start)return false;
+  if(Array.isArray(q.repeatDays)&&q.repeatDays.length)return q.repeatDays.map(String).includes(day);
+  return q.repeat==='daily'||q.date===d;
+ });
+}
 function completed(q,d){return !!(db.checks[d]||{})[q.id]}
 const SIDEBAR_PREF_KEY='dayquest_sidebar_hidden_v1';
 if(localStorage.getItem(SIDEBAR_PREF_KEY)==='1')$('appLayout')?.classList.add('sidebar-collapsed');
@@ -1930,10 +1938,14 @@ $('dailyQuestSetupLink').onclick=()=>setTab('questSetup');
 $('questList').onclick=e=>{const tile=e.target.closest('[data-quest-advance]');if(!tile||tile.disabled)return;const q=db.quests.find(item=>item.id===tile.dataset.questAdvance);if(!q)return;const state=questCheckState(q,today()),next=state.findIndex(value=>!value);if(next>=0)toggleQuest(q.id,next)};
 $('questForm').onsubmit=e=>{
  e.preventDefault();
- const title=$('questTitle').value.trim(),times=Math.max(1,Math.min(30,Math.floor(Number($('questTimes').value)||1))),eachTime=Number($('questEachTime').value);
- if(!title||!(eachTime>0)||!Number.isFinite(eachTime)){alert('Enter a quest name and a valid Each Time value greater than 0.');return}
- db.quests.push({id:crypto.randomUUID(),title,repeat:$('questRepeat').value,date:today(),times,eachTime});
- e.target.reset();$('questTitle').value='Namaz';$('questTimes').value=5;$('questEachTime').value=2;save()
+ const title=$('questTitle').value.trim(),times=Math.max(1,Math.min(30,Math.floor(Number($('questTimes').value)||1))),eachTime=Number($('questEachTime').value),startDate=$('questStartDate').value;
+ const repeatDays=[...document.querySelectorAll('[name="questDays"]:checked')].map(input=>input.value);
+ if(!title||!(eachTime>0)||!Number.isFinite(eachTime)){alert('Enter a quest name and a valid Value greater than 0.');return}
+ if(!startDate){alert('Choose the Daily Quest setup date.');return}
+ if(!repeatDays.length){alert('Select at least one repeat day.');return}
+ db.quests.push({id:crypto.randomUUID(),title,date:startDate,startDate,repeat:'weekly',repeatDays,times,eachTime});
+ e.target.reset();$('questTitle').value='Namaz';$('questTimes').value=5;$('questEachTime').value=2;$('questStartDate').value=today();
+ document.querySelectorAll('[name="questDays"]').forEach(input=>input.checked=true);save()
 };
 function questCheckState(q,d){
  const count=Math.max(1,Math.min(30,Math.floor(Number(q.times)||1))),state=(db.checks[d]||{})[q.id];
@@ -2028,14 +2040,15 @@ function questTileHTML(items){
 }
 function questHTML(items,del){return items.length?items.map(q=>{
  const d=today(),state=questCheckState(q,d),checked=state.filter(Boolean).length,achieved=questAchieved(q,d),target=questTarget(q);
+ const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],days=Array.isArray(q.repeatDays)&&q.repeatDays.length?q.repeatDays.map(Number).sort((a,b)=>[6,0,1,2,3,4,5].indexOf(a)-[6,0,1,2,3,4,5].indexOf(b)).map(day=>dayNames[day]).join(', '):(q.repeat==='daily'?'Every day':'One day');
  return `<div class="quest-item ${completed(q,d)?'done':''}">
-  <div class="quest-item-head"><div class="item-main"><div class="item-title">${esc(q.title)}</div><div class="item-sub">${q.repeat==='daily'?'Repeats daily':'Today only'} · Each Time: ${numberText(Number(q.eachTime??1))}</div></div>
-   <div class="quest-score"><strong>Total achieved: ${numberText(achieved)} / ${numberText(target)}</strong><span>${checked} / ${state.length} times checked</span></div>
+  <div class="quest-item-head"><div class="item-main"><div class="item-title">${esc(q.title)}</div><div class="item-sub">Repeat: ${esc(days)} · Setup date: ${esc(q.startDate||q.date||'—')} · Times: ${numberText(Number(q.times||1))} · Value: ${numberText(Number(q.eachTime??1))}</div></div>
+   <div class="quest-score"><strong>Achieved: ${numberText(achieved)} / ${numberText(target)}</strong><span>${checked} / ${state.length} Times</span></div>
    ${del?`<button class="delete" onclick="delQuest('${q.id}')" aria-label="Delete ${esc(q.title)}">×</button>`:''}
   </div>
-  <div class="quest-checks">${state.map((isChecked,i)=>`<label class="quest-check"><input class="check" type="checkbox" ${isChecked?'checked':''} aria-label="${esc(q.title)} time ${i+1}" onchange="toggleQuest('${q.id}',${i})"><span>Time ${i+1}</span></label>`).join('')}</div>
+  <div class="quest-progress-track"><span style="width:${target?Math.min(100,achieved/target*100):0}%"></span></div>
  </div>`
- }).join(''):empty('No quests for today. Add a small goal to get started.')}
+ }).join(''):empty('No Daily Quests scheduled for today.')}
 
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 $('expenseSearch').oninput=render;$('expenseFilter').onchange=render;
