@@ -1321,12 +1321,13 @@ function renderMeals(){
  if($('mealDefaultCount'))$('mealDefaultCount').value=db.mealPlan.defaultCount;
  if($('mealDateEntry')&&$('mealDateEntry').value!==date)$('mealDateEntry').value=date;
  if($('mealDateCount'))$('mealDateCount').value=db.mealPlan.dateCounts[date]??db.mealPlan.defaultCount;
- const list=$('mealMemberControls');if(list)list.innerHTML=db.familyMembers.length?db.familyMembers.map(member=>{const on=mealMemberEnabled(member,date),count=on?mealCountForMember(member,date):0;return '<div class="meal-member-row"><strong>'+esc(member)+'</strong><label class="meal-toggle"><input type="checkbox" data-meal-member="'+esc(member)+'" '+(on?'checked':'')+'> M</label><input class="meal-member-count-input" aria-label="Meal count for '+esc(member)+'" type="number" min="0" step="1" value="'+count+'" data-meal-count="'+esc(member)+'" '+(!on?'disabled':'')+'></div>'}).join(''):empty('Add family members in Profile first.');
+ const list=$('mealMemberControls');if(list)list.innerHTML=db.familyMembers.length?db.familyMembers.map(member=>{const on=mealMemberEnabled(member,date),count=on?mealCountForMember(member,date):0;return '<div class="meal-member-row"><strong>'+esc(member)+'</strong><label class="meal-toggle"><input type="checkbox" data-meal-member="'+esc(member)+'" '+(on?'checked':'')+'> M</label>'+(on?'<label class="meal-member-total"><span>T</span><input aria-label="Total meals for '+esc(member)+'" type="number" min="0" step="1" value="'+count+'" data-meal-count="'+esc(member)+'"></label>':'')+'</div>'}).join(''):empty('Add family members in Profile first.');
  const totals=db.familyMembers.map(member=>{let total=0;if(from&&to&&from<=to){for(let d=dateObj(from),end=dateObj(to);d<=end;d.setDate(d.getDate()+1)){const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');if(mealMemberEnabled(member,key))total+=mealCountForMember(member,key)}}return {member,total}});
  const totalMeals=totals.reduce((n,x)=>n+x.total,0),mealProductCost=from&&to&&from<=to?mealProductCostForRange(from,to):0,costPerMeal=totalMeals?mealProductCost/totalMeals:0;
- if($('mealMemberTotals'))$('mealMemberTotals').innerHTML=totals.length?totals.map(x=>'<div class="meal-total-row"><strong>'+esc(x.member)+'</strong><span>'+numberText(x.total)+' meals</span><strong class="meal-member-cost">'+money(x.total*costPerMeal)+'</strong></div>').join(''):empty('No family members added.');
- if($('mealRangeTotal'))$('mealRangeTotal').textContent=numberText(totalMeals)+' meals · Meal products cost '+money(mealProductCost)+' · Cost per meal '+money(costPerMeal);
+ if($('mealMemberTotals'))$('mealMemberTotals').innerHTML=totals.length?totals.map(x=>'<div class="meal-total-row"><strong>'+esc(x.member)+'</strong><span class="meal-total-count">T '+numberText(x.total)+'</span><strong class="meal-member-cost">'+money(x.total*costPerMeal)+'</strong></div>').join(''):empty('No family members added.');
+ if($('mealRangeTotal'))$('mealRangeTotal').textContent='Meal Cost: '+money(mealProductCost)+' · Cost per meal '+money(costPerMeal);
 }
+
 function saveMealDefault(){const n=Number($('mealDefaultCount').value);if(!Number.isInteger(n)||n<0){alert('Enter a whole number of meals, zero or more.');return}db.mealPlan.defaultCount=n;save();renderMeals()}
 
 function renderQuickActionManager(){
