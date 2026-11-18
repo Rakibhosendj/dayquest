@@ -2009,7 +2009,7 @@ function questActiveRange(q,d,now=new Date()){
   if(endAt<=startAt)endAt.setDate(endAt.getDate()+1);
   const state=questRangeState(q,d,i);
   if(state.every(Boolean))continue;
-  if(nowMs>endAt.getTime())continue;
+  if(nowMs>=endAt.getTime())continue;
   if(nowMs<startAt.getTime())return{status:'waiting',index:i,startAt,endAt,checked:state.filter(Boolean).length};
   return{status:'active',index:i,startAt,endAt,checked:state.filter(Boolean).length};
  }
