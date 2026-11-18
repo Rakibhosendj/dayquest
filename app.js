@@ -2496,7 +2496,12 @@ async function fetchCloudVersion(){
  if(error)throw error;return data||null;
 }
 async function writeCloudSnapshot(payload,expectedVersion){
- const {data,error}=await supabaseClient.rpc('dayquest_save_family_data',{p_payload:payload,p_expected_version:Number(expectedVersion||0)});
+ // Apply the same hard timeout to the first cloud write as to database reads.
+ // Without this, a stalled RPC can leave the login screen on "Loading" forever.
+ const {data,error}=await withCloudRequestTimeout(
+  supabaseClient.rpc('dayquest_save_family_data',{p_payload:payload,p_expected_version:Number(expectedVersion||0)}),
+  20000
+ );
  if(error)throw error;const rawVersion=Array.isArray(data)?data[0]?.dayquest_save_family_data??data[0]?.version??data[0]:data?.version??data;const version=Number(rawVersion);if(!Number.isFinite(version)||version<1)throw new Error('The cloud database returned an invalid version. Check the SQL migration and try again.');return version;
 }
 function queueCloudSave(){
@@ -2568,15 +2573,15 @@ async function connectCloudSession(user,{silent=false}={}){
   }
   if(!sameUser&&hasLocal){
    const remoteHasRecords=localHasRecords(row.payload||{});
+   // Preserve this device copy automatically; don't block sign-in with a
+   // Continue/Cancel dialog that can leave the login screen waiting.
+   downloadJsonFile(db,`dayquest-before-account-sync-${today()}.json`);
    if(!remoteHasRecords){
-    if(!await window.dayQuestConfirm('The cloud account is empty, but this device already has unlinked DayQuest records. Upload this device data to start the Family Account?')){await supabaseClient.auth.signOut();cloudUser=null;showAuthView('login','Migration was cancelled. This device data is unchanged.');return}
     cloudReady=true;cloudVersion=remoteVersion;cloudDirty=true;saveCloudMeta(remoteVersion,true);
     try{const nextVersion=await writeCloudSnapshot(JSON.parse(JSON.stringify(db)),remoteVersion);cloudVersion=nextVersion;cloudDirty=false;saveCloudMeta(nextVersion,false);startAppSession(user);startCloudPolling();return}
-    catch(writeError){if(/DAYQUEST_VERSION_CONFLICT/i.test(String(writeError.message||writeError))){await handleCloudConflict(await fetchCloudRow());return}cloudReady=false;startAppSession(user,{offline:!navigator.onLine});setCloudStatus('Could not migrate local records: '+(writeError.message||'cloud write failed'),{offline:!navigator.onLine});return}
+    catch(writeError){if(/DAYQUEST_VERSION_CONFLICT/i.test(String(writeError.message||writeError))){const latest=await fetchCloudRow();if(latest)await handleCloudConflict(latest);else throw writeError;return}cloudReady=false;startAppSession(user,{offline:!navigator.onLine});setCloudStatus('Could not migrate local records: '+(writeError.message||'cloud write failed'),{offline:!navigator.onLine});return}
    }
-   const message='This device and the cloud both contain DayQuest records. DayQuest will download a backup of this device copy, then load the existing cloud family data. Continue?';
-   if(!await window.dayQuestConfirm(message)){await supabaseClient.auth.signOut();cloudUser=null;showAuthView('login','Cloud data was not changed. Your existing device data remains here.');return}
-   applyRemoteRow(row,{downloadBackup:true});startAppSession(user);startCloudPolling();return;
+   applyRemoteRow(row);startAppSession(user);startCloudPolling();return;
   }
   if(sameUser&&!meta.dirty&&remoteVersion!==Number(meta.version||0)){
    applyRemoteRow(row);startAppSession(user);startCloudPolling();return;
@@ -2586,8 +2591,11 @@ async function connectCloudSession(user,{silent=false}={}){
  // No cloud document exists yet. Only unlinked local data (no previous auth user ID)
  // can be used for first migration. A different account's local data was handled above.
  if(!db.profile.familyName&&user.user_metadata?.family_name)db.profile.familyName=String(user.user_metadata.family_name);
- if(hasLocal&&!await window.dayQuestConfirm('No cloud data exists for this Family Account. Upload the existing unlinked DayQuest records on this device as the starting family data?')){
-  await supabaseClient.auth.signOut();cloudUser=null;showAuthView('login','Migration was cancelled. Your existing local DayQuest records were not changed. You can log in again when ready to migrate.');return;
+ if(hasLocal){
+  // Keep a downloadable safety copy, then migrate the unlinked local records
+  // automatically instead of waiting for a modal response during sign-in.
+  saveLocalSafetyCopy();
+  downloadJsonFile(db,`dayquest-before-first-cloud-upload-${today()}.json`);
  }
  if(!hasLocal&&user.user_metadata?.family_name)db.profile.familyName=String(user.user_metadata.family_name||'');
  cloudReady=true;cloudVersion=0;cloudDirty=true;saveCloudMeta(0,true);
