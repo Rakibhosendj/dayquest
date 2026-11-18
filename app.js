@@ -485,28 +485,29 @@ function defaultPurchaseLine(product=''){
  return {lineId:null,product,category:db.purchaseCategories[0]||'Staples',productType:db.productTypes.includes('Other')?'Other':db.productTypes[0],spec:'',quantity:1,unit:db.units.includes('pcs')?'pcs':db.units[0],rate:0,amount:0,amountMode:'rate',calcError:'',amountPending:false,costType:'unassigned',costMember:''};
 }
 function addNewPurchaseProduct(index){
- const raw=prompt('Enter the new product name in English:');if(raw===null)return;
- const name=raw.trim();if(!name){alert('Enter a product name.');return}
- const existing=db.productNames.find(n=>n.toLocaleLowerCase()===name.toLocaleLowerCase());
- const product=existing||name;
- if(!existing)db.productNames.unshift(product);
- const targetIndex=Number(index);
- if(!Number.isInteger(targetIndex)||targetIndex<0||!purchaseLines[targetIndex])return;
- const mealBox=$('purchaseLines').querySelector(`[data-line-index="${targetIndex}"] .pl-add-product-meal`);
- const bangla=prompt('Enter the Bangla product name to add it to Product Dictionary (leave blank to skip):','');
- if(bangla!==null&&bangla.trim()){
+ const targetIndex=Number(index);if(!Number.isInteger(targetIndex)||targetIndex<0||!purchaseLines[targetIndex])return;
+ const dialog=$('newProductEntryDialog'),form=$('newProductEntryForm');if(!dialog||!form)return;
+ $('newProductEntryEnglish').value='';$('newProductEntryBangla').value='';$('newProductEntryMeal').checked=true;
+ form.onsubmit=event=>{
+  event.preventDefault();
+  const name=$('newProductEntryEnglish').value.trim(),bangla=$('newProductEntryBangla').value.trim(),meal=$('newProductEntryMeal').checked;
+  if(!name){alert('Enter a product name.');return}
+  const existing=db.productNames.find(n=>n.toLocaleLowerCase()===name.toLocaleLowerCase()),product=existing||name;
+  if(!existing)db.productNames.unshift(product);
   const dictionaryItem=db.productDictionary.find(item=>item.english.toLocaleLowerCase()===name.toLocaleLowerCase());
-  const meal=mealBox?mealBox.checked:true;
-  if(dictionaryItem){dictionaryItem.bangla=bangla.trim();dictionaryItem.meal=meal}
-  else db.productDictionary.push({english:name,bangla:bangla.trim(),meal});
-  db.productDictionary.sort((x,y)=>x.english.localeCompare(y.english,undefined,{sensitivity:'base'}));
-  renderProductDictionary();
- }
- purchaseLines[targetIndex].product=product;
- renderProductNameSuggestions();renderPurchaseLines();renderMasterLists();localSaveOnly();
- const target=$('purchaseLines').querySelector(`[data-line-index="${targetIndex}"] .pl-product`);
- if(target){target.focus();target.select()}
+  if(bangla){
+   if(dictionaryItem){dictionaryItem.bangla=bangla;dictionaryItem.meal=meal}
+   else db.productDictionary.push({english:name,bangla,meal});
+   db.productDictionary.sort((x,y)=>x.english.localeCompare(y.english,undefined,{sensitivity:'base'}));
+   renderProductDictionary();
+  }
+  purchaseLines[targetIndex].product=product;dialog.close();renderProductNameSuggestions();renderPurchaseLines();renderMasterLists();localSaveOnly();
+  const target=$('purchaseLines').querySelector('[data-line-index="'+targetIndex+'"] .pl-product');if(target){target.focus();target.select()}
+ };
+ $('newProductEntryCancel').onclick=()=>dialog.close();
+ dialog.showModal();$('newProductEntryEnglish').focus();
 }
+
 function addProductTypeToPurchaseLine(index){
  const line=purchaseLines[index];if(!line)return;
  const raw=prompt('Enter a product type (for example: Medicine, Grocery, Household):');if(raw===null)return;
@@ -1383,7 +1384,7 @@ $('quickActionType').onchange=updateQuickActionTypeFields;
 const toggleQuickActionMode=()=>{quickActionMode=quickActionMode==='add'?'minus':'add';renderQuickActions()};
 $('overviewQuickSupplierSetupLink').onclick=()=>{setTab('supplierEntry');$('supplierEntryForm').scrollIntoView({behavior:'smooth',block:'start'})};
 $('supplierEntryForm').onsubmit=e=>{e.preventDefault();saveSupplierEntry()};
-$('newProductEntryDialog').querySelector('[data-close-new-product]').onclick=()=> $('newProductEntryDialog').close();
+// New Product dialog controls are bound when the Purchase Form Add Product action is used.
 $('mealDefaultSave').onclick=saveMealDefault;
 $('mealCostSave').onclick=()=>{const cost=Number($('mealCostPerMeal').value);if(!Number.isFinite(cost)||cost<0){alert('Enter a valid cost per meal.');return}db.mealPlan.costPerMeal=cost;save();renderMeals()};
 $('mealDateSave').onclick=()=>{const date=$('mealControlDate').value,n=Number($('mealDateCount').value);if(!date||!Number.isInteger(n)||n<0){alert('Choose a date and enter a whole number of meals, zero or more.');return}db.mealPlan.dateCounts[date]=n;save();renderMeals()};
