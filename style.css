@@ -1198,3 +1198,32 @@ button,input,select,textarea{
   .report-global-date-range label{font-size:10px}
   .report-global-date-range input{padding:8px 6px;font-size:11px}
 }
+
+
+/* Reports date filters: force From and To to remain side by side, including narrow phones. */
+#reports .report-global-date-range{
+  display:flex !important;
+  flex-flow:row nowrap !important;
+  align-items:end;
+  gap:8px;
+  width:100%;
+  max-width:520px;
+}
+#reports .report-global-date-range>label{
+  display:flex;
+  flex:1 1 0;
+  flex-direction:column;
+  min-width:0;
+  gap:4px;
+}
+#reports .report-global-date-range input{
+  display:block;
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+}
+@media(max-width:420px){
+  #reports .report-global-date-range{gap:6px}
+  #reports .report-global-date-range>label{font-size:10px}
+  #reports .report-global-date-range input{padding:8px 4px;font-size:11px}
+}
