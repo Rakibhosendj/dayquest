@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261118-meal-layout3">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261118-member-meal-checks">
 <title>DayQuest</title>
 </head>
 <body>
@@ -147,7 +147,7 @@
  <div class="section-head"><div><h2>Meals</h2><span class="muted">Set daily meals and manage each member by date</span></div><button type="button" class="secondary" id="mealsBackOverview">Back to Overview</button></div>
  <section class="settings-card meal-settings-card"><div class="meal-inline-row"><strong>Day Meal</strong><label class="meal-count-field"><input id="mealDefaultCount" type="number" min="0" step="1" value="3" aria-label="Day meal count"></label><button type="button" class="primary" id="mealDefaultSave">Save</button></div></section>
  <section class="settings-card meal-settings-card"><div class="meal-date-count-grid"><strong>Date Meal</strong><label><input id="mealDateEntry" type="date" aria-label="Date for meal count"></label><label class="meal-count-field"><span>M</span><input id="mealDateCount" type="number" min="0" step="1" value="3" aria-label="Meals for selected date"></label><button type="button" class="primary" id="mealDateSave">Save</button></div></section>
- <section class="settings-card meal-settings-card"><div class="section-head meal-member-control-head"><h3>Member meal ON / OFF</h3><label class="meal-date-select">Date <input id="mealControlDate" type="date"></label></div><div id="mealMemberControls" class="meal-member-list"></div></section>
+ <section class="settings-card meal-settings-card"><div class="section-head meal-member-control-head"><h3>Member Meal</h3><label class="meal-date-select">Date <input id="mealControlDate" type="date"></label></div><div id="mealMemberControls" class="meal-member-list"></div></section>
  <section class="settings-card meal-settings-card"><h3>Total Meal</h3><div class="meal-form-row meal-range-filters"><label>From <input id="mealFromDate" type="date"></label><label>To <input id="mealToDate" type="date"></label></div><div id="mealMemberTotals" class="meal-member-list"></div><strong id="mealRangeTotal" class="meal-range-total">0 meals · Total cost 0</strong></section>
 </section>
 <section id="purchaseBills" class="panel">
@@ -655,5 +655,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261118-meal-layout3"></script>
+<script src="app.js?v=20261118-member-meal-checks"></script>
 </body></html>
