@@ -2,7 +2,7 @@
   "id": "./",
   "name": "DayQuest – Family Expenses & Daily Goals",
   "short_name": "DayQuest",
-  "start_url": "./",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
