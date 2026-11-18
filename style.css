@@ -1227,3 +1227,46 @@ button,input,select,textarea{
   #reports .report-global-date-range>label{font-size:10px}
   #reports .report-global-date-range input{padding:8px 4px;font-size:11px}
 }
+
+
+/* Cross-platform touch, safe-area and iOS form-focus support. */
+html{
+  min-height:100%;
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+  overscroll-behavior-y:contain;
+}
+body{
+  min-height:100vh;
+  min-height:100dvh;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-right:env(safe-area-inset-right,0px);
+  padding-bottom:max(12px,env(safe-area-inset-bottom,0px));
+  padding-left:env(safe-area-inset-left,0px);
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+#appShell,#appLayout,.app-main,main,.panel{min-width:0}
+button,a,summary,input,select,textarea{
+  -webkit-tap-highlight-color:transparent;
+}
+button,summary,.tab,.side-link,.quick-action-card{
+  touch-action:manipulation;
+}
+input,select,textarea{
+  max-width:100%;
+  touch-action:manipulation;
+}
+img,canvas,svg{max-width:100%}
+@media(hover:none) and (pointer:coarse){
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,textarea{
+    font-size:16px !important;
+  }
+  button,.primary,.secondary,.ghost{
+    -webkit-appearance:none;
+  }
+}
+@supports(padding:max(0px)){
+  body{padding-bottom:max(12px,env(safe-area-inset-bottom,0px))}
+}
