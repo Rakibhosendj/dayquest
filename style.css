@@ -1125,3 +1125,25 @@ button,input,select,textarea{
 .dq-date-wrap input.dq-native-date-control::-webkit-calendar-picker-indicator{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;cursor:pointer}
 .dq-date-wrap input.dq-native-date-control::-webkit-date-and-time-value{opacity:0}
 @media(max-width:520px){.dq-date-wrap{min-height:36px;padding:0 7px;font-size:12px}.dq-date-icon{font-size:13px}}
+
+/* Guest Assign controls in Members Report */
+.member-report-guest-assignments{display:grid;gap:8px;margin:8px 0 14px}
+.member-report-guest-row{display:grid;grid-template-columns:minmax(90px,.7fr) minmax(0,2fr);gap:10px;align-items:center;padding:9px 10px;border:1px solid #e7ebf1;border-radius:10px;background:#fafbfd}
+.member-report-guest-row>strong{font-size:12px;overflow-wrap:anywhere}
+.member-report-guest-checks{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.member-report-guest-checks label{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;white-space:nowrap}
+.member-report-guest-checks input{width:16px;height:16px;accent-color:#18765b}
+@media(max-width:520px){
+ .meal-person-date-row,.meal-person-guest-setting{grid-template-columns:minmax(0,.65fr) minmax(0,1fr) minmax(0,1fr);gap:3px;padding:5px 3px;min-width:0}
+ .meal-person-date-row>strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px}
+ .meal-person-date-row>label{min-width:0;gap:2px;font-size:8px}
+ .meal-person-date-row input{display:block;width:100%;min-width:0;max-width:100%;box-sizing:border-box;padding:4px 1px;font-size:9px;letter-spacing:-.3px}
+ .meal-person-guest-setting .meal-guest-assignment{grid-column:1/-1;min-width:0}
+ .meal-guest-assignment-list{gap:4px;min-width:0}
+ .meal-guest-assignment-list label{font-size:9px;gap:2px}
+ .member-report-guest-row{grid-template-columns:minmax(60px,.65fr) minmax(0,1.7fr);gap:5px;padding:7px 4px}
+ .member-report-guest-row>strong{font-size:10px;min-width:0;overflow-wrap:anywhere}
+ .member-report-guest-checks{gap:5px}
+ .member-report-guest-checks label{font-size:9px;gap:2px}
+ .member-report-guest-checks input{width:14px;height:14px}
+}
