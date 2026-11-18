@@ -2630,7 +2630,7 @@ $('installBtn').onclick=async()=>{
   return;
  }
  if(isAppleTouchDevice&&!isDayQuestStandalone()){
-  alert('To add DayQuest to your iPhone or iPad Home Screen:\\n\\n1. Open DayQuest in Safari.\\n2. Tap the Share button.\\n3. Choose “Add to Home Screen”.\\n4. Tap “Add”.');
+  alert('To add DayQuest to your iPhone or iPad Home Screen:\n\n1. Open DayQuest in Safari.\n2. Tap the Share button.\n3. Choose “Add to Home Screen”.\n4. Tap “Add”.');
  }
 };
 if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
