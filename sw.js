@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v110-budget-view';
+const CACHE = 'dayquest-cache-v111-pwa-launch-fix';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261118-budget-view',
-  './app.js?v=20261118-budget-view',
+  './style.css?v=20261118-pwa-launch-fix',
+  './app.js?v=20261118-pwa-launch-fix',
   './manifest.json',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',
