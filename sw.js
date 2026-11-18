@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v86-daily-quest-weekday-schedule';
+const CACHE = 'dayquest-cache-v87-daily-quest-unlimited-times';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261118-daily-quest-weekday-schedule',
-  './app.js?v=20261118-daily-quest-weekday-schedule',
+  './style.css?v=20261118-daily-quest-unlimited-times',
+  './app.js?v=20261118-daily-quest-unlimited-times',
   './manifest.json',
   './cloud-config.js'
 ];
