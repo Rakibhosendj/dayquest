@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v82-login-input-interaction-fix';
+const CACHE = 'dayquest-cache-v83-daily-quest-vibration-login-status';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261117-login-input-interaction-fix',
-  './app.js?v=20261117-login-input-interaction-fix',
+  './style.css?v=20261118-daily-quest-vibration-login-status',
+  './app.js?v=20261118-daily-quest-vibration-login-status',
   './manifest.json',
   './cloud-config.js'
 ];
