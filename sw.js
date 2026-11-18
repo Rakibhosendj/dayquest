@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v103-member-meal-checks';
+const CACHE = 'dayquest-cache-v104-active-meal-default-checked';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261118-member-meal-checks',
-  './app.js?v=20261118-member-meal-checks',
+  './style.css?v=20261118-active-meal-default-checked',
+  './app.js?v=20261118-active-meal-default-checked',
   './manifest.json',
   './cloud-config.js'
 ];
