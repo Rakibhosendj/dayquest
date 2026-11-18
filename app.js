@@ -2158,7 +2158,7 @@ $('questForm').onsubmit=e=>{
  db.quests.push({id:crypto.randomUUID(),title,date:startDate,startDate,endDate,repeat:'weekly',repeatDays,times,eachTime,timeRanges});
  e.target.reset();$('questTitle').value='Namaz';$('questTimes').value=5;$('questEachTime').value=2;$('questStartDate').value=questLocalDate();$('questEndDate').value=questLocalDate();
  document.querySelectorAll('[name="questDays"]').forEach(input=>input.checked=true);
- $('questTimeRanges').innerHTML='<div class="quest-time-range-row" data-time-range-row><label>Start <input type="time" name="questRangeStart" value="06:00"></label><label>End <input type="time" name="questRangeEnd" value="10:00"></label><button type="button" class="secondary compact" data-remove-time-range>Remove</button></div><div class="quest-time-range-row" data-time-range-row><label>Start <input type="time" name="questRangeStart" value="14:00"></label><label>End <input type="time" name="questRangeEnd" value="17:00"></label><button type="button" class="secondary compact" data-remove-time-range>Remove</button></div><div class="quest-time-range-row" data-time-range-row><label>Start <input type="time" name="questRangeStart" value="20:00"></label><label>End <input type="time" name="questRangeEnd" value="05:00"></label><button type="button" class="secondary compact" data-remove-time-range>Remove</button></div>';
+ $('questTimeRanges').innerHTML='';
  save()
 };
 $('questStartDate').value=questLocalDate();$('questEndDate').value=questLocalDate();
