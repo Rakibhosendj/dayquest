@@ -9,7 +9,7 @@ const DEFAULT_PRODUCT_DICTIONARY=[{"english":"Rice","bangla":"চাল"},{"engl
 function normalizeProductDictionary(entries){
  const source=Array.isArray(entries)?entries:DEFAULT_PRODUCT_DICTIONARY;
  const seen=new Set();
- return source.map(item=>({english:String(item?.english??item?.en??'').trim(),bangla:String(item?.bangla??item?.bn??'').trim(),meal:!!item?.meal})).filter(item=>{
+ return source.map(item=>({english:String(item?.english??item?.en??'').trim(),bangla:String(item?.bangla??item?.bn??'').trim(),meal:item?.meal!==false})).filter(item=>{
   if(!item.english||!item.bangla)return false;
   const key=item.english.toLocaleLowerCase();if(seen.has(key))return false;seen.add(key);return true;
  });
@@ -29,7 +29,7 @@ db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};
 if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.themeColor||'')))db.settings.themeColor='#263b5c';
 if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';
 if(typeof db.settings.quickButtonVibration!=='boolean')db.settings.quickButtonVibration=true;
-db.productDictionary=normalizeProductDictionary(db.productDictionary);
+db.productDictionary=normalizeProductDictionary(db.productDictionary);if(!db.settings.mealDictionaryDefaultsApplied){db.productDictionary.forEach(item=>item.meal=true);db.settings.mealDictionaryDefaultsApplied=true;}
 if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;if(typeof db.settings.allowPurchaseBillEdits!=='boolean')db.settings.allowPurchaseBillEdits=true;
 db.units=Array.isArray(db.units)&&db.units.length?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];
 db.units=[...new Map(db.units.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);
@@ -142,7 +142,7 @@ db.quickActions.forEach(action=>{
 const save=()=>{localStorage.setItem('dayquest_v1',JSON.stringify(db));queueCloudSave();updateAppBrand();render();renderReport()};
 const money=n=>'৳'+Number(n||0).toLocaleString('en-BD',{minimumFractionDigits:2,maximumFractionDigits:2});
 const dateObj=s=>new Date(s+'T12:00:00');
-const fmt=s=>dateObj(s).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
+const fmt=s=>{if(!s)return '';const d=dateObj(s);if(Number.isNaN(d.getTime()))return String(s);const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return String(d.getDate()).padStart(2,'0')+'-'+months[d.getMonth()]+'-'+d.getFullYear()};
 const sum=arr=>arr.reduce((a,x)=>a+Number(x.amount),0);
 const expenseSettlements=x=>Array.isArray(x.settlements)?x.settlements:[];
 const expenseSettledAmount=x=>x.paymentType==='Due'?sum(expenseSettlements(x)):0;
@@ -377,7 +377,7 @@ $('showCostChartBtn').onclick=()=>{
 $('costChartBack').onclick=()=>{setTab('reports');activateReportSection('cost')};
 window.addEventListener('resize',()=>{closeSidebar();syncMenuToggle()});
 syncMenuToggle();
-$('todayDate').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'});
+$('todayDate').textContent=fmt(today());
 $('expenseDate').value=today();
 function renderExpenseMemberOptions(selectedNames=[]){
  const list=$('expenseCostMembers');if(!list)return;
@@ -439,6 +439,7 @@ $('addIncomePerson').onclick=()=>{let n=prompt('Add the person who earned this i
 function localSaveOnly(){localStorage.setItem('dayquest_v1',JSON.stringify(db));queueCloudSave()}
 
 function renderProductDictionary(){
+ db.productDictionary.sort((x,y)=>x.english.localeCompare(y.english,undefined,{sensitivity:'base'}));
  const list=$('productDictionaryList');if(!list)return;
  const query=String($('productDictionarySearch')?.value||'').trim().toLocaleLowerCase();
  const rows=db.productDictionary.filter(item=>!query||item.english.toLocaleLowerCase().includes(query)||item.bangla.toLocaleLowerCase().includes(query));
@@ -466,9 +467,7 @@ function productDictionaryMatch(value){
  return db.productDictionary.find(item=>item.english.toLocaleLowerCase()===query||item.bangla.toLocaleLowerCase()===query)||null;
 }
 function updateProductDictionaryMatch(input){
- const hint=input?.closest('.purchase-line')?.querySelector('.pl-product-dictionary-match');if(!hint)return;
- const match=productDictionaryMatch(input.value);hint.textContent=match?`Dictionary: ${match.english} · ${match.bangla}`:'';
- hint.hidden=!match;
+ const hint=input?.closest('.purchase-line')?.querySelector('.pl-product-dictionary-match');if(hint){hint.textContent='';hint.hidden=true;}
 }
 function renderProductNameSuggestions(){
  const list=$('productNameSuggestions');if(list){
@@ -486,13 +485,23 @@ function defaultPurchaseLine(product=''){
  return {lineId:null,product,category:db.purchaseCategories[0]||'Staples',productType:db.productTypes.includes('Other')?'Other':db.productTypes[0],spec:'',quantity:1,unit:db.units.includes('pcs')?'pcs':db.units[0],rate:0,amount:0,amountMode:'rate',calcError:'',amountPending:false,costType:'unassigned',costMember:''};
 }
 function addNewPurchaseProduct(index){
- const raw=prompt('Enter the new product name:');if(raw===null)return;
+ const raw=prompt('Enter the new product name in English:');if(raw===null)return;
  const name=raw.trim();if(!name){alert('Enter a product name.');return}
  const existing=db.productNames.find(n=>n.toLocaleLowerCase()===name.toLocaleLowerCase());
  const product=existing||name;
  if(!existing)db.productNames.unshift(product);
  const targetIndex=Number(index);
  if(!Number.isInteger(targetIndex)||targetIndex<0||!purchaseLines[targetIndex])return;
+ const mealBox=$('purchaseLines').querySelector(`[data-line-index="${targetIndex}"] .pl-add-product-meal`);
+ const bangla=prompt('Enter the Bangla product name to add it to Product Dictionary (leave blank to skip):','');
+ if(bangla!==null&&bangla.trim()){
+  const dictionaryItem=db.productDictionary.find(item=>item.english.toLocaleLowerCase()===name.toLocaleLowerCase());
+  const meal=mealBox?mealBox.checked:true;
+  if(dictionaryItem){dictionaryItem.bangla=bangla.trim();dictionaryItem.meal=meal}
+  else db.productDictionary.push({english:name,bangla:bangla.trim(),meal});
+  db.productDictionary.sort((x,y)=>x.english.localeCompare(y.english,undefined,{sensitivity:'base'}));
+  renderProductDictionary();
+ }
  purchaseLines[targetIndex].product=product;
  renderProductNameSuggestions();renderPurchaseLines();renderMasterLists();localSaveOnly();
  const target=$('purchaseLines').querySelector(`[data-line-index="${targetIndex}"] .pl-product`);
@@ -550,7 +559,7 @@ function purchaseLineTemplate(line,index){
  const amountMode=line.amountMode==='quantity'?'quantity':'rate';
  return `<div class="purchase-line" data-line-index="${index}">
   <div class="purchase-line-top"><strong>Product ${index+1}</strong><button type="button" class="delete remove-purchase-line" data-index="${index}" ${purchaseLines.length===1?'disabled':''}>Remove</button></div>
-  <div class="purchase-product-category-row"><div class="purchase-line-field-row"><label>Product name <input class="pl-product" list="productNameSuggestions" maxlength="80" value="${esc(line.product||'')}" placeholder="e.g. Rice / চাল" required><small class="pl-product-dictionary-match" hidden aria-live="polite"></small></label><button type="button" class="mini-add pl-add-product" data-index="${index}" aria-label="Add product">＋ Add</button></div><label>Category <select class="pl-category" required>${db.purchaseCategories.map(category=>`<option value="${esc(category)}" ${String(line.category||'Staples').toLocaleLowerCase()===category.toLocaleLowerCase()?'selected':''}>${esc(category)}</option>`).join('')}</select></label></div>
+  <div class="purchase-product-category-row"><div class="purchase-line-field-row"><label>Product name <input class="pl-product" list="productNameSuggestions" maxlength="80" value="${esc(line.product||'')}" placeholder="e.g. Rice / চাল" required><label class="pl-add-product-meal-label"><input type="checkbox" class="pl-add-product-meal" checked> Meals</label></label><button type="button" class="mini-add pl-add-product" data-index="${index}" aria-label="Add product">＋ Add</button></div><label>Category <select class="pl-category" required>${db.purchaseCategories.map(category=>`<option value="${esc(category)}" ${String(line.category||'Staples').toLocaleLowerCase()===category.toLocaleLowerCase()?'selected':''}>${esc(category)}</option>`).join('')}</select></label></div>
   <div class="purchase-secondary-fields"><div class="purchase-line-field-row"><label>Product type <select class="pl-product-type" required>${db.productTypes.map(type=>`<option value="${esc(type)}" ${String(line.productType||'Other').toLocaleLowerCase()===type.toLocaleLowerCase()?'selected':''}>${esc(type)}</option>`).join('')}</select></label><button type="button" class="mini-add pl-add-product-type" data-index="${index}">＋ Add</button></div>
   <label>Size / specification <input class="pl-spec" maxlength="80" value="${esc(line.spec||'')}" placeholder="e.g. 300 gram (optional)"></label></div>
   <div class="purchase-numbers-grid"><div class="form-grid"><label>Quantity <input class="pl-quantity" type="number" min="0.001" step="any" value="${Number(line.quantity??1)}" required></label><label>Unit <span class="select-add"><select class="pl-unit">${units}</select><button type="button" class="mini-add pl-add-unit" data-index="${index}">＋ Add</button></span></label></div>
