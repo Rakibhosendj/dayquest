@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101827"><meta name="description" content="Offline daily expense and quest tracker">
-<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261118-new-product-dialog">
+<link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css?v=20261118-new-product-entry-branded">
 <title>DayQuest</title>
 </head>
 <body>
@@ -649,12 +649,12 @@
 </section>
 </main>
 <footer>DayQuest · Private by design · Works offline</footer>
-<dialog id="newProductEntryDialog" class="dq-message-dialog new-product-entry-dialog" aria-labelledby="newProductEntryTitle"><form id="newProductEntryForm" class="dq-message-card"><h2 id="newProductEntryTitle">New Product</h2><label>Product name (English) <input id="newProductEntryEnglish" maxlength="80" required placeholder="Enter product name"></label><label>Product name (Bangla) <input id="newProductEntryBangla" maxlength="80" lang="bn" placeholder="Enter Bangla name (optional)"></label><label class="new-product-meal-check"><input id="newProductEntryMeal" type="checkbox" checked> Meals</label><div class="dq-message-actions"><button class="secondary" type="button" data-close-new-product>Cancel</button><button class="primary" type="submit">Add Product</button></div></form></dialog>
+<dialog id="newProductEntryDialog" class="dq-message-dialog new-product-entry-dialog" aria-labelledby="newProductEntryTitle"><form id="newProductEntryForm" class="dq-message-card"><h2 id="newProductEntryTitle">New Product</h2><label>Product name (English) <input id="newProductEntryEnglish" maxlength="80" required placeholder="Enter product name"></label><label>Product name (Bangla) <input id="newProductEntryBangla" maxlength="80" lang="bn" placeholder="Enter Bangla name (optional)"></label><label class="new-product-meal-check"><input id="newProductEntryMeal" type="checkbox" checked> Meals</label><div class="dq-message-actions"><button class="secondary" id="newProductEntryCancel" type="button">Cancel</button><button class="primary" type="submit">Add Product</button></div></form></dialog>
 <dialog id="dqMessageDialog" class="dq-message-dialog" aria-labelledby="dqMessageTitle"><div class="dq-message-card"><h2 id="dqMessageTitle">Day Quest Message Alert</h2><p id="dqMessageText"></p><div class="dq-message-actions"><button id="dqMessageCancel" class="secondary" type="button" hidden>Cancel</button><button id="dqMessageOk" class="primary" type="button">OK</button></div></div></dialog>
 </div>
 </div>
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261118-new-product-dialog"></script>
+<script src="app.js?v=20261118-new-product-entry-branded"></script>
 </body></html>
