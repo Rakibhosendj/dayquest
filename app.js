@@ -98,7 +98,7 @@ db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];
 db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
 db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};
 db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers.filter(name=>db.suppliers.includes(name)))]:[];
-db.mealPlan=db.mealPlan&&typeof db.mealPlan==='object'?db.mealPlan:{};db.mealPlan.defaultCount=Math.max(0,Math.floor(Number(db.mealPlan.defaultCount??3)||0));db.mealPlan.dateCounts=db.mealPlan.dateCounts&&typeof db.mealPlan.dateCounts==='object'?db.mealPlan.dateCounts:{};db.mealPlan.memberStatus=db.mealPlan.memberStatus&&typeof db.mealPlan.memberStatus==='object'?db.mealPlan.memberStatus:{};db.mealPlan.memberCounts=db.mealPlan.memberCounts&&typeof db.mealPlan.memberCounts==='object'?db.mealPlan.memberCounts:{};db.mealPlan.costPerMeal=Math.max(0,Number(db.mealPlan.costPerMeal)||0);
+db.mealPlan=db.mealPlan&&typeof db.mealPlan==='object'?db.mealPlan:{};db.mealPlan.defaultCount=Math.max(0,Math.floor(Number(db.mealPlan.defaultCount??3)||0));db.mealPlan.dateCounts=db.mealPlan.dateCounts&&typeof db.mealPlan.dateCounts==='object'?db.mealPlan.dateCounts:{};db.mealPlan.memberStatus=db.mealPlan.memberStatus&&typeof db.mealPlan.memberStatus==='object'?db.mealPlan.memberStatus:{};db.mealPlan.memberCounts=db.mealPlan.memberCounts&&typeof db.mealPlan.memberCounts==='object'?db.mealPlan.memberCounts:{};db.mealPlan.memberChecks=db.mealPlan.memberChecks&&typeof db.mealPlan.memberChecks==='object'?db.mealPlan.memberChecks:{};db.mealPlan.costPerMeal=Math.max(0,Number(db.mealPlan.costPerMeal)||0);
 db.productNames=Array.isArray(db.productNames)?db.productNames:[];
 db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);
 db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];
@@ -1321,8 +1321,14 @@ function renderMeals(){
  if($('mealDefaultCount'))$('mealDefaultCount').value=db.mealPlan.defaultCount;
  if($('mealDateEntry')&&$('mealDateEntry').value!==date)$('mealDateEntry').value=date;
  if($('mealDateCount'))$('mealDateCount').value=db.mealPlan.dateCounts[date]??db.mealPlan.defaultCount;
- const list=$('mealMemberControls');if(list)list.innerHTML=db.familyMembers.length?db.familyMembers.map(member=>{const on=mealMemberEnabled(member,date),count=on?mealCountForMember(member,date):0;return '<div class="meal-member-row"><strong>'+esc(member)+'</strong><label class="meal-toggle"><input type="checkbox" data-meal-member="'+esc(member)+'" '+(on?'checked':'')+'> M</label>'+(on?'<label class="meal-member-total"><span>T</span><input aria-label="Total meals for '+esc(member)+'" type="number" min="0" step="1" value="'+count+'" data-meal-count="'+esc(member)+'"></label>':'')+'</div>'}).join(''):empty('Add family members in Profile first.');
- const totals=db.familyMembers.map(member=>{let total=0;if(from&&to&&from<=to){for(let d=dateObj(from),end=dateObj(to);d<=end;d.setDate(d.getDate()+1)){const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');if(mealMemberEnabled(member,key))total+=mealCountForMember(member,key)}}return {member,total}});
+ const list=$('mealMemberControls');if(list)list.innerHTML=db.familyMembers.length?db.familyMembers.map(member=>{
+  const enabled=mealMemberEnabled(member,date),count=enabled?mealCountForMember(member,date):0;
+  const checks=db.mealPlan.memberChecks?.[date]?.[member]||[];
+  const boxes=Array.from({length:count},(_,idx)=>'<label class="meal-slot-check"><input type="checkbox" data-meal-slot="'+idx+'" data-meal-slot-member="'+esc(member)+'" '+(checks[idx]?'checked':'')+'><span>M</span></label>').join('');
+  const checked=checks.slice(0,count).filter(Boolean).length;
+  return '<div class="meal-member-row"><strong>'+esc(member)+'</strong><label class="meal-toggle"><input type="checkbox" data-meal-member="'+esc(member)+'" '+(enabled?'checked':'')+'> M</label>'+(enabled?'<div class="meal-slot-list">'+boxes+'</div><strong class="meal-member-total">T '+checked+'</strong>':'')+'</div>';
+ }).join(''):empty('Add family members in Profile first.');
+ const totals=db.familyMembers.map(member=>{let total=0;if(from&&to&&from<=to){for(let d=dateObj(from),end=dateObj(to);d<=end;d.setDate(d.getDate()+1)){const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');if(mealMemberEnabled(member,key)){const saved=db.mealPlan.memberChecks?.[key]?.[member];total+=Array.isArray(saved)?saved.filter(Boolean).length:mealCountForMember(member,key)}}}return {member,total}});
  const totalMeals=totals.reduce((n,x)=>n+x.total,0),mealProductCost=from&&to&&from<=to?mealProductCostForRange(from,to):0,costPerMeal=totalMeals?mealProductCost/totalMeals:0;
  if($('mealMemberTotals'))$('mealMemberTotals').innerHTML=totals.length?totals.map(x=>'<div class="meal-total-row"><strong>'+esc(x.member)+'</strong><span class="meal-total-count">T '+numberText(x.total)+'</span><strong class="meal-member-cost">'+money(x.total*costPerMeal)+'</strong></div>').join(''):empty('No family members added.');
  if($('mealRangeTotal'))$('mealRangeTotal').textContent='Meal Cost: '+money(mealProductCost)+' · Cost per meal '+money(costPerMeal);
@@ -1392,7 +1398,12 @@ $('mealDateSave').onclick=()=>{const date=$('mealDateEntry').value,n=Number($('m
 $('mealsBackOverview').onclick=()=>{setTab('home');document.getElementById('home')?.scrollIntoView({behavior:'instant',block:'start'})};
 ['mealFromDate','mealToDate','mealControlDate'].forEach(id=>$(id).addEventListener('change',renderMeals));
 $('mealDateEntry').addEventListener('change',()=>{const date=$('mealDateEntry').value;$('mealControlDate').value=date;renderMeals()});
-$('mealMemberControls').onchange=e=>{const toggle=e.target.closest('[data-meal-member]'),countInput=e.target.closest('[data-meal-count]');const date=$('mealControlDate').value;if(toggle){const member=toggle.dataset.mealMember;db.mealPlan.memberStatus[date]=db.mealPlan.memberStatus[date]||{};db.mealPlan.memberStatus[date][member]=toggle.checked;save();renderMeals();return}if(countInput){const member=countInput.dataset.mealCount,n=Number(countInput.value);if(!Number.isInteger(n)||n<0){alert('Enter a whole number of meals, zero or more.');renderMeals();return}db.mealPlan.memberCounts[date]=db.mealPlan.memberCounts[date]||{};db.mealPlan.memberCounts[date][member]=n;save();renderMeals()}};
+$('mealMemberControls').onchange=e=>{
+ const toggle=e.target.closest('[data-meal-member]'),slot=e.target.closest('[data-meal-slot]'),countInput=e.target.closest('[data-meal-count]'),date=$('mealControlDate').value;
+ if(toggle){const member=toggle.dataset.mealMember;db.mealPlan.memberStatus[date]=db.mealPlan.memberStatus[date]||{};db.mealPlan.memberStatus[date][member]=toggle.checked;save();renderMeals();return}
+ if(slot){const member=slot.dataset.mealSlotMember,index=Number(slot.dataset.mealSlot);db.mealPlan.memberChecks[date]=db.mealPlan.memberChecks[date]||{};db.mealPlan.memberChecks[date][member]=db.mealPlan.memberChecks[date][member]||Array(mealCountForMember(member,date)).fill(false);db.mealPlan.memberChecks[date][member][index]=slot.checked;save();renderMeals();return}
+ if(countInput){const member=countInput.dataset.mealCount,n=Number(countInput.value);if(!Number.isInteger(n)||n<0){alert('Enter a whole number of meals, zero or more.');renderMeals();return}db.mealPlan.memberCounts[date]=db.mealPlan.memberCounts[date]||{};db.mealPlan.memberCounts[date][member]=n;save();renderMeals()}
+};
 $('supplierEntryCancel').onclick=resetSupplierEntryForm;
 $('overviewQuickSetupLink').onclick=()=>{
  setTab('settings');
