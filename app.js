@@ -1152,9 +1152,23 @@ function updateQuickActionModeButton(){
  });
 }
 function vibrateQuickButton(){
- if(db.settings?.quickButtonVibration!==false&&typeof navigator!=='undefined'&&typeof navigator.vibrate==='function'){
-  try{navigator.vibrate(25)}catch(error){}
- }
+ if(db.settings?.quickButtonVibration===false||typeof navigator==='undefined')return false;
+ // The Vibration API is supported by many Android browsers, but not iOS Safari.
+ if(typeof navigator.vibrate!=='function')return false;
+ try{
+  navigator.vibrate(0);
+  return navigator.vibrate([45,30,45])!==false;
+ }catch(error){return false}
+}
+function bindQuickButtonHaptics(container){
+ if(!container||container.dataset.hapticsBound==='true')return;
+ container.dataset.hapticsBound='true';
+ container.addEventListener('pointerdown',event=>{
+  if(event.pointerType==='mouse')return;
+  const tile=event.target.closest('[data-quick-activate],[data-quick-supplier],[data-quest-advance]');
+  if(!tile||tile.disabled)return;
+  vibrateQuickButton();
+ },{passive:true});
 }
 function renderQuickActions(){
  const list=$('quickActionList'),overview=$('overviewQuickActionList');
@@ -1200,7 +1214,7 @@ function renderQuickSuppliers(){
    </span>
   </button>`;
  }).join(''):empty('No Quick Suppliers yet. Click the Quick Suppliers title to add supplier details, then enable Q in Settings → Custom Lists → Suppliers.');
- list.querySelectorAll('[data-quick-supplier]').forEach(button=>button.onclick=()=>{vibrateQuickButton();openQuickSupplierPurchase(button.dataset.quickSupplier)});
+ list.querySelectorAll('[data-quick-supplier]').forEach(button=>button.onclick=()=>openQuickSupplierPurchase(button.dataset.quickSupplier));
 }
 function openQuickSupplierPurchase(name){
  const supplier=String(name||'').trim();if(!supplier||!db.suppliers.includes(supplier))return;
@@ -1325,10 +1339,11 @@ $('quickActionForm').onsubmit=e=>{e.preventDefault();saveQuickAction()};
 $('quickActionCancel').onclick=()=>{resetQuickActionForm();if($('quickActionSettings'))$('quickActionSettings').open=false};
 const handleQuickActionTileClick=e=>{
  const tile=e.target.closest('[data-quick-activate]');if(!tile||tile.disabled)return;
- vibrateQuickButton();const id=tile.dataset.quickActivate;if(quickActionMode==='minus')subtractQuickActionOne(id);else addQuickActionOne(id);
+ const id=tile.dataset.quickActivate;if(quickActionMode==='minus')subtractQuickActionOne(id);else addQuickActionOne(id);
 };
 $('quickActionList').onclick=handleQuickActionTileClick;
 $('overviewQuickActionList').onclick=handleQuickActionTileClick;
+bindQuickButtonHaptics($('quickActionList'));bindQuickButtonHaptics($('overviewQuickActionList'));bindQuickButtonHaptics($('overviewQuickSupplierList'));bindQuickButtonHaptics($('questList'));
 $('quickActionManagerList').onclick=e=>{
  const button=e.target.closest('button');if(!button)return;
  if(button.dataset.quickEdit){editQuickAction(button.dataset.quickEdit);return}
@@ -1912,7 +1927,7 @@ $('guestForm').onsubmit=e=>{
 $('guestEntryDate').value=today();
 
 $('dailyQuestSetupLink').onclick=()=>setTab('questSetup');
-$('questList').onclick=e=>{const tile=e.target.closest('[data-quest-advance]');if(!tile||tile.disabled)return;vibrateQuickButton();const q=db.quests.find(item=>item.id===tile.dataset.questAdvance);if(!q)return;const state=questCheckState(q,today()),next=state.findIndex(value=>!value);if(next>=0)toggleQuest(q.id,next)};
+$('questList').onclick=e=>{const tile=e.target.closest('[data-quest-advance]');if(!tile||tile.disabled)return;const q=db.quests.find(item=>item.id===tile.dataset.questAdvance);if(!q)return;const state=questCheckState(q,today()),next=state.findIndex(value=>!value);if(next>=0)toggleQuest(q.id,next)};
 $('questForm').onsubmit=e=>{
  e.preventDefault();
  const title=$('questTitle').value.trim(),times=Math.max(1,Math.min(30,Math.floor(Number($('questTimes').value)||1))),eachTime=Number($('questEachTime').value);
