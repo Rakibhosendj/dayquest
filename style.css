@@ -996,3 +996,8 @@ button,input,select,textarea{
 .meal-member-count{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700}
 .meal-member-count input{width:74px;min-width:0;padding:7px}
 .meal-range-total{display:block;margin-top:12px;padding:12px;border-radius:10px;background:#f0f5f8}
+
+.dictionary-meal-check{display:flex!important;align-items:center;gap:6px;font-size:12px;font-weight:700;white-space:nowrap}
+.dictionary-meal-check input{width:18px;height:18px;accent-color:#18765b}
+.product-dictionary-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto auto!important}
+@media(max-width:560px){.product-dictionary-row{grid-template-columns:1fr 1fr!important}.product-dictionary-actions{grid-column:1/-1}}
