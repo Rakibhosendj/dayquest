@@ -962,13 +962,13 @@ button,input,select,textarea{
 @keyframes dayquestUpdatePulse{50%{transform:scale(1.22);opacity:.65}}
 
 /* Daily Quest: dedicated quick-tap buttons and separate setup page. */
-.daily-quest-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,190px));justify-content:center;gap:10px;}
-.daily-quest-tile{min-height:125px;aspect-ratio:1.7;border-radius:22px;gap:10px;padding:16px 12px}
-.daily-quest-tile .quick-action-button-stats{width:100%;max-width:260px;gap:6px 10px}
-.daily-quest-tile .quick-action-button-stats>span{font-size:clamp(11px,1.5vw,15px)}
+.daily-quest-list{display:grid;grid-template-columns:minmax(0,360px);justify-content:center;gap:10px;}
+.daily-quest-tile{width:100%;min-height:112px;aspect-ratio:auto;border-radius:18px;gap:8px;padding:14px 12px}
+.daily-quest-tile .quick-action-button-stats{width:100%;max-width:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-align:center}
+.daily-quest-tile .quick-action-button-stats>span{display:block;width:100%;text-align:center;font-size:clamp(12px,1.5vw,15px)}
 #dailyQuestSetupLink{display:inline-flex;align-items:center}
 #dailyQuestSetupLink h2{margin:0;font:inherit;font-size:inherit}
-@media(max-width:480px){.daily-quest-list{grid-template-columns:repeat(auto-fit,minmax(138px,160px));justify-content:center;gap:8px}.daily-quest-tile{width:100%;min-height:104px;aspect-ratio:1.45;padding:12px 8px;border-radius:18px;gap:7px}.daily-quest-tile .quick-action-button-stats{gap:5px 4px}.daily-quest-tile .quick-action-button-stats>span{font-size:10px}}
+@media(max-width:480px){.daily-quest-list{grid-template-columns:minmax(0,360px);justify-content:center;gap:8px}.daily-quest-tile{width:100%;min-height:104px;aspect-ratio:auto;padding:12px 8px;border-radius:18px;gap:7px}.daily-quest-tile .quick-action-button-stats{flex-direction:column;gap:5px}.daily-quest-tile .quick-action-button-stats>span{font-size:12px}}
 
 
 /* Daily Quest schedule setup */
