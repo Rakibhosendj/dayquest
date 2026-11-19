@@ -1509,3 +1509,19 @@ img,canvas,svg{max-width:100%}
 .notification-settings-card .quick{display:flex;gap:8px;flex-wrap:wrap}
 .notification-settings-card .quick button{min-height:38px}
 .notification-settings-card .hint{font-size:10px;line-height:1.45}
+
+
+/* Purchase bills action menu and Production material controls on touch screens. */
+.purchase-bill-compact-row{cursor:pointer}
+.purchase-bill-more{display:grid;place-items:center;flex:0 0 38px;width:38px;min-width:38px;height:38px;min-height:38px;border:1px solid #dfe5ed;border-radius:9px;background:#f3f6fa;color:#45566f;font-size:20px;line-height:1;padding:0;cursor:pointer;touch-action:manipulation;pointer-events:auto}
+.purchase-bill-more:active{background:#e4ebf4}
+.purchase-bill-more:focus-visible{outline:2px solid #6684ad;outline-offset:2px}
+.production-input-line .production-add-material-inline{display:grid;place-items:center;min-width:38px;min-height:40px;padding:5px;font-size:19px;touch-action:manipulation}
+.production-inputs{gap:7px}
+@media(max-width:520px){
+ .purchase-bill-compact-row{min-height:42px;gap:6px}
+ .purchase-bill-more{flex-basis:42px;width:42px;min-width:42px;height:42px;min-height:42px;font-size:22px}
+ .production-input-line{align-items:end}
+ .production-input-line .production-add-material-inline{min-width:42px;min-height:42px}
+ .production-input-line label{min-width:0}
+}
