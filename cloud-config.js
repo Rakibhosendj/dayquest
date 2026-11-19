@@ -10,5 +10,5 @@ window.DAYQUEST_CLOUD_CONFIG = Object.freeze({
   supabaseUrl: 'https://nawdixjssgtephchndix.supabase.co',
   publishableKey: 'sb_publishable_fnV7OxL7aGv8sw8lt4PX0Q_M9E4r8rg',
   // Add the matching VAPID public key after creating push-notification keys.
-  vapidPublicKey: ''
+  vapidPublicKey: 'BFJFMMbandjOokp6HK7MN5GMYmLEUE4KgMEdkpQ8MbeC7Q6IFrBl007juoSXrY8fcwqYmguYa5MPs8zb64796kA'
 });
