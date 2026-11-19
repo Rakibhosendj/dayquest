@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261119-profile-delete-dialog">
+<link rel="stylesheet" href="style.css?v=20261119-loans-notifications-production">
 <title>DayQuest</title>
 </head>
 <body>
@@ -84,7 +84,8 @@
      <button class="tab side-sub-link" data-tab="payExpenseDue" type="button">Pay or collect an expense due</button>
     </div>
    </details>
-   <button class="tab side-link" data-menu-item="income" data-tab="income" type="button"><span class="side-link-mark">07</span><span>Income</span></button>
+   <button class="tab side-link" data-menu-item="loans" data-tab="loans" type="button"><span class="side-link-mark">07</span><span>Loans</span></button>
+   <button class="tab side-link" data-menu-item="income" data-tab="income" type="button"><span class="side-link-mark">08</span><span>Income</span></button>
    <button class="tab side-link" data-menu-item="meals" data-tab="meals" type="button"><span class="side-link-mark">08</span><span>Meals</span></button>
    <button class="tab side-link" data-menu-item="quests" data-tab="quests" type="button"><span class="side-link-mark">09</span><span>Daily Quest</span></button>
    <details class="side-group" data-menu-item="reports" data-side-group="reports">
@@ -173,7 +174,7 @@
   <div class="section-head form-section-head purchase-lines-heading"><h3>Products in this bill</h3></div>
   <div id="purchaseLines" class="purchase-lines"></div>
   <div class="purchase-lines-footer">
-   <label>Calculate <select id="purchaseAmountMode"><option value="rate">Rate per unit</option><option value="quantity">Quantity</option></select></label>
+   <label>Calculate <select id="purchaseAmountMode"><option value="rate">Unit</option><option value="quantity">Quantity</option></select></label>
    <label>Discount <input id="purchaseDiscount" type="number" min="0" step="0.01" value="0"></label>
    <div class="purchase-subtotal-inline"><span>Subtotal</span><strong id="purchaseSubtotal">৳0.00</strong></div>
    <button type="button" class="mini-add purchase-add-line-button" id="addPurchaseLine" aria-label="Add line" title="Add line">＋</button>
@@ -235,18 +236,15 @@
  <form id="productionForm" class="form production-form">
   <div class="form-grid"><label>Production number <input id="productionNo" readonly aria-readonly="true"></label><label>Production date <input id="productionDate" type="date" required></label></div>
   <div class="section-head form-section-head"><h3>Finished product</h3></div>
-  <div class="form-grid production-product-header"><label>Product name <input id="productionProduct" list="productNameSuggestions" maxlength="80" placeholder="e.g. Homemade pickle" required></label><label>Product type <select id="productionProductType" required></select></label></div>
-  <div class="production-output-grid"><label>Product size / specification <input id="productionProductSize" maxlength="80" placeholder="e.g. 250 gram jar"></label><label>Produced quantity <input id="productionQuantity" type="number" min="0.001" step="any" value="1" required></label><label>Output unit <span class="select-add"><select id="productionUnit"></select><button type="button" class="mini-add" id="addProductionUnit">＋ Add</button></span></label></div>
+  <div class="production-output-grid production-finished-grid"><label>Product <input id="productionProduct" list="productNameSuggestions" maxlength="80" placeholder="e.g. Homemade pickle" required></label><label>Produced quantity <input id="productionQuantity" type="number" min="0.001" step="any" value="1" required></label><label>Unit <span class="select-add"><select id="productionUnit"></select><button type="button" class="mini-add" id="addProductionUnit">＋ Add</button></span></label></div>
   <div class="section-head form-section-head production-input-heading"><h3>Inventory materials used</h3></div>
   <div id="productionInputs" class="production-inputs"></div>
-  <div class="production-new-material-row"><button type="button" class="mini-add" id="addProductionInput">＋ New Material</button></div>
   <div class="form-grid production-overhead-grid"><label>Electricity cost <input id="productionElectricityCost" type="number" min="0" step="0.01" value="0"></label><label>Production transit cost <input id="productionTransitCost" type="number" min="0" step="0.01" value="0"></label></div>
   <div class="production-cost-preview">
    <div class="total-preview"><span>Material cost</span><strong id="productionMaterialCost">৳0.00</strong></div>
    <div class="total-preview"><span>Total production cost</span><strong id="productionTotalCost">৳0.00</strong></div>
    <div class="total-preview"><span>Cost per output unit</span><strong id="productionUnitCost">৳0.00</strong></div>
   </div>
-  <p class="hint" id="productionCostHint">Material cost is calculated from FIFO inventory lot costs. Electricity and transit are added to the finished product's inventory cost.</p>
   <button class="primary full" id="productionSubmit">Save production & add to Inventory</button>
  </form>
  <div class="section-head history-section-head"><div><h3>Production register</h3><span class="muted">Finished product batches and costs</span></div></div>
@@ -322,6 +320,33 @@
   <button class="secondary full" type="button" id="cancelExpenseDueAction">Cancel</button>
  </form>
 
+</section>
+<section id="loans" class="panel">
+ <div class="section-head"><div><h2>Loans</h2><span class="muted">Track money given and received, with collection or repayment dates</span></div></div>
+ <div class="cards loan-summary-cards">
+  <article class="stat"><span class="muted">To collect</span><strong id="loanGivenOutstanding">৳0.00</strong><small>Loans given to others</small></article>
+  <article class="stat"><span class="muted">To repay</span><strong id="loanTakenOutstanding">৳0.00</strong><small>Loans received from others</small></article>
+  <article class="stat"><span class="muted">Net loan balance</span><strong id="loanNetOutstanding">৳0.00</strong><small>Collect minus repay</small></article>
+ </div>
+ <form id="loanForm" class="form loan-form">
+  <div class="section-head form-section-head"><h3 id="loanFormTitle">Add loan</h3></div>
+  <div class="form-grid">
+   <label>Loan type <select id="loanType"><option value="given">Give loan · To collect</option><option value="taken">Take loan · To repay</option></select></label>
+   <label>Person / bank name <input id="loanParty" maxlength="100" placeholder="Enter person or bank name" required></label>
+  </div>
+  <div class="form-grid">
+   <label>Loan amount <input id="loanAmount" type="number" min="0.01" step="0.01" required></label>
+   <label>Cash or Bank <select id="loanMethod"><option value="Cash">Cash</option><option value="Bank">Bank</option></select></label>
+  </div>
+  <div class="form-grid">
+   <label>Loan date <input id="loanDate" type="date" required></label>
+   <label><span id="loanDueDateLabel">Collect by date</span> <input id="loanDueDate" type="date"></label>
+  </div>
+  <label>Note <input id="loanNote" maxlength="160" placeholder="Optional note"></label>
+  <div class="purchase-form-actions"><button class="primary" id="loanSaveButton">Save loan</button><button class="secondary" id="loanCancelEdit" type="button" hidden>Cancel edit</button></div>
+ </form>
+ <div class="section-head history-section-head"><div><h3>Loan register</h3><span class="muted" id="loanCount">0 loans</span></div></div>
+ <div id="loanList" class="list"></div>
 </section>
 <section id="income" class="panel">
  <div class="section-head income-page-head"><div><h2>Income</h2><span class="muted" id="incomeCount">0 entries</span></div><button type="button" class="mini-add" id="toggleSalesMemoForm">＋ New sales memo</button></div>
@@ -429,7 +454,6 @@
   <div id="familyMemberList" class="list family-member-list"></div>
   <p class="hint">Every saved family member is automatically available in the Income By selector. Existing income records keep their original earner names.</p>
   <div class="section-head form-section-head"><h3>Starting balances</h3></div>
-  <p class="hint">Enter the cash and bank amounts you had when you started using DayQuest. These are the starting amounts before the saved income and expense entries below are calculated.</p>
   <div class="form-grid">
    <label>Opening cash balance <input id="openingCash" type="number" min="0" step="0.01" value="0"></label>
    <label>Opening bank balance <input id="openingBank" type="number" min="0" step="0.01" value="0"></label>
@@ -443,6 +467,13 @@
 </section>
 <section id="settings" class="panel">
  <div class="section-head"><h2>Settings</h2><span class="pill">Personalize DayQuest</span></div>
+ <section class="settings-card notification-settings-card">
+  <div class="section-head settings-section-head"><div><h3>Notifications</h3><p class="settings-copy">Choose which loan date reminders this device should receive when background notifications are enabled.</p></div></div>
+  <label class="settings-toggle-row"><input id="notifyLoanGiven" type="checkbox" checked> <span>Loan collection reminders · Loans I give</span></label>
+  <label class="settings-toggle-row"><input id="notifyLoanTaken" type="checkbox" checked> <span>Loan repayment reminders · Loans I take</span></label>
+  <div class="quick"><button id="enableDayQuestNotifications" class="primary" type="button">Enable Background Notifications</button><button id="disableDayQuestNotifications" class="secondary" type="button">Disable Notifications</button></div>
+  <p class="hint" id="notificationPermissionStatus" role="status" aria-live="polite">Notifications need your browser permission and the DayQuest push service configuration.</p>
+ </section>
  <section class="settings-card cloud-update-card" id="cloudUpdateCard">
   <div class="section-head settings-section-head"><div><h3>Cloud Data Update</h3><p class="settings-copy">When newer family data is available on another device, you can update this device here.</p></div></div>
   <button id="settingsUpdateCloudData" class="settings-cloud-update-btn" type="button" hidden><span class="update-red-star" aria-hidden="true">★</span> Update Newer Cloud Data</button>
@@ -695,6 +726,7 @@
    <label class="delete-profile-option"><input type="checkbox" data-delete-group="purchases"><span><strong>Purchase bills &amp; supplier accounts</strong><small>Purchase bills, supplier payments and supplier details</small></span></label>
    <label class="delete-profile-option"><input type="checkbox" data-delete-group="inventory"><span><strong>Inventory stock movements</strong><small>Stock usage and consumption history</small></span></label>
    <label class="delete-profile-option"><input type="checkbox" data-delete-group="production"><span><strong>Production records</strong><small>Production batches and their linked stock movements</small></span></label>
+   <label class="delete-profile-option"><input type="checkbox" data-delete-group="loans"><span><strong>Loans</strong><small>Loan records and collection / repayment history</small></span></label>
    <label class="delete-profile-option"><input type="checkbox" data-delete-group="guests"><span><strong>Guest data</strong><small>Guest names, entry/out dates and guest meal assignments</small></span></label>
    <label class="delete-profile-option"><input type="checkbox" data-delete-group="members"><span><strong>Family members</strong><small>Member list and member meal settings</small></span></label>
    <label class="delete-profile-option"><input type="checkbox" data-delete-group="meals"><span><strong>Meal settings &amp; history</strong><small>Daily meal counts, date overrides and meal checks</small></span></label>
@@ -715,11 +747,19 @@
   <div class="dq-message-actions"><button class="secondary" id="deleteAccountPasswordCancel" type="button">Cancel</button><button class="primary" id="deleteAccountPasswordConfirm" type="button">Continue</button></div>
  </div>
 </dialog>
+<dialog id="loanSettlementDialog" class="dq-message-dialog loan-settlement-dialog" aria-labelledby="loanSettlementTitle">
+ <form id="loanSettlementForm" class="dq-message-card loan-settlement-card">
+  <h2 id="loanSettlementTitle">Collect loan</h2><p id="loanSettlementBalance"></p>
+  <label>Amount <input id="loanSettlementAmount" type="number" min="0.01" step="0.01" required></label>
+  <div class="form-grid"><label id="loanSettlementDateLabel">Collection date <input id="loanSettlementDate" type="date" required></label><label>Received / paid by <select id="loanSettlementMethod"><option value="Cash">Cash</option><option value="Bank">Bank</option></select></label></div>
+  <div class="dq-message-actions"><button class="secondary" id="loanSettlementCancel" type="button">Cancel</button><button class="primary" type="submit" id="loanSettlementSave">Save</button></div>
+ </form>
+</dialog>
 <dialog id="dqMessageDialog" class="dq-message-dialog" aria-labelledby="dqMessageTitle"><div class="dq-message-card"><h2 id="dqMessageTitle">Day Quest Message Alert</h2><p id="dqMessageText"></p><div class="dq-message-actions"><button id="dqMessageCancel" class="secondary" type="button" hidden>Cancel</button><button id="dqMessageOk" class="primary" type="button">OK</button></div></div></dialog>
 </div>
 </div>
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261119-profile-delete-dialog"></script>
+<script src="app.js?v=20261119-loans-notifications-production"></script>
 </body></html>
