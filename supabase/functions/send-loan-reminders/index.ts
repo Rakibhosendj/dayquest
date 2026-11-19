@@ -66,7 +66,11 @@ Deno.serve(async (request: Request) => {
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const secretKeys = (() => {
+    try { return JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") ?? "{}"); }
+    catch { return {}; }
+  })();
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SECRET_KEY") ?? secretKeys.default ?? "";
   const publicKey = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
   const privateKey = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
   const subject = Deno.env.get("VAPID_SUBJECT") ?? "";
