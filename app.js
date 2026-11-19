@@ -189,7 +189,7 @@ const supplierOutstanding=name=>supplierBillBalances(name).reduce((t,row)=>t+row
 function purchaseLineBaseAmount(line){return Math.max(0,Number(line.amount??(Number(line.quantity||0)*Number(line.rate||0)))||0)}
 function billLineSubtotal(bill){return (bill.lines||[]).reduce((total,line)=>total+purchaseLineBaseAmount(line),0)}
 function billTotal(bill){
- const calculated=Math.max(0,billLineSubtotal(bill)+Number(bill.transitCost||0)-Number(bill.discount||0));
+ const calculated=Math.max(0,billLineSubtotal(bill)-Number(bill.discount||0));
  const stored=Number(bill.total);
  // Older imported bills can contain a zero placeholder even when their line values are present.
  if(bill.total!==undefined&&bill.total!==null&&Number.isFinite(stored)&&(stored>0||calculated===0))return Math.max(0,stored);
@@ -708,15 +708,12 @@ function purchaseLineAmount(line){
 }
 function purchaseLineTemplate(line,index){
  const units=db.units.map(u=>`<option value="${esc(u)}" ${line.unit===u?'selected':''}>${esc(u)}</option>`).join('');
- const amountMode=line.amountMode==='quantity'?'quantity':'rate';
  return `<div class="purchase-line" data-line-index="${index}">
   <div class="purchase-line-top"><strong>Product ${index+1}</strong><button type="button" class="delete remove-purchase-line" data-index="${index}" ${purchaseLines.length===1?'disabled':''}>Remove</button></div>
   <div class="purchase-product-category-row"><div class="purchase-line-field-row"><label>Product name <input class="pl-product" list="productNameSuggestions" maxlength="80" value="${esc(line.product||'')}" placeholder="e.g. Rice / চাল" required></label><button type="button" class="mini-add pl-add-product" data-index="${index}" aria-label="Add product">＋ Add</button></div><label>Category <select class="pl-category" required>${db.purchaseCategories.map(category=>`<option value="${esc(category)}" ${String(line.category||'Staples').toLocaleLowerCase()===category.toLocaleLowerCase()?'selected':''}>${esc(category)}</option>`).join('')}</select></label></div>
-  <div class="purchase-secondary-fields"><div class="purchase-line-field-row"><label>Product type <select class="pl-product-type" required>${db.productTypes.map(type=>`<option value="${esc(type)}" ${String(line.productType||'Other').toLocaleLowerCase()===type.toLocaleLowerCase()?'selected':''}>${esc(type)}</option>`).join('')}</select></label><button type="button" class="mini-add pl-add-product-type" data-index="${index}">＋ Add</button></div>
-  <label>Size / specification <input class="pl-spec" maxlength="80" value="${esc(line.spec||'')}" placeholder="e.g. 300 gram (optional)"></label></div>
+  <div class="purchase-product-type-row"><div class="purchase-line-field-row"><label>Product type <select class="pl-product-type" required>${db.productTypes.map(type=>`<option value="${esc(type)}" ${String(line.productType||'Other').toLocaleLowerCase()===type.toLocaleLowerCase()?'selected':''}>${esc(type)}</option>`).join('')}</select></label><button type="button" class="mini-add pl-add-product-type" data-index="${index}">＋ Add</button></div></div>
   <div class="purchase-numbers-grid"><div class="form-grid"><label>Quantity <input class="pl-quantity" type="number" min="0.001" step="any" value="${Number(line.quantity??1)}" required></label><label>Unit <span class="select-add"><select class="pl-unit">${units}</select><button type="button" class="mini-add pl-add-unit" data-index="${index}">＋ Add</button></span></label></div>
   <div class="form-grid"><label>Rate per unit <input class="pl-rate" type="number" min="0" step="any" value="${Number(line.rate||0)}" required></label><label>Line amount <input class="pl-amount" type="number" min="0" step="any" value="${purchaseLineAmount(line)}" required></label></div></div>
-  <div class="purchase-calc-row"><label>Line amount calculates <select class="pl-amount-mode"><option value="rate" ${amountMode==='rate'?'selected':''}>Rate per unit</option><option value="quantity" ${amountMode==='quantity'?'selected':''}>Quantity</option></select></label><small>Choose which value to calculate from the line amount.</small></div>
   <p class="pl-calc-message" role="status" aria-live="polite">${esc(line.calcError||'')}</p>
  </div>`;
 }
@@ -742,13 +739,10 @@ function applyPurchaseLineAmount(index){
 function renderPurchaseLines(){
  $('purchaseLines').innerHTML=purchaseLines.map(purchaseLineTemplate).join('');
  $('purchaseLines').querySelectorAll('.purchase-line').forEach((node,index)=>node.querySelectorAll('input,select').forEach(el=>{
-  const prop=el.classList.contains('pl-product')?'product':el.classList.contains('pl-product-type')?'productType':el.classList.contains('pl-category')?'category':el.classList.contains('pl-spec')?'spec':el.classList.contains('pl-quantity')?'quantity':el.classList.contains('pl-unit')?'unit':el.classList.contains('pl-rate')?'rate':el.classList.contains('pl-amount')?'amount':'amountMode';
+  const prop=el.classList.contains('pl-product')?'product':el.classList.contains('pl-product-type')?'productType':el.classList.contains('pl-category')?'category':el.classList.contains('pl-quantity')?'quantity':el.classList.contains('pl-unit')?'unit':el.classList.contains('pl-rate')?'rate':'amount';
   const handle=()=>{
    const line=purchaseLines[index];if(!line)return;
-   if(prop==='amountMode'){
-    line.amountMode=el.value;
-    if(purchaseLineAmount(line)>0)applyPurchaseLineAmount(index);else{line.calcError='';line.amountPending=false;}
-   }else if(prop==='amount'){
+   if(prop==='amount'){
     line.amount=Math.max(0,Number(el.value)||0);applyPurchaseLineAmount(index);
    }else if(prop==='quantity'||prop==='rate'){
     line[prop]=Number(el.value)||0;
@@ -780,7 +774,7 @@ function renderPurchaseLines(){
  updatePurchaseTotals();
 }
 function currentPurchaseSubtotal(){return roundPurchaseAmount(purchaseLines.reduce((t,l)=>t+purchaseLineAmount(l),0))}
-function currentPurchaseTotal(){return Math.max(0,roundPurchaseAmount(currentPurchaseSubtotal()+Number($('purchaseTransitCost')?.value||0)-Number($('purchaseDiscount')?.value||0)))}
+function currentPurchaseTotal(){return Math.max(0,roundPurchaseAmount(currentPurchaseSubtotal()-Number($('purchaseDiscount')?.value||0)))}
 function updatePurchaseTotals(){
  purchaseLines.forEach((l,i)=>{
   const node=$('purchaseLines').querySelector(`[data-line-index="${i}"]`);if(!node)return;
@@ -792,8 +786,8 @@ function updatePurchaseTotals(){
  });
  const subtotal=currentPurchaseSubtotal(),transit=Math.max(0,Number($('purchaseTransitCost')?.value||0)),discount=Math.max(0,Number($('purchaseDiscount')?.value||0)),total=currentPurchaseTotal(),cash=Number($('purchaseCashPaid').value||0),bank=Number($('purchaseBankPaid').value||0),credit=Math.max(0,total-cash-bank);
  if($('purchaseSubtotal'))$('purchaseSubtotal').textContent=money(subtotal);$('purchaseBillTotal').textContent=money(total);$('purchaseCreditTotal').textContent=money(credit);
- const paymentTooHigh=cash+bank>total+0.000001,discountTooHigh=discount>subtotal+transit+0.000001,invalid=paymentTooHigh||discountTooHigh;$('purchaseCreditTotal').classList.toggle('invalid-total',invalid);$('purchaseBillSubmit').disabled=invalid;if(editingPurchaseBillId&&invalid&&$('purchaseEditHint')){$('purchaseEditHint').textContent=paymentTooHigh?'Cash paid plus bank paid is greater than the corrected bill total. Reduce one of the paid amounts before updating.':'The discount cannot exceed the product subtotal plus transit cost.';$('purchaseEditHint').hidden=false}
- if($('purchaseAdjustmentPreview'))$('purchaseAdjustmentPreview').textContent=`${money(subtotal)} + ${money(transit)} transit − ${money(discount)} discount`;
+ const paymentTooHigh=cash+bank>total+0.000001,discountTooHigh=discount>subtotal+0.000001,invalid=paymentTooHigh||discountTooHigh;$('purchaseCreditTotal').classList.toggle('invalid-total',invalid);$('purchaseBillSubmit').disabled=invalid;if(editingPurchaseBillId&&invalid&&$('purchaseEditHint')){$('purchaseEditHint').textContent=paymentTooHigh?'Cash paid plus bank paid is greater than the corrected bill total. Reduce one of the paid amounts before updating.':'The discount cannot exceed the product subtotal.';$('purchaseEditHint').hidden=false}
+
 }
 
 function updatePurchaseBillNo(){
@@ -801,7 +795,7 @@ function updatePurchaseBillNo(){
  if(editingPurchaseBillId&&date===purchaseBillOriginalDate){const original=db.purchaseBills.find(b=>b.id===editingPurchaseBillId);if(original&&original.billNo){field.value=original.billNo;return}}
  field.value=nextPurchaseBillNo(date,editingPurchaseBillId);
 }
-function resetPurchaseForm(){editingPurchaseBillId=null;purchaseBillOriginalDate='';if($('purchaseEditHint'))$('purchaseEditHint').hidden=true;$('purchaseBillForm').reset();$('purchaseDate').value=today();$('purchaseBillNo').value='';updatePurchaseBillNo();$('purchaseCashPaid').value=0;$('purchaseBankPaid').value=0;if($('purchaseTransitCost'))$('purchaseTransitCost').value=0;if($('purchaseDiscount'))$('purchaseDiscount').value=0;$('purchaseBillSubmit').textContent='Save purchase bill';$('cancelPurchaseEdit').hidden=true;purchaseLines=[defaultPurchaseLine()];renderPurchaseLines();fillChoices()}
+function resetPurchaseForm(){editingPurchaseBillId=null;purchaseBillOriginalDate='';if($('purchaseEditHint'))$('purchaseEditHint').hidden=true;$('purchaseBillForm').reset();$('purchaseAmountMode').value='rate';$('purchaseDate').value=today();$('purchaseBillNo').value='';updatePurchaseBillNo();$('purchaseCashPaid').value=0;$('purchaseBankPaid').value=0;if($('purchaseTransitCost'))$('purchaseTransitCost').value=0;if($('purchaseDiscount'))$('purchaseDiscount').value=0;$('purchaseBillSubmit').textContent='Save purchase bill';$('cancelPurchaseEdit').hidden=true;purchaseLines=[defaultPurchaseLine()];renderPurchaseLines();fillChoices()}
 function purchaseFormNotice(message){
  if(editingPurchaseBillId&&$('purchaseEditHint')){$('purchaseEditHint').textContent=message;$('purchaseEditHint').hidden=false;return}
  alert(message);
@@ -833,7 +827,12 @@ $('budgetList').addEventListener('change',event=>{
  updateBudgetTotals();
 });
 $('purchaseDate').addEventListener('change',updatePurchaseBillNo);
-$('addPurchaseLine').onclick=()=>{purchaseLines.push(defaultPurchaseLine());renderPurchaseLines()};
+$('purchaseAmountMode').addEventListener('change',()=>{
+ const mode=$('purchaseAmountMode').value==='quantity'?'quantity':'rate';
+ purchaseLines.forEach((line,index)=>{line.amountMode=mode;if(purchaseLineAmount(line)>0)applyPurchaseLineAmount(index);else{line.calcError='';line.amountPending=false}});
+ renderPurchaseLines();
+});
+$('addPurchaseLine').onclick=()=>{const line=defaultPurchaseLine();line.amountMode=$('purchaseAmountMode').value==='quantity'?'quantity':'rate';purchaseLines.push(line);renderPurchaseLines()};
 $('purchaseCashPaid').oninput=updatePurchaseTotals;$('purchaseBankPaid').oninput=updatePurchaseTotals;$('purchaseTransitCost').oninput=updatePurchaseTotals;$('purchaseDiscount').oninput=updatePurchaseTotals;
 $('addSupplier').onclick=()=>{let n=prompt('Enter supplier / store name:');if(n&&n.trim()){n=n.trim();if(!db.suppliers.includes(n))db.suppliers.push(n);fillChoices();renderMasterLists();$('purchaseSupplier').value=n;localSaveOnly()}};
 $('purchaseBillForm').onsubmit=e=>{
@@ -843,7 +842,7 @@ $('purchaseBillForm').onsubmit=e=>{
  if(unpaid>0&&db.settings.requireSupplierForDuePurchase&&!supplierInput){purchaseFormNotice('Select a supplier because this purchase has an unpaid balance. You can change this rule in Settings.');return}
  if(!date){purchaseFormNotice('Select the purchase date.');return}
  if(!lines.length||purchaseLines.some(l=>l.calcError)||lines.some(l=>!l.product||!l.productType||!(l.quantity>0)||!(l.rate>=0)||!(l.amount>=0)||!Number.isFinite(l.quantity)||!Number.isFinite(l.rate)||!Number.isFinite(l.amount))){purchaseFormNotice('Enter a product name, product type, valid quantity, rate and line amount for every bill line. For amount-based calculation, enter the required quantity or rate first.');return}
- if(transitCost<0||discount<0||discount>subtotal+transitCost+0.000001){purchaseFormNotice('Transit cost and discount must be valid, and discount cannot exceed the adjusted purchase subtotal.');return}
+ if(transitCost<0||discount<0||discount>subtotal+0.000001){purchaseFormNotice('Transit cost must be zero or greater, and discount cannot exceed the product subtotal. Transit cost is recorded separately from the bill.');return}
  if(cashPaid<0||bankPaid<0||cashPaid+bankPaid>total+0.000001){purchaseFormNotice('Cash paid plus bank paid cannot exceed the bill total. Adjust the payment amounts or the corrected bill total before updating.');return}
  const old=editingPurchaseBillId?db.purchaseBills.find(b=>b.id===editingPurchaseBillId):null;
  const billNo=old&&date===purchaseBillOriginalDate?String(old.billNo||'').trim():nextPurchaseBillNo(date,editingPurchaseBillId);
@@ -1265,7 +1264,7 @@ function editPurchaseBill(id){
  setTab('purchaseBills');
  editingPurchaseBillId=id;purchaseBillOriginalDate=String(b.date||'');ensureOption($('purchaseSupplier'),b.supplier);$('purchaseSupplier').value=b.supplier;
  fillChoices();
- $('purchaseBillNo').value=b.billNo||'';$('purchaseDate').value=b.date||today();$('purchaseCashPaid').value=Number(b.cashPaid||0);$('purchaseBankPaid').value=Number(b.bankPaid||0);$('purchaseTransitCost').value=Number(b.transitCost||0);$('purchaseDiscount').value=Number(b.discount||0);$('purchaseNote').value=b.note||'';
+ $('purchaseBillNo').value=b.billNo||'';$('purchaseAmountMode').value='rate';$('purchaseDate').value=b.date||today();$('purchaseCashPaid').value=Number(b.cashPaid||0);$('purchaseBankPaid').value=Number(b.bankPaid||0);$('purchaseTransitCost').value=Number(b.transitCost||0);$('purchaseDiscount').value=Number(b.discount||0);$('purchaseNote').value=b.note||'';
  purchaseLines=(b.lines||[]).map(l=>({lineId:l.id||null,product:l.product||'',category:l.category||b.category||'Staples',productType:l.productType||'Other',spec:l.spec||'',quantity:Number(l.quantity||0),unit:l.unit||'pcs',rate:Number(l.rate||0),amount:Number(l.amount??(Number(l.quantity||0)*Number(l.rate||0))),amountMode:'rate',calcError:'',amountPending:false,costType:l.costType||'unassigned',costMember:l.costMember||'',costMembers:assignedMembers(l)}));
  purchaseLines.forEach(l=>{if(!db.units.includes(l.unit))db.units.push(l.unit)});if($('purchaseEditHint')){$('purchaseEditHint').hidden=false;const hasUsedLines=db.consumptions.some(c=>c.billId===id);$('purchaseEditHint').textContent=hasUsedLines?'You are updating a bill already linked to inventory use, production or sales. Keep the used line in place; quantity changes proportionally update linked stock movements, unit/price corrections recalculate downstream production costs, supplier balances and reports.':'You are updating a saved bill. Inventory, supplier balances, production costs and all reports recalculate when you save.';}renderPurchaseLines();$('purchaseBillSubmit').textContent='Update recent bill';$('cancelPurchaseEdit').hidden=false;$('purchaseBillForm').scrollIntoView({behavior:'smooth',block:'start'});
 }
