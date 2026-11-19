@@ -1,4 +1,4 @@
-const CACHE = 'dayquest-cache-v116-profile-delete-dialog';
+const CACHE = 'dayquest-cache-v117-report-delete-option';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
