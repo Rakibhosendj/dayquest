@@ -20,7 +20,7 @@ supabase functions deploy save-notification-subscription
 supabase functions deploy send-loan-reminders
 ```
 
-The scheduled function has JWT verification disabled in `config.toml`, but it requires a separate long random `DAYQUEST_CRON_SECRET` header. Do not expose that value in browser code or commit it.
+The scheduled function has JWT verification disabled in `config.toml`. The scheduler sends the Supabase secret API key in the `apikey` header plus a separate long random `DAYQUEST_CRON_SECRET` header. Keep both values in Supabase Vault / Function Secrets; do not put either value in browser code or commit it.
 
 ## Create VAPID keys
 
@@ -40,12 +40,12 @@ supabase secrets set \
   DAYQUEST_CRON_SECRET="A_LONG_RANDOM_SECRET"
 ```
 
-Also add **only** the VAPID public key to `cloud-config.js` as `vapidPublicKey`. Never add the VAPID private key, service-role key, or cron secret to GitHub.
+Also add **only** the VAPID public key to `cloud-config.js` as `vapidPublicKey`. Never add the VAPID private key, Supabase secret key, or cron secret to GitHub.
 
 ## Schedule the daily check
 
 1. In the Supabase Dashboard, enable the `pg_cron`, `pg_net` and `Vault` extensions if they are not already enabled.
-2. In the SQL Editor, run the three `vault.create_secret` calls shown at the top of `schedule-loan-reminders.sql`, replacing the placeholders with your project URL, publishable key, and the same cron secret configured above.
+2. In the SQL Editor, run the three `vault.create_secret` calls shown at the top of `schedule-loan-reminders.sql`, replacing the placeholders with your project URL, secret key, and the same cron secret configured above.
 3. Run the remainder of `schedule-loan-reminders.sql` to create the daily job.
 4. In Supabase Cron, confirm the job is active and inspect its run history. The job runs at 18:05 UTC (00:05 in Bangladesh).
 
