@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261118-install-flow-fix">
+<link rel="stylesheet" href="style.css?v=20261119-purchase-form-layout">
 <title>DayQuest</title>
 </head>
 <body>
@@ -172,23 +172,22 @@
   <p class="hint purchase-edit-hint" id="purchaseEditHint" hidden>Edit the saved bill and select Update recent bill. Compatible units convert automatically; custom unit corrections keep the entered quantity. Inventory, linked stock use, production material cost, supplier balances and all date-range reports recalculate after saving.</p>
   <div class="section-head form-section-head purchase-lines-heading"><h3>Products in this bill</h3></div>
   <div id="purchaseLines" class="purchase-lines"></div>
-  <div class="purchase-add-line-row"><button type="button" class="mini-add" id="addPurchaseLine">＋ Add Line</button></div>
-  <div class="purchase-adjustments">
-   <div class="total-preview"><span>Products subtotal</span><strong id="purchaseSubtotal">৳0.00</strong></div>
-   <div class="form-grid">
-    <label>Transit cost <input id="purchaseTransitCost" type="number" min="0" step="0.01" value="0"></label>
-    <label>Purchase discount <input id="purchaseDiscount" type="number" min="0" step="0.01" value="0"></label>
-   </div>
-   <p class="hint" id="purchaseAdjustmentPreview">৳0.00 + ৳0.00 transit − ৳0.00 discount</p>
-   <div class="total-preview"><span>Final bill total</span><strong id="purchaseBillTotal">৳0.00</strong></div>
+  <div class="purchase-lines-footer">
+   <label>Calculate <select id="purchaseAmountMode"><option value="rate">Rate per unit</option><option value="quantity">Quantity</option></select></label>
+   <label>Discount <input id="purchaseDiscount" type="number" min="0" step="0.01" value="0"></label>
+   <div class="purchase-subtotal-inline"><span>Subtotal</span><strong id="purchaseSubtotal">৳0.00</strong></div>
+   <button type="button" class="mini-add purchase-add-line-button" id="addPurchaseLine" aria-label="Add line" title="Add line">＋</button>
   </div>
-  <div class="form-grid">
+  <div class="purchase-adjustments">
+   <label class="purchase-transit-separate">Transit cost (separate from bill) <input id="purchaseTransitCost" type="number" min="0" step="0.01" value="0"></label>
+   <div class="total-preview"><span>Bill total</span><strong id="purchaseBillTotal">৳0.00</strong></div>
+  </div>
+  <div class="form-grid purchase-payment-grid">
    <label>Cash paid now <input id="purchaseCashPaid" type="number" min="0" step="0.01" value="0"></label>
    <label>Bank paid now <input id="purchaseBankPaid" type="number" min="0" step="0.01" value="0"></label>
   </div>
   <div class="total-preview credit-preview"><span>Credit / payable to supplier</span><strong id="purchaseCreditTotal">৳0.00</strong></div>
-  <p class="hint purchase-payment-hint">Unpaid balance is tracked under the supplier account and reduces when you pay the supplier.</p>
-  <label class="purchase-note-field">Bill note <input id="purchaseNote" maxlength="120" placeholder="Optional note"></label>
+  <input id="purchaseNote" type="hidden">
   <div class="purchase-form-actions"><button class="primary" id="purchaseBillSubmit">Save purchase bill</button><button class="secondary" type="button" id="cancelPurchaseEdit" hidden>Cancel edit</button></div>
  </form>
  <div class="section-head history-section-head"><div><h3>Recent purchase bills</h3><span class="muted" id="purchaseBillCount">0 bills</span></div></div>
@@ -693,5 +692,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261118-install-flow-fix"></script>
+<script src="app.js?v=20261119-purchase-form-layout"></script>
 </body></html>
