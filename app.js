@@ -3295,6 +3295,8 @@ function clearFamilyMemberRecords(){
  memberKeys.forEach(key=>{if(db.mealPlan.personDates)delete db.mealPlan.personDates[key]});
 }
 function applyProfileDeleteSelection(groups){
+ // Reports are generated from records, so clearing Reports also clears every data group that feeds report totals.
+ if(groups.has('reports'))['transactions','purchases','inventory','production','guests','members','meals','quests','budgets'].forEach(group=>groups.add(group));
  // Profile details are always part of Delete Profile.
  db.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};
  if(groups.has('transactions'))clearExpenseIncomeRecords();
