@@ -1379,3 +1379,29 @@ img,canvas,svg{max-width:100%}
  #budget .budget-table .budget-rate,#budget .budget-table .budget-line-total{font-size:7px;letter-spacing:-.45px}
  #budget .budget-quantity-input{font-size:8px;padding:4px 0}
 }
+
+
+/* Compact Purchase Form control rows */
+.purchase-product-type-row{display:grid;grid-template-columns:minmax(0,1fr);gap:7px}
+.purchase-lines-footer{display:grid;grid-template-columns:minmax(140px,1.1fr) minmax(90px,.75fr) minmax(100px,.85fr) 38px;gap:7px;align-items:end;padding:7px 9px;background:#f4f7fb;border:1px solid #e5eaf1;border-radius:10px}
+.purchase-lines-footer>label{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:6px;margin:0;min-width:0;font-size:10px;white-space:nowrap}
+.purchase-lines-footer>label input,.purchase-lines-footer>label select{min-width:0;width:100%;min-height:34px;padding:6px 7px;font-size:11px}
+.purchase-subtotal-inline{display:flex;align-items:center;justify-content:space-between;gap:5px;min-width:0;min-height:34px;padding:5px 7px;background:#fff;border:1px solid #dce3ed;border-radius:8px;font-size:10px;white-space:nowrap}
+.purchase-subtotal-inline strong{font-size:12px;color:#263b5c;overflow:hidden;text-overflow:ellipsis}
+.purchase-add-line-button{min-width:36px;min-height:34px;padding:5px 7px;font-size:18px;line-height:1}
+.purchase-adjustments{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:end;gap:8px}
+.purchase-transit-separate{display:grid;grid-template-columns:auto minmax(90px,1fr);align-items:center;gap:7px;margin:0;font-size:10px}
+.purchase-transit-separate input{min-width:0;min-height:36px;padding:7px 8px;font-size:11px}
+.purchase-adjustments>.total-preview{min-height:36px;padding:8px 10px}
+.purchase-payment-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+@media(max-width:520px){
+ .purchase-lines-footer{grid-template-columns:minmax(0,1.1fr) minmax(0,.8fr) minmax(0,.9fr) 32px;gap:4px;padding:6px}
+ .purchase-lines-footer>label{grid-template-columns:1fr;gap:2px;font-size:9px;white-space:normal}
+ .purchase-lines-footer>label input,.purchase-lines-footer>label select{min-height:32px;font-size:10px}
+ .purchase-subtotal-inline{min-height:32px;display:grid;gap:1px;justify-content:stretch;padding:4px 5px;font-size:9px}
+ .purchase-subtotal-inline strong{font-size:10px}
+ .purchase-add-line-button{min-width:30px;min-height:32px;padding:4px;font-size:17px}
+ .purchase-adjustments{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;padding:8px}
+ .purchase-transit-separate{grid-template-columns:1fr;gap:3px;font-size:9px}
+ .purchase-payment-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px}
+}
