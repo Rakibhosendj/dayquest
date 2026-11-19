@@ -1454,3 +1454,58 @@ img,canvas,svg{max-width:100%}
  .purchase-payment-grid input{min-height:42px;font-size:16px!important}
  .purchase-form .mini-add{min-height:42px}
 }
+
+
+/* Loans */
+.loan-summary-cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.loan-summary-cards .stat{min-width:0;padding:12px}
+.loan-summary-cards .stat strong{font-size:clamp(16px,2vw,22px);white-space:nowrap}
+.loan-form{margin-top:12px}
+.loan-card{display:grid;gap:10px;padding:13px;background:#fff;border:1px solid #e4e9f0;border-radius:13px}
+.loan-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.loan-card-head>div{display:grid;gap:4px;min-width:0}
+.loan-card-head>div strong{font-size:13px;overflow-wrap:anywhere}
+.loan-card-head>div small{font-size:10px;color:#8190a3}
+.loan-outstanding-value{font-size:15px;color:#263b5c;white-space:nowrap}
+.loan-card-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.loan-card-stats span{display:grid;gap:4px;min-width:0;padding:8px;background:#f5f7fa;border-radius:9px;font-size:9px;color:#7f8a9a}
+.loan-card-stats strong{font-size:10px;color:#263b5c;overflow-wrap:anywhere}
+.loan-note{font-size:10px;color:#78869a}
+.loan-history{display:grid;gap:5px;border-top:1px solid #edf0f4;padding-top:8px}
+.loan-history-row{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#778397}
+.loan-history-row strong{color:#263b5c;white-space:nowrap}
+.loan-card-actions{display:flex;gap:7px;flex-wrap:wrap}
+.loan-card-actions button{min-height:36px;padding:8px 11px;font-size:10px}
+.loan-settlement-card{display:grid;gap:10px}
+.loan-settlement-card label{display:grid;gap:5px;font-size:11px;font-weight:750;color:#526176}
+.loan-settlement-card input,.loan-settlement-card select{width:100%;min-width:0;min-height:42px;padding:9px;border:1px solid #dfe5ed;border-radius:9px;background:#fbfcfe;font:inherit;font-size:16px;color:#172033}
+.loan-settlement-card p{margin:0}
+@media(max-width:520px){.loan-summary-cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.loan-summary-cards .stat{padding:8px}.loan-summary-cards .stat .muted{font-size:9px}.loan-summary-cards .stat strong{font-size:13px}.loan-summary-cards .stat small{font-size:8px}.loan-card{padding:9px}.loan-card-stats{gap:4px}.loan-card-stats span{padding:6px 4px;font-size:8px}.loan-card-stats strong{font-size:9px}.loan-card-actions{gap:5px}.loan-card-actions button{flex:1;padding:8px 6px}}
+/* Production form: materials fit on one compact row with add beside Product. */
+.production-finished-grid{grid-template-columns:minmax(0,1.2fr) minmax(0,.75fr) minmax(0,.8fr);gap:7px}
+.production-inputs{display:grid;gap:7px;min-width:0}
+.production-input-line{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,.75fr) minmax(0,.65fr) auto;gap:7px;align-items:end;min-width:0;padding:8px;background:#fff;border:1px solid #e5eaf1;border-radius:10px}
+.production-input-product-row{display:grid;grid-template-columns:minmax(0,1fr) 36px;align-items:end;gap:5px;min-width:0}
+.production-input-line label{display:grid;gap:4px;min-width:0;margin:0;font-size:10px;font-weight:750;color:#566176}
+.production-input-line select,.production-input-line input{width:100%;min-width:0;max-width:100%;min-height:38px;padding:7px;border:1px solid #dfe5ed;border-radius:8px;background:#fbfcfe;font:inherit;font-size:12px;color:#172033}
+.production-input-line .production-input-unit{background:#f1f4f8;color:#637187}
+.production-add-material-inline{min-width:36px;min-height:38px;padding:5px;font-size:19px}
+.production-input-stock{grid-column:1/-1;margin:0;color:#8390a1;font-size:9px}
+.production-input-line>.delete{min-height:38px;padding:7px 8px;font-size:9px}
+.production-regular-label{align-self:center;color:#18765b;font-size:10px;font-weight:800}
+@media(max-width:520px){
+ .production-finished-grid{grid-template-columns:minmax(0,1fr) minmax(0,.75fr) minmax(0,.75fr);gap:5px}
+ .production-input-line{grid-template-columns:minmax(0,1.35fr) minmax(0,.7fr) minmax(0,.55fr) 34px;gap:4px;padding:6px}
+ .production-input-line label{font-size:9px}
+ .production-input-line select,.production-input-line input{min-height:42px;padding:5px 4px;font-size:16px!important}
+ .production-input-product-row{grid-template-columns:minmax(0,1fr) 32px;gap:3px}
+ .production-add-material-inline{min-width:32px;min-height:42px;padding:3px;font-size:17px}
+ .production-input-line>.delete{min-height:42px;padding:5px 4px;font-size:9px}
+ .production-input-stock{font-size:8px}
+}
+@media(max-width:360px){.production-input-line{grid-template-columns:minmax(0,1fr) minmax(0,.7fr) minmax(0,.55fr) 32px}.production-finished-grid{grid-template-columns:1fr 1fr}.production-finished-grid>label:first-child{grid-column:1/-1}}
+/* Notification preference and status */
+.notification-settings-card .settings-toggle-row{min-height:38px}
+.notification-settings-card .quick{display:flex;gap:8px;flex-wrap:wrap}
+.notification-settings-card .quick button{min-height:38px}
+.notification-settings-card .hint{font-size:10px;line-height:1.45}
