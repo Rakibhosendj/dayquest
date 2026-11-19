@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261119-purchase-form-layout">
+<link rel="stylesheet" href="style.css?v=20261119-profile-delete-dialog">
 <title>DayQuest</title>
 </head>
 <body>
@@ -436,9 +436,7 @@
   </div>
   <button class="primary full">Save profile</button>
   <button class="delete-profile-btn" id="deleteProfileBtn" type="button">Delete Profile</button>
-  <p class="hint">Delete Profile clears profile details and starting balances only. Transaction history and your Family Account login remain.</p>
   <button class="clear-transactions-btn" id="clearAllExpensesIncomeBtn" type="button">Clear All Expenses &amp; Income</button>
-  <p class="hint">Permanently clears expense and income entries, including Quick Expenses history and related due/collection records. Keeps quick button settings, family members, purchases, inventory, production and profile.</p>
  </form>
  <div class="section-head"><h2>Current balance</h2></div>
  <div class="cards balance-cards"><article class="stat balance-main"><span class="muted">Earned balance</span><strong id="profileEarnedBalance">৳0.00</strong><small>Cash + bank after recorded transactions</small></article><article class="stat"><span class="muted">Cash balance</span><strong id="profileCashBalance">৳0.00</strong></article><article class="stat"><span class="muted">Bank balance</span><strong id="profileBankBalance">৳0.00</strong></article></div>
@@ -686,11 +684,41 @@
 </main>
 <footer>DayQuest · Private by design · Works offline</footer>
 <dialog id="newProductEntryDialog" class="dq-message-dialog new-product-entry-dialog" aria-labelledby="newProductEntryTitle"><form id="newProductEntryForm" class="dq-message-card"><h2 id="newProductEntryTitle">New Product</h2><label>Product name (English) <input id="newProductEntryEnglish" maxlength="80" required placeholder="Enter product name"></label><label>Product name (Bangla) <input id="newProductEntryBangla" maxlength="80" lang="bn" placeholder="Enter Bangla name (optional)"></label><label class="new-product-meal-check"><input id="newProductEntryMeal" type="checkbox" checked> Meals</label><div class="dq-message-actions"><button class="secondary" id="newProductEntryCancel" type="button">Cancel</button><button class="primary" type="submit">Add Product</button></div></form></dialog>
+<dialog id="deleteProfileDialog" class="dq-message-dialog delete-profile-dialog" aria-labelledby="deleteProfileDialogTitle">
+ <div class="dq-message-card delete-profile-card">
+  <h2 id="deleteProfileDialogTitle">Delete Profile</h2>
+  <p>Select the DayQuest data you want to permanently delete. Profile details are always cleared; all other selections are optional.</p>
+  <div class="delete-profile-options">
+   <label class="delete-profile-option mandatory"><input type="checkbox" checked disabled><span><strong>Profile details</strong><small>Name, phone, family name, photo and opening balances</small></span><em>Required</em></label>
+   <label class="delete-profile-option"><input type="checkbox" data-delete-group="transactions"><span><strong>Expenses &amp; income transactions</strong><small>Quick Expenses history, due balances, collections and sales memo entries</small></span></label>
+   <label class="delete-profile-option"><input type="checkbox" data-delete-group="purchases"><span><strong>Purchase bills &amp; supplier accounts</strong><small>Purchase bills, supplier payments and supplier details</small></span></label>
+   <label class="delete-profile-option"><input type="checkbox" data-delete-group="inventory"><span><strong>Inventory stock movements</strong><small>Stock usage and consumption history</small></span></label>
+   <label class="delete-profile-option"><input type="checkbox" data-delete-group="production"><span><strong>Production records</strong><small>Production batches and their linked stock movements</small></span></label>
+   <label class="delete-profile-option"><input type="checkbox" data-delete-group="guests"><span><strong>Guest data</strong><small>Guest names, entry/out dates and guest meal assignments</small></span></label>
+   <label class="delete-profile-option"><input type="checkbox" data-delete-group="members"><span><strong>Family members</strong><small>Member list and member meal settings</small></span></label>
+   <label class="delete-profile-option"><input type="checkbox" data-delete-group="meals"><span><strong>Meal settings &amp; history</strong><small>Daily meal counts, date overrides and meal checks</small></span></label>
+   <label class="delete-profile-option"><input type="checkbox" data-delete-group="quests"><span><strong>Daily Quests</strong><small>Quest definitions and achievement history</small></span></label>
+   <label class="delete-profile-option"><input type="checkbox" data-delete-group="budgets"><span><strong>Budget plans</strong><small>Saved budget date ranges and quantities</small></span></label>
+   <label class="delete-profile-option"><input type="checkbox" data-delete-group="lists"><span><strong>Product dictionary &amp; custom lists</strong><small>Custom product, expense, income, category, type and unit lists</small></span></label>
+   <label class="delete-profile-option"><input type="checkbox" data-delete-group="quickButtons"><span><strong>Quick button setups</strong><small>Saved Quick Expenses and Quick Income button configurations</small></span></label>
+  </div>
+  <p class="delete-profile-report-note">Reports are calculated from saved records, not stored separately. Their results update automatically when you delete the related data above.</p>
+  <div class="dq-message-actions"><button class="secondary" id="deleteProfileCancel" type="button">Cancel</button><button class="delete-profile-confirm" id="confirmDeleteProfile" type="button">Delete selected data</button></div>
+ </div>
+</dialog>
+<dialog id="deleteAccountPasswordDialog" class="dq-message-dialog" aria-labelledby="deleteAccountPasswordTitle">
+ <div class="dq-message-card delete-account-password-card">
+  <h2 id="deleteAccountPasswordTitle">DayQuest</h2>
+  <p>Enter your current Family Account password to confirm permanent account deletion.</p>
+  <label>Password <input id="deleteAccountPassword" type="password" autocomplete="current-password" required></label>
+  <div class="dq-message-actions"><button class="secondary" id="deleteAccountPasswordCancel" type="button">Cancel</button><button class="primary" id="deleteAccountPasswordConfirm" type="button">Continue</button></div>
+ </div>
+</dialog>
 <dialog id="dqMessageDialog" class="dq-message-dialog" aria-labelledby="dqMessageTitle"><div class="dq-message-card"><h2 id="dqMessageTitle">Day Quest Message Alert</h2><p id="dqMessageText"></p><div class="dq-message-actions"><button id="dqMessageCancel" class="secondary" type="button" hidden>Cancel</button><button id="dqMessageOk" class="primary" type="button">OK</button></div></div></dialog>
 </div>
 </div>
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261119-purchase-form-layout"></script>
+<script src="app.js?v=20261119-profile-delete-dialog"></script>
 </body></html>
