@@ -8,7 +8,7 @@
 --
 -- Example Vault calls (replace each placeholder before running):
 -- select vault.create_secret('https://YOUR-PROJECT-REF.supabase.co', 'dayquest_project_url');
--- select vault.create_secret('YOUR_SB_SECRET_KEY', 'dayquest_publishable_key');
+-- select vault.create_secret('YOUR_SB_SECRET_KEY', 'dayquest_secret_key');
 -- select vault.create_secret('YOUR_LONG_RANDOM_CRON_SECRET', 'dayquest_cron_secret');
 
 create extension if not exists pg_cron with schema pg_catalog;
@@ -30,7 +30,7 @@ select cron.schedule(
       || '/functions/v1/send-loan-reminders',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'apikey', (select decrypted_secret from vault.decrypted_secrets where name = 'dayquest_publishable_key'),
+      'apikey', (select decrypted_secret from vault.decrypted_secrets where name = 'dayquest_secret_key'),
       'x-dayquest-cron-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'dayquest_cron_secret')
     ),
     body := jsonb_build_object('source', 'dayquest-loan-reminder-cron'),
