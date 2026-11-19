@@ -19,8 +19,16 @@ Deno.serve(async (request: Request) => {
 
   const authorization = request.headers.get("Authorization");
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? "";
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const publishableKeys = (() => {
+    try { return JSON.parse(Deno.env.get("SUPABASE_PUBLISHABLE_KEYS") ?? "{}"); }
+    catch { return {}; }
+  })();
+  const secretKeys = (() => {
+    try { return JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") ?? "{}"); }
+    catch { return {}; }
+  })();
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? publishableKeys.default ?? "";
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SECRET_KEY") ?? secretKeys.default ?? "";
 
   if (!authorization || !supabaseUrl || !anonKey || !serviceRoleKey) {
     return json({ error: "DayQuest push service is not configured." }, 503);
