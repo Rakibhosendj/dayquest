@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v118-loans-notifications-production';
+const CACHE = 'dayquest-cache-v120-purchase-production-push';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261119-loans-notifications-production',
-  './app.js?v=20261119-loans-notifications-production',
+  './style.css?v=20261119-purchase-production-loan-push',
+  './app.js?v=20261119-purchase-production-loan-push',
   './manifest.json',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',
