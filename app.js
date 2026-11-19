@@ -184,13 +184,21 @@ const expenseOutstandingAt=(x,asOf)=>x.paymentType==='Due'?Math.max(0,Number(x.a
 const incomeOutstandingAt=(x,asOf)=>x.paymentType==='Due'?Math.max(0,Number(x.amount||0)-incomeCollections(x).filter(c=>!c.date||String(c.date)<=asOf).reduce((t,c)=>t+Number(c.amount||0),0)):0;
 const incomeReceivedOn=(x,d)=>{let direct=x.paymentType!=='Due'&&x.date===d?Number(x.amount||0):0;let collections=incomeCollections(x).filter(c=>c.date===d).reduce((a,c)=>a+Number(c.amount||0),0);return direct+collections};
 const incomeReceivedBetween=(a,b)=>db.incomes.reduce((t,x)=>t+incomeCollections(x).filter(c=>c.date>=a&&c.date<=b).reduce((v,c)=>v+Number(c.amount||0),0)+(x.paymentType!=='Due'&&x.date>=a&&x.date<=b?Number(x.amount||0):0),0);
-const billCredit=b=>Math.max(0,Number(b.credit??(billTotal(b)-Number(b.cashPaid||0)-Number(b.bankPaid||0))));
+function billCredit(b){
+ const calculated=Math.max(0,billTotal(b)-Number(b.cashPaid||0)-Number(b.bankPaid||0));
+ const stored=Number(b.credit);
+ // Old bills stored transit in their total/credit; transit is now kept outside the bill.
+ if(Number(b.transitCost||0)>0)return calculated;
+ return b.credit!==undefined&&b.credit!==null&&Number.isFinite(stored)?Math.max(0,stored):calculated;
+}
 const supplierOutstanding=name=>supplierBillBalances(name).reduce((t,row)=>t+row.remaining,0);
 function purchaseLineBaseAmount(line){return Math.max(0,Number(line.amount??(Number(line.quantity||0)*Number(line.rate||0)))||0)}
 function billLineSubtotal(bill){return (bill.lines||[]).reduce((total,line)=>total+purchaseLineBaseAmount(line),0)}
 function billTotal(bill){
  const calculated=Math.max(0,billLineSubtotal(bill)-Number(bill.discount||0));
  const stored=Number(bill.total);
+ // Older bills stored transit inside the bill total. Recalculate those bills without transit.
+ if(Number(bill.transitCost||0)>0)return calculated;
  // Older imported bills can contain a zero placeholder even when their line values are present.
  if(bill.total!==undefined&&bill.total!==null&&Number.isFinite(stored)&&(stored>0||calculated===0))return Math.max(0,stored);
  return calculated;
