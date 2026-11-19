@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v114-install-flow-fix';
+const CACHE = 'dayquest-cache-v115-purchase-form-layout';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261118-install-flow-fix',
-  './app.js?v=20261118-install-flow-fix',
+  './style.css?v=20261119-purchase-form-layout',
+  './app.js?v=20261119-purchase-form-layout',
   './manifest.json',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',
