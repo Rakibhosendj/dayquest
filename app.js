@@ -1,5 +1,5 @@
 const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slice(0,10);
-const SIDE_MENU_DEFAULT_ORDER=['home','expenses','inventory','budget','production','supplierAccounts','outstanding','income','meals','quests','reports','profile','settings'];
+const SIDE_MENU_DEFAULT_ORDER=['home','expenses','inventory','budget','production','supplierAccounts','outstanding','loans','income','meals','quests','reports','profile','settings'];
 function normalizeSideMenuOrder(value){
  const valid=new Set(SIDE_MENU_DEFAULT_ORDER);
  const picked=Array.isArray(value)?value.filter(key=>valid.has(key)):[];
@@ -15,7 +15,7 @@ function normalizeProductDictionary(entries){
  });
 }
 const load=()=>{try{return JSON.parse(localStorage.getItem('dayquest_v1'))||{expenses:[],quests:[],checks:{}}}catch{return{expenses:[],quests:[],checks:{}}}};
-let db=load(),deferredInstall=null,editingExpenseId=null,editingIncomeId=null,collectingIncomeId=null,settlingExpenseId=null,activeSupplierName=null,payingSupplierName=null,purchaseLines=[],editingPurchaseBillId=null,purchaseBillOriginalDate='',salesMemoLines=[],editingSalesMemoId=null,editingQuickActionId=null;
+let db=load(),deferredInstall=null,editingExpenseId=null,editingIncomeId=null,collectingIncomeId=null,settlingExpenseId=null,activeSupplierName=null,payingSupplierName=null,purchaseLines=[],editingPurchaseBillId=null,purchaseBillOriginalDate='',salesMemoLines=[],editingSalesMemoId=null,editingQuickActionId=null,editingLoanId=null,settlingLoanId=null;
 db.sideMenuOrder=normalizeSideMenuOrder(db.sideMenuOrder);
 let quickActionMode='add';
 db.expenses=Array.isArray(db.expenses)?db.expenses:[];
@@ -26,6 +26,7 @@ db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategorie
 db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];
 db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);
 db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};
+db.settings.notificationPreferences=db.settings.notificationPreferences&&typeof db.settings.notificationPreferences==='object'?db.settings.notificationPreferences:{loanGiven:true,loanTaken:true,enabled:false};
 if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.themeColor||'')))db.settings.themeColor='#263b5c';
 if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';
 if(typeof db.settings.quickButtonVibration!=='boolean')db.settings.quickButtonVibration=true;
@@ -34,6 +35,10 @@ if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requ
 db.units=Array.isArray(db.units)&&db.units.length?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];
 db.units=[...new Map(db.units.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);
 db.incomes=Array.isArray(db.incomes)?db.incomes:[];
+db.loans=Array.isArray(db.loans)?db.loans:[];
+db.loans.forEach(loan=>{loan.id=String(loan.id||crypto.randomUUID());loan.type=loan.type==='taken'?'taken':'given';loan.party=String(loan.party||'').trim();loan.amount=Math.max(0,Number(loan.amount)||0);loan.method=loan.method==='Bank'?'Bank':'Cash';loan.date=String(loan.date||'');loan.dueDate=String(loan.dueDate||'');loan.note=String(loan.note||'');loan.settlements=Array.isArray(loan.settlements)?loan.settlements:[]});
+db.loans=Array.isArray(db.loans)?db.loans:[];
+db.loans.forEach(loan=>{loan.id=String(loan.id||crypto.randomUUID());loan.type=loan.type==='taken'?'taken':'given';loan.party=String(loan.party||'').trim();loan.amount=Math.max(0,Number(loan.amount)||0);loan.method=loan.method==='Bank'?'Bank':'Cash';loan.date=String(loan.date||'');loan.dueDate=String(loan.dueDate||'');loan.note=String(loan.note||'');loan.settlements=Array.isArray(loan.settlements)?loan.settlements:[]});
 db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];
 db.incomes.forEach(x=>{if(x.source&&!db.incomeHeads.includes(x.source))db.incomeHeads.push(x.source)});
 db.profile=db.profile&&typeof db.profile==='object'?db.profile:{name:'',phone:'',openingCash:0,openingBank:0};
@@ -230,6 +235,11 @@ function calculateBalances(){
  db.purchaseBills.forEach(b=>{add('Cash',-Number(b.cashPaid||0));add('Bank',-Number(b.bankPaid||0))});
  // Supplier credit reduces balances only when a later payment is recorded.
  db.supplierPayments.forEach(p=>add(p.method||'Cash',-Number(p.amount||0)));
+ // Loan advances change cash/bank when issued or received; settlements reverse that movement.
+ db.loans.forEach(loan=>{
+  const given=loan.type!=='taken';add(loan.method||'Cash',given?-Number(loan.amount||0):Number(loan.amount||0));
+  (loan.settlements||[]).forEach(item=>add(item.method||'Cash',given?Number(item.amount||0):-Number(item.amount||0)));
+ });
  return {cash,bank,total:cash+bank};
 }
 function showBalances(){const b=calculateBalances();[['earnedBalance',b.total],['cashBalance',b.cash],['bankBalance',b.bank],['reportEarnedBalance',b.total],['reportCashBalance',b.cash],['reportBankBalance',b.bank],['profileEarnedBalance',b.total],['profileCashBalance',b.cash],['profileBankBalance',b.bank]].forEach(([id,v])=>{if($(id))$(id).textContent=money(v)});}
@@ -382,8 +392,9 @@ function setTab(t){
  if(activeGroup)activeGroup.open=true;
  closeSidebar();
  if(t==='reports'){renderReport();if(!document.querySelector('[data-report-go].active'))activateReportSection('members')}
- if(t==='settings'){renderPurchaseCategorySettings();renderMasterLists();renderProductDictionary();renderMealPersonDates();$('quickButtonColorInput').value=db.settings.quickButtonColor||'#ee7d2f';$('quickButtonColorValue').textContent=(db.settings.quickButtonColor||'#ee7d2f').toUpperCase();if($('quickButtonVibration'))$('quickButtonVibration').checked=db.settings.quickButtonVibration!==false;$('requireSupplierForDuePurchase').checked=db.settings.requireSupplierForDuePurchase!==false;$('allowPurchaseBillEdits').checked=db.settings.allowPurchaseBillEdits!==false;fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickMemberOptions(quickSelectedMembers());updateQuickActionTypeFields();renderQuickActionManager();}
+ if(t==='settings'){renderPurchaseCategorySettings();renderMasterLists();renderProductDictionary();renderMealPersonDates();renderNotificationSettings();$('quickButtonColorInput').value=db.settings.quickButtonColor||'#ee7d2f';$('quickButtonColorValue').textContent=(db.settings.quickButtonColor||'#ee7d2f').toUpperCase();if($('quickButtonVibration'))$('quickButtonVibration').checked=db.settings.quickButtonVibration!==false;$('requireSupplierForDuePurchase').checked=db.settings.requireSupplierForDuePurchase!==false;$('allowPurchaseBillEdits').checked=db.settings.allowPurchaseBillEdits!==false;fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickMemberOptions(quickSelectedMembers());updateQuickActionTypeFields();renderQuickActionManager();}
  if(t==='payExpenseDue')renderExpenseDueList();
+ if(t==='loans'){if(!$('loanDate').value)$('loanDate').value=today();renderLoans();}
  if(t==='quickExpenses'){renderQuickMemberOptions(quickSelectedMembers());fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickActions();}
  if(t==='questSetup'){if($('questSetupList'))$('questSetupList').innerHTML=questHTML(dayQuests(questLocalDate()),true);}
  if(t==='inventory')renderInventory();
@@ -1041,10 +1052,11 @@ function productionInputTemplate(input,index,buckets){
  const options=buckets.map(bucket=>`<option value="${esc(salesStockValue(bucket.product,bucket.unit))}" ${selected===salesStockValue(bucket.product,bucket.unit)?'selected':''}>${esc(bucket.product)} (${esc(bucket.unit)}) · Available ${numberText(bucket.available)}</option>`).join('');
  const available=buckets.find(bucket=>bucket.product.toLocaleLowerCase()===String(input.product||'').toLocaleLowerCase()&&bucket.unit.toLocaleLowerCase()===String(input.unit||'').toLocaleLowerCase())?.available||0;
  return `<div class="production-input-line" data-production-input="${index}">
-  <div class="production-input-head"><strong>Material ${index+1}</strong><button type="button" class="delete remove-production-input" data-index="${index}" ${productionInputs.length===1?'disabled':''}>Remove</button></div>
-  <label class="production-input-product-field">Inventory product <select class="production-input-product" required><option value="">${buckets.length?'Select available inventory product':'No available inventory stock'}</option>${options}${input.product&&!buckets.some(bucket=>bucket.product.toLocaleLowerCase()===input.product.toLocaleLowerCase()&&bucket.unit.toLocaleLowerCase()===input.unit.toLocaleLowerCase())?`<option value="${esc(selected)}" selected>${esc(input.product)} (${esc(input.unit)}) · No stock on production date</option>`:''}</select></label>
-  <div class="production-input-measure-row"><label>Quantity to use <input class="production-input-quantity" type="number" min="0.001" step="any" value="${Number(input.quantity||1)}" required></label><label class="production-input-unit-field">Unit <input class="production-input-unit" value="${esc(input.unit||'')}" placeholder="—" readonly aria-readonly="true" tabindex="-1"></label></div>
+  <div class="production-input-product-row"><label>Product <select class="production-input-product" required><option value="">${buckets.length?'Select product':'No inventory stock'}</option>${options}${input.product&&!buckets.some(bucket=>bucket.product.toLocaleLowerCase()===input.product.toLocaleLowerCase()&&bucket.unit.toLocaleLowerCase()===input.unit.toLocaleLowerCase())?`<option value="${esc(selected)}" selected>${esc(input.product)} (${esc(input.unit)}) · No stock on production date</option>`:''}</select></label>${index===0?`<button type="button" class="mini-add production-add-material-inline" aria-label="Add material" title="Add material">＋</button>`:''}</div>
+  <label>Quantity <input class="production-input-quantity" type="number" min="0.001" step="any" value="${Number(input.quantity||1)}" required></label>
+  <label>Unit <input class="production-input-unit" value="${esc(input.unit||'')}" placeholder="—" readonly aria-readonly="true" tabindex="-1"></label>
   ${input.product?`<small class="production-input-stock">Available on ${fmt($('productionDate').value)}: ${numberText(available)} ${esc(input.unit)}</small>`:''}
+  <button type="button" class="delete remove-production-input" data-index="${index}" ${productionInputs.length===1?'disabled':''}>Remove</button>
  </div>`;
 }
 function renderProductionInputs(){
@@ -1056,12 +1068,16 @@ function renderProductionInputs(){
   quantity.addEventListener('input',()=>{productionInputs[index].quantity=Number(quantity.value||0);updateProductionPreview()});
  });
  $('productionInputs').querySelectorAll('.remove-production-input').forEach(button=>button.onclick=()=>{if(productionInputs.length>1){productionInputs.splice(Number(button.dataset.index),1);renderProductionInputs();updateProductionPreview()}});
+ $('productionInputs').querySelectorAll('.production-add-material-inline').forEach(button=>button.onclick=()=>{
+  let index=productionInputs.findIndex(input=>!String(input.product||'').trim());if(index<0){productionInputs.push(defaultProductionInput());index=productionInputs.length-1}
+  renderProductionInputs();updateProductionPreview();$('productionInputs').querySelectorAll('.production-input-product')[index]?.focus();
+ });
  updateProductionPreview();
 }
 function allocateProductionMaterials(inputs,date){
  const buckets=buildSalesStockBuckets(null,date),consumptions=[],summaries=[],owners=[];let ingredientCost=0;
  for(const input of inputs){
-  if(!input.product||!input.unit||!(Number(input.quantity)>0))return {error:'Select each inventory product and enter a quantity greater than zero.'};
+  if(!input.product||!input.unit||!(Number(input.quantity)>0))return {error:'Choose a product and enter a positive quantity.'};
   const bucket=buckets.get(salesStockKey(input.product,input.unit));if(!bucket)return {error:`${input.product} (${input.unit}) is not available in Inventory on the selected production date.`};
   let remaining=Number(input.quantity),lineCost=0;
   for(const lot of bucket.lots){
@@ -1081,12 +1097,10 @@ function updateProductionPreview(){
  const date=$('productionDate').value||today(),allocation=allocateProductionMaterials(productionInputs,date),electricity=Math.max(0,Number($('productionElectricityCost').value||0)),transit=Math.max(0,Number($('productionTransitCost').value||0)),quantity=Math.max(0,Number($('productionQuantity').value||0));
  const materials=allocation.error?0:allocation.ingredientCost,total=roundPurchaseAmount(materials+electricity+transit),unitCost=quantity>0?total/quantity:0;
  $('productionMaterialCost').textContent=money(materials);$('productionTotalCost').textContent=money(total);$('productionUnitCost').textContent=money(unitCost);
- $('productionCostHint').textContent=allocation.error?allocation.error:`Material cost ${money(materials)} + Electricity ${money(electricity)} + Transit ${money(transit)} = Total ${money(total)}. The total is saved as the finished product's inventory value.`;
- $('productionCostHint').classList.toggle('validation-hint',!!allocation.error);
+
  $('productionSubmit').disabled=!!allocation.error||!productionInputs.length||!(quantity>0);
 }
 function fillProductionOptions(){
- const type=$('productionProductType');if(type){const prior=type.value;type.innerHTML=db.productTypes.map(value=>`<option value="${esc(value)}">${esc(value)}</option>`).join('');if(db.productTypes.includes(prior))type.value=prior;else if(db.productTypes.includes('Other'))type.value='Other'}
  const unit=$('productionUnit');if(unit){const prior=unit.value;unit.innerHTML=db.units.map(value=>`<option value="${esc(value)}">${esc(value)}</option>`).join('');if(db.units.includes(prior))unit.value=prior;else if(db.units.includes('pcs'))unit.value='pcs'}
 }
 function resetProductionForm(){
@@ -1098,9 +1112,15 @@ function renderProductionList(){
  $('productionCount').textContent=`${batches.length} ${batches.length===1?'batch':'batches'}`;
  list.innerHTML=batches.length?batches.map(batch=>{
   const inputs=(batch.inputs||[]).map(item=>`${esc(item.product)} ${numberText(item.quantity)} ${esc(item.unit)} (${money(item.cost)})`).join(' · ');
-  return `<article class="production-batch" data-production-id="${esc(batch.id)}"><div class="production-batch-head"><div><strong>${esc(batch.product)}${batch.spec?` · ${esc(batch.spec)}`:''}</strong><small>${esc(batch.productionNo||'Production')} · ${fmt(batch.date)} · Produced ${numberText(batch.quantity)} ${esc(batch.unit)}</small></div><strong>${money(batch.totalCost)}</strong></div><div class="production-batch-grid"><span>Materials<strong>${money(batch.ingredientCost)}</strong></span><span>Electricity<strong>${money(batch.electricityCost)}</strong></span><span>Transit<strong>${money(batch.transitCost)}</strong></span><span>Cost per unit<strong>${money(batch.unitCost)}</strong></span></div><small class="production-batch-materials">Used: ${inputs||'No materials recorded'}</small><div class="production-batch-actions"><button type="button" class="edit-btn" data-open-production-stock>Open Inventory</button><button type="button" class="delete" data-delete-production>Delete batch</button></div></article>`;
+  const regular=db.productNames.some(name=>String(name).toLocaleLowerCase()===String(batch.product||'').toLocaleLowerCase());
+  return `<article class="production-batch" data-production-id="${esc(batch.id)}"><div class="production-batch-head"><div><strong>${esc(batch.product)}</strong><small>${esc(batch.productionNo||'Production')} · ${fmt(batch.date)} · Produced ${numberText(batch.quantity)} ${esc(batch.unit)}</small></div><strong>${money(batch.totalCost)}</strong></div><div class="production-batch-grid"><span>Materials<strong>${money(batch.ingredientCost)}</strong></span><span>Electricity<strong>${money(batch.electricityCost)}</strong></span><span>Transit<strong>${money(batch.transitCost)}</strong></span><span>Cost per unit<strong>${money(batch.unitCost)}</strong></span></div><small class="production-batch-materials">Used: ${inputs||'No materials recorded'}</small><div class="production-batch-actions"><button type="button" class="edit-btn" data-open-production-stock>Open Inventory</button>${regular?'<span class="production-regular-label">Regular Product</span>':'<button type="button" class="secondary" data-transfer-regular>Transfer to Regular Product</button>'}<button type="button" class="delete" data-delete-production>Delete batch</button></div></article>`;
  }).join(''):empty('No production batches yet. Select inventory materials and save your first finished product batch.');
  list.querySelectorAll('[data-open-production-stock]').forEach(button=>button.onclick=()=>{const batch=button.closest('[data-production-id]');openInventoryLine(stockRefKey(`production:${batch.dataset.productionId}`,'output'))});
+ list.querySelectorAll('[data-transfer-regular]').forEach(button=>button.onclick=()=>{
+  const batch=db.productions.find(item=>item.id===button.closest('[data-production-id]')?.dataset.productionId);if(!batch)return;
+  if(!db.productNames.some(name=>String(name).toLocaleLowerCase()===String(batch.product).toLocaleLowerCase()))db.productNames.push(batch.product);
+  batch.regularProduct=true;renderProductNameSuggestions();save();alert(`${batch.product} is now available as a Regular Product. No additional cost has been added.`);
+ });
  list.querySelectorAll('[data-delete-production]').forEach(button=>button.onclick=()=>deleteProduction(button.closest('[data-production-id]')?.dataset.productionId));
 }
 function deleteProduction(id){
@@ -1111,21 +1131,19 @@ function deleteProduction(id){
  db.consumptions=db.consumptions.filter(c=>c.productionId!==id);db.productions=db.productions.filter(item=>item.id!==id);save();
 }
 $('productionDate').addEventListener('change',()=>{$('productionNo').value=nextProductionNo($('productionDate').value);renderProductionInputs()});
-$('addProductionInput').onclick=()=>{let index=productionInputs.findIndex(input=>!String(input.product||'').trim());if(index<0){productionInputs.push(defaultProductionInput());index=productionInputs.length-1}renderProductionInputs();$('productionForm').scrollIntoView({behavior:'smooth',block:'start'});$('productionInputs').querySelectorAll('.production-input-product')[index]?.focus()};
+
 ['productionQuantity','productionElectricityCost','productionTransitCost'].forEach(id=>$(id).addEventListener('input',updateProductionPreview));
 $('productionForm').onsubmit=e=>{
- e.preventDefault();const date=$('productionDate').value,productionNo=$('productionNo').value,product=$('productionProduct').value.trim(),productType=$('productionProductType').value||'Other',spec=$('productionProductSize').value.trim(),quantity=Number($('productionQuantity').value),unit=$('productionUnit').value,electricityCost=Number($('productionElectricityCost').value||0),transitCost=Number($('productionTransitCost').value||0);
+ e.preventDefault();const date=$('productionDate').value,productionNo=$('productionNo').value,product=$('productionProduct').value.trim(),quantity=Number($('productionQuantity').value),unit=$('productionUnit').value,electricityCost=Number($('productionElectricityCost').value||0),transitCost=Number($('productionTransitCost').value||0);
  if(!date||!product||!unit||!(quantity>0)||!Number.isFinite(quantity)){alert('Enter a production date, finished product name, positive quantity and unit.');return}
  if(!Number.isFinite(electricityCost)||!Number.isFinite(transitCost)||electricityCost<0||transitCost<0){alert('Electricity and transit costs must be zero or greater.');return}
  if(!productionInputs.length||productionInputs.some(input=>!input.product||!(Number(input.quantity)>0))){alert('Add at least one inventory material with a valid quantity.');return}
  const allocation=allocateProductionMaterials(productionInputs,date);if(allocation.error){alert(allocation.error);return}
  const totalCost=roundPurchaseAmount(allocation.ingredientCost+electricityCost+transitCost),id=crypto.randomUUID();
  if(db.productions.some(item=>String(item.productionNo||'').toLocaleLowerCase()===productionNo.toLocaleLowerCase())){alert('This production number already exists. Please refresh the form and try again.');$('productionNo').value=nextProductionNo(date);return}
- const batch={id,productionNo,date,product,productType,spec,quantity,unit,ingredientCost:allocation.ingredientCost,electricityCost,transitCost,totalCost,unitCost:quantity>0?totalCost/quantity:0,inputs:allocation.summaries,costMembers:allocation.costMembers,overheadMembers:allocation.costMembers.slice(),overheadCost:roundPurchaseAmount(electricityCost+transitCost)};
+ const batch={id,productionNo,date,product,productType:'Other',spec:'',regularProduct:false,quantity,unit,ingredientCost:allocation.ingredientCost,electricityCost,transitCost,totalCost,unitCost:quantity>0?totalCost/quantity:0,inputs:allocation.summaries,costMembers:allocation.costMembers,overheadMembers:allocation.costMembers.slice(),overheadCost:roundPurchaseAmount(electricityCost+transitCost)};
  db.productions.unshift(batch);
  allocation.consumptions.forEach(item=>db.consumptions.push({id:crypto.randomUUID(),...item,productionId:id,productionNo,date}));
- if(!db.productNames.some(name=>name.toLocaleLowerCase()===product.toLocaleLowerCase())){db.productNames.push(product);renderProductNameSuggestions()}
- if(!db.productTypes.some(name=>name.toLocaleLowerCase()===productType.toLocaleLowerCase()))db.productTypes.push(productType);
  if(!db.units.includes(unit))db.units.push(unit);
  resetProductionForm();save();
 };
@@ -1148,13 +1166,98 @@ function renderSupplierAccounts(){
    return `<article class="purchase-bill-line" id="purchase-bill-line-${lineId}"><div class="purchase-bill-line-head"><strong>${esc(line.product||'Product')}${line.spec?` · ${esc(line.spec)}`:''}</strong><strong>${money(amount)}</strong></div><small>${esc(line.category||b.category||'Uncategorised')} · ${esc(line.productType||'Other')} · ${numberText(line.quantity)} ${esc(line.unit||'pcs')} × ${money(line.rate||0)}</small><div class="purchase-bill-stock"><span>Purchased <strong>${numberText(line.quantity)} ${esc(line.unit||'pcs')}</strong></span><span>Used <strong>${numberText(used)} ${esc(line.unit||'pcs')}</strong></span><span>In stock <strong>${numberText(remaining)} ${esc(line.unit||'pcs')}</strong></span><span>Assigned to <strong>${esc(owners.length?owners.join(', '):'Not assigned')}</strong></span></div><button type="button" class="edit-btn" data-view-inventory-line="${esc(stockRefKey(b.id,line.id))}">Open inventory record</button></article>`;
   }).join('');
   const label=`${b.supplier||'Cash purchase'}${b.billNo?` · #${b.billNo}`:''} · ${fmt(b.date)} · ${lines.length} item${lines.length===1?'':'s'}`;
-  return `<article class="purchase-bill-card" id="purchase-bill-${billId}" data-purchase-bill-card="${billId}"><div class="purchase-bill-compact-row" data-bill-summary tabindex="0" role="button" aria-haspopup="true" aria-expanded="false" aria-label="${esc(label)}. Long press or right-click for actions." title="Long press or right-click for bill actions"><span class="purchase-bill-compact-title">${esc(label)}</span><strong class="purchase-bill-compact-total">${money(billTotal(b))}</strong><span class="purchase-bill-compact-more" aria-hidden="true">⋯</span></div><div class="purchase-bill-actions" data-bill-actions hidden>${b.supplier?`<button type="button" class="edit-btn" data-open-supplier="${esc(b.supplier)}">Account</button>`:''}<button type="button" class="edit-btn" data-bill-detail-toggle>View details</button>${db.settings.allowPurchaseBillEdits!==false?`<button type="button" class="edit-btn" data-edit-bill="${billId}">Edit bill</button>`:''}<button type="button" class="delete" data-delete-bill="${billId}">Delete</button></div><div class="purchase-bill-detail-panel" data-bill-detail hidden><div class="purchase-bill-detail-meta">${esc((lines).map(line=>line.category||b.category||'Uncategorised').filter((value,index,array)=>array.indexOf(value)===index).join(', '))} · Transit ${money(b.transitCost)} · Discount ${money(b.discount)} · Cash ${money(b.cashPaid)} · Bank ${money(b.bankPaid)} · Credit ${money(billCredit(b))}</div><div class="purchase-bill-products">${products||empty('No products on this bill.')}</div></div></article>`;
+  return `<article class="purchase-bill-card" id="purchase-bill-${billId}" data-purchase-bill-card="${billId}"><div class="purchase-bill-compact-row" data-bill-summary tabindex="0" role="button" aria-haspopup="true" aria-expanded="false" aria-label="${esc(label)}. Tap to show bill actions." title="Tap to show bill actions"><span class="purchase-bill-compact-title">${esc(label)}</span><strong class="purchase-bill-compact-total">${money(billTotal(b))}</strong><span class="purchase-bill-compact-more" aria-hidden="true">⋯</span></div><div class="purchase-bill-actions" data-bill-actions hidden>${b.supplier?`<button type="button" class="edit-btn" data-open-supplier="${esc(b.supplier)}">Account</button>`:''}<button type="button" class="edit-btn" data-bill-detail-toggle>View details</button>${db.settings.allowPurchaseBillEdits!==false?`<button type="button" class="edit-btn" data-edit-bill="${billId}">Edit bill</button>`:''}<button type="button" class="delete" data-delete-bill="${billId}">Delete</button></div><div class="purchase-bill-detail-panel" data-bill-detail hidden><div class="purchase-bill-detail-meta">${esc((lines).map(line=>line.category||b.category||'Uncategorised').filter((value,index,array)=>array.indexOf(value)===index).join(', '))} · Transit ${money(b.transitCost)} · Discount ${money(b.discount)} · Cash ${money(b.cashPaid)} · Bank ${money(b.bankPaid)} · Credit ${money(billCredit(b))}</div><div class="purchase-bill-products">${products||empty('No products on this bill.')}</div></div></article>`;
  }).join(''):empty('No purchase bills saved yet.');
  $('purchaseBillList').querySelectorAll('[data-open-supplier]').forEach(btn=>btn.onclick=()=>openSupplierAccount(btn.dataset.openSupplier));
  $('purchaseBillList').querySelectorAll('[data-edit-bill]').forEach(btn=>btn.onclick=()=>editPurchaseBill(btn.dataset.editBill));
  $('purchaseBillList').querySelectorAll('[data-delete-bill]').forEach(btn=>btn.onclick=()=>deletePurchaseBill(btn.dataset.deleteBill));
  $('purchaseBillList').querySelectorAll('[data-view-inventory-line]').forEach(btn=>btn.onclick=()=>openInventoryLine(btn.dataset.viewInventoryLine));
  $('purchaseBillList').querySelectorAll('[data-bill-detail-toggle]').forEach(btn=>btn.onclick=()=>{const panel=btn.closest('[data-purchase-bill-card]')?.querySelector('[data-bill-detail]');if(!panel)return;panel.hidden=!panel.hidden;btn.textContent=panel.hidden?'View details':'Hide details'});
+}
+function loanSettledAmount(loan){return (loan.settlements||[]).reduce((total,item)=>total+Math.max(0,Number(item.amount)||0),0)}
+function loanOutstanding(loan){return Math.max(0,Number(loan.amount||0)-loanSettledAmount(loan))}
+function loanMoneySummary(){
+ const given=db.loans.filter(loan=>loan.type!=='taken').reduce((total,loan)=>total+loanOutstanding(loan),0);
+ const taken=db.loans.filter(loan=>loan.type==='taken').reduce((total,loan)=>total+loanOutstanding(loan),0);
+ return {given,taken,net:given-taken};
+}
+function resetLoanForm(){
+ editingLoanId=null;$('loanForm').reset();$('loanDate').value=today();$('loanDueDate').value='';$('loanMethod').value='Cash';
+ $('loanType').value='given';$('loanDueDateLabel').textContent='Collect by date';$('loanFormTitle').textContent='Add loan';
+ $('loanSaveButton').textContent='Save loan';$('loanCancelEdit').hidden=true;
+}
+function renderLoans(){
+ const summary=loanMoneySummary();
+ $('loanGivenOutstanding').textContent=money(summary.given);$('loanTakenOutstanding').textContent=money(summary.taken);$('loanNetOutstanding').textContent=money(summary.net);
+ $('loanCount').textContent=`${db.loans.length} ${db.loans.length===1?'loan':'loans'}`;
+ const rows=db.loans.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||String(a.id).localeCompare(String(b.id)));
+ $('loanList').innerHTML=rows.length?rows.map(loan=>{
+  const given=loan.type!=='taken',outstanding=loanOutstanding(loan),settled=loanSettledAmount(loan),title=given?'Loan given · To collect':'Loan taken · To repay';
+  const dateLabel=loan.dueDate?(given?'Collect by ':'Pay by ')+fmt(loan.dueDate):(given?'Collection date not set':'Repayment date not set');
+  const history=(loan.settlements||[]).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(item=>`<div class="loan-history-row"><span>${given?'Collected':'Repaid'} · ${fmt(item.date)} · ${esc(item.method||'Cash')}</span><strong>${money(item.amount)}</strong></div>`).join('');
+  return `<article class="loan-card" data-loan-id="${esc(loan.id)}">
+   <div class="loan-card-head"><div><strong>${esc(loan.party||'Loan')}</strong><small>${title} · ${fmt(loan.date)} · ${esc(loan.method||'Cash')}</small></div><strong class="loan-outstanding-value">${money(outstanding)}</strong></div>
+   <div class="loan-card-stats"><span>Loan amount<strong>${money(loan.amount)}</strong></span><span>Settled<strong>${money(settled)}</strong></span><span>${dateLabel}<strong>${outstanding<=0.000001?'Completed':loan.dueDate&&loan.dueDate<today()?'Overdue':'Outstanding'}</strong></span></div>
+   ${loan.note?`<small class="loan-note">${esc(loan.note)}</small>`:''}
+   ${history?`<div class="loan-history">${history}</div>`:''}
+   <div class="loan-card-actions">${outstanding>0.000001?`<button type="button" class="primary" data-loan-settle>${given?'Collect':'Pay'} loan</button>`:''}<button type="button" class="secondary" data-loan-edit>Edit</button><button type="button" class="delete" data-loan-delete>Delete</button></div>
+  </article>`;
+ }).join(''):empty('No loans recorded yet.');
+ $('loanList').querySelectorAll('[data-loan-settle]').forEach(button=>button.onclick=()=>openLoanSettlement(button.closest('[data-loan-id]')?.dataset.loanId));
+ $('loanList').querySelectorAll('[data-loan-edit]').forEach(button=>button.onclick=()=>editLoan(button.closest('[data-loan-id]')?.dataset.loanId));
+ $('loanList').querySelectorAll('[data-loan-delete]').forEach(button=>button.onclick=()=>deleteLoan(button.closest('[data-loan-id]')?.dataset.loanId));
+}
+function editLoan(id){
+ const loan=db.loans.find(item=>item.id===id);if(!loan)return;
+ editingLoanId=id;$('loanType').value=loan.type;$('loanParty').value=loan.party;$('loanAmount').value=Number(loan.amount||0);$('loanMethod').value=loan.method||'Cash';$('loanDate').value=loan.date||today();$('loanDueDate').value=loan.dueDate||'';$('loanNote').value=loan.note||'';
+ $('loanDueDateLabel').textContent=loan.type==='taken'?'Pay by date':'Collect by date';$('loanFormTitle').textContent='Edit loan';$('loanSaveButton').textContent='Update loan';$('loanCancelEdit').hidden=false;$('loanForm').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function deleteLoan(id){
+ const loan=db.loans.find(item=>item.id===id);if(!loan)return;
+ if(!confirm('Delete this loan and its collection / repayment history? The cash and bank balances will be recalculated.'))return;
+ db.loans=db.loans.filter(item=>item.id!==id);if(editingLoanId===id)resetLoanForm();save();
+}
+function openLoanSettlement(id){
+ const loan=db.loans.find(item=>item.id===id);if(!loan||loanOutstanding(loan)<=0.000001)return;
+ settlingLoanId=id;const given=loan.type!=='taken',due=loanOutstanding(loan);
+ $('loanSettlementTitle').textContent=given?'Collect loan':'Pay loan';
+ $('loanSettlementBalance').textContent=`${loan.party} · Remaining ${money(due)}`;
+ $('loanSettlementAmount').value=due.toFixed(2);$('loanSettlementAmount').max=due.toFixed(2);$('loanSettlementDate').value=today();$('loanSettlementMethod').value='Cash';
+ $('loanSettlementDateLabel').childNodes[0].textContent=given?'Collection date ':'Repayment date ';
+ $('loanSettlementDialog').showModal();
+}
+$('loanSettlementCancel').onclick=()=>{$('loanSettlementDialog').close();settlingLoanId=null};
+$('loanSettlementForm').onsubmit=event=>{
+ event.preventDefault();const loan=db.loans.find(item=>item.id===settlingLoanId);if(!loan)return;
+ const amount=Number($('loanSettlementAmount').value),date=$('loanSettlementDate').value,method=$('loanSettlementMethod').value;
+ if(!date||!Number.isFinite(amount)||amount<=0||amount>loanOutstanding(loan)+0.000001){alert('Enter a valid amount up to the remaining loan balance and choose the collection or repayment date.');return}
+ loan.settlements.push({id:crypto.randomUUID(),amount,date,method:method==='Bank'?'Bank':'Cash'});
+ $('loanSettlementDialog').close();settlingLoanId=null;save();
+};
+$('loanType').addEventListener('change',()=>{$('loanDueDateLabel').textContent=$('loanType').value==='taken'?'Pay by date':'Collect by date'});
+$('loanCancelEdit').onclick=resetLoanForm;
+$('loanForm').onsubmit=event=>{
+ event.preventDefault();const type=$('loanType').value==='taken'?'taken':'given',party=$('loanParty').value.trim(),amount=Number($('loanAmount').value),method=$('loanMethod').value==='Bank'?'Bank':'Cash',date=$('loanDate').value,dueDate=$('loanDueDate').value,note=$('loanNote').value.trim();
+ if(!party||!date||!Number.isFinite(amount)||amount<=0){alert('Enter a person or bank name, loan date and a valid amount.');return}
+ if(dueDate&&dueDate<date){alert('The collection or repayment date cannot be earlier than the loan date.');return}
+ if(editingLoanId){
+  const loan=db.loans.find(item=>item.id===editingLoanId);if(!loan)return;
+  if(amount<loanSettledAmount(loan)){alert('Loan amount cannot be less than the amount already collected or repaid.');return}
+  Object.assign(loan,{type,party,amount,method,date,dueDate,note});
+ }else db.loans.unshift({id:crypto.randomUUID(),type,party,amount,method,date,dueDate,note,settlements:[]});
+ resetLoanForm();save();
+};
+function revealPurchaseBillActions(card,focusFirst=false){
+ if(!card)return;
+ document.querySelectorAll('[data-purchase-bill-card].purchase-bill-actions-visible').forEach(openCard=>{if(openCard!==card)hidePurchaseBillActions(openCard)});
+ const actions=card.querySelector('[data-bill-actions]'),row=card.querySelector('[data-bill-summary]');if(!actions||!row)return;
+ actions.hidden=false;card.classList.add('purchase-bill-actions-visible');row.setAttribute('aria-expanded','true');
+ if(focusFirst)actions.querySelector('button')?.focus({preventScroll:true});
+}
+function hidePurchaseBillActions(card){
+ if(!card)return;const actions=card.querySelector('[data-bill-actions]'),row=card.querySelector('[data-bill-summary]'),detail=card.querySelector('[data-bill-detail]');
+ if(actions)actions.hidden=true;if(detail)detail.hidden=true;card.classList.remove('purchase-bill-actions-visible');row?.setAttribute('aria-expanded','false');
+ const view=card.querySelector('[data-bill-detail-toggle]');if(view)view.textContent='View details';
 }
 function revealPurchaseBillActions(card,focusFirst=false){
  if(!card)return;
@@ -1168,17 +1271,14 @@ function hidePurchaseBillActions(card){
  if(actions)actions.hidden=true;if(detail)detail.hidden=true;card.classList.remove('purchase-bill-actions-visible');row?.setAttribute('aria-expanded','false');
  const view=card.querySelector('[data-bill-detail-toggle]');if(view)view.textContent='View details';
 }
-let purchaseBillHoldTimer=null,purchaseBillHoldCard=null,purchaseBillHoldPoint=null;
-function cancelPurchaseBillHold(){if(purchaseBillHoldTimer)clearTimeout(purchaseBillHoldTimer);purchaseBillHoldTimer=null;purchaseBillHoldCard=null;purchaseBillHoldPoint=null;}
 const purchaseBillListElement=$('purchaseBillList');
-purchaseBillListElement?.addEventListener('contextmenu',event=>{const card=event.target.closest('[data-purchase-bill-card]');if(!card)return;event.preventDefault();revealPurchaseBillActions(card)});
-purchaseBillListElement?.addEventListener('pointerdown',event=>{
- const row=event.target.closest('[data-bill-summary]');if(!row||!['touch','pen'].includes(event.pointerType))return;
- cancelPurchaseBillHold();purchaseBillHoldCard=row.closest('[data-purchase-bill-card]');purchaseBillHoldPoint={x:event.clientX,y:event.clientY};
- purchaseBillHoldTimer=setTimeout(()=>{revealPurchaseBillActions(purchaseBillHoldCard);purchaseBillHoldTimer=null;},620);
+purchaseBillListElement?.addEventListener('click',event=>{
+ const row=event.target.closest('[data-bill-summary]');if(!row)return;
+ const card=row.closest('[data-purchase-bill-card]');if(!card)return;
+ const actions=card.querySelector('[data-bill-actions]');
+ if(actions?.hidden)revealPurchaseBillActions(card);else hidePurchaseBillActions(card);
 });
-purchaseBillListElement?.addEventListener('pointermove',event=>{if(!purchaseBillHoldTimer||!purchaseBillHoldPoint)return;if(Math.hypot(event.clientX-purchaseBillHoldPoint.x,event.clientY-purchaseBillHoldPoint.y)>12)cancelPurchaseBillHold()});
-['pointerup','pointercancel','pointerleave'].forEach(type=>purchaseBillListElement?.addEventListener(type,cancelPurchaseBillHold));
+purchaseBillListElement?.addEventListener('contextmenu',event=>{const card=event.target.closest('[data-purchase-bill-card]');if(!card)return;event.preventDefault();revealPurchaseBillActions(card)});
 purchaseBillListElement?.addEventListener('keydown',event=>{
  const row=event.target.closest('[data-bill-summary]');if(!row)return;
  if(['Enter',' ','ContextMenu'].includes(event.key)||(event.shiftKey&&event.key==='F10')){event.preventDefault();revealPurchaseBillActions(row.closest('[data-purchase-bill-card]'),true)}
@@ -2389,7 +2489,7 @@ function render(){
  renderRecentExpenses();
  $('recentIncome').innerHTML=incomeHTML([...db.incomes].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4),false);
  $('todayQuests').innerHTML=questHTML(qToday.slice(0,4),false);
- $('expenseCount').textContent=`${db.expenses.length} expenses · ${db.purchaseBills.length} bills`;
+ $('expenseCount').textContent=`${db.expenses.length} expenses · ${db.purchaseBills.length} bills`;renderLoans();
  let filtered=db.expenses.filter(x=>( $('expenseFilter').value==='all'||x.category===$('expenseFilter').value)&&(`${x.note} ${x.category}`).toLowerCase().includes($('expenseSearch').value.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date));
  $('expenseList').innerHTML=expenseHTML(filtered,true);$('questList').innerHTML=questTileHTML(dayQuestsForNow(questDate));if($('questSetupList'))$('questSetupList').innerHTML=questHTML(dayQuests(questDate),true);renderQuickActions();renderQuickSuppliers();renderQuickActionManager();renderSupplierAccounts();renderInventory();renderProductionList();renderExpenseDueList();renderGuestReport();
  $('questSummary').textContent=`${done}/${qToday.length} completed`;$('incomeCount').textContent=`${db.incomes.length} entries`;
@@ -2783,7 +2883,7 @@ function renderDueReport(from,to){
 
 activateReportSection('members');purchaseLines=[defaultPurchaseLine()];renderPurchaseLines();fillChoices();renderQuickMemberOptions([]);fillQuickActionOptions();updateQuickActionTypeFields();$('purchaseDate').value=today();updatePurchaseBillNo();productionInputs=[defaultProductionInput()];fillProductionOptions();resetProductionForm();applyThemeColor(db.settings.themeColor,false);renderPurchaseCategorySettings();renderMasterLists();
 $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`dayquest-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href)};
-$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.quickActions))x.quickActions=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.productTypes))x.productTypes=['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];if(!Array.isArray(x.purchaseCategories))x.purchaseCategories=['Assets','Staples','Fixed Ex.'];if(!x.settings||typeof x.settings!=='object')x.settings={themeColor:'#263b5c'};if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.productions))x.productions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};if(!Array.isArray(x.familyMembers))x.familyMembers=[];if(!Array.isArray(x.guestPeople))x.guestPeople=[];if(!Array.isArray(x.guests))x.guests=[];if(confirm('Replace current data with this backup?')){db=x;db.sideMenuOrder=normalizeSideMenuOrder(db.sideMenuOrder);db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};db.productDictionary=normalizeProductDictionary(db.productDictionary);db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(item=>{item.costMember=String(item.costMember||'').trim()});db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
+$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.loans))x.loans=[];if(!Array.isArray(x.quickActions))x.quickActions=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.productTypes))x.productTypes=['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];if(!Array.isArray(x.purchaseCategories))x.purchaseCategories=['Assets','Staples','Fixed Ex.'];if(!x.settings||typeof x.settings!=='object')x.settings={themeColor:'#263b5c'};if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.productions))x.productions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};if(!Array.isArray(x.familyMembers))x.familyMembers=[];if(!Array.isArray(x.guestPeople))x.guestPeople=[];if(!Array.isArray(x.guests))x.guests=[];if(confirm('Replace current data with this backup?')){db=x;db.sideMenuOrder=normalizeSideMenuOrder(db.sideMenuOrder);db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};db.productDictionary=normalizeProductDictionary(db.productDictionary);db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(item=>{item.costMember=String(item.costMember||'').trim()});db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
 db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};
 db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers.filter(name=>db.suppliers.includes(name)))]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];
 db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.productions=Array.isArray(db.productions)?db.productions.filter(p=>p&&p.id&&p.product&&Number(p.quantity)>0):[];normalizePurchaseInventory();db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;if(typeof db.settings.allowPurchaseBillEdits!=='boolean')db.settings.allowPurchaseBillEdits=true;db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];db.units=Array.isArray(db.units)?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];normalizePurchaseBillNumbers();db.profile=db.profile||{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};db.profile.familyName=String(db.profile.familyName||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestPeople=Array.isArray(db.guestPeople)?db.guestPeople.map(n=>String(n||'').trim()).filter(Boolean):[];db.guestPeople=[...new Map(db.guestPeople.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guests=Array.isArray(db.guests)?db.guests.filter(g=>g&&Array.isArray(g.members)&&g.members.length&&/^\d{4}-\d{2}-\d{2}$/.test(String(g.entryDate||''))):[];db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.members.forEach(n=>{if(!assignablePeople().some(x=>x.toLocaleLowerCase()===String(n).toLocaleLowerCase()))db.guestPeople.push(String(n).trim())})});db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);normalizeMemberAssignments();db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeople.push(name)});db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);renderPurchaseCategorySettings();renderMasterLists();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
@@ -2896,7 +2996,7 @@ function setCloudStatus(message,{conflict=false,remote=false,offline=false,autoH
 function hideCloudStatus(){clearTimeout(cloudStatusHideTimer);cloudStatusHideTimer=null;const bar=$('cloudSyncBar');if(bar)bar.hidden=true}
 function downloadJsonFile(value,name){const blob=new Blob([JSON.stringify(value,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
 function localHasRecords(value=db){
- const recordArrays=['expenses','incomes','purchaseBills','supplierPayments','productions','consumptions','guests','quests','quickActions','familyMembers','guestPeople','suppliers','productNames','incomePeople'];
+ const recordArrays=['expenses','incomes','loans','purchaseBills','supplierPayments','productions','consumptions','guests','quests','quickActions','familyMembers','guestPeople','suppliers','productNames','incomePeople'];
  if(recordArrays.some(key=>Array.isArray(value?.[key])&&value[key].length>0))return true;
  if(value?.checks&&Object.keys(value.checks).length>0)return true;
  const defaultLists={
@@ -2920,7 +3020,7 @@ function createEmptyDayQuestDatabase(){
   settings:{themeColor:'#263b5c',requireSupplierForDuePurchase:true,allowPurchaseBillEdits:true},
   units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'],incomes:[],incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'],incomePeople:[],
   profile:{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0},familyMembers:[],guestPeople:[],guests:[],
-  purchaseBills:[],supplierPayments:[],suppliers:[],productNames:[],consumptions:[],productions:[]
+  purchaseBills:[],supplierPayments:[],suppliers:[],productNames:[],consumptions:[],productions:[],loans:[]
  };
 }
 function makeSupabaseClient(){
@@ -3304,7 +3404,8 @@ function clearFamilyMemberRecords(){
 }
 function applyProfileDeleteSelection(groups){
  // Reports are generated from records, so clearing Reports also clears every data group that feeds report totals.
- if(groups.has('reports'))['transactions','purchases','inventory','production','guests','members','meals','quests','budgets'].forEach(group=>groups.add(group));
+ if(groups.has('reports'))['transactions','purchases','inventory','production','guests','members','meals','quests','budgets','loans'].forEach(group=>groups.add(group));
+ if(groups.has('loans'))db.loans=[];
  // Profile details are always part of Delete Profile.
  db.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};
  if(groups.has('transactions'))clearExpenseIncomeRecords();
@@ -3425,6 +3526,62 @@ window.addEventListener('online',async()=>{if(!cloudUser)return;if(cloudConflict
 window.addEventListener('offline',()=>{if(cloudUser)hideCloudStatus()});
 
 // DayQuest-owned alert dialog and branded native confirmation/input dialogs.
+function notificationPrefs(){
+ const value=db.settings.notificationPreferences&&typeof db.settings.notificationPreferences==='object'?db.settings.notificationPreferences:{};
+ return {loanGiven:value.loanGiven!==false,loanTaken:value.loanTaken!==false,enabled:value.enabled===true};
+}
+function renderNotificationSettings(){
+ const prefs=notificationPrefs();
+ $('notifyLoanGiven').checked=prefs.loanGiven;$('notifyLoanTaken').checked=prefs.loanTaken;
+ const available='Notification' in window;
+ const permission=available?Notification.permission:'unsupported';
+ $('notificationPermissionStatus').textContent=permission==='granted'
+  ?(prefs.enabled?'Browser permission granted. Background loan reminders need the DayQuest push service to be configured.':'Browser permission is granted. Enable background notifications to register this device.')
+  :permission==='denied'?'Notifications are blocked in browser settings. Allow DayQuest notifications in your browser settings.'
+  :permission==='unsupported'?'This browser does not support notifications.'
+  :'Select your loan reminders, then tap Enable Background Notifications.';
+ $('enableDayQuestNotifications').disabled=!available;$('disableDayQuestNotifications').disabled=!available;
+}
+function saveNotificationPreferences(){
+ db.settings.notificationPreferences={...notificationPrefs(),loanGiven:$('notifyLoanGiven').checked,loanTaken:$('notifyLoanTaken').checked};
+ localSaveOnly();renderNotificationSettings();
+}
+function urlBase64ToUint8Array(value){
+ const padding='='.repeat((4-value.length%4)%4),base64=(value+padding).replace(/-/g,'+').replace(/_/g,'/'),raw=atob(base64);
+ return Uint8Array.from([...raw].map(char=>char.charCodeAt(0)));
+}
+async function saveNotificationSubscription(subscription){
+ if(!supabaseClient||!cloudUser)throw new Error('Sign in to your DayQuest Family Account first.');
+ const {error}=await supabaseClient.functions.invoke('save-notification-subscription',{body:{subscription:subscription?subscription.toJSON():null,endpoint:subscription?.endpoint||null,preferences:notificationPrefs()}});
+ if(error)throw error;
+}
+$('notifyLoanGiven').addEventListener('change',saveNotificationPreferences);
+$('notifyLoanTaken').addEventListener('change',saveNotificationPreferences);
+$('enableDayQuestNotifications').onclick=async()=>{
+ if(!('Notification' in window)||!('serviceWorker' in navigator)||!('PushManager' in window)){alert('This browser does not support background push notifications.');return}
+ if(!navigator.onLine||!supabaseClient||!cloudUser){alert('Connect to the internet and sign in to DayQuest before enabling background notifications.');return}
+ const config=window.DAYQUEST_CLOUD_CONFIG||{},publicKey=String(config.vapidPublicKey||'').trim();
+ if(!publicKey){alert('The DayQuest administrator must add the VAPID public key to the shared cloud configuration and configure the matching private key in Supabase before background notifications can be enabled.');renderNotificationSettings();return}
+ try{
+  const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
+  if(permission!=='granted'){alert('Notification permission was not granted. You can change this in your browser settings.');renderNotificationSettings();return}
+  const registration=await navigator.serviceWorker.ready;
+  let subscription=await registration.pushManager.getSubscription();
+  if(!subscription)subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(publicKey)});
+  db.settings.notificationPreferences={...notificationPrefs(),enabled:true};
+  await saveNotificationSubscription(subscription);
+  localSaveOnly();renderNotificationSettings();
+  alert('Background loan reminders are enabled on this device.');
+ }catch(error){console.error('DayQuest push subscription failed',error);alert('DayQuest could not enable background notifications. Check that the push-notification database and Edge Function have been deployed, then try again.')}
+};
+$('disableDayQuestNotifications').onclick=async()=>{
+ try{
+  const registration=await navigator.serviceWorker?.getRegistration(),subscription=await registration?.pushManager?.getSubscription();
+  if(subscription){await saveNotificationSubscription(null);await subscription.unsubscribe()}
+  db.settings.notificationPreferences={...notificationPrefs(),enabled:false};localSaveOnly();renderNotificationSettings();
+  alert('DayQuest notifications are disabled on this device.');
+ }catch(error){console.error('DayQuest push unsubscribe failed',error);alert('DayQuest could not update the notification subscription. Try again while online.')}
+};
 function installDayQuestMessageAlerts(){
  const dialog=$('dqMessageDialog'),title=$('dqMessageTitle'),message=$('dqMessageText'),ok=$('dqMessageOk');
  const nativeAlert=window.alert.bind(window),nativeConfirm=window.confirm.bind(window),nativePrompt=window.prompt.bind(window);
