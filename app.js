@@ -3269,27 +3269,117 @@ $('authResetForm').onsubmit=async e=>{
  try{const {error}=await supabaseClient.auth.updateUser({password});if(error)throw error;await supabaseClient.auth.signOut();cloudPasswordRecovery=false;$('recoveryPassword').value='';$('recoveryPasswordConfirm').value='';showAuthView('login','Password updated. Log in with your new password.')}
  catch(error){$('authMessage').textContent=error.message||'Could not update the password.'}
 };
-$('deleteProfileBtn').onclick=async()=>{
- if(!await window.dayQuestConfirm('Delete this family profile from DayQuest? This clears the profile name, phone, family name, photo and opening balances. It does NOT delete transaction history or the cloud login.'))return;
+function clearExpenseIncomeRecords(){
+ const salesMemoIds=new Set(db.incomes.filter(item=>item.salesMemo).map(item=>String(item.id)));
+ db.expenses=[];db.incomes=[];
+ if(Array.isArray(db.consumptions)&&salesMemoIds.size)db.consumptions=db.consumptions.filter(item=>!salesMemoIds.has(String(item.salesMemoId||'')));
+}
+function clearGuestRecords(){
+ const guestNames=new Set([...db.guestPeople,...db.guests.flatMap(item=>item.members||[])].map(mealPersonKey));
+ db.guestPeople=[];db.guests=[];
+ db.mealPlan.guestAssignments={};db.mealPlan.guestChecks={};db.mealPlan.guestStatus={};
+ guestNames.forEach(key=>{if(db.mealPlan.personDates)delete db.mealPlan.personDates[key]});
+}
+function clearFamilyMemberRecords(){
+ const memberNames=db.familyMembers.slice(),memberKeys=new Set(memberNames.map(mealPersonKey));
+ db.familyMembers=[];
+ db.incomePeople=db.incomePeople.filter(name=>!memberKeys.has(mealPersonKey(name)));
+ ['memberStatus','memberCounts','memberChecks'].forEach(key=>{
+  const days=db.mealPlan[key]||{};
+  Object.values(days).forEach(day=>memberNames.forEach(name=>{delete day[name]}));
+ });
+ Object.entries(db.mealPlan.guestAssignments||{}).forEach(([guest,names])=>{
+  const remaining=(names||[]).filter(name=>!memberKeys.has(mealPersonKey(name)));
+  if(remaining.length)db.mealPlan.guestAssignments[guest]=remaining;else delete db.mealPlan.guestAssignments[guest];
+ });
+ memberKeys.forEach(key=>{if(db.mealPlan.personDates)delete db.mealPlan.personDates[key]});
+}
+function applyProfileDeleteSelection(groups){
+ // Profile details are always part of Delete Profile.
  db.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};
- $('profilePhotoInput').value='';loadProfileForm();save();
- alert('Family profile details were cleared. Your transactions and Family Account login are unchanged.');
+ if(groups.has('transactions'))clearExpenseIncomeRecords();
+ if(groups.has('purchases')){
+  const billIds=new Set(db.purchaseBills.map(bill=>String(bill.id)));
+  db.purchaseBills=[];db.supplierPayments=[];db.suppliers=[];db.supplierDetails={};db.quickSuppliers=[];
+  db.consumptions=db.consumptions.filter(item=>!billIds.has(String(item.billId||'')));
+ }
+ if(groups.has('inventory'))db.consumptions=[];
+ if(groups.has('production')){
+  const productionIds=new Set(db.productions.map(item=>String(item.id)));
+  db.productions=[];
+  db.consumptions=db.consumptions.filter(item=>!productionIds.has(String(item.productionId||''))&&!productionIds.has(String(item.billId||'').replace(/^production:/,'')));
+ }
+ if(groups.has('guests'))clearGuestRecords();
+ if(groups.has('members'))clearFamilyMemberRecords();
+ if(groups.has('meals'))db.mealPlan={defaultCount:3,dateCounts:{},memberStatus:{},memberCounts:{},memberChecks:{},personDates:{},guestStatus:{},guestAssignments:{},guestChecks:{},costPerMeal:0};
+ if(groups.has('quests')){db.quests=[];db.checks={};}
+ if(groups.has('budgets'))db.budgetPlans={};
+ if(groups.has('lists')){
+  db.productNames=[];
+  db.productDictionary=DEFAULT_PRODUCT_DICTIONARY.map(item=>({...item,meal:true}));
+  db.expenseNames=['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];
+  db.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];
+  db.purchaseCategories=['Assets','Staples','Fixed Ex.'];
+  db.productTypes=['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];
+  db.units=['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];
+ }
+ if(groups.has('quickButtons'))db.quickActions=[];
+ if(groups.has('purchases')||groups.has('inventory')||groups.has('production'))recalculateProductionCostsFromInventory();
+ $('profilePhotoInput').value='';
+ loadProfileForm();fillChoices();renderPurchaseCategorySettings();renderMasterLists();renderProductDictionary();renderQuickMemberOptions([]);fillQuickActionOptions();
+ save();
+}
+$('deleteProfileBtn').onclick=()=>{
+ const dialog=$('deleteProfileDialog');
+ if(!dialog||typeof dialog.showModal!=='function'){alert('DayQuest could not open the Delete Profile options. Please update your browser and try again.');return}
+ dialog.querySelectorAll('[data-delete-group]').forEach(input=>input.checked=false);
+ dialog.showModal();
+};
+$('deleteProfileCancel').onclick=()=>{$('deleteProfileDialog').close()};
+$('confirmDeleteProfile').onclick=async()=>{
+ const dialog=$('deleteProfileDialog'),button=$('confirmDeleteProfile');
+ const groups=new Set([...dialog.querySelectorAll('[data-delete-group]:checked')].map(input=>input.dataset.deleteGroup));
+ const labels=['Profile details',...Array.from(dialog.querySelectorAll('[data-delete-group]:checked')).map(input=>input.closest('label')?.querySelector('strong')?.textContent||input.dataset.deleteGroup)];
+ const confirmed=await window.dayQuestConfirm('DayQuest will permanently delete the following selected data:\n\n'+labels.join('\n')+'\n\nReports will update from the remaining records. This action cannot be undone. Continue?');
+ if(!confirmed)return;
+ button.disabled=true;
+ try{
+  applyProfileDeleteSelection(groups);
+  dialog.close();
+  alert('DayQuest deleted the selected data. Any data you did not select has been kept.');
+ }catch(error){
+  console.error('DayQuest profile data deletion failed',error);
+  alert('DayQuest could not complete the selected deletion. Your account login has not been deleted. Please check your data and try again.');
+ }finally{button.disabled=false}
 };
 $('clearAllExpensesIncomeBtn').onclick=async()=>{
- if(!await window.dayQuestConfirm('Clear ALL expense and income entries, including Quick Expenses transactions and their due/collection history? This cannot be undone.'))return;
- if(!await window.dayQuestConfirm('Final confirmation: permanently clear all saved expenses and income from this family account? Purchase bills, inventory, production, quick button settings and profile will remain.'))return;
- const salesMemoIds=db.incomes.filter(item=>item.salesMemo).map(item=>String(item.id));
- db.expenses=[];db.incomes=[];
- if(Array.isArray(db.consumptions)&&salesMemoIds.length)db.consumptions=db.consumptions.filter(item=>!salesMemoIds.includes(String(item.salesMemoId||'')));
- save();
- alert('All expense and income entries have been cleared. Quick button settings, purchases, inventory, production and profile remain.');
+ const confirmed=await window.dayQuestConfirm('DayQuest will permanently clear all expense and income transactions, including Quick Expenses history, due balances, collections and sales memo entries. Quick button settings, family members, purchases, inventory, production and profile will remain. Continue?');
+ if(!confirmed)return;
+ clearExpenseIncomeRecords();save();
+ alert('DayQuest cleared all expense and income transactions. Your quick button settings and other saved data remain.');
 };
+function requestDeleteAccountPassword(){
+ const dialog=$('deleteAccountPasswordDialog'),input=$('deleteAccountPassword'),confirmButton=$('deleteAccountPasswordConfirm'),cancelButton=$('deleteAccountPasswordCancel');
+ if(!dialog||typeof dialog.showModal!=='function')return Promise.resolve(window.prompt('DayQuest: Enter your current Family Account password to confirm permanent deletion:'));
+ input.value='';
+ return new Promise(resolve=>{
+  let finished=false;
+  const finish=value=>{
+   if(finished)return;finished=true;
+   dialog.close();confirmButton.removeEventListener('click',accept);cancelButton.removeEventListener('click',cancel);input.removeEventListener('keydown',onKey);dialog.removeEventListener('cancel',onCancel);
+   resolve(value);
+  };
+  const accept=()=>finish(input.value),cancel=()=>finish(null),onKey=event=>{if(event.key==='Enter'){event.preventDefault();accept()}},onCancel=event=>{event.preventDefault();cancel()};
+  confirmButton.addEventListener('click',accept);cancelButton.addEventListener('click',cancel);input.addEventListener('keydown',onKey);dialog.addEventListener('cancel',onCancel);
+  dialog.showModal();input.focus();
+ });
+}
 $('deleteAccountBtn').onclick=async()=>{
  if(!supabaseClient||!cloudUser||!navigator.onLine){alert('Connect to the internet and sign in to your Family Account before deleting it.');return}
  if(!await window.dayQuestConfirm('Permanently delete this DayQuest Family Account? This removes the account login and its cloud access for every family member using this shared account. This action cannot be undone. Export a backup first if you need to keep a copy.'))return;
- const password=window.prompt('Enter the current Family Account password to confirm permanent deletion:');
+ const password=await requestDeleteAccountPassword();
  if(password===null)return;
- if(!String(password).trim()){alert('Password is required. The account was not deleted.');return}
+ if(!String(password).trim()){alert('DayQuest requires your Family Account password. The account was not deleted.');return}
  const button=$('deleteAccountBtn');button.disabled=true;button.textContent='Deleting account…';
  try{
   const email=String(cloudUser.email||'').trim();
