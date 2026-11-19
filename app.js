@@ -1052,7 +1052,7 @@ function productionInputTemplate(input,index,buckets){
  const options=buckets.map(bucket=>`<option value="${esc(salesStockValue(bucket.product,bucket.unit))}" ${selected===salesStockValue(bucket.product,bucket.unit)?'selected':''}>${esc(bucket.product)} (${esc(bucket.unit)}) · Available ${numberText(bucket.available)}</option>`).join('');
  const available=buckets.find(bucket=>bucket.product.toLocaleLowerCase()===String(input.product||'').toLocaleLowerCase()&&bucket.unit.toLocaleLowerCase()===String(input.unit||'').toLocaleLowerCase())?.available||0;
  return `<div class="production-input-line" data-production-input="${index}">
-  <div class="production-input-product-row"><label>Product <select class="production-input-product" required><option value="">${buckets.length?'Select product':'No inventory stock'}</option>${options}${input.product&&!buckets.some(bucket=>bucket.product.toLocaleLowerCase()===input.product.toLocaleLowerCase()&&bucket.unit.toLocaleLowerCase()===input.unit.toLocaleLowerCase())?`<option value="${esc(selected)}" selected>${esc(input.product)} (${esc(input.unit)}) · No stock on production date</option>`:''}</select></label>${index===0?`<button type="button" class="mini-add production-add-material-inline" aria-label="Add material" title="Add material">＋</button>`:''}</div>
+  <div class="production-input-product-row"><label>Product <select class="production-input-product" required><option value="">${buckets.length?'Select product':'No inventory stock'}</option>${options}${input.product&&!buckets.some(bucket=>bucket.product.toLocaleLowerCase()===input.product.toLocaleLowerCase()&&bucket.unit.toLocaleLowerCase()===input.unit.toLocaleLowerCase())?`<option value="${esc(selected)}" selected>${esc(input.product)} (${esc(input.unit)}) · No stock on production date</option>`:''}</select></label><button type="button" class="mini-add production-add-material-inline" aria-label="Add material" title="Add material">＋</button></div>
   <label>Quantity <input class="production-input-quantity" type="number" min="0.001" step="any" value="${Number(input.quantity||1)}" required></label>
   <label>Unit <input class="production-input-unit" value="${esc(input.unit||'')}" placeholder="—" readonly aria-readonly="true" tabindex="-1"></label>
   ${input.product?`<small class="production-input-stock">Available on ${fmt($('productionDate').value)}: ${numberText(available)} ${esc(input.unit)}</small>`:''}
@@ -1108,12 +1108,14 @@ function resetProductionForm(){
 }
 function renderProductionList(){
  const list=$('productionList');if(!list)return;
+ const stockRows=inventoryEntries();
  const batches=db.productions.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
  $('productionCount').textContent=`${batches.length} ${batches.length===1?'batch':'batches'}`;
  list.innerHTML=batches.length?batches.map(batch=>{
   const inputs=(batch.inputs||[]).map(item=>`${esc(item.product)} ${numberText(item.quantity)} ${esc(item.unit)} (${money(item.cost)})`).join(' · ');
-  const regular=db.productNames.some(name=>String(name).toLocaleLowerCase()===String(batch.product||'').toLocaleLowerCase());
-  return `<article class="production-batch" data-production-id="${esc(batch.id)}"><div class="production-batch-head"><div><strong>${esc(batch.product)}</strong><small>${esc(batch.productionNo||'Production')} · ${fmt(batch.date)} · Produced ${numberText(batch.quantity)} ${esc(batch.unit)}</small></div><strong>${money(batch.totalCost)}</strong></div><div class="production-batch-grid"><span>Materials<strong>${money(batch.ingredientCost)}</strong></span><span>Electricity<strong>${money(batch.electricityCost)}</strong></span><span>Transit<strong>${money(batch.transitCost)}</strong></span><span>Cost per unit<strong>${money(batch.unitCost)}</strong></span></div><small class="production-batch-materials">Used: ${inputs||'No materials recorded'}</small><div class="production-batch-actions"><button type="button" class="edit-btn" data-open-production-stock>Open Inventory</button>${regular?'<span class="production-regular-label">Regular Product</span>':'<button type="button" class="secondary" data-transfer-regular>Transfer to Regular Product</button>'}<button type="button" class="delete" data-delete-production>Delete batch</button></div></article>`;
+  const regular=batch.regularProduct===true||db.productNames.some(name=>String(name).toLocaleLowerCase()===String(batch.product||'').toLocaleLowerCase());
+  const stockRecord=stockRows.find(record=>record.billId===`production:${batch.id}`&&record.lineId==='output'),inStock=Number(stockRecord?.remaining??batch.quantity??0);
+  return `<article class="production-batch" data-production-id="${esc(batch.id)}"><div class="production-batch-head"><div><strong>${esc(batch.product)}</strong><small>${esc(batch.productionNo||'Production')} · ${fmt(batch.date)} · Produced ${numberText(batch.quantity)} ${esc(batch.unit)} · In stock ${numberText(inStock)} ${esc(batch.unit)}</small></div><strong>${money(batch.totalCost)}</strong></div><div class="production-batch-grid"><span>Materials<strong>${money(batch.ingredientCost)}</strong></span><span>Electricity<strong>${money(batch.electricityCost)}</strong></span><span>Transit<strong>${money(batch.transitCost)}</strong></span><span>Cost per unit<strong>${money(batch.unitCost)}</strong></span></div><small class="production-batch-materials">Used: ${inputs||'No materials recorded'}</small><div class="production-batch-actions"><button type="button" class="edit-btn" data-open-production-stock>Open Inventory</button>${regular?'<span class="production-regular-label">Regular Product</span>':'<button type="button" class="secondary" data-transfer-regular>Transfer to Regular Product</button>'}<button type="button" class="delete" data-delete-production>Delete batch</button></div></article>`;
  }).join(''):empty('No production batches yet. Select inventory materials and save your first finished product batch.');
  list.querySelectorAll('[data-open-production-stock]').forEach(button=>button.onclick=()=>{const batch=button.closest('[data-production-id]');openInventoryLine(stockRefKey(`production:${batch.dataset.productionId}`,'output'))});
  list.querySelectorAll('[data-transfer-regular]').forEach(button=>button.onclick=()=>{
@@ -1141,7 +1143,7 @@ $('productionForm').onsubmit=e=>{
  const allocation=allocateProductionMaterials(productionInputs,date);if(allocation.error){alert(allocation.error);return}
  const totalCost=roundPurchaseAmount(allocation.ingredientCost+electricityCost+transitCost),id=crypto.randomUUID();
  if(db.productions.some(item=>String(item.productionNo||'').toLocaleLowerCase()===productionNo.toLocaleLowerCase())){alert('This production number already exists. Please refresh the form and try again.');$('productionNo').value=nextProductionNo(date);return}
- const batch={id,productionNo,date,product,productType:'Other',spec:'',regularProduct:false,quantity,unit,ingredientCost:allocation.ingredientCost,electricityCost,transitCost,totalCost,unitCost:quantity>0?totalCost/quantity:0,inputs:allocation.summaries,costMembers:allocation.costMembers,overheadMembers:allocation.costMembers.slice(),overheadCost:roundPurchaseAmount(electricityCost+transitCost)};
+ const batch={id,productionNo,date,product,regularProduct:false,quantity,unit,ingredientCost:allocation.ingredientCost,electricityCost,transitCost,totalCost,unitCost:quantity>0?totalCost/quantity:0,inputs:allocation.summaries,costMembers:allocation.costMembers,overheadMembers:allocation.costMembers.slice(),overheadCost:roundPurchaseAmount(electricityCost+transitCost)};
  db.productions.unshift(batch);
  allocation.consumptions.forEach(item=>db.consumptions.push({id:crypto.randomUUID(),...item,productionId:id,productionNo,date}));
  if(!db.units.includes(unit))db.units.push(unit);
@@ -1166,7 +1168,7 @@ function renderSupplierAccounts(){
    return `<article class="purchase-bill-line" id="purchase-bill-line-${lineId}"><div class="purchase-bill-line-head"><strong>${esc(line.product||'Product')}${line.spec?` · ${esc(line.spec)}`:''}</strong><strong>${money(amount)}</strong></div><small>${esc(line.category||b.category||'Uncategorised')} · ${esc(line.productType||'Other')} · ${numberText(line.quantity)} ${esc(line.unit||'pcs')} × ${money(line.rate||0)}</small><div class="purchase-bill-stock"><span>Purchased <strong>${numberText(line.quantity)} ${esc(line.unit||'pcs')}</strong></span><span>Used <strong>${numberText(used)} ${esc(line.unit||'pcs')}</strong></span><span>In stock <strong>${numberText(remaining)} ${esc(line.unit||'pcs')}</strong></span><span>Assigned to <strong>${esc(owners.length?owners.join(', '):'Not assigned')}</strong></span></div><button type="button" class="edit-btn" data-view-inventory-line="${esc(stockRefKey(b.id,line.id))}">Open inventory record</button></article>`;
   }).join('');
   const label=`${b.supplier||'Cash purchase'}${b.billNo?` · #${b.billNo}`:''} · ${fmt(b.date)} · ${lines.length} item${lines.length===1?'':'s'}`;
-  return `<article class="purchase-bill-card" id="purchase-bill-${billId}" data-purchase-bill-card="${billId}"><div class="purchase-bill-compact-row" data-bill-summary tabindex="0" role="button" aria-haspopup="true" aria-expanded="false" aria-label="${esc(label)}. Tap to show bill actions." title="Tap to show bill actions"><span class="purchase-bill-compact-title">${esc(label)}</span><strong class="purchase-bill-compact-total">${money(billTotal(b))}</strong><span class="purchase-bill-compact-more" aria-hidden="true">⋯</span></div><div class="purchase-bill-actions" data-bill-actions hidden>${b.supplier?`<button type="button" class="edit-btn" data-open-supplier="${esc(b.supplier)}">Account</button>`:''}<button type="button" class="edit-btn" data-bill-detail-toggle>View details</button>${db.settings.allowPurchaseBillEdits!==false?`<button type="button" class="edit-btn" data-edit-bill="${billId}">Edit bill</button>`:''}<button type="button" class="delete" data-delete-bill="${billId}">Delete</button></div><div class="purchase-bill-detail-panel" data-bill-detail hidden><div class="purchase-bill-detail-meta">${esc((lines).map(line=>line.category||b.category||'Uncategorised').filter((value,index,array)=>array.indexOf(value)===index).join(', '))} · Transit ${money(b.transitCost)} · Discount ${money(b.discount)} · Cash ${money(b.cashPaid)} · Bank ${money(b.bankPaid)} · Credit ${money(billCredit(b))}</div><div class="purchase-bill-products">${products||empty('No products on this bill.')}</div></div></article>`;
+  return `<article class="purchase-bill-card" id="purchase-bill-${billId}" data-purchase-bill-card="${billId}"><div class="purchase-bill-compact-row" data-bill-summary tabindex="0" aria-expanded="false"><span class="purchase-bill-compact-title">${esc(label)}</span><strong class="purchase-bill-compact-total">${money(billTotal(b))}</strong><button type="button" class="purchase-bill-more" data-bill-actions-toggle aria-label="Show actions for this purchase bill" aria-expanded="false" title="Bill actions">⋯</button></div><div class="purchase-bill-actions" data-bill-actions hidden>${b.supplier?`<button type="button" class="edit-btn" data-open-supplier="${esc(b.supplier)}">Account</button>`:''}<button type="button" class="edit-btn" data-bill-detail-toggle>View details</button>${db.settings.allowPurchaseBillEdits!==false?`<button type="button" class="edit-btn" data-edit-bill="${billId}">Edit bill</button>`:''}<button type="button" class="delete" data-delete-bill="${billId}">Delete</button></div><div class="purchase-bill-detail-panel" data-bill-detail hidden><div class="purchase-bill-detail-meta">${esc((lines).map(line=>line.category||b.category||'Uncategorised').filter((value,index,array)=>array.indexOf(value)===index).join(', '))} · Transit ${money(b.transitCost)} · Discount ${money(b.discount)} · Cash ${money(b.cashPaid)} · Bank ${money(b.bankPaid)} · Credit ${money(billCredit(b))}</div><div class="purchase-bill-products">${products||empty('No products on this bill.')}</div></div></article>`;
  }).join(''):empty('No purchase bills saved yet.');
  $('purchaseBillList').querySelectorAll('[data-open-supplier]').forEach(btn=>btn.onclick=()=>openSupplierAccount(btn.dataset.openSupplier));
  $('purchaseBillList').querySelectorAll('[data-edit-bill]').forEach(btn=>btn.onclick=()=>editPurchaseBill(btn.dataset.editBill));
@@ -1250,40 +1252,44 @@ $('loanForm').onsubmit=event=>{
 function revealPurchaseBillActions(card,focusFirst=false){
  if(!card)return;
  document.querySelectorAll('[data-purchase-bill-card].purchase-bill-actions-visible').forEach(openCard=>{if(openCard!==card)hidePurchaseBillActions(openCard)});
- const actions=card.querySelector('[data-bill-actions]'),row=card.querySelector('[data-bill-summary]');if(!actions||!row)return;
- actions.hidden=false;card.classList.add('purchase-bill-actions-visible');row.setAttribute('aria-expanded','true');
+ const actions=card.querySelector('[data-bill-actions]'),row=card.querySelector('[data-bill-summary]'),toggle=card.querySelector('[data-bill-actions-toggle]');
+ if(!actions||!row)return;
+ actions.hidden=false;card.classList.add('purchase-bill-actions-visible');row.setAttribute('aria-expanded','true');toggle?.setAttribute('aria-expanded','true');
  if(focusFirst)actions.querySelector('button')?.focus({preventScroll:true});
 }
 function hidePurchaseBillActions(card){
- if(!card)return;const actions=card.querySelector('[data-bill-actions]'),row=card.querySelector('[data-bill-summary]'),detail=card.querySelector('[data-bill-detail]');
- if(actions)actions.hidden=true;if(detail)detail.hidden=true;card.classList.remove('purchase-bill-actions-visible');row?.setAttribute('aria-expanded','false');
- const view=card.querySelector('[data-bill-detail-toggle]');if(view)view.textContent='View details';
-}
-function revealPurchaseBillActions(card,focusFirst=false){
  if(!card)return;
- document.querySelectorAll('[data-purchase-bill-card].purchase-bill-actions-visible').forEach(openCard=>{if(openCard!==card)hidePurchaseBillActions(openCard)});
- const actions=card.querySelector('[data-bill-actions]'),row=card.querySelector('[data-bill-summary]');if(!actions||!row)return;
- actions.hidden=false;card.classList.add('purchase-bill-actions-visible');row.setAttribute('aria-expanded','true');
- if(focusFirst)actions.querySelector('button')?.focus({preventScroll:true});
-}
-function hidePurchaseBillActions(card){
- if(!card)return;const actions=card.querySelector('[data-bill-actions]'),row=card.querySelector('[data-bill-summary]'),detail=card.querySelector('[data-bill-detail]');
- if(actions)actions.hidden=true;if(detail)detail.hidden=true;card.classList.remove('purchase-bill-actions-visible');row?.setAttribute('aria-expanded','false');
+ const actions=card.querySelector('[data-bill-actions]'),row=card.querySelector('[data-bill-summary]'),detail=card.querySelector('[data-bill-detail]'),toggle=card.querySelector('[data-bill-actions-toggle]');
+ if(actions)actions.hidden=true;if(detail)detail.hidden=true;
+ card.classList.remove('purchase-bill-actions-visible');row?.setAttribute('aria-expanded','false');toggle?.setAttribute('aria-expanded','false');
  const view=card.querySelector('[data-bill-detail-toggle]');if(view)view.textContent='View details';
 }
 const purchaseBillListElement=$('purchaseBillList');
 purchaseBillListElement?.addEventListener('click',event=>{
- const row=event.target.closest('[data-bill-summary]');if(!row)return;
- const card=row.closest('[data-purchase-bill-card]');if(!card)return;
+ const toggle=event.target.closest('[data-bill-actions-toggle]'),row=event.target.closest('[data-bill-summary]');
+ if(!toggle&&!row)return;
+ if(event.target.closest('[data-bill-actions]'))return;
+ const card=(toggle||row).closest('[data-purchase-bill-card]');if(!card)return;
+ event.preventDefault();
  const actions=card.querySelector('[data-bill-actions]');
  if(actions?.hidden)revealPurchaseBillActions(card);else hidePurchaseBillActions(card);
 });
-purchaseBillListElement?.addEventListener('contextmenu',event=>{const card=event.target.closest('[data-purchase-bill-card]');if(!card)return;event.preventDefault();revealPurchaseBillActions(card)});
-purchaseBillListElement?.addEventListener('keydown',event=>{
- const row=event.target.closest('[data-bill-summary]');if(!row)return;
- if(['Enter',' ','ContextMenu'].includes(event.key)||(event.shiftKey&&event.key==='F10')){event.preventDefault();revealPurchaseBillActions(row.closest('[data-purchase-bill-card]'),true)}
+purchaseBillListElement?.addEventListener('contextmenu',event=>{
+ const card=event.target.closest('[data-purchase-bill-card]');if(!card)return;
+ event.preventDefault();revealPurchaseBillActions(card);
 });
-document.addEventListener('click',event=>{const current=event.target.closest('[data-purchase-bill-card]');document.querySelectorAll('[data-purchase-bill-card].purchase-bill-actions-visible').forEach(card=>{if(card!==current)hidePurchaseBillActions(card)})});
+purchaseBillListElement?.addEventListener('keydown',event=>{
+ const row=event.target.closest('[data-bill-summary]');if(!row||event.target.closest('button'))return;
+ if(['Enter',' ','ContextMenu'].includes(event.key)||(event.shiftKey&&event.key==='F10')){
+  event.preventDefault();const card=row.closest('[data-purchase-bill-card]');
+  const actions=card?.querySelector('[data-bill-actions]');
+  if(actions?.hidden)revealPurchaseBillActions(card,true);else hidePurchaseBillActions(card);
+ }
+});
+document.addEventListener('click',event=>{
+ const current=event.target.closest('[data-purchase-bill-card]');
+ document.querySelectorAll('[data-purchase-bill-card].purchase-bill-actions-visible').forEach(card=>{if(card!==current)hidePurchaseBillActions(card)});
+});
 function openSupplierAccount(name){
  setTab('supplierAccounts');
  activeSupplierName=name;$('supplierAccountPanel').hidden=false;$('supplierAccountTitle').textContent=name;$('supplierAccountSubtitle').textContent='Supplier / creditor ledger';
@@ -3059,6 +3065,8 @@ function normalizeCloudDatabase(raw){
  db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(x=>{if(!['family','member','unassigned','members'].includes(x.costType))x.costType=x.costMember?'member':'unassigned';x.costMember=String(x.costMember||'').trim();if(x.costType==='member'&&!x.costMember)x.costType='unassigned'});
  db.quests=Array.isArray(db.quests)?db.quests:[];db.checks=db.checks&&typeof db.checks==='object'?db.checks:{};
  db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];
+ db.loans=Array.isArray(db.loans)?db.loans:[];db.loans.forEach(loan=>{loan.id=String(loan.id||crypto.randomUUID());loan.type=loan.type==='taken'?'taken':'given';loan.amount=Math.max(0,Number(loan.amount)||0);loan.method=loan.method==='Bank'?'Bank':'Cash';loan.date=String(loan.date||'');loan.dueDate=String(loan.dueDate||'');loan.settlements=Array.isArray(loan.settlements)?loan.settlements:[]});
+ db.settings.notificationPreferences=db.settings.notificationPreferences&&typeof db.settings.notificationPreferences==='object'?db.settings.notificationPreferences:{loanGiven:true,loanTaken:true,enabled:false};
  db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];
  db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
 db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};
@@ -3536,23 +3544,30 @@ function renderNotificationSettings(){
  const available='Notification' in window;
  const permission=available?Notification.permission:'unsupported';
  $('notificationPermissionStatus').textContent=permission==='granted'
-  ?(prefs.enabled?'Browser permission granted. Background loan reminders need the DayQuest push service to be configured.':'Browser permission is granted. Enable background notifications to register this device.')
+  ?(prefs.enabled?'Background loan reminders are enabled on this device for the selected loan types.':'Browser permission is granted. Tap Enable Background Notifications to register this device.')
   :permission==='denied'?'Notifications are blocked in browser settings. Allow DayQuest notifications in your browser settings.'
   :permission==='unsupported'?'This browser does not support notifications.'
-  :'Select your loan reminders, then tap Enable Background Notifications.';
+  :'Select your loan reminders, then tap Enable Background Notifications. The push service must be configured once by the DayQuest administrator.';
  $('enableDayQuestNotifications').disabled=!available;$('disableDayQuestNotifications').disabled=!available;
 }
 function saveNotificationPreferences(){
  db.settings.notificationPreferences={...notificationPrefs(),loanGiven:$('notifyLoanGiven').checked,loanTaken:$('notifyLoanTaken').checked};
- localSaveOnly();renderNotificationSettings();
+ localSaveOnly();renderNotificationSettings();syncNotificationSubscriptionPreferences();
+}
+async function syncNotificationSubscriptionPreferences(){
+ if(!navigator.onLine||!cloudUser||!notificationPrefs().enabled)return;
+ try{
+  const registration=await navigator.serviceWorker.ready,subscription=await registration.pushManager.getSubscription();
+  if(subscription)await saveNotificationSubscription(subscription);
+ }catch(error){console.warn('DayQuest could not refresh notification preferences on the push service:',error)}
 }
 function urlBase64ToUint8Array(value){
  const padding='='.repeat((4-value.length%4)%4),base64=(value+padding).replace(/-/g,'+').replace(/_/g,'/'),raw=atob(base64);
  return Uint8Array.from([...raw].map(char=>char.charCodeAt(0)));
 }
-async function saveNotificationSubscription(subscription){
+async function saveNotificationSubscription(subscription,removeEndpoint=subscription?.endpoint||null){
  if(!supabaseClient||!cloudUser)throw new Error('Sign in to your DayQuest Family Account first.');
- const {error}=await supabaseClient.functions.invoke('save-notification-subscription',{body:{subscription:subscription?subscription.toJSON():null,endpoint:subscription?.endpoint||null,preferences:notificationPrefs()}});
+ const {error}=await supabaseClient.functions.invoke('save-notification-subscription',{body:{subscription:subscription?subscription.toJSON():null,endpoint:subscription?.endpoint||removeEndpoint||null,preferences:notificationPrefs()}});
  if(error)throw error;
 }
 $('notifyLoanGiven').addEventListener('change',saveNotificationPreferences);
@@ -3577,7 +3592,7 @@ $('enableDayQuestNotifications').onclick=async()=>{
 $('disableDayQuestNotifications').onclick=async()=>{
  try{
   const registration=await navigator.serviceWorker?.getRegistration(),subscription=await registration?.pushManager?.getSubscription();
-  if(subscription){await saveNotificationSubscription(null);await subscription.unsubscribe()}
+  if(subscription){await saveNotificationSubscription(null,subscription.endpoint);await subscription.unsubscribe()}
   db.settings.notificationPreferences={...notificationPrefs(),enabled:false};localSaveOnly();renderNotificationSettings();
   alert('DayQuest notifications are disabled on this device.');
  }catch(error){console.error('DayQuest push unsubscribe failed',error);alert('DayQuest could not update the notification subscription. Try again while online.')}
