@@ -48,8 +48,9 @@ db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(
 db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];
 db.guestPeople=Array.isArray(db.guestPeople)?db.guestPeople.map(n=>String(n||'').trim()).filter(Boolean):[];
 db.guestPeople=[...new Map(db.guestPeople.map(n=>[n.toLocaleLowerCase(),n])).values()];
-db.guests=Array.isArray(db.guests)?db.guests.filter(g=>g&&Array.isArray(g.members)&&g.members.length&&/^\d{4}-\d{2}-\d{2}$/.test(String(g.entryDate||''))):[];
-db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.members.forEach(n=>{if(!db.guestPeople.some(x=>x.toLocaleLowerCase()===n.toLocaleLowerCase())&&!db.familyMembers.some(x=>x.toLocaleLowerCase()===n.toLocaleLowerCase()))db.guestPeople.push(n)})});
+db.guestRelations=db.guestRelations&&typeof db.guestRelations==='object'&&!Array.isArray(db.guestRelations)?db.guestRelations:{};
+db.guests=Array.isArray(db.guests)?db.guests.filter(g=>g&&Array.isArray(g.members)&&g.members.length&&/^\d{4}-\d{2}-\d{2}$/.test(String(g.entryDate||''))):[];db.guests.forEach(g=>{g.relation=String(g.relation||'')});
+db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.relation=String(g.relation||'');g.members.forEach(n=>{if(!db.guestPeople.some(x=>x.toLocaleLowerCase()===n.toLocaleLowerCase())&&!db.familyMembers.some(x=>x.toLocaleLowerCase()===n.toLocaleLowerCase()))db.guestPeople.push(n)})});
 function uniquePeople(names){return [...new Map((names||[]).map(n=>String(n||'').trim()).filter(Boolean).map(n=>[n.toLocaleLowerCase(),n])).values()]}
 function assignablePeople(){return uniquePeople([...db.familyMembers,...db.guestPeople])}
 function assignedMembers(item){
@@ -1660,9 +1661,12 @@ function mealProductCostForRange(from,to){
 function mealGuestAssignedTo(guest,member){
  return (db.mealPlan.guestAssignments?.[mealPersonKey(guest)]||[]).some(name=>mealPersonKey(name)===mealPersonKey(member));
 }
-function mealGuestChecked(guest,member,date){
- return db.mealPlan.guestChecks?.[date]?.[mealPersonKey(guest)]?.[mealPersonKey(member)]!==false;
+function mealGuestCheckState(guest,member,date){
+ const count=mealCountForDate(date),saved=db.mealPlan.guestChecks?.[date]?.[mealPersonKey(guest)]?.[mealPersonKey(member)];
+ return Array.from({length:count},(_,index)=>Array.isArray(saved)?saved[index]!==false:saved!==false);
 }
+function mealGuestChecked(guest,member,date,index=0){return mealGuestCheckState(guest,member,date)[index]!==false}
+function mealGuestCheckedCount(guest,member,date){return mealGuestCheckState(guest,member,date).filter(Boolean).length}
 function mealMemberGuestNames(member,date){
  return db.guestPeople.filter(guest=>mealGuestAssignedTo(guest,member)&&mealPersonInDateRange(guest,date,true));
 }
@@ -1678,8 +1682,8 @@ function renderMeals(){
   const checks=Array.from({length:count},(_,idx)=>savedChecks[idx]!==false);
   const mealBoxes=Array.from({length:count},(_,idx)=>'<label class="meal-slot-check"><input type="checkbox" data-meal-slot="'+idx+'" data-meal-slot-member="'+esc(member)+'" '+(checks[idx]?'checked':'')+'><span>M</span></label>').join('');
   const guestNames=mealMemberGuestNames(member,date);
-  const guestBoxes=guestNames.map(guest=>'<label class="meal-slot-check meal-guest-slot"><input type="checkbox" data-meal-guest-slot="'+esc(guest)+'" data-meal-guest-host="'+esc(member)+'" '+(mealGuestChecked(guest,member,date)?'checked':'')+'><span>G</span></label>').join('');
-  const ownChecked=checks.filter(Boolean).length,guestChecked=guestNames.filter(guest=>mealGuestChecked(guest,member,date)).length;
+  const guestBoxes=guestNames.flatMap(guest=>mealGuestCheckState(guest,member,date).map((checked,index)=>'<label class="meal-slot-check meal-guest-slot"><input type="checkbox" data-meal-guest-slot="'+esc(guest)+'" data-meal-guest-host="'+esc(member)+'" data-meal-guest-meal="'+index+'" '+(checked?'checked':'')+'><span>G</span></label>')).join('');
+  const ownChecked=checks.filter(Boolean).length,guestChecked=guestNames.reduce((total,guest)=>total+mealGuestCheckedCount(guest,member,date),0);
   const total=ownChecked+guestChecked;
   return '<div class="meal-member-row"><strong>'+esc(member)+'</strong><label class="meal-toggle"><input type="checkbox" data-meal-member="'+esc(member)+'" '+(enabled?'checked':'')+'> A</label><div class="meal-slot-list">'+(enabled?mealBoxes:'')+guestBoxes+'</div><strong class="meal-member-total">T '+total+'</strong></div>';
  }).join(''):empty('Add family members in Profile first.');
@@ -1692,7 +1696,7 @@ function renderMeals(){
      const saved=db.mealPlan.memberChecks?.[key]?.[member];
      total+=Array.from({length:mealCountForMember(member,key)},(_,idx)=>!Array.isArray(saved)||saved[idx]!==false).filter(Boolean).length;
     }
-    db.guestPeople.filter(guest=>mealGuestAssignedTo(guest,member)&&mealPersonInDateRange(guest,key,true)).forEach(guest=>{if(mealGuestChecked(guest,member,key))total++});
+    db.guestPeople.filter(guest=>mealGuestAssignedTo(guest,member)&&mealPersonInDateRange(guest,key,true)).forEach(guest=>{total+=mealGuestCheckedCount(guest,member,key)});
    }
   }
   return {member,total};
@@ -1766,6 +1770,20 @@ $('mealDateSave').onclick=()=>{const date=$('mealDateEntry').value,n=Number($('m
 $('mealsBackOverview').onclick=()=>{setTab('home');document.getElementById('home')?.scrollIntoView({behavior:'instant',block:'start'})};
 ['mealFromDate','mealToDate','mealControlDate'].forEach(id=>$(id).addEventListener('change',renderMeals));
 $('mealDateEntry').addEventListener('change',()=>{const date=$('mealDateEntry').value;$('mealControlDate').value=date;renderMeals()});
+$('memberReportGuestAssignments').onclick=e=>{
+ const button=e.target.closest('[data-report-save-guest]');if(!button)return;
+ const row=button.closest('[data-report-guest-row]');if(!row)return;
+ const guest=row.dataset.reportGuestRow,key=mealPersonKey(guest),relation=row.querySelector('[data-report-guest-relation]').value.trim(),entryDate=row.querySelector('[data-report-guest-entry]').value,outDate=row.querySelector('[data-report-guest-out]').value;
+ if(outDate&&!entryDate){alert('Choose the guest entry date before setting an out date.');return}
+ if(entryDate&&outDate&&outDate<entryDate){alert('Guest out date cannot be earlier than the entry date.');return}
+ db.guestRelations=db.guestRelations||{};if(relation)db.guestRelations[key]=relation;else delete db.guestRelations[key];
+ let stay=db.guests.find(item=>item.id===row.dataset.reportGuestId);
+ if(entryDate){
+  if(!stay){stay={id:crypto.randomUUID(),entryDate,outDate,members:[guest],purpose:'',relation};db.guests.unshift(stay)}
+  else Object.assign(stay,{entryDate,outDate,relation});
+ }else if(stay){alert('Keep the guest entry date or remove this guest stay from the Guest register.');return}
+ save();renderMemberReportGuestAssignments();renderGuestReport();renderMealPersonDates();renderMeals();
+};
 $('memberReportGuestAssignments').onchange=e=>{
  const input=e.target.closest('[data-report-meal-assign-guest]');if(!input)return;
  const guest=input.dataset.reportMealAssignGuest,member=input.dataset.reportMealAssignMember,key=mealPersonKey(guest);
@@ -1773,7 +1791,7 @@ $('memberReportGuestAssignments').onchange=e=>{
  const current=db.mealPlan.guestAssignments[key]||[];
  db.mealPlan.guestAssignments[key]=input.checked?uniquePeople([...current,member]):current.filter(name=>mealPersonKey(name)!==mealPersonKey(member));
  if(!db.mealPlan.guestAssignments[key].length)delete db.mealPlan.guestAssignments[key];
- save();renderMealPersonDates();renderMeals();
+ save();renderMeals();
 };
 $('mealPersonDateSettings').onchange=e=>{
  const assign=e.target.closest('[data-meal-assign-guest]');
@@ -1797,7 +1815,7 @@ $('mealPersonDateSettings').onchange=e=>{
 $('mealMemberControls').onchange=e=>{
  const toggle=e.target.closest('[data-meal-member]'),guestSlot=e.target.closest('[data-meal-guest-slot]'),slot=e.target.closest('[data-meal-slot]'),countInput=e.target.closest('[data-meal-count]'),date=$('mealControlDate').value;
  if(toggle){const member=toggle.dataset.mealMember;db.mealPlan.memberStatus[date]=db.mealPlan.memberStatus[date]||{};db.mealPlan.memberStatus[date][member]=toggle.checked;if(toggle.checked){db.mealPlan.memberChecks[date]=db.mealPlan.memberChecks[date]||{};db.mealPlan.memberChecks[date][member]=Array(mealCountForMember(member,date)).fill(true)}save();renderMeals();return}
- if(guestSlot){const guest=mealPersonKey(guestSlot.dataset.mealGuestSlot),host=mealPersonKey(guestSlot.dataset.mealGuestHost);db.mealPlan.guestChecks[date]=db.mealPlan.guestChecks[date]||{};db.mealPlan.guestChecks[date][guest]=db.mealPlan.guestChecks[date][guest]||{};db.mealPlan.guestChecks[date][guest][host]=guestSlot.checked;save();renderMeals();return}
+ if(guestSlot){const guest=mealPersonKey(guestSlot.dataset.mealGuestSlot),host=mealPersonKey(guestSlot.dataset.mealGuestHost),index=Number(guestSlot.dataset.mealGuestMeal),count=mealCountForDate(date);db.mealPlan.guestChecks[date]=db.mealPlan.guestChecks[date]||{};db.mealPlan.guestChecks[date][guest]=db.mealPlan.guestChecks[date][guest]||{};const existing=db.mealPlan.guestChecks[date][guest][host],state=Array.from({length:count},(_,idx)=>Array.isArray(existing)?existing[idx]!==false:existing!==false);if(index>=0&&index<count)state[index]=guestSlot.checked;db.mealPlan.guestChecks[date][guest][host]=state;save();renderMeals();return}
  if(slot){const member=slot.dataset.mealSlotMember,index=Number(slot.dataset.mealSlot);db.mealPlan.memberChecks[date]=db.mealPlan.memberChecks[date]||{};const count=mealCountForMember(member,date),saved=db.mealPlan.memberChecks[date][member]||[];db.mealPlan.memberChecks[date][member]=Array.from({length:count},(_,idx)=>saved[idx]!==false);db.mealPlan.memberChecks[date][member][index]=slot.checked;save();renderMeals();return}
  if(countInput){const member=countInput.dataset.mealCount,n=Number(countInput.value);if(!Number.isInteger(n)||n<0){alert('Enter a whole number of meals, zero or more.');renderMeals();return}db.mealPlan.memberCounts[date]=db.mealPlan.memberCounts[date]||{};db.mealPlan.memberCounts[date][member]=n;save();renderMeals()}
 };
@@ -2374,13 +2392,11 @@ function mealPersonEnabled(name,date,isGuest=false){
 }
 function renderMealPersonDates(){
  const host=$('mealPersonDateSettings');if(!host)return;
- const makeRows=(names,isGuest)=>names.map(name=>{
-  const key=mealPersonKey(name),dates=mealPersonDateValues(name,isGuest);
-  const assigned=db.mealPlan.guestAssignments?.[key]||[];
-  const assignedHtml=isGuest?'<div class="meal-guest-assignment"><small>Assigned to</small><div class="meal-guest-assignment-list">'+db.familyMembers.map(member=>'<label><input type="checkbox" data-meal-assign-guest="'+esc(name)+'" data-meal-assign-member="'+esc(member)+'" '+(assigned.some(x=>mealPersonKey(x)===mealPersonKey(member))?'checked':'')+'><span>'+esc(member)+'</span></label>').join('')+'</div></div>':'';
-  return '<div class="meal-person-date-row '+(isGuest?'meal-person-guest-setting':'')+'" data-meal-person-row="'+esc(name)+'" data-meal-person-guest="'+(isGuest?'1':'0')+'"><strong>'+esc(name)+'</strong><label>Meal Start<input type="date" data-meal-person-start value="'+esc(dates.startDate)+'"></label><label>Meal Close<input type="date" data-meal-person-close value="'+esc(dates.closeDate)+'"></label>'+assignedHtml+'</div>';
- }).join('')||'<p class="muted meal-person-date-empty">No '+(isGuest?'guest members':'family members')+' added.</p>';
- host.innerHTML='<div class="meal-person-date-group"><h4>Members</h4>'+makeRows(db.familyMembers,false)+'</div><div class="meal-person-date-group"><h4>Guest Members</h4>'+makeRows(db.guestPeople,true)+'</div>';
+ const rows=db.familyMembers.map(name=>{
+  const dates=mealPersonDateValues(name,false);
+  return '<div class="meal-person-date-row" data-meal-person-row="'+esc(name)+'"><strong>'+esc(name)+'</strong><label>Meal Start<input type="date" data-meal-person-start value="'+esc(dates.startDate)+'"></label><label>Meal Close<input type="date" data-meal-person-close value="'+esc(dates.closeDate)+'"></label></div>';
+ }).join('');
+ host.innerHTML='<div class="meal-person-date-group"><h4>Members</h4>'+(rows||'<p class="muted meal-person-date-empty">No family members added.</p>')+'</div>';
 }
 function renderFamilyMembers(){
  const list=$('familyMemberList');if(!list)return;
@@ -2437,11 +2453,13 @@ $('addGuestName').onclick=()=>{
  db.guestPeople.push(name);input.value='';renderGuestMemberControls();renderMealPersonDates();fillChoices();save();
 };
 $('guestForm').onsubmit=e=>{
- e.preventDefault();const members=selectedGuestMembers(),entryDate=$('guestEntryDate').value,purpose=$('guestPurpose').value.trim();
+ e.preventDefault();const members=selectedGuestMembers(),entryDate=$('guestEntryDate').value,purpose=$('guestPurpose').value.trim(),relation=$('guestRelation').value.trim();
  if(!members.length){alert('Select at least one guest member.');return}
  if(!entryDate){alert('Choose the guest entry date.');return}
- db.guests.unshift({id:crypto.randomUUID(),entryDate,outDate:'',members,purpose});
- $('guestForm').reset();$('guestEntryDate').value=today();fillGuestMemberOptions([]);renderGuestReport();renderMealPersonDates();save();
+ if(!relation){alert('Enter the guest relation to the assigned family member.');$('guestRelation').focus();return}
+ db.guestRelations=db.guestRelations||{};members.forEach(name=>{db.guestRelations[mealPersonKey(name)]=relation});
+ db.guests.unshift({id:crypto.randomUUID(),entryDate,outDate:'',members,purpose,relation});
+ $('guestForm').reset();$('guestEntryDate').value=today();fillGuestMemberOptions([]);renderGuestReport();renderMemberReportGuestAssignments();renderMealPersonDates();save();
 };
 $('guestEntryDate').value=today();
 
@@ -2653,7 +2671,7 @@ function renderFamilyCostReport(items,bills=[],rangeStart='',rangeEnd=''){
  $('familyCostNote').textContent=notes.join(' ')||'Expenses and landed purchase costs are divided equally among their selected people. Production materials are already included at purchase; only production electricity and transit overhead are added again, allocated to the people assigned to the consumed materials.';
 }
 function renderMemberProductConsumptionReport(rangeStart,rangeEnd,reportPeople=[]){
- const select=$('memberProductFilter'),list=$('memberProductConsumption'),hint=$('memberConsumptionHint');
+ const select=$('memberProductFilter'),list=$('memberProductConsumption');
  if(!select||!list)return;
  const owners=uniquePeople([...reportPeople,...assignablePeople(),...inventoryEntries().flatMap(record=>record.costMembers)]);
  const previous=select.value||'all';
@@ -2677,8 +2695,8 @@ function renderMemberProductConsumptionReport(rangeStart,rangeEnd,reportPeople=[
  const attributedTotal=movements.reduce((total,row)=>total+(selected?row.memberShare:row.fullCost),0);
  const entryCount=movements.length;
  const targetLabel=selected?selected:'All products';
- if(hint)hint.textContent=`${targetLabel} · ${fmt(rangeStart)} – ${fmt(rangeEnd)}. Cost uses each inventory lot's landed/unit cost. This activity detail is not added again to the Cost totals above; purchase and production costs are already counted at their source.`;
- if(!movements.length){list.innerHTML=empty(selected?`No product stock consumption for ${esc(selected)} from ${esc(fmt(rangeStart))} to ${esc(fmt(rangeEnd))}.`:`No product stock consumption from ${esc(fmt(rangeStart))} to ${esc(fmt(rangeEnd))}.`);return}
+
+ if(!movements.length){list.innerHTML=empty(selected?`No product stock consumption for ${esc(selected)}.`:'No product stock consumption.');return}
  const rows=movements.map(row=>{
   const qty=`${numberText(row.entry.quantity)} ${esc(row.record.unit)}`;
   const useLabel=row.reference?`${row.movementType} · ${row.reference}`:row.movementType;
@@ -2712,20 +2730,13 @@ function guestStayCosts(guest,rangeStart='',rangeEnd=''){
 }
 function renderGuestReport(rangeStart='',rangeEnd=''){
  const list=$('guestStayList'),report=$('guestReport');if(!list||!report)return;
- list.innerHTML=db.guests.slice().sort((a,b)=>String(b.entryDate).localeCompare(String(a.entryDate))).map(g=>`<article class="guest-row" data-guest-id="${esc(g.id)}"><div class="guest-row-head"><div><strong>${esc(g.members.join(', '))}</strong><small>Entry: ${fmt(g.entryDate)} · ${g.purpose?`Purpose: ${esc(g.purpose)}`:'No purpose noted'}</small></div><span class="guest-status ${g.outDate?'guest-left':'guest-staying'}">${g.outDate?'Left':'Staying'}</span></div><div class="guest-out-control"><label>Guest out date <input type="date" data-guest-out value="${esc(g.outDate||'')}" min="${esc(g.entryDate)}"></label><button type="button" class="edit-btn" data-save-guest-out>Update out date</button></div></article>`).join('')||empty('No guest entries yet. Add guest names, select one or more people, and save their entry date.');
- list.querySelectorAll('[data-save-guest-out]').forEach(button=>button.onclick=()=>{
-  const row=button.closest('[data-guest-id]'),g=db.guests.find(x=>x.id===row?.dataset.guestId);if(!g)return;
-  const outDate=row.querySelector('[data-guest-out]').value;
-  if(outDate&&outDate<g.entryDate){alert('Guest out date cannot be earlier than the entry date.');return}
-  g.outDate=outDate;renderMealPersonDates();renderMeals();save();
- });
+ list.innerHTML=db.guests.slice().sort((a,b)=>String(b.entryDate).localeCompare(String(a.entryDate))).map(g=>'<article class="guest-row" data-guest-id="'+esc(g.id)+'"><div class="guest-row-head"><div><strong>'+esc(g.members.join(', '))+'</strong><small>Entry: '+fmt(g.entryDate)+' · Out: '+(g.outDate?fmt(g.outDate):'Still staying')+' · Relation: '+esc(g.relation||'Not set')+(g.purpose?' · Purpose: '+esc(g.purpose):'')+'</small></div><span class="guest-status '+(g.outDate?'guest-left':'guest-staying')+'">'+(g.outDate?'Left':'Staying')+'</span></div></article>').join('')||empty('No guest entries yet.');
  const filteredGuests=db.guests.filter(g=>guestOverlapsRange(g,rangeStart,rangeEnd));
  report.innerHTML=filteredGuests.slice().sort((a,b)=>String(b.entryDate).localeCompare(String(a.entryDate))).map(g=>{
   const costs=guestStayCosts(g,rangeStart,rangeEnd);
-  return `<article class="guest-report-row"><div><strong>${esc(g.members.join(', '))}</strong><small>Entry date: ${fmt(g.entryDate)} · Out date: ${g.outDate?fmt(g.outDate):'Still staying'} · Purpose: ${esc(g.purpose||'Not specified')}</small></div><div class="guest-report-costs"><span>Guest purpose cost<strong>${money(costs.purposeCost)}</strong></span><span>Family cost in selected stay range<strong>${money(costs.sharedFamilyCost)}</strong></span><span>Guest share of family cost<strong>${money(costs.guestShareOfFamily)}</strong></span></div></article>`;
- }).join('')||empty('No guest stays overlap the selected report date range.');
+  return '<article class="guest-report-row"><div><strong>'+esc(g.members.join(', '))+'</strong><small>Entry date: '+fmt(g.entryDate)+' · Out date: '+(g.outDate?fmt(g.outDate):'Still staying')+' · Relation: '+esc(g.relation||'Not set')+' · Purpose: '+esc(g.purpose||'Not specified')+'</small></div><div class="guest-report-costs"><span>Guest purpose cost<strong>'+money(costs.purposeCost)+'</strong></span><span>Family cost<strong>'+money(costs.sharedFamilyCost)+'</strong></span><span>Guest share<strong>'+money(costs.guestShareOfFamily)+'</strong></span></div></article>';
+ }).join('')||empty('No guest stays in this report.');
 }
-
 function renderProductionReport(from,to){
  const list=$('productionReportList');if(!list)return;
  const batches=db.productions.filter(batch=>String(batch.date||'')>=from&&String(batch.date||'')<=to).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
@@ -2821,8 +2832,10 @@ function renderMemberReportGuestAssignments(){
  const host=$('memberReportGuestAssignments');if(!host)return;
  host.innerHTML=db.guestPeople.length?db.guestPeople.map(guest=>{
   const key=mealPersonKey(guest),assigned=db.mealPlan.guestAssignments?.[key]||[];
+  const stay=guestStayRangesForPerson(guest).slice().sort((a,b)=>String(b.entryDate).localeCompare(String(a.entryDate)))[0]||null;
+  const relation=String(stay?.relation||db.guestRelations?.[key]||'');
   const checks=db.familyMembers.map(member=>'<label><input type="checkbox" data-report-meal-assign-guest="'+esc(guest)+'" data-report-meal-assign-member="'+esc(member)+'" '+(assigned.some(name=>mealPersonKey(name)===mealPersonKey(member))?'checked':'')+'><span>'+esc(member)+'</span></label>').join('');
-  return '<div class="member-report-guest-row"><strong>'+esc(guest)+'</strong><div class="member-report-guest-checks">'+(checks||'<span class="muted">Add family members first.</span>')+'</div></div>';
+  return '<div class="member-report-guest-row" data-report-guest-row="'+esc(guest)+'" data-report-guest-id="'+esc(stay?.id||'')+'"><strong>'+esc(guest)+'</strong><div class="member-report-guest-dates"><label>Relation<input type="text" maxlength="60" data-report-guest-relation value="'+esc(relation)+'" placeholder="Relation"></label><label>In<input type="date" data-report-guest-entry value="'+esc(stay?.entryDate||'')+'"></label><label>Out<input type="date" data-report-guest-out value="'+esc(stay?.outDate||'')+'" min="'+esc(stay?.entryDate||'')+'"></label><button type="button" class="edit-btn" data-report-save-guest>Save</button></div><div class="member-report-guest-checks">'+(checks||'<span class="muted">Add family members first.</span>')+'</div></div>';
  }).join(''):empty('No guest members added yet.');
 }
 function renderReport(){
@@ -2887,7 +2900,6 @@ function renderReport(){
  if($('costChartPageTotal'))$('costChartPageTotal').textContent=money(total);
  if($('costChartPageRange'))$('costChartPageRange').textContent=`${fmt(from)} – ${fmt(to)}`;
  renderCostReport(from,to);
- let all=0,done=0;days.forEach(d=>dayQuests(d).forEach(q=>{const state=questCheckState(q,d);all+=state.length;done+=state.filter(Boolean).length}));$('achievementRate').textContent=(all?Math.round(done/all*100):0)+'%';
  renderProductPurchaseReport(from,to);renderDueReport(from,to);updateReportSummaryMetrics();
 }
 
@@ -2932,7 +2944,7 @@ $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:
 $('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.loans))x.loans=[];if(!Array.isArray(x.quickActions))x.quickActions=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.productTypes))x.productTypes=['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];if(!Array.isArray(x.purchaseCategories))x.purchaseCategories=['Assets','Staples','Fixed Ex.'];if(!x.settings||typeof x.settings!=='object')x.settings={themeColor:'#263b5c'};if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.productions))x.productions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};if(!Array.isArray(x.familyMembers))x.familyMembers=[];if(!Array.isArray(x.guestPeople))x.guestPeople=[];if(!Array.isArray(x.guests))x.guests=[];if(confirm('Replace current data with this backup?')){db=x;db.sideMenuOrder=normalizeSideMenuOrder(db.sideMenuOrder);db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};db.productDictionary=normalizeProductDictionary(db.productDictionary);db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(item=>{item.costMember=String(item.costMember||'').trim()});db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
 db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};
 db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers.filter(name=>db.suppliers.includes(name)))]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];
-db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.productions=Array.isArray(db.productions)?db.productions.filter(p=>p&&p.id&&p.product&&Number(p.quantity)>0):[];normalizePurchaseInventory();db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;if(typeof db.settings.allowPurchaseBillEdits!=='boolean')db.settings.allowPurchaseBillEdits=true;db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];db.units=Array.isArray(db.units)?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];normalizePurchaseBillNumbers();db.profile=db.profile||{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};db.profile.familyName=String(db.profile.familyName||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestPeople=Array.isArray(db.guestPeople)?db.guestPeople.map(n=>String(n||'').trim()).filter(Boolean):[];db.guestPeople=[...new Map(db.guestPeople.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guests=Array.isArray(db.guests)?db.guests.filter(g=>g&&Array.isArray(g.members)&&g.members.length&&/^\d{4}-\d{2}-\d{2}$/.test(String(g.entryDate||''))):[];db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.members.forEach(n=>{if(!assignablePeople().some(x=>x.toLocaleLowerCase()===String(n).toLocaleLowerCase()))db.guestPeople.push(String(n).trim())})});db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);normalizeMemberAssignments();db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeople.push(name)});db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);renderPurchaseCategorySettings();renderMasterLists();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
+db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.productions=Array.isArray(db.productions)?db.productions.filter(p=>p&&p.id&&p.product&&Number(p.quantity)>0):[];normalizePurchaseInventory();db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;if(typeof db.settings.allowPurchaseBillEdits!=='boolean')db.settings.allowPurchaseBillEdits=true;db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];db.units=Array.isArray(db.units)?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];normalizePurchaseBillNumbers();db.profile=db.profile||{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};db.profile.familyName=String(db.profile.familyName||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestPeople=Array.isArray(db.guestPeople)?db.guestPeople.map(n=>String(n||'').trim()).filter(Boolean):[];db.guestPeople=[...new Map(db.guestPeople.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestRelations=db.guestRelations&&typeof db.guestRelations==='object'&&!Array.isArray(db.guestRelations)?db.guestRelations:{};db.guests=Array.isArray(db.guests)?db.guests.filter(g=>g&&Array.isArray(g.members)&&g.members.length&&/^\d{4}-\d{2}-\d{2}$/.test(String(g.entryDate||''))):[];db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.members.forEach(n=>{if(!assignablePeople().some(x=>x.toLocaleLowerCase()===String(n).toLocaleLowerCase()))db.guestPeople.push(String(n).trim())})});db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);normalizeMemberAssignments();db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeople.push(name)});db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);renderPurchaseCategorySettings();renderMasterLists();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
 const isAppleTouchDevice=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const isAndroidDevice=/Android/i.test(navigator.userAgent);
 const isMobileInstallDevice=isAppleTouchDevice||isAndroidDevice;
