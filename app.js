@@ -1283,6 +1283,7 @@ $('loanForm').onsubmit=event=>{
   const loan=db.loans.find(item=>item.id===editingLoanId);if(!loan)return;
   if(amount<loanSettledAmount(loan)){alert('Loan amount cannot be less than the amount already collected or repaid.');return}
   if(loanSettledAmount(loan)>0.000001&&((loan.installments?.[0]?.dueDate||'')!==firstDueDate||(loan.installments?.length||1)!==installmentCount||(loan.installmentFrequency||'monthly')!==installmentFrequency)){alert('This loan already has a payment or collection. Its installment dates and count cannot be changed.');return}
+  if(loanSettledAmount(loan)>0.000001)installments.forEach((item,index)=>{if(loan.installments?.[index]?.id)item.id=loan.installments[index].id});
   Object.assign(loan,{type,party,amount,method,date,dueDate:installments.at(-1)?.dueDate||'',installmentCount,installmentFrequency,installments:installments.length?installments:(loan.installments||[]),note});
  }else db.loans.unshift({id:crypto.randomUUID(),type,party,amount,method,date,dueDate:installments.at(-1)?.dueDate||'',installmentCount,installmentFrequency,installments,note,settlements:[]});
  resetLoanForm();save();
