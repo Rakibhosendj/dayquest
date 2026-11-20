@@ -1594,3 +1594,10 @@ img,canvas,svg{max-width:100%}
  .member-report-guest-checks label{font-size:8px}
  .member-report-guest-checks input{width:13px;height:13px}
 }
+
+/* Guest Assign: omit the visible guest-name column while retaining accessible row labels. */
+.member-report-guest-row{grid-template-columns:minmax(0,1fr) minmax(0,1.35fr)}
+.member-report-guest-row>.visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+@media(max-width:520px){
+ .member-report-guest-row{min-width:510px;grid-template-columns:230px minmax(0,1fr)}
+}
