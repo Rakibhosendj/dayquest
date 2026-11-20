@@ -1224,6 +1224,7 @@ function renderLoans(){
   return `<article class="loan-card" data-loan-id="${esc(loan.id)}">
    <div class="loan-card-head"><div><strong>${esc(loan.party||'Loan')}</strong><small>${title} · ${fmt(loan.date)} · ${esc(loan.method||'Cash')}</small></div><strong class="loan-outstanding-value">${money(outstanding)}</strong></div>
    <div class="loan-card-stats"><span>Loan amount<strong>${money(loan.amount)}</strong></span><span>Settled<strong>${money(settled)}</strong></span><span>${dateLabel}<strong>${outstanding<=0.000001?'Completed':loan.dueDate&&loan.dueDate<today()?'Overdue':'Outstanding'}</strong></span></div>
+   ${loan.installments?.length?'<div class="loan-installments">'+loan.installments.map((item,index)=>{const left=loanInstallmentOutstanding(loan,item),status=left<=0.000001?"Paid":item.dueDate<today()?"Overdue":"Upcoming";return '<div class="loan-installment-row"><span>Installment '+(index+1)+' · '+fmt(item.dueDate)+' · '+status+'</span><strong>'+money(left)+' / '+money(item.amount)+'</strong></div>'}).join('')+'</div>':''}
    ${loan.note?`<small class="loan-note">${esc(loan.note)}</small>`:''}
    ${history?`<div class="loan-history">${history}</div>`:''}
    <div class="loan-card-actions">${outstanding>0.000001?`<button type="button" class="primary" data-loan-settle>${given?'Collect':'Pay'} loan</button>`:''}<button type="button" class="secondary" data-loan-edit>Edit</button><button type="button" class="delete" data-loan-delete>Delete</button></div>
@@ -1248,29 +1249,42 @@ function openLoanSettlement(id){
  settlingLoanId=id;const given=loan.type!=='taken',due=loanOutstanding(loan);
  $('loanSettlementTitle').textContent=given?'Collect loan':'Pay loan';
  $('loanSettlementBalance').textContent=`${loan.party} · Remaining ${money(due)}`;
- $('loanSettlementAmount').value=due.toFixed(2);$('loanSettlementAmount').max=due.toFixed(2);$('loanSettlementDate').value=today();$('loanSettlementMethod').value='Cash';
+ const openInstallments=(loan.installments||[]).filter(item=>loanInstallmentOutstanding(loan,item)>0.000001).sort((a,b)=>String(a.dueDate).localeCompare(String(b.dueDate)));
+ $('loanSettlementInstallment').innerHTML='<option value="">General payment / collection</option>'+openInstallments.map(item=>'<option value="'+esc(item.id)+'">Installment '+((loan.installments||[]).indexOf(item)+1)+' · '+fmt(item.dueDate)+' · '+money(loanInstallmentOutstanding(loan,item))+'</option>').join('');
+ $('loanSettlementInstallmentLabel').hidden=!openInstallments.length;
+ $('loanSettlementInstallment').value=openInstallments[0]?.id||'';
+ const cap=openInstallments.length?loanInstallmentOutstanding(loan,openInstallments[0]):due;
+ $('loanSettlementAmount').value=cap.toFixed(2);$('loanSettlementAmount').max=cap.toFixed(2);$('loanSettlementDate').value=today();$('loanSettlementMethod').value='Cash';
  $('loanSettlementDateLabel').childNodes[0].textContent=given?'Collection date ':'Repayment date ';
  $('loanSettlementDialog').showModal();
 }
 $('loanSettlementCancel').onclick=()=>{$('loanSettlementDialog').close();settlingLoanId=null};
+$('loanSettlementInstallment').onchange=()=>{
+ const loan=db.loans.find(item=>item.id===settlingLoanId),installment=loan?.installments?.find(item=>item.id===$('loanSettlementInstallment').value);
+ const cap=installment?loanInstallmentOutstanding(loan,installment):loan?loanOutstanding(loan):0;
+ $('loanSettlementAmount').value=cap.toFixed(2);$('loanSettlementAmount').max=cap.toFixed(2);
+};
 $('loanSettlementForm').onsubmit=event=>{
  event.preventDefault();const loan=db.loans.find(item=>item.id===settlingLoanId);if(!loan)return;
- const amount=Number($('loanSettlementAmount').value),date=$('loanSettlementDate').value,method=$('loanSettlementMethod').value;
- if(!date||!Number.isFinite(amount)||amount<=0||amount>loanOutstanding(loan)+0.000001){alert('Enter a valid amount up to the remaining loan balance and choose the collection or repayment date.');return}
- loan.settlements.push({id:crypto.randomUUID(),amount,date,method:method==='Bank'?'Bank':'Cash'});
+ const amount=Number($('loanSettlementAmount').value),date=$('loanSettlementDate').value,method=$('loanSettlementMethod').value,installmentId=$('loanSettlementInstallment').value||null,installment=loan.installments?.find(item=>item.id===installmentId),limit=installment?loanInstallmentOutstanding(loan,installment):loanOutstanding(loan);
+ if(!date||!Number.isFinite(amount)||amount<=0||amount>limit+0.000001||amount>loanOutstanding(loan)+0.000001){alert('Enter a valid amount up to '+money(limit)+' for this installment.');return}
+ loan.settlements.push({id:crypto.randomUUID(),amount,date,method:method==='Bank'?'Bank':'Cash',installmentId});
  $('loanSettlementDialog').close();settlingLoanId=null;save();
 };
-$('loanType').addEventListener('change',()=>{$('loanDueDateLabel').textContent=$('loanType').value==='taken'?'Pay by date':'Collect by date'});
+$('loanType').addEventListener('change',()=>{$('loanDueDateLabel').textContent='First installment date'});
 $('loanCancelEdit').onclick=resetLoanForm;
 $('loanForm').onsubmit=event=>{
- event.preventDefault();const type=$('loanType').value==='taken'?'taken':'given',party=$('loanParty').value.trim(),amount=Number($('loanAmount').value),method=$('loanMethod').value==='Bank'?'Bank':'Cash',date=$('loanDate').value,dueDate=$('loanDueDate').value,note=$('loanNote').value.trim();
+ event.preventDefault();const type=$('loanType').value==='taken'?'taken':'given',party=$('loanParty').value.trim(),amount=Number($('loanAmount').value),method=$('loanMethod').value==='Bank'?'Bank':'Cash',date=$('loanDate').value,firstDueDate=$('loanDueDate').value,installmentCount=Math.max(1,Math.min(120,Math.floor(Number($('loanInstallmentCount').value)||1))),installmentFrequency=$('loanInstallmentFrequency').value,note=$('loanNote').value.trim();
  if(!party||!date||!Number.isFinite(amount)||amount<=0){alert('Enter a person or bank name, loan date and a valid amount.');return}
- if(dueDate&&dueDate<date){alert('The collection or repayment date cannot be earlier than the loan date.');return}
+ if(installmentCount>1&&!firstDueDate){alert('Choose the first installment date when you add more than one installment.');return}
+ if(firstDueDate&&firstDueDate<date){alert('The first installment date cannot be earlier than the loan date.');return}
+ const installments=buildLoanInstallmentSchedule(amount,installmentCount,firstDueDate,installmentFrequency);
  if(editingLoanId){
   const loan=db.loans.find(item=>item.id===editingLoanId);if(!loan)return;
   if(amount<loanSettledAmount(loan)){alert('Loan amount cannot be less than the amount already collected or repaid.');return}
-  Object.assign(loan,{type,party,amount,method,date,dueDate,note});
- }else db.loans.unshift({id:crypto.randomUUID(),type,party,amount,method,date,dueDate,note,settlements:[]});
+  if(loanSettledAmount(loan)>0.000001&&((loan.installments?.[0]?.dueDate||'')!==firstDueDate||(loan.installments?.length||1)!==installmentCount||(loan.installmentFrequency||'monthly')!==installmentFrequency)){alert('This loan already has a payment or collection. Its installment dates and count cannot be changed.');return}
+  Object.assign(loan,{type,party,amount,method,date,dueDate:installments.at(-1)?.dueDate||'',installmentCount,installmentFrequency,installments:installments.length?installments:(loan.installments||[]),note});
+ }else db.loans.unshift({id:crypto.randomUUID(),type,party,amount,method,date,dueDate:installments.at(-1)?.dueDate||'',installmentCount,installmentFrequency,installments,note,settlements:[]});
  resetLoanForm();save();
 };
 function revealPurchaseBillActions(card,focusFirst=false){
