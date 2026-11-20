@@ -1183,9 +1183,31 @@ function loanMoneySummary(){
  const taken=db.loans.filter(loan=>loan.type==='taken').reduce((total,loan)=>total+loanOutstanding(loan),0);
  return {given,taken,net:given-taken};
 }
+function buildLoanInstallmentSchedule(amount,count,firstDate,frequency){
+ if(!firstDate)return [];
+ const n=Math.max(1,Math.min(120,Math.floor(Number(count)||1))),cents=Math.round(Number(amount)*100),base=Math.floor(cents/n),remainder=cents-base*n,rows=[];
+ for(let i=0;i<n;i++){
+  const due=new Date(firstDate+'T12:00:00');
+  if(frequency==='weekly')due.setDate(due.getDate()+7*i);
+  else if(frequency==='fortnightly')due.setDate(due.getDate()+14*i);
+  else{const day=due.getDate();due.setDate(1);due.setMonth(due.getMonth()+i);due.setDate(Math.min(day,new Date(due.getFullYear(),due.getMonth()+1,0).getDate()))}
+  rows.push({id:crypto.randomUUID(),dueDate:due.toISOString().slice(0,10),amount:Number(((base+(i===n-1?remainder:0))/100).toFixed(2))});
+ }
+ return rows;
+}
+function loanInstallmentBalances(loan){
+ const items=(loan.installments||[]).slice().sort((a,b)=>String(a.dueDate).localeCompare(String(b.dueDate)));
+ const balances=new Map(items.map(item=>[item.id,Math.max(0,Number(item.amount)||0)]));
+ const settlements=(loan.settlements||[]).slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
+ settlements.filter(item=>item.installmentId&&balances.has(item.installmentId)).forEach(item=>balances.set(item.installmentId,Math.max(0,(balances.get(item.installmentId)||0)-Math.max(0,Number(item.amount)||0))));
+ let unassigned=settlements.filter(item=>!item.installmentId).reduce((total,item)=>total+Math.max(0,Number(item.amount)||0),0);
+ items.forEach(item=>{if(unassigned<=0)return;const open=balances.get(item.id)||0,take=Math.min(open,unassigned);balances.set(item.id,open-take);unassigned-=take});
+ return balances;
+}
+function loanInstallmentOutstanding(loan,installment){return loanInstallmentBalances(loan).get(installment.id)||0}
 function resetLoanForm(){
- editingLoanId=null;$('loanForm').reset();$('loanDate').value=today();$('loanDueDate').value='';$('loanMethod').value='Cash';
- $('loanType').value='given';$('loanDueDateLabel').textContent='Collect by date';$('loanFormTitle').textContent='Add loan';
+ editingLoanId=null;$('loanForm').reset();$('loanDate').value=today();$('loanDueDate').value='';$('loanInstallmentCount').value=1;$('loanInstallmentFrequency').value='monthly';$('loanMethod').value='Cash';
+ $('loanType').value='given';$('loanDueDateLabel').textContent='First installment date';$('loanFormTitle').textContent='Add loan';
  $('loanSaveButton').textContent='Save loan';$('loanCancelEdit').hidden=true;
 }
 function renderLoans(){
@@ -1195,7 +1217,9 @@ function renderLoans(){
  const rows=db.loans.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||String(a.id).localeCompare(String(b.id)));
  $('loanList').innerHTML=rows.length?rows.map(loan=>{
   const given=loan.type!=='taken',outstanding=loanOutstanding(loan),settled=loanSettledAmount(loan),title=given?'Loan given · To collect':'Loan taken · To repay';
-  const dateLabel=loan.dueDate?(given?'Collect by ':'Pay by ')+fmt(loan.dueDate):(given?'Collection date not set':'Repayment date not set');
+  const pendingInstallments=(loan.installments||[]).filter(item=>loanInstallmentOutstanding(loan,item)>0.000001).sort((a,b)=>String(a.dueDate).localeCompare(String(b.dueDate)));
+  const nextInstallment=pendingInstallments[0];
+  const dateLabel=nextInstallment?(given?'Next collection ':'Next payment ')+fmt(nextInstallment.dueDate):(given?'Collection completed':'Repayment completed');
   const history=(loan.settlements||[]).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(item=>`<div class="loan-history-row"><span>${given?'Collected':'Repaid'} · ${fmt(item.date)} · ${esc(item.method||'Cash')}</span><strong>${money(item.amount)}</strong></div>`).join('');
   return `<article class="loan-card" data-loan-id="${esc(loan.id)}">
    <div class="loan-card-head"><div><strong>${esc(loan.party||'Loan')}</strong><small>${title} · ${fmt(loan.date)} · ${esc(loan.method||'Cash')}</small></div><strong class="loan-outstanding-value">${money(outstanding)}</strong></div>
@@ -1211,8 +1235,8 @@ function renderLoans(){
 }
 function editLoan(id){
  const loan=db.loans.find(item=>item.id===id);if(!loan)return;
- editingLoanId=id;$('loanType').value=loan.type;$('loanParty').value=loan.party;$('loanAmount').value=Number(loan.amount||0);$('loanMethod').value=loan.method||'Cash';$('loanDate').value=loan.date||today();$('loanDueDate').value=loan.dueDate||'';$('loanNote').value=loan.note||'';
- $('loanDueDateLabel').textContent=loan.type==='taken'?'Pay by date':'Collect by date';$('loanFormTitle').textContent='Edit loan';$('loanSaveButton').textContent='Update loan';$('loanCancelEdit').hidden=false;$('loanForm').scrollIntoView({behavior:'smooth',block:'start'});
+ editingLoanId=id;$('loanType').value=loan.type;$('loanParty').value=loan.party;$('loanAmount').value=Number(loan.amount||0);$('loanMethod').value=loan.method||'Cash';$('loanDate').value=loan.date||today();$('loanDueDate').value=loan.installments&&loan.installments.length?loan.installments[0].dueDate:loan.dueDate||'';$('loanInstallmentCount').value=loan.installments&&loan.installments.length?loan.installments.length:(loan.installmentCount||1);$('loanInstallmentFrequency').value=loan.installmentFrequency||'monthly';$('loanNote').value=loan.note||'';
+ $('loanDueDateLabel').textContent='First installment date';$('loanFormTitle').textContent='Edit loan';$('loanSaveButton').textContent='Update loan';$('loanCancelEdit').hidden=false;$('loanForm').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function deleteLoan(id){
  const loan=db.loans.find(item=>item.id===id);if(!loan)return;
