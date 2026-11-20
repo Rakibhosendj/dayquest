@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v122-reminder-installment-fix';
+const CACHE = 'dayquest-cache-v123-members-guest-report-meals';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261120-reminder-installment-fix',
-  './app.js?v=20261120-reminder-installment-fix',
+  './style.css?v=20261120-members-guest-report-meals',
+  './app.js?v=20261120-members-guest-report-meals',
   './manifest.json',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',
