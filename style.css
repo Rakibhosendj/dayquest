@@ -1540,3 +1540,57 @@ img,canvas,svg{max-width:100%}
  .loan-installment-row{font-size:9px;padding:5px}
  .notification-settings-card .settings-toggle-row{min-height:44px;font-size:11px}
 }
+
+
+/* Members Report: keep costing summaries in a single compact row. */
+#memberCostBreakdown{margin-top:5px}
+.costing-summary{
+ display:grid;
+ grid-template-columns:repeat(4,minmax(0,1fr));
+ gap:6px;
+ margin:8px 0;
+}
+.costing-summary .stat{min-width:0;padding:8px 7px;gap:3px}
+.costing-summary .stat .muted{font-size:10px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.costing-summary .stat strong{font-size:15px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.costing-summary .stat small{font-size:9px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.member-report-guest-assignments{display:grid;gap:5px;margin:6px 0 12px;overflow-x:auto}
+.member-report-guest-row{
+ display:grid;
+ grid-template-columns:minmax(65px,.65fr) minmax(0,1.2fr) minmax(0,1.35fr);
+ align-items:center;
+ gap:6px;
+ min-width:600px;
+ padding:6px 7px;
+}
+.member-report-guest-row>strong{min-width:0;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.member-report-guest-dates{
+ display:grid;
+ grid-template-columns:minmax(78px,.9fr) minmax(88px,1fr) minmax(88px,1fr) auto;
+ align-items:end;
+ gap:4px;
+ min-width:0;
+}
+.member-report-guest-dates label{display:grid;gap:2px;min-width:0;font-size:9px;font-weight:700;white-space:nowrap}
+.member-report-guest-dates input{width:100%;min-width:0;max-width:100%;height:31px;padding:4px 3px;font-size:10px}
+.member-report-guest-dates button{min-height:31px;padding:5px 7px;font-size:10px;white-space:nowrap}
+.member-report-guest-checks{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;min-width:0;overflow-x:auto;white-space:nowrap}
+.member-report-guest-checks label{font-size:9px;gap:3px}
+.member-report-guest-checks input{width:14px;height:14px;flex:0 0 auto}
+@media(max-width:520px){
+ .costing-summary{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;overflow:hidden}
+ .costing-summary .stat{padding:6px 4px;border-radius:8px}
+ .costing-summary .stat .muted{font-size:8px}
+ .costing-summary .stat strong{font-size:11px}
+ .costing-summary .stat small{font-size:7px}
+ .member-report-guest-assignments{margin-left:-2px;margin-right:-2px}
+ .member-report-guest-row{min-width:560px;grid-template-columns:65px 230px minmax(0,1fr);gap:5px;padding:5px 4px}
+ .member-report-guest-row>strong{font-size:10px}
+ .member-report-guest-dates{grid-template-columns:65px 76px 76px auto;gap:3px}
+ .member-report-guest-dates label{font-size:8px}
+ .member-report-guest-dates input{height:29px;font-size:9px;padding:3px 1px}
+ .member-report-guest-dates button{min-height:29px;padding:4px 5px;font-size:9px}
+ .member-report-guest-checks{gap:4px}
+ .member-report-guest-checks label{font-size:8px}
+ .member-report-guest-checks input{width:13px;height:13px}
+}
