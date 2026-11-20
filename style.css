@@ -1525,3 +1525,18 @@ img,canvas,svg{max-width:100%}
  .production-input-line .production-add-material-inline{min-width:42px;min-height:42px}
  .production-input-line label{min-width:0}
 }
+
+/* Daily Quest, payment and loan installment reminder controls. */
+.loan-installments{display:grid;gap:5px;padding-top:8px;border-top:1px solid #eef1f5}
+.loan-installment-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 7px;border-radius:7px;background:#f7f9fc;font-size:10px;color:#718096}
+.loan-installment-row strong{color:#263b5c;white-space:nowrap}
+.loan-installment-setup{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.loan-installment-setup input,.loan-installment-setup select{min-width:0;width:100%}
+.loan-settlement-card #loanSettlementInstallmentLabel{display:grid;gap:5px}
+.loan-settlement-card #loanSettlementInstallmentLabel[hidden]{display:none}
+.notification-settings-card .settings-toggle-row{min-height:42px;padding:7px 2px}
+@media(max-width:520px){
+ .loan-installment-setup{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .loan-installment-row{font-size:9px;padding:5px}
+ .notification-settings-card .settings-toggle-row{min-height:44px;font-size:11px}
+}
