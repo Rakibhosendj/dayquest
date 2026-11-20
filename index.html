@@ -285,6 +285,7 @@
   <div id="dueFields" class="due-fields" hidden>
    <label>Due direction <select id="dueDirection"><option value="i_owe">I Owe</option><option value="owed_to_me">Others Owe Me</option></select></label>
    <label>Person name <input id="duePerson" maxlength="60" placeholder="Who is involved in this due?"></label>
+   <label>Due / collect by date <input id="expenseDueDate" type="date"></label>
    <label id="duePaidFromField" hidden>Expense paid from <select id="duePaidFrom"><option>Cash</option><option>Bank</option></select></label>
   </div>
   <div class="form-grid">
@@ -340,7 +341,11 @@
   </div>
   <div class="form-grid">
    <label>Loan date <input id="loanDate" type="date" required></label>
-   <label><span id="loanDueDateLabel">Collect by date</span> <input id="loanDueDate" type="date"></label>
+   <label><span id="loanDueDateLabel">First installment date</span> <input id="loanDueDate" type="date"></label>
+  </div>
+  <div class="form-grid loan-installment-setup">
+   <label>Number of installments <input id="loanInstallmentCount" type="number" min="1" max="120" step="1" value="1" required></label>
+   <label>Installment frequency <select id="loanInstallmentFrequency"><option value="monthly">Monthly</option><option value="fortnightly">Every 2 weeks</option><option value="weekly">Weekly</option></select></label>
   </div>
   <label>Note <input id="loanNote" maxlength="160" placeholder="Optional note"></label>
   <div class="purchase-form-actions"><button class="primary" id="loanSaveButton">Save loan</button><button class="secondary" id="loanCancelEdit" type="button" hidden>Cancel edit</button></div>
@@ -358,6 +363,7 @@
    <div class="form-grid"><label>Customer phone <input id="salesMemoPhone" maxlength="30" placeholder="Optional phone"></label><label>Prepared by <select id="salesMemoBy" required></select></label></div>
    <label>Customer address <input id="salesMemoAddress" maxlength="140" placeholder="Optional address"></label>
    <div class="form-grid"><label>Payment type <select id="salesMemoPayment"><option>Cash</option><option>Bank</option><option>Due</option></select></label><label>Memo note <input id="salesMemoNote" maxlength="120" placeholder="Optional note"></label></div>
+   <label id="salesMemoDueDateField" hidden>Collect by date <input id="salesMemoDueDate" type="date"></label>
    <div class="section-head form-section-head sales-lines-heading"><h3>Products sold</h3><button type="button" class="mini-add" id="addSalesMemoLine">＋ Add product</button></div>
    <div id="salesMemoLines" class="sales-memo-lines"></div>
    <p class="hint sales-stock-hint">Only products with available Inventory stock can be selected. Saving a memo reduces the available stock automatically.</p>
@@ -376,6 +382,7 @@
   <label>Payment type <select id="incomePaymentType"><option>Cash</option><option>Bank</option><option>Due</option></select></label>
   <div id="incomeDueFields" class="due-fields" hidden>
    <label>Customer / person who owes you <input id="incomeDuePerson" maxlength="60" placeholder="Enter person or customer name"></label>
+   <label>Collect by date <input id="incomeDueDate" type="date"></label>
    <p class="hint">This income will stay outstanding until you collect it. You can collect the full amount or collect it in parts later.</p>
   </div>
   <label>Date <input id="incomeDate" type="date" required></label>
@@ -468,7 +475,10 @@
 <section id="settings" class="panel">
  <div class="section-head"><h2>Settings</h2><span class="pill">Personalize DayQuest</span></div>
  <section class="settings-card notification-settings-card">
-  <div class="section-head settings-section-head"><div><h3>Notifications</h3><p class="settings-copy">Choose which loan date reminders this device should receive when background notifications are enabled.</p></div></div>
+  <div class="section-head settings-section-head"><div><h3>Notifications</h3><p class="settings-copy">Choose which reminders this device should receive, including when DayQuest is closed.</p></div></div>
+  <label class="settings-toggle-row"><input id="notifyDailyQuest" type="checkbox" checked> <span>Daily Quest alarms · At each scheduled time range</span></label>
+  <label class="settings-toggle-row"><input id="notifyExpenseDue" type="checkbox" checked> <span>Expense due reminders · Pay or collect</span></label>
+  <label class="settings-toggle-row"><input id="notifyIncomeDue" type="checkbox" checked> <span>Income due reminders · Collect money</span></label>
   <label class="settings-toggle-row"><input id="notifyLoanGiven" type="checkbox" checked> <span>Loan collection reminders · Loans I give</span></label>
   <label class="settings-toggle-row"><input id="notifyLoanTaken" type="checkbox" checked> <span>Loan repayment reminders · Loans I take</span></label>
   <div class="quick"><button id="enableDayQuestNotifications" class="primary" type="button">Enable Background Notifications</button><button id="disableDayQuestNotifications" class="secondary" type="button">Disable Notifications</button></div>
@@ -750,6 +760,7 @@
 <dialog id="loanSettlementDialog" class="dq-message-dialog loan-settlement-dialog" aria-labelledby="loanSettlementTitle">
  <form id="loanSettlementForm" class="dq-message-card loan-settlement-card">
   <h2 id="loanSettlementTitle">Collect loan</h2><p id="loanSettlementBalance"></p>
+  <label id="loanSettlementInstallmentLabel">Installment <select id="loanSettlementInstallment"></select></label>
   <label>Amount <input id="loanSettlementAmount" type="number" min="0.01" step="0.01" required></label>
   <div class="form-grid"><label id="loanSettlementDateLabel">Collection date <input id="loanSettlementDate" type="date" required></label><label>Received / paid by <select id="loanSettlementMethod"><option value="Cash">Cash</option><option value="Bank">Bank</option></select></label></div>
   <div class="dq-message-actions"><button class="secondary" id="loanSettlementCancel" type="button">Cancel</button><button class="primary" type="submit" id="loanSettlementSave">Save</button></div>
