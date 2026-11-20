@@ -3105,7 +3105,7 @@ function normalizeCloudDatabase(raw){
  db.quests=Array.isArray(db.quests)?db.quests:[];db.checks=db.checks&&typeof db.checks==='object'?db.checks:{};
  db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];
  db.loans=Array.isArray(db.loans)?db.loans:[];db.loans.forEach(loan=>{loan.id=String(loan.id||crypto.randomUUID());loan.type=loan.type==='taken'?'taken':'given';loan.amount=Math.max(0,Number(loan.amount)||0);loan.method=loan.method==='Bank'?'Bank':'Cash';loan.date=String(loan.date||'');loan.dueDate=String(loan.dueDate||'');loan.settlements=Array.isArray(loan.settlements)?loan.settlements:[];loan.installmentFrequency=['weekly','fortnightly','monthly'].includes(loan.installmentFrequency)?loan.installmentFrequency:'monthly';loan.installments=Array.isArray(loan.installments)?loan.installments:[];if(!loan.installments.length&&loan.dueDate)loan.installments=[{id:'legacy-'+loan.id,dueDate:loan.dueDate,amount:loan.amount}];loan.installments=loan.installments.map((item,index)=>({id:String(item.id||('installment-'+(index+1)+'-'+loan.id)),dueDate:String(item.dueDate||''),amount:Math.max(0,Number(item.amount)||0)})).filter(item=>item.dueDate&&item.amount>0);if(loan.installments.length)loan.dueDate=loan.installments[loan.installments.length-1].dueDate;loan.installmentCount=Math.max(1,Math.floor(Number(loan.installmentCount)||loan.installments.length||1))});
- db.settings.notificationPreferences=db.settings.notificationPreferences&&typeof db.settings.notificationPreferences==='object'?db.settings.notificationPreferences:{loanGiven:true,loanTaken:true,enabled:false};
+ db.settings.notificationPreferences={dailyQuest:true,expenseDue:true,incomeDue:true,loanGiven:true,loanTaken:true,enabled:false,...(db.settings.notificationPreferences&&typeof db.settings.notificationPreferences==='object'?db.settings.notificationPreferences:{})};
  db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];
  db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
 db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};
@@ -3575,10 +3575,11 @@ window.addEventListener('offline',()=>{if(cloudUser)hideCloudStatus()});
 // DayQuest-owned alert dialog and branded native confirmation/input dialogs.
 function notificationPrefs(){
  const value=db.settings.notificationPreferences&&typeof db.settings.notificationPreferences==='object'?db.settings.notificationPreferences:{};
- return {loanGiven:value.loanGiven!==false,loanTaken:value.loanTaken!==false,enabled:value.enabled===true};
+ return {dailyQuest:value.dailyQuest!==false,expenseDue:value.expenseDue!==false,incomeDue:value.incomeDue!==false,loanGiven:value.loanGiven!==false,loanTaken:value.loanTaken!==false,enabled:value.enabled===true,timeZone:value.timeZone||Intl.DateTimeFormat().resolvedOptions().timeZone||'Asia/Dhaka'};
 }
 function renderNotificationSettings(){
  const prefs=notificationPrefs();
+ $('notifyDailyQuest').checked=prefs.dailyQuest;$('notifyExpenseDue').checked=prefs.expenseDue;$('notifyIncomeDue').checked=prefs.incomeDue;
  $('notifyLoanGiven').checked=prefs.loanGiven;$('notifyLoanTaken').checked=prefs.loanTaken;
  const available='Notification' in window;
  const permission=available?Notification.permission:'unsupported';
@@ -3590,7 +3591,7 @@ function renderNotificationSettings(){
  $('enableDayQuestNotifications').disabled=!available;$('disableDayQuestNotifications').disabled=!available;
 }
 function saveNotificationPreferences(){
- db.settings.notificationPreferences={...notificationPrefs(),loanGiven:$('notifyLoanGiven').checked,loanTaken:$('notifyLoanTaken').checked};
+ db.settings.notificationPreferences={...notificationPrefs(),dailyQuest:$('notifyDailyQuest').checked,expenseDue:$('notifyExpenseDue').checked,incomeDue:$('notifyIncomeDue').checked,loanGiven:$('notifyLoanGiven').checked,loanTaken:$('notifyLoanTaken').checked,timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'Asia/Dhaka'};
  localSaveOnly();renderNotificationSettings();syncNotificationSubscriptionPreferences();
 }
 async function syncNotificationSubscriptionPreferences(){
@@ -3609,8 +3610,7 @@ async function saveNotificationSubscription(subscription,removeEndpoint=subscrip
  const {error}=await supabaseClient.functions.invoke('save-notification-subscription',{body:{subscription:subscription?subscription.toJSON():null,endpoint:subscription?.endpoint||removeEndpoint||null,preferences:notificationPrefs()}});
  if(error)throw error;
 }
-$('notifyLoanGiven').addEventListener('change',saveNotificationPreferences);
-$('notifyLoanTaken').addEventListener('change',saveNotificationPreferences);
+['notifyDailyQuest','notifyExpenseDue','notifyIncomeDue','notifyLoanGiven','notifyLoanTaken'].forEach(id=>$(id).addEventListener('change',saveNotificationPreferences));
 $('enableDayQuestNotifications').onclick=async()=>{
  if(!('Notification' in window)||!('serviceWorker' in navigator)||!('PushManager' in window)){alert('This browser does not support background push notifications.');return}
  if(!navigator.onLine||!supabaseClient||!cloudUser){alert('Connect to the internet and sign in to DayQuest before enabling background notifications.');return}
@@ -3625,7 +3625,7 @@ $('enableDayQuestNotifications').onclick=async()=>{
   db.settings.notificationPreferences={...notificationPrefs(),enabled:true};
   await saveNotificationSubscription(subscription);
   localSaveOnly();renderNotificationSettings();
-  alert('Background loan reminders are enabled on this device.');
+  alert('DayQuest background notifications are enabled on this device for the selected reminders.');
  }catch(error){console.error('DayQuest push subscription failed',error);alert('DayQuest could not enable background notifications. Check that the push-notification database and Edge Function have been deployed, then try again.')}
 };
 $('disableDayQuestNotifications').onclick=async()=>{
