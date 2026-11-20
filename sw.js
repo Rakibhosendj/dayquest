@@ -41,7 +41,10 @@ self.addEventListener('push', event => {
     icon: './icons/icon-192.png',
     badge: './icons/icon-192.png',
     tag: String(data.tag || 'dayquest-reminder'),
-    renotify: false,
+    renotify: true,
+    requireInteraction: true,
+    silent: false,
+    vibrate: [250, 120, 250, 120, 350],
     data: { url: String(data.url || './index.html') }
   };
   event.waitUntil(self.registration.showNotification(title, options));
