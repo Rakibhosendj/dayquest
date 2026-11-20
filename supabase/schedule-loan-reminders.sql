@@ -18,12 +18,12 @@ select cron.unschedule(jobid)
 from cron.job
 where jobname = 'dayquest-loan-reminders';
 
--- 18:05 UTC is 00:05 in Asia/Dhaka (UTC+6). The function checks the family
--- loan due date in Asia/Dhaka and sends one reminder per device/loan each day
--- until the loan is fully collected or repaid.
+-- Run every minute so Daily Quest alarms can fire at each device's configured
+-- time-range start. Due and loan-installment reminders are sent at/after 08:00
+-- in the device's selected timezone, once per device, event and local calendar day.
 select cron.schedule(
   'dayquest-loan-reminders',
-  '5 18 * * *',
+  '* * * * *',
   $$
   select net.http_post(
     url := (select decrypted_secret from vault.decrypted_secrets where name = 'dayquest_project_url')
