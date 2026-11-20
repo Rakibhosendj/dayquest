@@ -566,7 +566,7 @@
   </div>
  </section>
  <section class="settings-card meal-person-date-settings-card">
-  <div class="section-head settings-section-head"><div><h3>Member &amp; Guest Meal Dates</h3></div></div>
+  <div class="section-head settings-section-head"><div><h3>Member Meal Dates</h3></div></div>
   <div id="mealPersonDateSettings" class="meal-person-date-settings"></div>
  </section>
  <section class="settings-card admin-cloud-settings-card">
@@ -631,36 +631,36 @@
  </section>
 
  <section class="report-pane" data-report-pane="members" hidden>
-  <div class="section-head"><h2>Members Report</h2><span class="pill">Selected date range</span></div>
+  <div class="section-head"><h2>Members Report</h2></div>
   <div class="section-head"><h2>Member-wise costing</h2><span class="pill" id="memberCostCount">0 members</span></div>
   <div class="cards costing-summary">
-   <article class="stat"><span class="muted">Multi-member assigned costs</span><strong id="familyCostTotal">৳0.00</strong><small id="familyCostMemberCount">Shared across 0 selected people</small></article>
-   <article class="stat"><span class="muted">Average shared share per person</span><strong id="familyCostPerMember">৳0.00</strong><small>Average across selected recipients</small></article>
-   <article class="stat"><span class="muted">Single-member assigned costs</span><strong id="memberDirectCostTotal">৳0.00</strong><small>Assigned to one person</small></article>
-   <article class="stat"><span class="muted">Not assigned</span><strong id="unassignedCostTotal">৳0.00</strong><small>Older / unallocated expenses</small></article>
+   <article class="stat"><span class="muted">As Assigned</span><strong id="familyCostTotal">৳0.00</strong><small id="familyCostMemberCount">Shared across 0 selected people</small></article>
+   <article class="stat"><span class="muted">As AVG</span><strong id="familyCostPerMember">৳0.00</strong><small>Average across selected recipients</small></article>
+   <article class="stat"><span class="muted">As Single</span><strong id="memberDirectCostTotal">৳0.00</strong><small>Assigned to one person</small></article>
+   <article class="stat"><span class="muted">As Unassigned</span><strong id="unassignedCostTotal">৳0.00</strong><small>Older / unallocated expenses</small></article>
   </div>
   <div id="memberCostBreakdown" class="list"></div>
   <p class="hint" id="familyCostNote">Each expense or purchased product is divided equally among only the people selected for that entry.</p>
-  <div class="section-head"><h2>Member product consumption & cost list</h2><span class="pill">Selected date range</span></div>
+  <div class="section-head"><h2>Consumption & Cost</h2></div>
   <label class="report-filter-label">Show product consumption for <select id="memberProductFilter"><option value="all">All products</option></select></label>
-  <p class="hint member-consumption-hint" id="memberConsumptionHint">Choose an individual member to see their consumed products, quantities and allocated costs for the selected report dates.</p>
   <div id="memberProductConsumption" class="list"></div>
   <div class="section-head"><h2>Guest Assign</h2><span class="pill">Assign guests to family members</span></div>
   <div id="memberReportGuestAssignments" class="member-report-guest-assignments"></div>
-  <div class="section-head"><h2>Guest entry & stay register</h2><span class="pill">Entry / out date</span></div>
+  <div class="section-head"><h2>Guest</h2></div>
   <form id="guestForm" class="form guest-form">
    <div class="family-member-add"><input id="newGuestName" maxlength="80" placeholder="Add a guest name" aria-label="New guest name"><button class="secondary" type="button" id="addGuestName">＋ Add guest</button></div>
    <label>Guest entry date <input id="guestEntryDate" type="date" required></label>
-   <div class="assignment-field"><strong>Which members are guests? (multiple selection)</strong><div id="guestMemberOptions" class="member-check-list"></div></div>
+   <label>Relation with member <input id="guestRelation" maxlength="60" placeholder="e.g. Brother, Aunt, Friend" required></label>
+   <div class="assignment-field"><strong>Guest names (multiple selection)</strong><div id="guestMemberOptions" class="member-check-list"></div></div>
    <label>Guest purpose <input id="guestPurpose" maxlength="120" placeholder="e.g. Family visit, medical stay, occasion"></label>
    <button class="primary full" type="submit">Save guest entry</button>
   </form>
-  <div class="section-head"><h3>Guest stays</h3><span class="muted">Set the out date when guests leave</span></div>
+  <div class="section-head"><h3>Guest stays</h3></div>
   <div id="guestStayList" class="list"></div>
   <div class="section-head"><h3>Guest cost report</h3><span class="muted">Costs within the selected report range</span></div>
   <p class="hint guest-report-hint">Guest purpose cost totals expenses and products assigned only to the selected guest(s). Shared family cost and the guests' share are calculated only for the selected date range overlapping each stay.</p>
   <div id="guestReport" class="list"></div>
-  <div class="section-head"><h2>Quest achievement</h2></div><article class="stat"><strong id="achievementRate">0%</strong><small>completion rate for selected period</small></article>
+  
  </section>
 
  <section class="report-pane" data-report-pane="production" hidden>
