@@ -58,8 +58,12 @@ Deno.serve(async (request: Request) => {
     : {};
   const preferences = {
     enabled: rawPreferences.enabled === true,
+    dailyQuest: rawPreferences.dailyQuest !== false,
+    expenseDue: rawPreferences.expenseDue !== false,
+    incomeDue: rawPreferences.incomeDue !== false,
     loanGiven: rawPreferences.loanGiven !== false,
     loanTaken: rawPreferences.loanTaken !== false,
+    timeZone: String(rawPreferences.timeZone || "Asia/Dhaka").slice(0, 80),
   };
 
   if (!endpoint || endpoint.length > 2048 || !endpoint.startsWith("https://")) {
