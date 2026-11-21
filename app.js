@@ -1228,10 +1228,15 @@ function renderLoans(){
   const history=(loan.settlements||[]).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(item=>`<div class="loan-history-row"><span>${given?'Collected':'Repaid'} · ${fmt(item.date)} · ${esc(item.method||'Cash')}</span><strong>${money(item.amount)}</strong></div>`).join('');
   return `<article class="loan-card" data-loan-id="${esc(loan.id)}">
    <div class="loan-card-head"><div><strong>${esc(loan.party||'Loan')}</strong><small>${title} · ${fmt(loan.date)} · ${esc(loan.method||'Cash')}</small></div><strong class="loan-outstanding-value">${money(outstanding)}</strong></div>
-   <div class="loan-card-stats"><span>Loan amount<strong>${money(loan.amount)}</strong></span><span>Settled<strong>${money(settled)}</strong></span><span>${dateLabel}<strong>${outstanding<=0.000001?'Completed':loan.dueDate&&loan.dueDate<today()?'Overdue':'Outstanding'}</strong></span></div>
-   ${loan.installments?.length?'<div class="loan-installments">'+loan.installments.map((item,index)=>{const left=loanInstallmentOutstanding(loan,item),status=left<=0.000001?"Paid":item.dueDate<today()?"Overdue":"Upcoming";return '<div class="loan-installment-row"><span>Installment '+(index+1)+' · '+fmt(item.dueDate)+' · '+status+'</span><strong>'+money(left)+' / '+money(item.amount)+'</strong></div>'}).join('')+'</div>':''}
-   ${loan.note?`<small class="loan-note">${esc(loan.note)}</small>`:''}
-   ${history?`<div class="loan-history">${history}</div>`:''}
+   <details class="loan-details-disclosure">
+    <summary>Loan register details</summary>
+    <div class="loan-details-content">
+     <div class="loan-card-stats"><span>Loan amount<strong>${money(loan.amount)}</strong></span><span>Settled<strong>${money(settled)}</strong></span><span>${dateLabel}<strong>${outstanding<=0.000001?'Completed':loan.dueDate&&loan.dueDate<today()?'Overdue':'Outstanding'}</strong></span></div>
+     ${loan.installments?.length?'<div class="loan-installments">'+loan.installments.map((item,index)=>{const left=loanInstallmentOutstanding(loan,item),status=left<=0.000001?"Paid":item.dueDate<today()?"Overdue":"Upcoming";return '<div class="loan-installment-row"><span>Installment '+(index+1)+' · '+fmt(item.dueDate)+' · '+status+'</span><strong>'+money(left)+' / '+money(item.amount)+'</strong></div>'}).join('')+'</div>':''}
+     ${loan.note?`<small class="loan-note">${esc(loan.note)}</small>`:''}
+     ${history?`<div class="loan-history">${history}</div>`:''}
+    </div>
+   </details>
    <div class="loan-card-actions">${outstanding>0.000001?`<button type="button" class="primary" data-loan-settle>${given?'Collect':'Pay'} loan</button>`:''}<button type="button" class="secondary" data-loan-edit>Edit</button><button type="button" class="delete" data-loan-delete>Delete</button></div>
   </article>`;
  }).join(''):empty('No loans recorded yet.');
