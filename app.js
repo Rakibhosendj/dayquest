@@ -3039,8 +3039,8 @@ $('shareDayQuestAppLink').onclick=async()=>{
  if(status)status.textContent='';
  if(typeof navigator.share==='function'){
   try{
-   await navigator.share({title:'DayQuest',text:'Open DayQuest family app',url:DAYQUEST_APP_URL});
-   if(status)status.textContent='DayQuest link shared.';
+   await navigator.share({title:'DayQuest',text:'DayQuest'});
+   if(status)status.textContent='DayQuest name shared. Use Copy Link to share the app address.';
   }catch(error){
    if(error?.name==='AbortError')return;
    console.warn('DayQuest share sheet could not be opened:',error);
