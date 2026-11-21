@@ -1687,3 +1687,12 @@ img,canvas,svg{max-width:100%}
 .color-custom-control input[type=color]{width:30px;height:30px;padding:0;border:0;border-radius:7px;background:transparent;cursor:pointer}
 .color-dropdown-row>strong{font-size:10px;color:#566176;letter-spacing:.35px;white-space:nowrap}
 @media(max-width:480px){.color-dropdown-row{grid-template-columns:30px minmax(100px,1fr) 38px auto;gap:6px}.color-dropdown-swatch{width:28px;height:28px;border-radius:8px}.color-dropdown-row select{font-size:12px;padding:8px 25px 8px 8px;min-height:40px}.color-custom-control{width:38px;height:40px}.color-custom-control input[type=color]{width:27px;height:27px}.color-dropdown-row>strong{font-size:9px}}
+
+
+/* Member Meal Dates: collapsed until opened by the user. */
+.meal-person-date-settings-card>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;list-style:none;margin:0;min-height:24px}
+.meal-person-date-settings-card>summary::-webkit-details-marker{display:none}
+.meal-person-date-settings-card>summary::after{content:'＋';font-size:17px;line-height:1;color:#64748b;font-weight:700}
+.meal-person-date-settings-card[open]>summary{margin-bottom:12px}
+.meal-person-date-settings-card[open]>summary::after{content:'−'}
+.meal-person-date-settings-card>summary:focus-visible{outline:2px solid #16834b;outline-offset:4px;border-radius:5px}
