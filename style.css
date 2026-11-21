@@ -1610,3 +1610,18 @@ img,canvas,svg{max-width:100%}
  .share-app-card .share-app-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
  .share-app-card .share-app-actions button{width:100%;min-width:0;min-height:42px;padding:9px 7px;font-size:12px}
 }
+
+
+/* DayQuest brand icon in navigation, login and reports. */
+.auth-logo{width:62px;height:62px;flex:0 0 62px;display:block;object-fit:cover;border-radius:17px;box-shadow:0 5px 16px #10182722}
+.sidebar-brand-logo{width:44px;height:44px;flex:0 0 44px;display:block;object-fit:cover;border-radius:13px;box-shadow:0 3px 10px #0003}
+.reports-page-heading{align-items:center}
+.reports-brand-title{display:flex;align-items:center;gap:10px;min-width:0}
+.reports-page-logo{width:42px;height:42px;flex:0 0 42px;display:block;object-fit:cover;border-radius:12px;box-shadow:0 3px 10px #14233a20}
+.reports-brand-title h2{margin:0}
+@media(max-width:520px){
+ .auth-logo{width:54px;height:54px;flex-basis:54px;border-radius:15px}
+ .sidebar-brand-logo{width:40px;height:40px;flex-basis:40px}
+ .reports-page-logo{width:34px;height:34px;flex-basis:34px;border-radius:10px}
+ .reports-brand-title{gap:7px}
+}
