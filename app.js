@@ -3012,6 +3012,45 @@ if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.ser
 }).catch(error=>{
  console.warn('DayQuest offline support could not be registered:',error);
 }));
+const DAYQUEST_APP_URL='https://rakibhosendj.github.io/dayquest/';
+async function copyDayQuestAppLink(){
+ const status=$('shareDayQuestAppLinkStatus');
+ try{
+  if(navigator.clipboard?.writeText&&window.isSecureContext){
+   await navigator.clipboard.writeText(DAYQUEST_APP_URL);
+  }else{
+   const field=document.createElement('textarea');
+   field.value=DAYQUEST_APP_URL;field.setAttribute('readonly','');
+   field.style.position='fixed';field.style.left='-9999px';field.style.top='0';
+   document.body.appendChild(field);field.select();
+   const copied=document.execCommand('copy');field.remove();
+   if(!copied)throw new Error('Clipboard copy was not available.');
+  }
+  if(status)status.textContent='DayQuest app link copied.';
+  return true;
+ }catch(error){
+  console.warn('DayQuest could not copy the app link:',error);
+  if(status)status.textContent='Could not copy automatically. App link: '+DAYQUEST_APP_URL;
+  return false;
+ }
+}
+$('shareDayQuestAppLink').onclick=async()=>{
+ const status=$('shareDayQuestAppLinkStatus');
+ if(status)status.textContent='';
+ if(typeof navigator.share==='function'){
+  try{
+   await navigator.share({title:'DayQuest',text:'Open DayQuest family app',url:DAYQUEST_APP_URL});
+   if(status)status.textContent='DayQuest link shared.';
+  }catch(error){
+   if(error?.name==='AbortError')return;
+   console.warn('DayQuest share sheet could not be opened:',error);
+   await copyDayQuestAppLink();
+  }
+ }else{
+  await copyDayQuestAppLink();
+ }
+};
+$('copyDayQuestAppLink').onclick=copyDayQuestAppLink;
 // DayQuest cloud authentication and family-wide data sync.
 // The browser contains only the Supabase project URL and publishable/anon key.
 // Authorization is enforced by PostgreSQL Row Level Security; never put a service-role key here.
