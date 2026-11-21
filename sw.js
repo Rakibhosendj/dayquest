@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v135-coin-check-icon';
+const CACHE = 'dayquest-cache-v136-theme-color-picker';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261121-coin-check',
-  './app.js?v=20261121-family-app-icon-share',
+  './style.css?v=20261121-theme-color-picker',
+  './app.js?v=20261121-theme-color-picker',
   './manifest.json',
   './icons/icon-192.png?v=20261121-coin-check',
   './icons/icon-512.svg',

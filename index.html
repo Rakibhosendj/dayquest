@@ -24,7 +24,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261121-coin-check">
+<link rel="stylesheet" href="style.css?v=20261121-theme-color-picker">
 <title>DayQuest</title>
 </head>
 <body>
@@ -510,17 +510,36 @@
   <button id="settingsUpdateCloudData" class="settings-cloud-update-btn" type="button" hidden><span class="update-red-star" aria-hidden="true">★</span> Update Newer Cloud Data</button>
   <p class="hint">Update appears when newer cloud data is detected.</p>
  </section>
- <section class="settings-card">
+ <section class="settings-card theme-settings-card">
   <div class="section-head settings-section-head"><div><h3>Theme color</h3></div></div>
-  <div class="theme-picker-row"><label for="themeColorInput">Custom color</label><input id="themeColorInput" type="color" value="#263b5c" aria-label="Choose theme color"><strong id="themeColorValue">#263B5C</strong></div>
-  <div class="theme-presets" aria-label="Theme color presets">
-   <button type="button" class="theme-swatch" data-theme-color="#263b5c" aria-label="Navy blue" title="Navy blue" style="--swatch:#263b5c"></button>
-   <button type="button" class="theme-swatch" data-theme-color="#18765b" aria-label="Forest green" title="Forest green" style="--swatch:#18765b"></button>
-   <button type="button" class="theme-swatch" data-theme-color="#6941a5" aria-label="Violet" title="Violet" style="--swatch:#6941a5"></button>
-   <button type="button" class="theme-swatch" data-theme-color="#a65b20" aria-label="Amber" title="Amber" style="--swatch:#a65b20"></button>
-   <button type="button" class="theme-swatch" data-theme-color="#b44358" aria-label="Rose" title="Rose" style="--swatch:#b44358"></button>
-   <button type="button" class="theme-swatch" data-theme-color="#236d91" aria-label="Ocean blue" title="Ocean blue" style="--swatch:#236d91"></button>
+  <div class="theme-color-options" role="group" aria-label="Choose app theme color">
+   <button type="button" class="theme-color-option" data-theme-color="#263b5c" aria-label="Navy" aria-pressed="false" title="Navy" style="--swatch:#263b5c"><span class="theme-color-chip"><span class="theme-color-check" aria-hidden="true">✓</span></span><span class="theme-color-name">Navy</span></button>
+   <button type="button" class="theme-color-option" data-theme-color="#18765b" aria-label="Forest" aria-pressed="false" title="Forest" style="--swatch:#18765b"><span class="theme-color-chip"><span class="theme-color-check" aria-hidden="true">✓</span></span><span class="theme-color-name">Forest</span></button>
+   <button type="button" class="theme-color-option" data-theme-color="#059669" aria-label="Emerald" aria-pressed="false" title="Emerald" style="--swatch:#059669"><span class="theme-color-chip"><span class="theme-color-check" aria-hidden="true">✓</span></span><span class="theme-color-name">Emerald</span></button>
+   <button type="button" class="theme-color-option" data-theme-color="#0f766e" aria-label="Teal" aria-pressed="false" title="Teal" style="--swatch:#0f766e"><span class="theme-color-chip"><span class="theme-color-check" aria-hidden="true">✓</span></span><span class="theme-color-name">Teal</span></button>
+   <button type="button" class="theme-color-option" data-theme-color="#65a30d" aria-label="Lime" aria-pressed="false" title="Lime" style="--swatch:#65a30d"><span class="theme-color-chip"><span class="theme-color-check" aria-hidden="true">✓</span></span><span class="theme-color-name">Lime</span></button>
+   <button type="button" class="theme-color-option" data-theme-color="#236d91" aria-label="Ocean" aria-pressed="false" title="Ocean" style="--swatch:#236d91"><span class="theme-color-chip"><span class="theme-color-check" aria-hidden="true">✓</span></span><span class="theme-color-name">Ocean</span></button>
+   <button type="button" class="theme-color-option" data-theme-color="#2563eb" aria-label="Blue" aria-pressed="false" title="Blue" style="--swatch:#2563eb"><span class="theme-color-chip"><span class="theme-color-check" aria-hidden="true">✓</span></span><span class="theme-color-name">Blue</span></button>
+   <button type="button" class="theme-color-option" data-theme-color="#0284c7" aria-label="Sky" aria-pressed="false" title="Sky" style="--swatch:#0284c7"><span class="theme-color-chip"><span class="theme-color-check" aria-hidden="true">✓</span></span><span class="theme-color-name">Sky</span></button>
+   <button type="button" class="theme-color-option" data-theme-color="#4f46e5" aria-label="Indigo" aria-pressed="false" title="Indigo" style="--swatch:#4f46e5"><span class="theme-color-chip"><span class="theme-color-check" aria-hidden="true">✓</span></span><span class="theme-color-name">Indigo</span></button>
+   <button type="button" class="theme-color-option" data-theme-color="#6941a5" aria-label="Violet" aria-pressed="false" title="Violet" style="--swatch:#6941a5"><span class="theme-color-chip"><span class="theme-color-check" aria-hidden="true">✓</span></span><span class="theme-color-name">Violet</span></button>
+   <button type="button" class="theme-color-option" data-theme-color="#9333ea" aria-label="Purple" aria-pressed="false" title="Purple" style="--swatch:#9333ea"><span class="theme-color-chip"><span class="theme-color-check" aria-hidden="true">✓</span></span><span class="theme-color-name">Purple</span></button>
+   <button type="button" class="theme-color-option" data-theme-color="#c026d3" aria-label="Magenta" aria-pressed="false" title="Magenta" style="--swatch:#c026d3"><span class="theme-color-chip"><span class="theme-color-check" aria-hidden="true">✓</span></span><span class="theme-color-name">Magenta</span></button>
+   <button type="button" class="theme-color-option" data-theme-color="#b44358" aria-label="Rose" aria-pressed="false" title="Rose" style="--swatch:#b44358"><span class="theme-color-chip"><span class="theme-color-check" aria-hidden="true">✓</span></span><span class="theme-color-name">Rose</span></button>
+   <button type="button" class="theme-color-option" data-theme-color="#dc2626" aria-label="Red" aria-pressed="false" title="Red" style="--swatch:#dc2626"><span class="theme-color-chip"><span class="theme-color-check" aria-hidden="true">✓</span></span><span class="theme-color-name">Red</span></button>
+   <button type="button" class="theme-color-option" data-theme-color="#ea580c" aria-label="Coral" aria-pressed="false" title="Coral" style="--swatch:#ea580c"><span class="theme-color-chip"><span class="theme-color-check" aria-hidden="true">✓</span></span><span class="theme-color-name">Coral</span></button>
+   <button type="button" class="theme-color-option" data-theme-color="#d97706" aria-label="Amber" aria-pressed="false" title="Amber" style="--swatch:#d97706"><span class="theme-color-chip"><span class="theme-color-check" aria-hidden="true">✓</span></span><span class="theme-color-name">Amber</span></button>
+   <button type="button" class="theme-color-option" data-theme-color="#92400e" aria-label="Brown" aria-pressed="false" title="Brown" style="--swatch:#92400e"><span class="theme-color-chip"><span class="theme-color-check" aria-hidden="true">✓</span></span><span class="theme-color-name">Brown</span></button>
+   <button type="button" class="theme-color-option" data-theme-color="#4d7c0f" aria-label="Olive" aria-pressed="false" title="Olive" style="--swatch:#4d7c0f"><span class="theme-color-chip"><span class="theme-color-check" aria-hidden="true">✓</span></span><span class="theme-color-name">Olive</span></button>
+   <button type="button" class="theme-color-option" data-theme-color="#475569" aria-label="Slate" aria-pressed="false" title="Slate" style="--swatch:#475569"><span class="theme-color-chip"><span class="theme-color-check" aria-hidden="true">✓</span></span><span class="theme-color-name">Slate</span></button>
+   <button type="button" class="theme-color-option" data-theme-color="#1f2937" aria-label="Charcoal" aria-pressed="false" title="Charcoal" style="--swatch:#1f2937"><span class="theme-color-chip"><span class="theme-color-check" aria-hidden="true">✓</span></span><span class="theme-color-name">Charcoal</span></button>
+   <label class="theme-color-option theme-color-other" id="themeColorOtherOption" title="Choose any other color">
+    <span class="theme-color-chip"><span class="theme-color-other-icon" aria-hidden="true">＋</span><span class="theme-color-check" aria-hidden="true">✓</span></span>
+    <span class="theme-color-name">Other</span>
+    <input id="themeColorInput" type="color" value="#263b5c" aria-label="Choose other theme color">
+   </label>
   </div>
+  <div class="theme-current-row"><span>Selected color</span><strong id="themeColorValue">#263B5C</strong></div>
  </section>
  <section class="settings-card">
   <div class="section-head settings-section-head"><div><h3>Quick button color</h3></div></div>
@@ -792,5 +811,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261121-settings-hint-cleanup-final"></script>
+<script src="app.js?v=20261121-theme-color-picker"></script>
 </body></html>

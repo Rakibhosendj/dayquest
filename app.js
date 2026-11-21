@@ -2243,6 +2243,14 @@ function applyThemeColor(color,persist=true){
  const meta=document.querySelector('meta[name=theme-color]');if(meta)meta.content=normalized;
  if($('themeColorInput'))$('themeColorInput').value=normalized;
  if($('themeColorValue'))$('themeColorValue').textContent=normalized.toUpperCase();
+ let isPreset=false;
+ document.querySelectorAll('[data-theme-color]').forEach(button=>{
+  const selected=String(button.dataset.themeColor||'').toLowerCase()===normalized;
+  button.classList.toggle('is-selected',selected);button.setAttribute('aria-pressed',String(selected));
+  if(selected)isPreset=true;
+ });
+ const other=$('themeColorOtherOption');
+ if(other){other.classList.toggle('is-selected',!isPreset);other.setAttribute('aria-pressed',String(!isPreset));}
  if(persist){db.settings=db.settings||{};db.settings.themeColor=normalized;localSaveOnly()}
 }
 function applyQuickButtonColor(color,persist=true){
