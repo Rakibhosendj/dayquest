@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v124-guest-assign-hide-name';
+const CACHE = 'dayquest-cache-v125-share-app-link';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261120-guest-assign-hide-name',
-  './app.js?v=20261120-guest-assign-hide-name',
+  './style.css?v=20261121-share-app-link',
+  './app.js?v=20261121-share-app-link',
   './manifest.json',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',
