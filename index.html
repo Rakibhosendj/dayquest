@@ -176,10 +176,9 @@
 </section>
 <section id="purchaseBills" class="panel">
 
- <div class="section-head"><h2>Purchase bill entry</h2></div>
+ <div class="section-head purchase-page-heading"><h2>Purchase bill entry</h2><div class="purchase-balance-strip" aria-live="polite"><div><span>Cash</span><strong id="purchaseCashBalance">৳0.00</strong></div><div><span>Bank</span><strong id="purchaseBankBalance">৳0.00</strong></div></div></div>
  <datalist id="productNameSuggestions"></datalist>
  <form id="purchaseBillForm" class="form purchase-form">
-  <div class="purchase-balance-strip" aria-live="polite"><div><span>Cash Balance</span><strong id="purchaseCashBalance">৳0.00</strong></div><div><span>Bank Balance</span><strong id="purchaseBankBalance">৳0.00</strong></div></div>
   <div class="purchase-header-grid">
    <label>Supplier / store <span class="select-add"><select id="purchaseSupplier"><option value="">Select supplier (optional for fully paid purchases)</option></select><button type="button" class="mini-add" id="addSupplier">＋ Add</button></span></label>
    <label>Auto bill number <input id="purchaseBillNo" maxlength="50" placeholder="Generated automatically" readonly aria-readonly="true"></label>
@@ -882,5 +881,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261121-password-management"></script>
+<script src="app.js?v=20261121-purchase-title-balances"></script>
 </body></html>
