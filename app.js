@@ -3037,10 +3037,24 @@ async function copyDayQuestAppLink(){
 $('shareDayQuestAppLink').onclick=async()=>{
  const status=$('shareDayQuestAppLinkStatus');
  if(status)status.textContent='';
+ const shareText='DayQuest — Family finance and daily goals';
  if(typeof navigator.share==='function'){
   try{
-   await navigator.share({title:'DayQuest',text:'DayQuest'});
-   if(status)status.textContent='DayQuest name shared. Use Copy Link to share the app address.';
+   let shareData={title:'DayQuest',text:shareText,url:DAYQUEST_APP_URL};
+   try{
+    const iconResponse=await fetch('./icons/icon-192.png',{cache:'no-cache'});
+    if(iconResponse.ok){
+     const iconBlob=await iconResponse.blob();
+     const iconFile=new File([iconBlob],'DayQuest-app-icon.png',{type:'image/png'});
+     if(navigator.canShare?.({files:[iconFile]})){
+      shareData={title:'DayQuest',text:shareText+'\n'+DAYQUEST_APP_URL,files:[iconFile]};
+     }
+    }
+   }catch(iconError){
+    console.warn('DayQuest icon could not be attached; sharing the app link instead:',iconError);
+   }
+   await navigator.share(shareData);
+   if(status)status.textContent=shareData.files?'DayQuest app link and icon shared.':'DayQuest app link shared with its app preview.';
   }catch(error){
    if(error?.name==='AbortError')return;
    console.warn('DayQuest share sheet could not be opened:',error);

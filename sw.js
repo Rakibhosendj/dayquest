@@ -1,12 +1,11 @@
-const CACHE = 'dayquest-cache-v128-settings-hint-cleanup-final';
+const CACHE = 'dayquest-cache-v129-family-app-icon-share';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261121-settings-hint-cleanup-final',
-  './app.js?v=20261121-settings-hint-cleanup-final',
+  './style.css?v=20261121-family-app-icon-share',
+  './app.js?v=20261121-family-app-icon-share',
   './manifest.json',
-  './icons/apple-touch-icon.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './cloud-config.js'
