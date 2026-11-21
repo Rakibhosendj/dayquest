@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261121-settings-hint-cleanup">
+<link rel="stylesheet" href="style.css?v=20261121-settings-hint-cleanup-final">
 <title>DayQuest</title>
 </head>
 <body>
@@ -482,7 +482,7 @@
   <label class="settings-toggle-row"><input id="notifyLoanGiven" type="checkbox" checked> <span>Loan collection reminders · Loans I give</span></label>
   <label class="settings-toggle-row"><input id="notifyLoanTaken" type="checkbox" checked> <span>Loan repayment reminders · Loans I take</span></label>
   <div class="quick"><button id="enableDayQuestNotifications" class="primary" type="button">Enable Background Notifications</button><button id="disableDayQuestNotifications" class="secondary" type="button">Disable Notifications</button></div>
-  
+  <p class="hint" id="notificationPermissionStatus" role="status" aria-live="polite" hidden></p>
  </section>
  <section class="settings-card share-app-card">
   <div class="section-head settings-section-head"><div><h3>Share DayQuest</h3></div></div>
@@ -779,5 +779,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261121-settings-hint-cleanup"></script>
+<script src="app.js?v=20261121-settings-hint-cleanup-final"></script>
 </body></html>
