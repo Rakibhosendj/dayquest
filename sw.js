@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v130-branding-menu-login-reports';
+const CACHE = 'dayquest-cache-v131-full-brand-icon';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261121-branding-menu-login-reports',
+  './style.css?v=20261121-full-brand-icon',
   './app.js?v=20261121-family-app-icon-share',
   './manifest.json',
   './icons/icon-192.png',
