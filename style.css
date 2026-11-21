@@ -1653,3 +1653,8 @@ img,canvas,svg{max-width:100%}
  .sidebar-brand .sidebar-brand-logo{width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;flex-basis:44px!important}
  .reports-brand-title .reports-page-logo{width:40px!important;height:40px!important;min-width:40px!important;min-height:40px!important;flex-basis:40px!important}
 }
+
+/* Prevent the logo from being vertically compressed or clipped by flex layout. */
+.sidebar-brand{align-items:center!important;min-height:78px}
+.sidebar-brand .sidebar-brand-logo{display:block!important;object-fit:contain!important;width:48px!important;height:48px!important;min-width:48px!important;min-height:48px!important;max-width:48px!important;max-height:48px!important;flex:0 0 48px!important;padding:0!important;margin:0!important;overflow:visible!important;background:transparent!important}
+.auth-brand .auth-logo,.reports-brand-title .reports-page-logo{object-fit:contain!important;flex-shrink:0!important}
