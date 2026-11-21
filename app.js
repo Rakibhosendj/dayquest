@@ -212,17 +212,25 @@ function billTotal(bill){
  if(bill.total!==undefined&&bill.total!==null&&Number.isFinite(stored)&&(stored>0||calculated===0))return Math.max(0,stored);
  return calculated;
 }
-function purchaseBillLineCosts(bill){
- const lines=bill.lines||[],subtotal=billLineSubtotal(bill),total=billTotal(bill),weights=lines.map(line=>purchaseLineBaseAmount(line));
+function allocatePurchaseBillLines(bill,totalAmount){
+ const lines=bill.lines||[],weights=lines.map(line=>purchaseLineBaseAmount(line));
  const weightTotal=weights.reduce((a,b)=>a+b,0),fallback=weightTotal>0?weights:lines.map(line=>Math.max(0,Number(line.quantity||0)));
  const denominator=fallback.reduce((a,b)=>a+b,0);let allocated=0;const map=new Map();
  lines.forEach((line,index)=>{
   let amount=0;
-  if(index===lines.length-1)amount=roundPurchaseAmount(total-allocated);
-  else if(denominator>0)amount=roundPurchaseAmount(total*fallback[index]/denominator);
+  if(index===lines.length-1)amount=roundPurchaseAmount(totalAmount-allocated);
+  else if(denominator>0)amount=roundPurchaseAmount(totalAmount*fallback[index]/denominator);
   allocated+=amount;map.set(line.id||String(index),Math.max(0,amount));
  });
  return map;
+}
+function purchaseBillLineBillAmount(bill,line){
+ const index=(bill.lines||[]).indexOf(line);
+ return allocatePurchaseBillLines(bill,billTotal(bill)).get(line.id||String(index))??purchaseLineBaseAmount(line);
+}
+function purchaseBillLineCosts(bill){
+ const landedTotal=roundPurchaseAmount(billTotal(bill)+Math.max(0,Number(bill.transitCost||0)));
+ return allocatePurchaseBillLines(bill,landedTotal);
 }
 function purchaseLineCost(bill,line){const index=(bill.lines||[]).indexOf(line);return purchaseBillLineCosts(bill).get(line.id||String(index))??purchaseLineBaseAmount(line)}
 function calculateBalances(){
@@ -236,7 +244,7 @@ function calculateBalances(){
   }else add(x.paymentType||'Cash',-Number(x.amount||0));
  });
  // Purchase bills reduce only the portions actually paid from cash or bank.
- db.purchaseBills.forEach(b=>{add('Cash',-Number(b.cashPaid||0));add('Bank',-Number(b.bankPaid||0))});
+ db.purchaseBills.forEach(b=>{add('Cash',-Number(b.cashPaid||0));add('Bank',-Number(b.bankPaid||0));add(b.transitPaidFrom==='Bank'?'Bank':'Cash',-Number(b.transitCost||0))});
  // Supplier credit reduces balances only when a later payment is recorded.
  db.supplierPayments.forEach(p=>add(p.method||'Cash',-Number(p.amount||0)));
  // Loan advances change cash/bank when issued or received; settlements reverse that movement.
@@ -808,8 +816,8 @@ function updatePurchaseTotals(){
   if(rateField&&document.activeElement!==rateField)rateField.value=Number(l.rate??0);
   if(message)message.textContent=l.calcError||'';
  });
- const subtotal=currentPurchaseSubtotal(),transit=Math.max(0,Number($('purchaseTransitCost')?.value||0)),discount=Math.max(0,Number($('purchaseDiscount')?.value||0)),total=currentPurchaseTotal(),cash=Number($('purchaseCashPaid').value||0),bank=Number($('purchaseBankPaid').value||0),credit=Math.max(0,total-cash-bank);
- if($('purchaseSubtotal'))$('purchaseSubtotal').textContent=money(subtotal);$('purchaseBillTotal').textContent=money(total);$('purchaseCreditTotal').textContent=money(credit);
+ const subtotal=currentPurchaseSubtotal(),transit=Math.max(0,Number($('purchaseTransitCost')?.value||0)),discount=Math.max(0,Number($('purchaseDiscount')?.value||0)),total=currentPurchaseTotal(),landedTotal=roundPurchaseAmount(total+transit),cash=Number($('purchaseCashPaid').value||0),bank=Number($('purchaseBankPaid').value||0),credit=Math.max(0,total-cash-bank),balances=calculateBalances();
+ if($('purchaseSubtotal'))$('purchaseSubtotal').textContent=money(subtotal);$('purchaseBillTotal').textContent=money(total);$('purchaseLandedCost').textContent=money(landedTotal);$('purchaseCreditTotal').textContent=money(credit);$('purchaseCashBalance').textContent=money(balances.cash);$('purchaseBankBalance').textContent=money(balances.bank);
  const paymentTooHigh=cash+bank>total+0.000001,discountTooHigh=discount>subtotal+0.000001,invalid=paymentTooHigh||discountTooHigh;$('purchaseCreditTotal').classList.toggle('invalid-total',invalid);$('purchaseBillSubmit').disabled=invalid;if(editingPurchaseBillId&&invalid&&$('purchaseEditHint')){$('purchaseEditHint').textContent=paymentTooHigh?'Cash paid plus bank paid is greater than the corrected bill total. Reduce one of the paid amounts before updating.':'The discount cannot exceed the product subtotal.';$('purchaseEditHint').hidden=false}
 
 }
@@ -819,7 +827,7 @@ function updatePurchaseBillNo(){
  if(editingPurchaseBillId&&date===purchaseBillOriginalDate){const original=db.purchaseBills.find(b=>b.id===editingPurchaseBillId);if(original&&original.billNo){field.value=original.billNo;return}}
  field.value=nextPurchaseBillNo(date,editingPurchaseBillId);
 }
-function resetPurchaseForm(){editingPurchaseBillId=null;purchaseBillOriginalDate='';if($('purchaseEditHint'))$('purchaseEditHint').hidden=true;$('purchaseBillForm').reset();$('purchaseAmountMode').value='rate';$('purchaseDate').value=today();$('purchaseBillNo').value='';updatePurchaseBillNo();$('purchaseCashPaid').value=0;$('purchaseBankPaid').value=0;if($('purchaseTransitCost'))$('purchaseTransitCost').value=0;if($('purchaseDiscount'))$('purchaseDiscount').value=0;$('purchaseBillSubmit').textContent='Save purchase bill';$('cancelPurchaseEdit').hidden=true;purchaseLines=[defaultPurchaseLine()];renderPurchaseLines();fillChoices()}
+function resetPurchaseForm(){editingPurchaseBillId=null;purchaseBillOriginalDate='';if($('purchaseEditHint'))$('purchaseEditHint').hidden=true;$('purchaseBillForm').reset();$('purchaseAmountMode').value='rate';$('purchaseDate').value=today();$('purchaseBillNo').value='';updatePurchaseBillNo();$('purchaseCashPaid').value=0;$('purchaseBankPaid').value=0;if($('purchaseTransitCost'))$('purchaseTransitCost').value=0;if($('purchaseTransitPaidFrom'))$('purchaseTransitPaidFrom').value='Cash';if($('purchaseDiscount'))$('purchaseDiscount').value=0;$('purchaseBillSubmit').textContent='Save purchase bill';$('cancelPurchaseEdit').hidden=true;purchaseLines=[defaultPurchaseLine()];renderPurchaseLines();fillChoices()}
 function purchaseFormNotice(message){
  if(editingPurchaseBillId&&$('purchaseEditHint')){$('purchaseEditHint').textContent=message;$('purchaseEditHint').hidden=false;return}
  alert(message);
@@ -857,10 +865,10 @@ $('purchaseAmountMode').addEventListener('change',()=>{
  renderPurchaseLines();
 });
 $('addPurchaseLine').onclick=()=>{const line=defaultPurchaseLine();line.amountMode=$('purchaseAmountMode').value==='quantity'?'quantity':'rate';purchaseLines.push(line);renderPurchaseLines()};
-$('purchaseCashPaid').oninput=updatePurchaseTotals;$('purchaseBankPaid').oninput=updatePurchaseTotals;$('purchaseTransitCost').oninput=updatePurchaseTotals;$('purchaseDiscount').oninput=updatePurchaseTotals;
+$('purchaseCashPaid').oninput=updatePurchaseTotals;$('purchaseBankPaid').oninput=updatePurchaseTotals;$('purchaseTransitCost').oninput=updatePurchaseTotals;$('purchaseTransitPaidFrom').onchange=updatePurchaseTotals;$('purchaseDiscount').oninput=updatePurchaseTotals;
 $('addSupplier').onclick=()=>{let n=prompt('Enter supplier / store name:');if(n&&n.trim()){n=n.trim();if(!db.suppliers.includes(n))db.suppliers.push(n);fillChoices();renderMasterLists();$('purchaseSupplier').value=n;localSaveOnly()}};
 $('purchaseBillForm').onsubmit=e=>{
- e.preventDefault();if(editingPurchaseBillId&&db.settings.allowPurchaseBillEdits===false){if($('purchaseEditHint')){$('purchaseEditHint').textContent='Editing is disabled. Enable “Allow editing saved purchase bills” in Settings, then reopen this bill.';$('purchaseEditHint').hidden=false}return}const supplierInput=$('purchaseSupplier').value.trim(),date=$('purchaseDate').value,cashPaid=Number($('purchaseCashPaid').value||0),bankPaid=Number($('purchaseBankPaid').value||0),subtotal=currentPurchaseSubtotal(),transitCost=Math.max(0,Number($('purchaseTransitCost').value||0)),discount=Math.max(0,Number($('purchaseDiscount').value||0)),total=currentPurchaseTotal(),unpaid=Math.max(0,total-cashPaid-bankPaid);
+ e.preventDefault();if(editingPurchaseBillId&&db.settings.allowPurchaseBillEdits===false){if($('purchaseEditHint')){$('purchaseEditHint').textContent='Editing is disabled. Enable “Allow editing saved purchase bills” in Settings, then reopen this bill.';$('purchaseEditHint').hidden=false}return}const supplierInput=$('purchaseSupplier').value.trim(),date=$('purchaseDate').value,cashPaid=Number($('purchaseCashPaid').value||0),bankPaid=Number($('purchaseBankPaid').value||0),subtotal=currentPurchaseSubtotal(),transitCost=Math.max(0,Number($('purchaseTransitCost').value||0)),transitPaidFrom=$('purchaseTransitPaidFrom').value==='Bank'?'Bank':'Cash',discount=Math.max(0,Number($('purchaseDiscount').value||0)),total=currentPurchaseTotal(),unpaid=Math.max(0,total-cashPaid-bankPaid);
  const supplier=supplierInput||(unpaid>0?'Unassigned supplier':'');
  const lines=purchaseLines.map(l=>({id:l.lineId||crypto.randomUUID(),product:String(l.product||'').trim(),category:String(l.category||db.purchaseCategories[0]||'Staples').trim(),productType:String(l.productType||'Other').trim()||'Other',spec:String(l.spec||'').trim(),quantity:Number(l.quantity),unit:String(l.unit||'pcs'),rate:Number(l.rate),amount:purchaseLineAmount(l),costType:['family','member','unassigned','members'].includes(l.costType)?l.costType:'unassigned',costMember:String(l.costMember||'').trim(),costMembers:Array.isArray(l.costMembers)?uniquePeople(l.costMembers):[]}));
  if(unpaid>0&&db.settings.requireSupplierForDuePurchase&&!supplierInput){purchaseFormNotice('Select a supplier because this purchase has an unpaid balance. You can change this rule in Settings.');return}
@@ -872,7 +880,7 @@ $('purchaseBillForm').onsubmit=e=>{
  const billNo=old&&date===purchaseBillOriginalDate?String(old.billNo||'').trim():nextPurchaseBillNo(date,editingPurchaseBillId);
  if(!billNo){purchaseFormNotice('Could not generate a bill number. Check the purchase date and try again.');return}
  if(db.purchaseBills.some(b=>b.id!==editingPurchaseBillId&&String(b.billNo||'').trim().toLocaleLowerCase()===billNo.toLocaleLowerCase())){purchaseFormNotice('This bill number already exists. A new unique number has been generated; review it and update again.');updatePurchaseBillNo();return}
- const categories=uniquePeople(lines.map(line=>line.category));const values={supplier,category:categories.length===1?categories[0]:'Multiple categories',billNo,date,lines,subtotal,transitCost,discount,total,cashPaid,bankPaid,credit:unpaid,note:$('purchaseNote').value.trim()};
+ const categories=uniquePeople(lines.map(line=>line.category));const values={supplier,category:categories.length===1?categories[0]:'Multiple categories',billNo,date,lines,subtotal,transitCost,transitPaidFrom,discount,total,cashPaid,bankPaid,credit:unpaid,note:$('purchaseNote').value.trim()};
  if(editingPurchaseBillId){
   if(!old){purchaseFormNotice('The original purchase bill could not be found. Refresh the page and reopen the bill.');return}
   const billConsumptions=db.consumptions.filter(c=>c.billId===editingPurchaseBillId);
@@ -1431,7 +1439,7 @@ function editPurchaseBill(id){
  setTab('purchaseBills');
  editingPurchaseBillId=id;purchaseBillOriginalDate=String(b.date||'');ensureOption($('purchaseSupplier'),b.supplier);$('purchaseSupplier').value=b.supplier;
  fillChoices();
- $('purchaseBillNo').value=b.billNo||'';$('purchaseAmountMode').value='rate';$('purchaseDate').value=b.date||today();$('purchaseCashPaid').value=Number(b.cashPaid||0);$('purchaseBankPaid').value=Number(b.bankPaid||0);$('purchaseTransitCost').value=Number(b.transitCost||0);$('purchaseDiscount').value=Number(b.discount||0);$('purchaseNote').value=b.note||'';
+ $('purchaseBillNo').value=b.billNo||'';$('purchaseAmountMode').value='rate';$('purchaseDate').value=b.date||today();$('purchaseCashPaid').value=Number(b.cashPaid||0);$('purchaseBankPaid').value=Number(b.bankPaid||0);$('purchaseTransitCost').value=Number(b.transitCost||0);$('purchaseTransitPaidFrom').value=b.transitPaidFrom==='Bank'?'Bank':'Cash';$('purchaseDiscount').value=Number(b.discount||0);$('purchaseNote').value=b.note||'';
  purchaseLines=(b.lines||[]).map(l=>({lineId:l.id||null,product:l.product||'',category:l.category||b.category||'Staples',productType:l.productType||'Other',spec:l.spec||'',quantity:Number(l.quantity||0),unit:l.unit||'pcs',rate:Number(l.rate||0),amount:Number(l.amount??(Number(l.quantity||0)*Number(l.rate||0))),amountMode:'rate',calcError:'',amountPending:false,costType:l.costType||'unassigned',costMember:l.costMember||'',costMembers:assignedMembers(l)}));
  purchaseLines.forEach(l=>{if(!db.units.includes(l.unit))db.units.push(l.unit)});if($('purchaseEditHint')){$('purchaseEditHint').hidden=false;const hasUsedLines=db.consumptions.some(c=>c.billId===id);$('purchaseEditHint').textContent=hasUsedLines?'You are updating a bill already linked to inventory use, production or sales. Keep the used line in place; quantity changes proportionally update linked stock movements, unit/price corrections recalculate downstream production costs, supplier balances and reports.':'You are updating a saved bill. Inventory, supplier balances, production costs and all reports recalculate when you save.';}renderPurchaseLines();$('purchaseBillSubmit').textContent='Update recent bill';$('cancelPurchaseEdit').hidden=false;$('purchaseBillForm').scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -2117,9 +2125,9 @@ function reportPurchaseRows(from,to){
   const settlement=settlements.get(String(bill.id))||{paid:0,discount:0,remaining:billCredit(bill)};
   const paid=Math.min(total,directPaid+Number(settlement.paid||0)),due=Math.max(0,Number(settlement.remaining??billCredit(bill)));
   (bill.lines||[]).forEach((line,index)=>{
-   const lineAmount=purchaseLineCost(bill,line),share=total>0?lineAmount/total:0,lineId=line.id||String(index),quantity=Math.max(0,Number(line.quantity||0));
+   const lineAmount=purchaseLineCost(bill,line),billLineAmount=purchaseBillLineBillAmount(bill,line),share=total>0?billLineAmount/total:0,transitShare=Math.max(0,lineAmount-billLineAmount),lineId=line.id||String(index),quantity=Math.max(0,Number(line.quantity||0));
    const used=usedStockQuantity({billId:bill.id,lineId},{asOfDate:to}),stock=Math.max(0,quantity-used);
-   out.push([fmt(bill.date),bill.billNo||'',bill.supplier||'Unassigned Supplier',line.category||bill.category||'Uncategorised',line.productType||'Other',line.product||'Unspecified product',quantity?`${numberText(quantity)} ${line.unit||'pcs'}`:'—',money(Number(line.rate||0)),money(lineAmount),money(paid*share),money(due*share),`${numberText(stock)} ${line.unit||'pcs'}`]);
+   out.push([fmt(bill.date),bill.billNo||'',bill.supplier||'Unassigned Supplier',line.category||bill.category||'Uncategorised',line.productType||'Other',line.product||'Unspecified product',quantity?`${numberText(quantity)} ${line.unit||'pcs'}`:'—',money(Number(line.rate||0)),money(lineAmount),money(paid*share+transitShare),money(due*share),`${numberText(stock)} ${line.unit||'pcs'}`]);
   });
  });
  return out;
@@ -2868,13 +2876,13 @@ function buildCostReportRows(from,to){
   const totalPaid=Math.min(billTotalAmount,directPaid+Number(settlement.paid||0));
   const totalDue=Math.max(0,Number(settlement.remaining??billCredit(bill)));
   (bill.lines||[]).forEach((line,index)=>{
-   const lineId=line.id||String(index),lineCost=purchaseLineCost(bill,line),share=billTotalAmount>0?lineCost/billTotalAmount:0;
+   const lineId=line.id||String(index),lineCost=purchaseLineCost(bill,line),billLineAmount=purchaseBillLineBillAmount(bill,line),share=billTotalAmount>0?billLineAmount/billTotalAmount:0,transitShare=Math.max(0,lineCost-billLineAmount);
    const quantity=Math.max(0,Number(line.quantity||0));
    const consumed=usedStockQuantity({billId:bill.id,lineId},{asOfDate:to});
    const stock=Math.max(0,quantity-consumed);
    rows.push({
     date:String(bill.date||''),product:String(line.product||'Unspecified product'),quantity:quantity>0?`${numberText(quantity)} ${String(line.unit||'pcs')}`:'—',
-    rate:money(Number(line.rate||0)),paidAmount:totalPaid*share,dueAmount:totalDue*share,supplier:String(bill.supplier||'Unassigned Supplier'),
+    rate:money(Number(line.rate||0)),paidAmount:totalPaid*share+transitShare,dueAmount:totalDue*share,supplier:String(bill.supplier||'Unassigned Supplier'),
     inventoryStock:`${numberText(stock)} ${String(line.unit||'pcs')}`,
     category:String(line.category||bill.category||'Uncategorised'),type:String(line.productType||'Other'),productGroup:String(line.product||'Unspecified product'),
     source:'Purchase',discountAllocated:Number(settlement.discount||0)*share

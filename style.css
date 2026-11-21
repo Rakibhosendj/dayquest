@@ -1745,3 +1745,12 @@ body{color:var(--dq-font-color,#263b5c)}
 .loan-details-content .loan-card-stats{margin:0}
 .loan-details-content .loan-installments{margin:0}
 .loan-details-content .loan-history{margin:0}
+
+/* Purchase form: cash/bank balances and separate transit payment. */
+.purchase-balance-strip{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:8px 10px;background:#f4f7fb;border:1px solid #e3e9f1;border-radius:10px}
+.purchase-balance-strip>div{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;font-size:10px;color:#738198}
+.purchase-balance-strip strong{font-size:13px;color:#263b5c;white-space:nowrap}
+.purchase-transit-method{display:grid;grid-template-columns:auto minmax(80px,1fr);align-items:center;gap:7px;margin:0;font-size:10px}
+.purchase-transit-method select{min-width:0;min-height:36px}
+.purchase-landed-preview{border:1px solid #dce6f0}
+@media(max-width:520px){.purchase-balance-strip{padding:7px 8px}.purchase-balance-strip strong{font-size:12px}.purchase-transit-method{grid-template-columns:1fr;gap:3px;font-size:9px}.purchase-transit-method select{min-height:42px;font-size:16px!important}}
