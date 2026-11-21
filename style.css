@@ -1734,12 +1734,16 @@ body{color:var(--dq-font-color,#263b5c)}
 .admin-password-change{margin-top:12px}
 
 /* Loan register: keep each record compact and collapse supporting detail by default. */
-.loan-details-disclosure{min-width:0;border-top:1px solid #edf0f4;padding-top:7px}
-.loan-details-disclosure>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:32px;padding:5px 2px;cursor:pointer;list-style:none;font-size:10px;font-weight:800;color:#526176}
+.loan-details-disclosure{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:8px;min-width:0;border-top:1px solid #edf0f4;padding-top:7px}
+.loan-details-disclosure>summary{grid-column:2;grid-row:1;display:flex;align-items:center;justify-content:center;width:28px;height:30px;padding:0;cursor:pointer;list-style:none;border:1px solid #e5eaf1;border-radius:8px;color:#8290a3}
 .loan-details-disclosure>summary::-webkit-details-marker{display:none}
-.loan-details-disclosure>summary::after{content:"▾";font-size:12px;color:#8290a3;transition:transform .15s ease}
-.loan-details-disclosure[open]>summary::after{transform:rotate(180deg)}
-.loan-details-content{display:grid;gap:9px;padding-top:6px}
+.loan-details-toggle-icon{display:inline-block;font-size:13px;transition:transform .15s ease}
+.loan-details-disclosure[open]>summary .loan-details-toggle-icon{transform:rotate(180deg)}
+.loan-details-content{grid-column:1 / -1;grid-row:2;display:grid;gap:9px;padding-top:6px}
+.loan-details-disclosure:not([open]) .loan-details-content{display:none}
+.loan-details-disclosure:not([open])::before{content:"Loan amount";grid-column:1;grid-row:1;font-size:9px;color:#7f8a9a}
+.loan-details-disclosure:not([open])::after{content:attr(data-amount);grid-column:1;grid-row:1;margin-top:12px;font-size:10px;font-weight:800;color:#263b5c}
+.loan-details-disclosure:not([open]) .loan-card-actions{display:none}
 .loan-details-content .loan-card-stats{margin:0}
 .loan-details-content .loan-installments{margin:0}
 .loan-details-content .loan-history{margin:0}
