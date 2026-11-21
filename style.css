@@ -1474,13 +1474,13 @@ img,canvas,svg{max-width:100%}
 .loan-history{display:grid;gap:5px;border-top:1px solid #edf0f4;padding-top:8px}
 .loan-history-row{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#778397}
 .loan-history-row strong{color:#263b5c;white-space:nowrap}
-.loan-card-actions{display:flex;gap:7px;flex-wrap:wrap}
-.loan-card-actions button{min-height:36px;padding:8px 11px;font-size:10px}
+.loan-card-actions{display:flex;align-items:stretch;gap:6px;flex-wrap:nowrap;width:100%;margin:0 0 2px}
+.loan-card-actions button{flex:1 1 0;min-width:0;min-height:34px;padding:7px 5px;font-size:10px;white-space:nowrap}
 .loan-settlement-card{display:grid;gap:10px}
 .loan-settlement-card label{display:grid;gap:5px;font-size:11px;font-weight:750;color:#526176}
 .loan-settlement-card input,.loan-settlement-card select{width:100%;min-width:0;min-height:42px;padding:9px;border:1px solid #dfe5ed;border-radius:9px;background:#fbfcfe;font:inherit;font-size:16px;color:#172033}
 .loan-settlement-card p{margin:0}
-@media(max-width:520px){.loan-summary-cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.loan-summary-cards .stat{padding:8px}.loan-summary-cards .stat .muted{font-size:9px}.loan-summary-cards .stat strong{font-size:13px}.loan-summary-cards .stat small{font-size:8px}.loan-card{padding:9px}.loan-card-stats{gap:4px}.loan-card-stats span{padding:6px 4px;font-size:8px}.loan-card-stats strong{font-size:9px}.loan-card-actions{gap:5px}.loan-card-actions button{flex:1;padding:8px 6px}}
+@media(max-width:520px){.loan-summary-cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}.loan-summary-cards .stat{padding:8px}.loan-summary-cards .stat .muted{font-size:9px}.loan-summary-cards .stat strong{font-size:13px}.loan-summary-cards .stat small{font-size:8px}.loan-card{padding:9px}.loan-card-stats{gap:4px}.loan-card-stats span{padding:6px 4px;font-size:8px}.loan-card-stats strong{font-size:9px}.loan-card-actions{gap:4px;flex-wrap:nowrap}.loan-card-actions button{flex:1 1 0;min-width:0;padding:7px 3px;font-size:9px;white-space:nowrap}}
 /* Production form: materials fit on one compact row with add beside Product. */
 .production-finished-grid{grid-template-columns:minmax(0,1.2fr) minmax(0,.75fr) minmax(0,.8fr);gap:7px}
 .production-inputs{display:grid;gap:7px;min-width:0}

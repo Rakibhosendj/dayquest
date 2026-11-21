@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v139-loan-details-dropdown';
+const CACHE = 'dayquest-cache-v140-loan-actions-row';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261121-loan-details-dropdown',
-  './app.js?v=20261121-loan-details-dropdown',
+  './style.css?v=20261121-loan-actions-row',
+  './app.js?v=20261121-loan-actions-before-amount',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
   './icons/icon-512.svg',

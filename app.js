@@ -1231,13 +1231,13 @@ function renderLoans(){
    <details class="loan-details-disclosure">
     <summary>Loan register details</summary>
     <div class="loan-details-content">
+     <div class="loan-card-actions">${outstanding>0.000001?`<button type="button" class="primary" data-loan-settle>${given?'Collect':'Pay'} loan</button>`:''}<button type="button" class="secondary" data-loan-edit>Edit</button><button type="button" class="delete" data-loan-delete>Delete</button></div>
      <div class="loan-card-stats"><span>Loan amount<strong>${money(loan.amount)}</strong></span><span>Settled<strong>${money(settled)}</strong></span><span>${dateLabel}<strong>${outstanding<=0.000001?'Completed':loan.dueDate&&loan.dueDate<today()?'Overdue':'Outstanding'}</strong></span></div>
      ${loan.installments?.length?'<div class="loan-installments">'+loan.installments.map((item,index)=>{const left=loanInstallmentOutstanding(loan,item),status=left<=0.000001?"Paid":item.dueDate<today()?"Overdue":"Upcoming";return '<div class="loan-installment-row"><span>Installment '+(index+1)+' · '+fmt(item.dueDate)+' · '+status+'</span><strong>'+money(left)+' / '+money(item.amount)+'</strong></div>'}).join('')+'</div>':''}
      ${loan.note?`<small class="loan-note">${esc(loan.note)}</small>`:''}
      ${history?`<div class="loan-history">${history}</div>`:''}
     </div>
    </details>
-   <div class="loan-card-actions">${outstanding>0.000001?`<button type="button" class="primary" data-loan-settle>${given?'Collect':'Pay'} loan</button>`:''}<button type="button" class="secondary" data-loan-edit>Edit</button><button type="button" class="delete" data-loan-delete>Delete</button></div>
   </article>`;
  }).join(''):empty('No loans recorded yet.');
  $('loanList').querySelectorAll('[data-loan-settle]').forEach(button=>button.onclick=()=>openLoanSettlement(button.closest('[data-loan-id]')?.dataset.loanId));
