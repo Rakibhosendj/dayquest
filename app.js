@@ -27,7 +27,7 @@ db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.produc
 db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);
 db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};
 db.settings.notificationPreferences={dailyQuest:true,expenseDue:true,incomeDue:true,loanGiven:true,loanTaken:true,enabled:false,...(db.settings.notificationPreferences&&typeof db.settings.notificationPreferences==='object'?db.settings.notificationPreferences:{})};
-if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.themeColor||'')))db.settings.themeColor='#263b5c';
+if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.themeColor||'')))db.settings.themeColor='#263b5c';if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.backgroundColor||'')))db.settings.backgroundColor='#f3f5f9';
 if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';
 if(typeof db.settings.quickButtonVibration!=='boolean')db.settings.quickButtonVibration=true;
 db.productDictionary=normalizeProductDictionary(db.productDictionary);if(!db.settings.mealDictionaryDefaultsApplied){db.productDictionary.forEach(item=>item.meal=true);db.settings.mealDictionaryDefaultsApplied=true;}
@@ -2237,30 +2237,45 @@ function activateReportSection(key){
 document.querySelectorAll('[data-report-go]').forEach(button=>button.addEventListener('click',()=>{
  setTab('reports');activateReportSection(button.dataset.reportGo);
 }));
+function setColorDropdown(prefix,color){
+ const select=$(prefix+'Select'),input=$(prefix+'Input'),value=$(prefix+'Value'),swatch=$(prefix+'Swatch');
+ const normalized=String(color||'').toLowerCase();
+ const hasPreset=!!select&&Array.from(select.options).some(option=>option.value===normalized);
+ if(select)select.value=hasPreset?normalized:'other';
+ if(input&&/^#[0-9a-f]{6}$/i.test(normalized))input.value=normalized;
+ if(value)value.textContent=normalized.toUpperCase();
+ if(swatch)swatch.style.background=normalized||'#f3f5f9';
+}
+function openCustomColorPicker(prefix){
+ const input=$(prefix+'Input');
+ if(input){
+  try{if(typeof input.showPicker==='function')input.showPicker();else input.click()}catch{input.click()}
+ }
+}
 function applyThemeColor(color,persist=true){
  if(!/^#[0-9a-f]{6}$/i.test(String(color||'')))return;
- const normalized=String(color).toLowerCase();document.documentElement.style.setProperty('--accent-color',normalized);
+ const normalized=String(color).toLowerCase();
+ document.documentElement.style.setProperty('--accent-color',normalized);
  const meta=document.querySelector('meta[name=theme-color]');if(meta)meta.content=normalized;
- if($('themeColorInput'))$('themeColorInput').value=normalized;
- if($('themeColorValue'))$('themeColorValue').textContent=normalized.toUpperCase();
- let isPreset=false;
- document.querySelectorAll('[data-theme-color]').forEach(button=>{
-  const selected=String(button.dataset.themeColor||'').toLowerCase()===normalized;
-  button.classList.toggle('is-selected',selected);button.setAttribute('aria-pressed',String(selected));
-  if(selected)isPreset=true;
- });
- const other=$('themeColorOtherOption');
- if(other){other.classList.toggle('is-selected',!isPreset);other.setAttribute('aria-pressed',String(!isPreset));}
+ setColorDropdown('themeColor',normalized);
  if(persist){db.settings=db.settings||{};db.settings.themeColor=normalized;localSaveOnly()}
 }
 function applyQuickButtonColor(color,persist=true){
  if(!/^#[0-9a-f]{6}$/i.test(String(color||'')))return;
- const normalized=String(color).toLowerCase();document.documentElement.style.setProperty('--quick-button-color',normalized);
- if($('quickButtonColorInput'))$('quickButtonColorInput').value=normalized;
- if($('quickButtonColorValue'))$('quickButtonColorValue').textContent=normalized.toUpperCase();
+ const normalized=String(color).toLowerCase();
+ document.documentElement.style.setProperty('--quick-button-color',normalized);
+ setColorDropdown('quickButtonColor',normalized);
  if(persist){db.settings=db.settings||{};db.settings.quickButtonColor=normalized;localSaveOnly()}
 }
-applyQuickButtonColor(db.settings.quickButtonColor,false);
+function applyBackgroundColor(color,persist=true){
+ if(!/^#[0-9a-f]{6}$/i.test(String(color||'')))return;
+ const normalized=String(color).toLowerCase();
+ document.documentElement.style.setProperty('--page-background',normalized);
+ setColorDropdown('backgroundColor',normalized);
+ if(persist){db.settings=db.settings||{};db.settings.backgroundColor=normalized;localSaveOnly()}
+}
+applyQuickButtonColor(db.settings.quickButtonColor||'#ee7d2f',false);
+applyBackgroundColor(db.settings.backgroundColor||'#f3f5f9',false);
 
 const SETTINGS_MASTER_CONFIG={
  supplier:{list:'settingsSupplierList',array:'suppliers',input:'newSettingSupplier',form:'addSettingSupplierForm',title:'supplier'},
@@ -2343,11 +2358,14 @@ $('requireSupplierForDuePurchase').checked=db.settings.requireSupplierForDuePurc
 $('requireSupplierForDuePurchase').onchange=e=>{db.settings.requireSupplierForDuePurchase=!!e.target.checked;save()};
 $('allowPurchaseBillEdits').checked=db.settings.allowPurchaseBillEdits!==false;
 $('allowPurchaseBillEdits').onchange=e=>{db.settings.allowPurchaseBillEdits=!!e.target.checked;if(!db.settings.allowPurchaseBillEdits&&editingPurchaseBillId)resetPurchaseForm();save()};
+$('themeColorSelect').onchange=e=>e.target.value==='other'?openCustomColorPicker('themeColor'):applyThemeColor(e.target.value);
 $('themeColorInput').oninput=e=>applyThemeColor(e.target.value);
-document.querySelectorAll('[data-theme-color]').forEach(button=>button.onclick=()=>applyThemeColor(button.dataset.themeColor));
+$('quickButtonColorSelect').onchange=e=>e.target.value==='other'?openCustomColorPicker('quickButtonColor'):applyQuickButtonColor(e.target.value);
 $('quickButtonColorInput').oninput=e=>applyQuickButtonColor(e.target.value);
+$('backgroundColorSelect').onchange=e=>e.target.value==='other'?openCustomColorPicker('backgroundColor'):applyBackgroundColor(e.target.value);
+$('backgroundColorInput').oninput=e=>applyBackgroundColor(e.target.value);
 $('quickButtonVibration').onchange=e=>{db.settings.quickButtonVibration=!!e.target.checked;save()};
-document.querySelectorAll('[data-quick-button-color]').forEach(button=>button.onclick=()=>applyQuickButtonColor(button.dataset.quickButtonColor));
+
 $('addProductDictionaryForm').onsubmit=e=>{e.preventDefault();const english=$('newProductDictionaryEnglish').value.trim(),bangla=$('newProductDictionaryBangla').value.trim();if(!english||!bangla)return;if(db.productDictionary.some(item=>item.english.toLocaleLowerCase()===english.toLocaleLowerCase())){alert('That English product name already exists.');return}db.productDictionary.push({english,bangla,meal:$('newProductDictionaryMeal').checked});$('newProductDictionaryEnglish').value='';$('newProductDictionaryBangla').value='';$('newProductDictionaryMeal').checked=false;renderProductDictionary();renderProductNameSuggestions();save()};
 $('productDictionarySearch').oninput=renderProductDictionary;
 $('addPurchaseCategoryForm').onsubmit=e=>{
@@ -2952,7 +2970,7 @@ $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:
 $('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.loans))x.loans=[];if(!Array.isArray(x.quickActions))x.quickActions=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.productTypes))x.productTypes=['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];if(!Array.isArray(x.purchaseCategories))x.purchaseCategories=['Assets','Staples','Fixed Ex.'];if(!x.settings||typeof x.settings!=='object')x.settings={themeColor:'#263b5c'};if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.productions))x.productions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};if(!Array.isArray(x.familyMembers))x.familyMembers=[];if(!Array.isArray(x.guestPeople))x.guestPeople=[];if(!Array.isArray(x.guests))x.guests=[];if(confirm('Replace current data with this backup?')){db=x;db.sideMenuOrder=normalizeSideMenuOrder(db.sideMenuOrder);db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};db.productDictionary=normalizeProductDictionary(db.productDictionary);db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(item=>{item.costMember=String(item.costMember||'').trim()});db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
 db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};
 db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers.filter(name=>db.suppliers.includes(name)))]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];
-db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.productions=Array.isArray(db.productions)?db.productions.filter(p=>p&&p.id&&p.product&&Number(p.quantity)>0):[];normalizePurchaseInventory();db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;if(typeof db.settings.allowPurchaseBillEdits!=='boolean')db.settings.allowPurchaseBillEdits=true;db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];db.units=Array.isArray(db.units)?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];normalizePurchaseBillNumbers();db.profile=db.profile||{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};db.profile.familyName=String(db.profile.familyName||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestPeople=Array.isArray(db.guestPeople)?db.guestPeople.map(n=>String(n||'').trim()).filter(Boolean):[];db.guestPeople=[...new Map(db.guestPeople.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestRelations=db.guestRelations&&typeof db.guestRelations==='object'&&!Array.isArray(db.guestRelations)?db.guestRelations:{};db.guests=Array.isArray(db.guests)?db.guests.filter(g=>g&&Array.isArray(g.members)&&g.members.length&&/^\d{4}-\d{2}-\d{2}$/.test(String(g.entryDate||''))):[];db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.members.forEach(n=>{if(!assignablePeople().some(x=>x.toLocaleLowerCase()===String(n).toLocaleLowerCase()))db.guestPeople.push(String(n).trim())})});db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);normalizeMemberAssignments();db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeople.push(name)});db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);renderPurchaseCategorySettings();renderMasterLists();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
+db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.productions=Array.isArray(db.productions)?db.productions.filter(p=>p&&p.id&&p.product&&Number(p.quantity)>0):[];normalizePurchaseInventory();db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;if(typeof db.settings.allowPurchaseBillEdits!=='boolean')db.settings.allowPurchaseBillEdits=true;db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];db.units=Array.isArray(db.units)?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];normalizePurchaseBillNumbers();db.profile=db.profile||{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};db.profile.familyName=String(db.profile.familyName||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestPeople=Array.isArray(db.guestPeople)?db.guestPeople.map(n=>String(n||'').trim()).filter(Boolean):[];db.guestPeople=[...new Map(db.guestPeople.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestRelations=db.guestRelations&&typeof db.guestRelations==='object'&&!Array.isArray(db.guestRelations)?db.guestRelations:{};db.guests=Array.isArray(db.guests)?db.guests.filter(g=>g&&Array.isArray(g.members)&&g.members.length&&/^\d{4}-\d{2}-\d{2}$/.test(String(g.entryDate||''))):[];db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.members.forEach(n=>{if(!assignablePeople().some(x=>x.toLocaleLowerCase()===String(n).toLocaleLowerCase()))db.guestPeople.push(String(n).trim())})});db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);normalizeMemberAssignments();db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeople.push(name)});db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);applyQuickButtonColor(db.settings.quickButtonColor||'#ee7d2f',false);applyBackgroundColor(db.settings.backgroundColor||'#f3f5f9',false);renderPurchaseCategorySettings();renderMasterLists();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
 const isAppleTouchDevice=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const isAndroidDevice=/Android/i.test(navigator.userAgent);
 const isMobileInstallDevice=isAppleTouchDevice||isAndroidDevice;
@@ -3136,7 +3154,7 @@ function createEmptyDayQuestDatabase(){
  return {
   expenses:[],quests:[],checks:{},expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'],
   quickActions:[],purchaseCategories:['Assets','Staples','Fixed Ex.'],productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'],
-  settings:{themeColor:'#263b5c',requireSupplierForDuePurchase:true,allowPurchaseBillEdits:true},
+  settings:{themeColor:'#263b5c',quickButtonColor:'#ee7d2f',backgroundColor:'#f3f5f9',requireSupplierForDuePurchase:true,allowPurchaseBillEdits:true},
   units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'],incomes:[],incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'],incomePeople:[],
   profile:{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0},familyMembers:[],guestPeople:[],guests:[],
   purchaseBills:[],supplierPayments:[],suppliers:[],productNames:[],consumptions:[],productions:[],loans:[]
