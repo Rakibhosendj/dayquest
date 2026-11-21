@@ -1710,3 +1710,7 @@ img,canvas,svg{max-width:100%}
 .color-customization-content .settings-section-head{margin:0 0 7px}
 .color-customization-content .color-dropdown-row{display:flex;gap:8px;align-items:center;min-width:0}
 .color-customization-content .color-dropdown-row select{flex:1;min-width:0}
+
+
+/* Apply the selected font color consistently throughout the app. */
+body{color:var(--dq-font-color,#263b5c)}
