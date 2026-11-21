@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v133-real-family-icon';
+const CACHE = 'dayquest-cache-v134-actual-family-icon';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261121-real-family-icon',
+  './style.css?v=20261121-actual-family-icon',
   './app.js?v=20261121-family-app-icon-share',
   './manifest.json',
   './icons/icon-192.png',
