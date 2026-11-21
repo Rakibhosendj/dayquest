@@ -909,7 +909,7 @@ $('purchaseBillForm').onsubmit=e=>{
  }
  else db.purchaseBills.unshift({id:crypto.randomUUID(),...values});
  if(supplier&&!db.suppliers.includes(supplier))db.suppliers.push(supplier);lines.forEach(l=>{if(!db.productNames.includes(l.product))db.productNames.push(l.product);if(!db.purchaseCategories.includes(l.category))db.purchaseCategories.push(l.category);if(!db.productTypes.some(type=>type.toLocaleLowerCase()===l.productType.toLocaleLowerCase()))db.productTypes.push(l.productType);if(!db.units.includes(l.unit))db.units.push(l.unit)});
- resetPurchaseForm();save();
+ const wasEditing=!!editingPurchaseBillId;resetPurchaseForm();save();alert(wasEditing?'Purchase bill updated successfully.':'Purchase bill saved successfully.');
 };
 function inventoryMemberChecks(line){
  const selected=new Set(assignedMembers(line).map(n=>n.toLocaleLowerCase()));

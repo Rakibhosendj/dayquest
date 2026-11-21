@@ -1766,3 +1766,5 @@ body{color:var(--dq-font-color,#263b5c)}
 .login-password-change-form input{width:100%;min-width:0}
 .login-password-change-form button{width:100%;min-height:40px}
 .login-password-change-form p{margin:0;min-height:0}
+
+.dq-message-brand{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px}.dq-message-brand img{width:42px;height:42px;object-fit:contain;flex:0 0 42px}.dq-message-brand h2{margin:0}

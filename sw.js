@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v145-purchase-title-balances';
+const CACHE = 'dayquest-cache-v146-branded-purchase-save';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261121-purchase-title-balances',
-  './app.js?v=20261121-purchase-title-balances',
+  './style.css?v=20261121-branded-purchase-save',
+  './app.js?v=20261121-branded-purchase-save',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
   './icons/icon-512.svg',
