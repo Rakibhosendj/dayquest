@@ -1601,3 +1601,12 @@ img,canvas,svg{max-width:100%}
 @media(max-width:520px){
  .member-report-guest-row{min-width:510px;grid-template-columns:230px minmax(0,1fr)}
 }
+
+/* Share DayQuest from Settings */
+.share-app-card .share-app-actions{display:flex;flex-wrap:wrap;gap:8px}
+.share-app-card .share-app-actions button{min-width:135px}
+.share-app-status{min-height:0;margin:7px 0 0;overflow-wrap:anywhere}
+@media(max-width:520px){
+ .share-app-card .share-app-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .share-app-card .share-app-actions button{width:100%;min-width:0;min-height:42px;padding:9px 7px;font-size:12px}
+}
