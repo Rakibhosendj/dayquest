@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v137-color-dropdowns';
+const CACHE = 'dayquest-cache-v138-nav-colors';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261121-color-dropdowns',
+  './style.css?v=20261121-nav-colors',
   './app.js?v=20261121-theme-color-picker',
   './manifest.json',
   './icons/icon-192.png?v=20261121-coin-check',

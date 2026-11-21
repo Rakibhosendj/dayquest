@@ -24,7 +24,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261121-color-dropdowns">
+<link rel="stylesheet" href="style.css?v=20261121-nav-colors">
 <title>DayQuest</title>
 </head>
 <body>
@@ -552,6 +552,34 @@
    <strong id="backgroundColorValue">#F3F5F9</strong>
   </div>
  </section>
+ <section class="settings-card color-setting-card">
+  <div class="section-head settings-section-head"><div><h3>Side Menu Color</h3></div></div>
+  <div class="color-dropdown-row">
+   <span class="color-dropdown-swatch" id="sideMenuColorSwatch" aria-hidden="true"></span>
+   <select id="sideMenuColorSelect" aria-label="Side Menu Color">
+    <option value="#263b5c">⚫ Navy</option><option value="#18765b">🟢 Forest</option><option value="#059669">🟢 Emerald</option><option value="#0f766e">🟩 Teal</option><option value="#65a30d">🟩 Lime</option><option value="#236d91">🔵 Ocean</option><option value="#2563eb">🔵 Blue</option><option value="#0284c7">🩵 Sky</option><option value="#4f46e5">🔷 Indigo</option><option value="#6941a5">🟣 Violet</option><option value="#9333ea">🟣 Purple</option><option value="#c026d3">🟪 Magenta</option><option value="#b44358">🩷 Rose</option><option value="#dc2626">🔴 Red</option><option value="#ea580c">🟠 Coral</option><option value="#d97706">🟡 Amber</option><option value="#92400e">🟤 Brown</option><option value="#4d7c0f">🟢 Olive</option><option value="#475569">⚫ Slate</option><option value="#1f2937">⚫ Charcoal</option>
+    <option value="other">🎨 Other (custom)</option>
+   </select>
+   <label class="color-custom-control" title="Choose custom color">
+    <input id="sideMenuColorInput" type="color" value="#111d30" aria-label="Choose custom side menu color">
+   </label>
+   <strong id="sideMenuColorValue">#111D30</strong>
+  </div>
+ </section>
+ <section class="settings-card color-setting-card">
+  <div class="section-head settings-section-head"><div><h3>Top Bar Color</h3></div></div>
+  <div class="color-dropdown-row">
+   <span class="color-dropdown-swatch" id="topBarColorSwatch" aria-hidden="true"></span>
+   <select id="topBarColorSelect" aria-label="Top Bar Color">
+    <option value="#263b5c">⚫ Navy</option><option value="#18765b">🟢 Forest</option><option value="#059669">🟢 Emerald</option><option value="#0f766e">🟩 Teal</option><option value="#65a30d">🟩 Lime</option><option value="#236d91">🔵 Ocean</option><option value="#2563eb">🔵 Blue</option><option value="#0284c7">🩵 Sky</option><option value="#4f46e5">🔷 Indigo</option><option value="#6941a5">🟣 Violet</option><option value="#9333ea">🟣 Purple</option><option value="#c026d3">🟪 Magenta</option><option value="#b44358">🩷 Rose</option><option value="#dc2626">🔴 Red</option><option value="#ea580c">🟠 Coral</option><option value="#d97706">🟡 Amber</option><option value="#92400e">🟤 Brown</option><option value="#4d7c0f">🟢 Olive</option><option value="#475569">⚫ Slate</option><option value="#1f2937">⚫ Charcoal</option>
+    <option value="other">🎨 Other (custom)</option>
+   </select>
+   <label class="color-custom-control" title="Choose custom color">
+    <input id="topBarColorInput" type="color" value="#101827" aria-label="Choose custom top bar color">
+   </label>
+   <strong id="topBarColorValue">#101827</strong>
+  </div>
+ </section>
 <section class="settings-card">
   <div class="section-head settings-section-head"><div><h3>Quick button vibration</h3></div></div>
   <label class="settings-toggle-row"><input id="quickButtonVibration" type="checkbox" checked> <span>Enable vibration on quick buttons</span></label>
@@ -810,5 +838,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261121-color-dropdowns"></script>
+<script src="app.js?v=20261121-nav-colors"></script>
 </body></html>
