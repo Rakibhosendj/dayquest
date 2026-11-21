@@ -3636,10 +3636,10 @@ function renderNotificationSettings(){
  const available='Notification' in window;
  const permission=available?Notification.permission:'unsupported';
  $('notificationPermissionStatus').textContent=permission==='granted'
-  ?(prefs.enabled?'Background notifications are enabled on this device for your selected reminder categories.':'Browser permission is granted. Tap Enable Background Notifications to register this device.')
+  ?(prefs.enabled?'Background notifications are enabled on this device for your selected reminder categories.':'')
   :permission==='denied'?'Notifications are blocked in browser settings. Allow DayQuest notifications in your browser settings.'
   :permission==='unsupported'?'This browser does not support notifications.'
-  :'Select the reminder categories you need, then tap Enable Background Notifications. The push service must be configured once by the DayQuest administrator.';
+  :'';
  $('enableDayQuestNotifications').disabled=!available;$('disableDayQuestNotifications').disabled=!available;
 }
 function saveNotificationPreferences(){
