@@ -387,6 +387,7 @@ function setupSideMenuReordering(){
  });
 }
 function setTab(t){
+ if(t!=='settings'&&adminCloudUnlocked)lockAdminCloudSettings();
  const tabs=[...document.querySelectorAll('.tab')];
  tabs.forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===t));
@@ -3524,10 +3525,35 @@ function lockAdminCloudSettings(){
  adminCloudUnlocked=false;
  const panel=$('adminCloudSettings'),gate=$('adminAccessCard'),details=$('adminCloudConnection');
  if(panel)panel.hidden=true;
- if(gate)gate.hidden=false;
+ if(gate)gate.hidden=true;
  if(details)details.open=false;
  const password=$('adminAccessPassword');if(password)password.value='';
  const confirmPassword=$('adminAccessConfirmPassword');if(confirmPassword)confirmPassword.value='';
+}
+function revealAdminAccessGate(){
+ if(adminCloudUnlocked)return;
+ const gate=$('adminAccessCard');if(!gate)return;
+ refreshAdminAccessGate();
+ gate.hidden=false;
+ $('adminAccessPassword').focus({preventScroll:true});
+}
+let adminAccessTapCount=0,adminAccessTapTimer=null;
+function handleAdminAccessGesture(){
+ if(adminCloudUnlocked)return;
+ adminAccessTapCount++;
+ if(adminAccessTapTimer!==null)clearTimeout(adminAccessTapTimer);
+ adminAccessTapTimer=setTimeout(()=>{adminAccessTapCount=0;adminAccessTapTimer=null},2500);
+ if(adminAccessTapCount>=5){
+  adminAccessTapCount=0;clearTimeout(adminAccessTapTimer);adminAccessTapTimer=null;
+  revealAdminAccessGate();
+ }
+}
+const settingsAdminTrigger=$('settingsTitle');
+if(settingsAdminTrigger){
+ settingsAdminTrigger.addEventListener('click',handleAdminAccessGesture);
+ settingsAdminTrigger.addEventListener('keydown',event=>{
+  if(event.key==='Enter'||event.key===' '){event.preventDefault();handleAdminAccessGesture()}
+ });
 }
 function unlockAdminCloudSettings(){
  adminCloudUnlocked=true;

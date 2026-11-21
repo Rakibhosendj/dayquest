@@ -488,7 +488,7 @@
  <div class="cards balance-cards"><article class="stat balance-main"><span class="muted">Earned balance</span><strong id="profileEarnedBalance">৳0.00</strong><small>Cash + bank after recorded transactions</small></article><article class="stat"><span class="muted">Cash balance</span><strong id="profileCashBalance">৳0.00</strong></article><article class="stat"><span class="muted">Bank balance</span><strong id="profileBankBalance">৳0.00</strong></article></div>
 </section>
 <section id="settings" class="panel">
- <div class="section-head"><h2>Settings</h2><span class="pill">Personalize DayQuest</span></div>
+ <div class="section-head"><h2 id="settingsTitle" class="settings-admin-secret-trigger" tabindex="0" aria-label="Settings">Settings</h2><span class="pill">Personalize DayQuest</span></div>
  <details class="settings-card notification-settings-card">
   <summary class="section-head settings-section-head"><h3>Choose Reminder Receive</h3></summary>
   <label class="settings-toggle-row"><input id="notifyDailyQuest" type="checkbox" checked> <span>Daily Quest alarms · At each scheduled time range</span></label>
@@ -652,7 +652,7 @@
   <summary class="section-head settings-section-head"><h3>Member Meal Dates</h3></summary>
   <div id="mealPersonDateSettings" class="meal-person-date-settings"></div>
  </details>
- <section id="adminAccessCard" class="settings-card admin-access-card">
+ <section id="adminAccessCard" class="settings-card admin-access-card" hidden>
   <div class="section-head settings-section-head"><div><h3>Administrator Access</h3></div></div>
   <p class="settings-copy" id="adminAccessIntro">Enter the separate administrator password to open restricted settings.</p>
   <form id="adminAccessForm" class="form admin-access-form">
@@ -869,5 +869,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261121-nav-colors"></script>
+<script src="app.js?v=20261121-admin-hidden"></script>
 </body></html>

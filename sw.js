@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v137-admin-password-gate';
+const CACHE = 'dayquest-cache-v138-admin-hidden';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
   './style.css?v=20261121-admin-password-gate',
-  './app.js?v=20261121-admin-password-gate',
+  './app.js?v=20261121-admin-hidden',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
   './icons/icon-512.svg',
