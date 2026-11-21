@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261120-guest-assign-hide-name">
+<link rel="stylesheet" href="style.css?v=20261121-share-app-link">
 <title>DayQuest</title>
 </head>
 <body>
@@ -484,6 +484,14 @@
   <div class="quick"><button id="enableDayQuestNotifications" class="primary" type="button">Enable Background Notifications</button><button id="disableDayQuestNotifications" class="secondary" type="button">Disable Notifications</button></div>
   <p class="hint" id="notificationPermissionStatus" role="status" aria-live="polite">Notifications need your browser permission and the DayQuest push service configuration.</p>
  </section>
+ <section class="settings-card share-app-card">
+  <div class="section-head settings-section-head"><div><h3>Share DayQuest</h3><p class="settings-copy">Share the DayQuest app link with family and friends.</p></div></div>
+  <div class="quick share-app-actions">
+   <button id="shareDayQuestAppLink" class="primary" type="button">Share App Link</button>
+   <button id="copyDayQuestAppLink" class="secondary" type="button">Copy Link</button>
+  </div>
+  <p class="hint share-app-status" id="shareDayQuestAppLinkStatus" role="status" aria-live="polite"></p>
+ </section>
  <section class="settings-card cloud-update-card" id="cloudUpdateCard">
   <div class="section-head settings-section-head"><div><h3>Cloud Data Update</h3><p class="settings-copy">When newer family data is available on another device, you can update this device here.</p></div></div>
   <button id="settingsUpdateCloudData" class="settings-cloud-update-btn" type="button" hidden><span class="update-red-star" aria-hidden="true">★</span> Update Newer Cloud Data</button>
@@ -771,5 +779,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261120-guest-assign-hide-name"></script>
+<script src="app.js?v=20261121-share-app-link"></script>
 </body></html>
