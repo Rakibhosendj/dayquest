@@ -41,7 +41,8 @@ db.loans=Array.isArray(db.loans)?db.loans:[];
 db.loans.forEach(loan=>{loan.id=String(loan.id||crypto.randomUUID());loan.type=loan.type==='taken'?'taken':'given';loan.party=String(loan.party||'').trim();loan.amount=Math.max(0,Number(loan.amount)||0);loan.method=loan.method==='Bank'?'Bank':'Cash';loan.date=String(loan.date||'');loan.dueDate=String(loan.dueDate||'');loan.note=String(loan.note||'');loan.settlements=Array.isArray(loan.settlements)?loan.settlements:[]});
 db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];
 db.incomes.forEach(x=>{if(x.source&&!db.incomeHeads.includes(x.source))db.incomeHeads.push(x.source)});
-db.profile=db.profile&&typeof db.profile==='object'?db.profile:{name:'',phone:'',openingCash:0,openingBank:0};
+db.profile=db.profile&&typeof db.profile==='object'?db.profile:{name:'',phone:'',address:'',openingCash:0,openingBank:0};
+db.profile.address=String(db.profile.address||'');
 db.profile.familyName=String(db.profile.familyName||'');
 db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';
 db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];
@@ -2465,7 +2466,7 @@ function renderFamilyMembers(){
  });
 }
 function loadProfileForm(){
- $('profileName').value=db.profile.name||'';$('profilePhone').value=db.profile.phone||'';$('familyName').value=db.profile.familyName||'';
+ $('profileName').value=db.profile.name||'';$('profilePhone').value=db.profile.phone||'';$('profileAddress').value=db.profile.address||'';$('familyName').value=db.profile.familyName||'';
  $('openingCash').value=Number(db.profile.openingCash||0);$('openingBank').value=Number(db.profile.openingBank||0);
  updateAppBrand();updateProfilePhotoPreview();renderFamilyMembers();renderMealPersonDates();
 }
@@ -2497,7 +2498,7 @@ $('profileForm').onsubmit=e=>{
  e.preventDefault();const openingCash=Number($('openingCash').value),openingBank=Number($('openingBank').value);
  if(!Number.isFinite(openingCash)||openingCash<0||!Number.isFinite(openingBank)||openingBank<0){alert('Opening balances must be zero or greater.');return}
  const name=$('profileName').value.trim();
- db.profile={...db.profile,name,phone:$('profilePhone').value.trim(),familyName:$('familyName').value.trim(),openingCash,openingBank};
+ db.profile={...db.profile,name,phone:$('profilePhone').value.trim(),address:$('profileAddress').value.trim(),familyName:$('familyName').value.trim(),openingCash,openingBank};
  if(name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===name.toLocaleLowerCase()))db.familyMembers.unshift(name);
  if(name&&!db.incomePeople.includes(name))db.incomePeople.unshift(name);
  fillChoices();renderFamilyMembers();updateProfilePhotoPreview();save();alert('Family profile and starting balances saved.');
@@ -3199,7 +3200,7 @@ function makeSupabaseClient(){
 function showAuthView(view,message=''){
  $('authScreen').hidden=false;$('appShell').hidden=true;document.title='Day Quest';hideCloudStatus();
  // Keep login fields directly interactive even after a failed session restore.
- ['loginEmail','loginPassword','signupFamilyName','signupEmail','signupPassword','signupPasswordConfirm','recoveryPassword','recoveryPasswordConfirm'].forEach(id=>{const field=$(id);if(field){field.disabled=false;field.readOnly=false;field.removeAttribute('aria-disabled');field.style.pointerEvents='auto';field.style.userSelect='text'}});
+ ['loginEmail','loginPassword','signupFamilyName','signupAddress','signupEmail','signupPassword','signupPasswordConfirm','recoveryPassword','recoveryPasswordConfirm'].forEach(id=>{const field=$(id);if(field){field.disabled=false;field.readOnly=false;field.removeAttribute('aria-disabled');field.style.pointerEvents='auto';field.style.userSelect='text'}});
  ['authSignupView','authLoginView','authResetView'].forEach(id=>$(id).hidden=true);
  // Cloud connection editing is available only after login in Settings → Administrator.
  const target={signup:'authSignupView',login:'authLoginView',reset:'authResetView'}[view]||'authLoginView';$(target).hidden=false;
@@ -3512,10 +3513,10 @@ $('useSharedCloudConfig').onclick=async()=>{
 };
 $('authSignupForm').onsubmit=async e=>{
  e.preventDefault();if(!supabaseClient){$('authMessage').textContent='Cloud connection unavailable. Please contact your DayQuest administrator.';return}
- const familyName=$('signupFamilyName').value.trim(),email=$('signupEmail').value.trim().toLowerCase(),password=$('signupPassword').value,confirmPassword=$('signupPasswordConfirm').value;
- if(!familyName){$('authMessage').textContent='Enter your family name.';return}if(password.length<8){$('authMessage').textContent='Use a password with at least 8 characters.';return}if(password!==confirmPassword){$('authMessage').textContent='The passwords do not match.';return}
+ const familyName=$('signupFamilyName').value.trim(),address=$('signupAddress').value.trim(),email=$('signupEmail').value.trim().toLowerCase(),password=$('signupPassword').value,confirmPassword=$('signupPasswordConfirm').value;
+ if(!familyName){$('authMessage').textContent='Enter your family name.';return}if(!address){$('authMessage').textContent='Enter your family address.';return}if(password.length<8){$('authMessage').textContent='Use a password with at least 8 characters.';return}if(password!==confirmPassword){$('authMessage').textContent='The passwords do not match.';return}
  const button=$('authSignupForm').querySelector('button[type="submit"]');button.disabled=true;$('authMessage').textContent='Creating your Family Account…';
- try{const {data,error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:location.href.split('#')[0],data:{family_name:familyName}}});if(error)throw error;$('signupPassword').value='';$('signupPasswordConfirm').value='';if(data.session){await connectCloudSession(data.user||data.session.user)}else{showAuthView('login','Account created. Check your email for the confirmation link, then log in here.')}}
+ try{const {data,error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:location.href.split('#')[0],data:{family_name:familyName,address}}});if(error)throw error;$('signupPassword').value='';$('signupPasswordConfirm').value='';if(data.session){await connectCloudSession(data.user||data.session.user)}else{showAuthView('login','Account created. Check your email for the confirmation link, then log in here.')}}
  catch(error){$('authMessage').textContent=error.message||'Could not create the Family Account.'}
  finally{button.disabled=false}
 };
