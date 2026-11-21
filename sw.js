@@ -7,6 +7,7 @@ const FILES = [
   './app.js?v=20261121-family-app-icon-share',
   './manifest.json',
   './icons/icon-192.png',
+  './icons/icon-512.svg',
   './icons/icon-512.png',
   './cloud-config.js'
 ];
