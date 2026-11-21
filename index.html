@@ -512,7 +512,10 @@
   <button id="settingsUpdateCloudData" class="settings-cloud-update-btn" type="button" hidden><span class="update-red-star" aria-hidden="true">★</span> Update Newer Cloud Data</button>
   <p class="hint">Update appears when newer cloud data is detected.</p>
  </section>
-  <section class="settings-card color-setting-card theme-settings-card">
+  <details class="settings-card color-customization-card">
+ <summary class="section-head settings-section-head"><h3>Color Customization</h3></summary>
+ <div class="color-customization-content">
+<div class="color-setting-item">
   <div class="section-head settings-section-head"><div><h3>Theme color</h3></div></div>
   <div class="color-dropdown-row">
    <span class="color-dropdown-swatch" id="themeColorSwatch" aria-hidden="true"></span>
@@ -525,8 +528,8 @@
    </label>
    <strong id="themeColorValue">#263B5C</strong>
   </div>
- </section>
- <section class="settings-card color-setting-card ">
+ </div>
+ <div class="color-setting-item">
   <div class="section-head settings-section-head"><div><h3>Quick button color</h3></div></div>
   <div class="color-dropdown-row">
    <span class="color-dropdown-swatch" id="quickButtonColorSwatch" aria-hidden="true"></span>
@@ -539,8 +542,8 @@
    </label>
    <strong id="quickButtonColorValue">#EE7D2F</strong>
   </div>
- </section>
- <section class="settings-card color-setting-card ">
+ </div>
+ <div class="color-setting-item">
   <div class="section-head settings-section-head"><div><h3>Background Color</h3></div></div>
   <div class="color-dropdown-row">
    <span class="color-dropdown-swatch" id="backgroundColorSwatch" aria-hidden="true"></span>
@@ -553,8 +556,8 @@
    </label>
    <strong id="backgroundColorValue">#F3F5F9</strong>
   </div>
- </section>
- <section class="settings-card color-setting-card">
+ </div>
+ <div class="color-setting-item">
   <div class="section-head settings-section-head"><div><h3>Side Menu Color</h3></div></div>
   <div class="color-dropdown-row">
    <span class="color-dropdown-swatch" id="sideMenuColorSwatch" aria-hidden="true"></span>
@@ -567,8 +570,8 @@
    </label>
    <strong id="sideMenuColorValue">#111D30</strong>
   </div>
- </section>
- <section class="settings-card color-setting-card">
+ </div>
+ <div class="color-setting-item">
   <div class="section-head settings-section-head"><div><h3>Top Bar Color</h3></div></div>
   <div class="color-dropdown-row">
    <span class="color-dropdown-swatch" id="topBarColorSwatch" aria-hidden="true"></span>
@@ -581,7 +584,18 @@
    </label>
    <strong id="topBarColorValue">#101827</strong>
   </div>
- </section>
+ </div>
+  <div class="color-setting-item">
+   <div class="section-head settings-section-head"><div><h3>Font Color</h3></div></div>
+   <div class="color-dropdown-row">
+    <span class="color-dropdown-swatch" id="fontColorSwatch" aria-hidden="true"></span>
+    <select id="fontColorSelect" aria-label="Font Color"><option value="#263b5c">⚫ Navy</option><option value="#18765b">🟢 Forest</option><option value="#059669">🟢 Emerald</option><option value="#0f766e">🟩 Teal</option><option value="#2563eb">🔵 Blue</option><option value="#4f46e5">🔷 Indigo</option><option value="#9333ea">🟣 Purple</option><option value="#dc2626">🔴 Red</option><option value="#92400e">🟤 Brown</option><option value="#475569">⚫ Slate</option><option value="#1f2937">⚫ Charcoal</option><option value="#ffffff">⚪ White</option><option value="other">🎨 Other (custom)</option></select>
+    <label class="color-custom-control" title="Choose custom font color"><input id="fontColorInput" type="color" value="#263b5c" aria-label="Choose custom font color"></label>
+    <strong id="fontColorValue">#263B5C</strong>
+   </div>
+  </div>
+ </div>
+</details>
 <section class="settings-card">
   <div class="section-head settings-section-head"><div><h3>Quick button vibration</h3></div></div>
   <label class="settings-toggle-row"><input id="quickButtonVibration" type="checkbox" checked> <span>Enable vibration on quick buttons</span></label>

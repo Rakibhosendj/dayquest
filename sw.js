@@ -1,12 +1,12 @@
-const CACHE = 'dayquest-cache-v133-meal-dates-dropdown';
+const CACHE = 'dayquest-cache-v135-color-customization';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261121-meal-dates-dropdown',
-  './app.js?v=20261121-meal-dates-dropdown',
+  './style.css?v=20261121-color-customization',
+  './app.js?v=20261121-color-customization',
   './manifest.json',
-  './icons/icon-192.png?v=20261121-meal-dates-dropdown',
+  './icons/icon-192.png?v=20261121-color-customization',
   './icons/icon-512.svg',
   './icons/icon-512.png',
   './cloud-config.js'

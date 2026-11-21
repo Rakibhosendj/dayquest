@@ -1696,3 +1696,17 @@ img,canvas,svg{max-width:100%}
 .meal-person-date-settings-card[open]>summary{margin-bottom:12px}
 .meal-person-date-settings-card[open]>summary::after{content:'−'}
 .meal-person-date-settings-card>summary:focus-visible{outline:2px solid #16834b;outline-offset:4px;border-radius:5px}
+
+
+/* Collapsible Color Customization group. */
+.color-customization-card>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;list-style:none;margin:0;min-height:24px}
+.color-customization-card>summary::-webkit-details-marker{display:none}
+.color-customization-card>summary::after{content:'＋';font-size:17px;line-height:1;color:#64748b;font-weight:700}
+.color-customization-card[open]>summary{margin-bottom:12px}
+.color-customization-card[open]>summary::after{content:'−'}
+.color-customization-card>summary:focus-visible{outline:2px solid #16834b;outline-offset:4px;border-radius:5px}
+.color-customization-content{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:8px}
+.color-customization-content>.color-setting-item{min-width:0;border:1px solid #e7ebf1;border-radius:12px;padding:10px;margin:0;background:#fff}
+.color-customization-content .settings-section-head{margin:0 0 7px}
+.color-customization-content .color-dropdown-row{display:flex;gap:8px;align-items:center;min-width:0}
+.color-customization-content .color-dropdown-row select{flex:1;min-width:0}
