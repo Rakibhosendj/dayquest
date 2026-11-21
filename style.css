@@ -1754,3 +1754,13 @@ body{color:var(--dq-font-color,#263b5c)}
 .purchase-transit-method select{min-width:0;min-height:36px}
 .purchase-landed-preview{border:1px solid #dce6f0}
 @media(max-width:520px){.purchase-balance-strip{padding:7px 8px}.purchase-balance-strip strong{font-size:12px}.purchase-transit-method{grid-template-columns:1fr;gap:3px;font-size:9px}.purchase-transit-method select{min-height:42px;font-size:16px!important}}
+
+/* Regular family users can change their own Family Account login password. */
+.password-management-card>summary{cursor:pointer;list-style:none}
+.password-management-card>summary::-webkit-details-marker{display:none}
+.password-management-card>summary:focus-visible{outline:2px solid #16834b;outline-offset:4px;border-radius:5px}
+.login-password-change-form{gap:9px}
+.login-password-change-form label{display:grid;gap:5px}
+.login-password-change-form input{width:100%;min-width:0}
+.login-password-change-form button{width:100%;min-height:40px}
+.login-password-change-form p{margin:0;min-height:0}

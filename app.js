@@ -3674,6 +3674,33 @@ $('authResetForm').onsubmit=async e=>{
  try{const {error}=await supabaseClient.auth.updateUser({password});if(error)throw error;await supabaseClient.auth.signOut();cloudPasswordRecovery=false;$('recoveryPassword').value='';$('recoveryPasswordConfirm').value='';showAuthView('login','Password updated. Log in with your new password.')}
  catch(error){$('authMessage').textContent=error.message||'Could not update the password.'}
 };
+$('loginPasswordChangeForm').onsubmit=async e=>{
+ e.preventDefault();
+ const currentPassword=$('loginCurrentPassword').value,newPassword=$('loginNewPassword').value,confirmation=$('loginConfirmNewPassword').value;
+ const button=$('loginPasswordChangeSubmit'),message=$('loginPasswordChangeMessage');
+ message.textContent='';
+ if(!supabaseClient||!cloudUser){message.textContent='Sign in to your Family Account before changing its login password.';return}
+ if(!navigator.onLine){message.textContent='Connect to the internet before changing your login password.';return}
+ if(newPassword.length<8){message.textContent='Use at least 8 characters for the new password.';return}
+ if(newPassword!==confirmation){message.textContent='The new passwords do not match.';return}
+ const email=String(cloudUser.email||'').trim().toLowerCase();
+ if(!email){message.textContent='The signed-in account email is unavailable. Please log out and log in again.';return}
+ button.disabled=true;button.textContent='Updating password…';
+ try{
+  const {data:loginData,error:loginError}=await supabaseClient.auth.signInWithPassword({email,password:currentPassword});
+  if(loginError)throw new Error('Current login password is incorrect.');
+  if(loginData?.user?.id!==cloudUser.id)throw new Error('The login confirmation did not match this Family Account.');
+  cloudUser=loginData.user;
+  const {error:updateError}=await supabaseClient.auth.updateUser({password:newPassword});
+  if(updateError)throw updateError;
+  $('loginPasswordChangeForm').reset();
+  message.textContent='Login password changed successfully. You can use the new password on your other devices.';
+ }catch(error){
+  message.textContent=error.message||'Could not change the login password. Please try again.';
+ }finally{
+  button.disabled=false;button.textContent='Change Login Password';
+ }
+};
 function clearExpenseIncomeRecords(){
  const salesMemoIds=new Set(db.incomes.filter(item=>item.salesMemo).map(item=>String(item.id)));
  db.expenses=[];db.incomes=[];

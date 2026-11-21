@@ -655,6 +655,16 @@
   <summary class="section-head settings-section-head"><h3>Member Meal Dates</h3></summary>
   <div id="mealPersonDateSettings" class="meal-person-date-settings"></div>
  </details>
+ <details class="settings-card password-management-card">
+  <summary class="section-head settings-section-head"><h3>Password Management</h3></summary>
+  <form id="loginPasswordChangeForm" class="form login-password-change-form">
+   <label>Current login password <input id="loginCurrentPassword" type="password" autocomplete="current-password" required></label>
+   <label>New login password <input id="loginNewPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+   <label>Confirm new login password <input id="loginConfirmNewPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+   <button class="primary" id="loginPasswordChangeSubmit" type="submit">Change Login Password</button>
+   <p class="hint" id="loginPasswordChangeMessage" role="status" aria-live="polite"></p>
+  </form>
+ </details>
  <section id="adminAccessCard" class="settings-card admin-access-card" hidden>
   <div class="section-head settings-section-head"><div><h3>Administrator Access</h3></div></div>
   <p class="settings-copy" id="adminAccessIntro">Enter the separate administrator password to open restricted settings.</p>
@@ -872,5 +882,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261121-purchase-transit-landed-cost"></script>
+<script src="app.js?v=20261121-password-management"></script>
 </body></html>
