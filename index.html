@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261121-share-name-only">
+<link rel="stylesheet" href="style.css?v=20261121-settings-hint-cleanup">
 <title>DayQuest</title>
 </head>
 <body>
@@ -475,17 +475,17 @@
 <section id="settings" class="panel">
  <div class="section-head"><h2>Settings</h2><span class="pill">Personalize DayQuest</span></div>
  <section class="settings-card notification-settings-card">
-  <div class="section-head settings-section-head"><div><h3>Notifications</h3><p class="settings-copy">Choose which reminders this device should receive, including when DayQuest is closed.</p></div></div>
+  <div class="section-head settings-section-head"><div><h3>Choose Reminder Receive</h3></div></div>
   <label class="settings-toggle-row"><input id="notifyDailyQuest" type="checkbox" checked> <span>Daily Quest alarms · At each scheduled time range</span></label>
   <label class="settings-toggle-row"><input id="notifyExpenseDue" type="checkbox" checked> <span>Expense due reminders · Pay or collect</span></label>
   <label class="settings-toggle-row"><input id="notifyIncomeDue" type="checkbox" checked> <span>Income due reminders · Collect money</span></label>
   <label class="settings-toggle-row"><input id="notifyLoanGiven" type="checkbox" checked> <span>Loan collection reminders · Loans I give</span></label>
   <label class="settings-toggle-row"><input id="notifyLoanTaken" type="checkbox" checked> <span>Loan repayment reminders · Loans I take</span></label>
   <div class="quick"><button id="enableDayQuestNotifications" class="primary" type="button">Enable Background Notifications</button><button id="disableDayQuestNotifications" class="secondary" type="button">Disable Notifications</button></div>
-  <p class="hint" id="notificationPermissionStatus" role="status" aria-live="polite">Notifications need your browser permission and the DayQuest push service configuration.</p>
+  
  </section>
  <section class="settings-card share-app-card">
-  <div class="section-head settings-section-head"><div><h3>Share DayQuest</h3><p class="settings-copy">Share the DayQuest app link with family and friends.</p></div></div>
+  <div class="section-head settings-section-head"><div><h3>Share DayQuest</h3></div></div>
   <div class="quick share-app-actions">
    <button id="shareDayQuestAppLink" class="primary" type="button">Share App Link</button>
    <button id="copyDayQuestAppLink" class="secondary" type="button">Copy Link</button>
@@ -493,12 +493,12 @@
   <p class="hint share-app-status" id="shareDayQuestAppLinkStatus" role="status" aria-live="polite"></p>
  </section>
  <section class="settings-card cloud-update-card" id="cloudUpdateCard">
-  <div class="section-head settings-section-head"><div><h3>Cloud Data Update</h3><p class="settings-copy">When newer family data is available on another device, you can update this device here.</p></div></div>
+  <div class="section-head settings-section-head"><div><h3>Cloud Data Update</h3></div></div>
   <button id="settingsUpdateCloudData" class="settings-cloud-update-btn" type="button" hidden><span class="update-red-star" aria-hidden="true">★</span> Update Newer Cloud Data</button>
-  <p class="hint">The Update button appears when newer cloud data is detected. Your current device data is backed up before updating.</p>
+  <p class="hint">Update appears when newer cloud data is detected.</p>
  </section>
  <section class="settings-card">
-  <div class="section-head settings-section-head"><div><h3>Theme color</h3><p class="settings-copy">Choose the main color for navigation, buttons and highlights.</p></div></div>
+  <div class="section-head settings-section-head"><div><h3>Theme color</h3></div></div>
   <div class="theme-picker-row"><label for="themeColorInput">Custom color</label><input id="themeColorInput" type="color" value="#263b5c" aria-label="Choose theme color"><strong id="themeColorValue">#263B5C</strong></div>
   <div class="theme-presets" aria-label="Theme color presets">
    <button type="button" class="theme-swatch" data-theme-color="#263b5c" aria-label="Navy blue" title="Navy blue" style="--swatch:#263b5c"></button>
@@ -510,7 +510,7 @@
   </div>
  </section>
  <section class="settings-card">
-  <div class="section-head settings-section-head"><div><h3>Quick button color</h3><p class="settings-copy">Choose one color for Quick Expenses and Quick Suppliers buttons on the Overview and Quick Expenses pages.</p></div></div>
+  <div class="section-head settings-section-head"><div><h3>Quick button color</h3></div></div>
   <div class="theme-picker-row"><label for="quickButtonColorInput">Quick button color</label><input id="quickButtonColorInput" type="color" value="#ee7d2f" aria-label="Choose quick button color"><strong id="quickButtonColorValue">#EE7D2F</strong></div>
   <div class="theme-presets" aria-label="Quick button color presets">
    <button type="button" class="theme-swatch" data-quick-button-color="#ee7d2f" aria-label="Orange" title="Orange" style="--swatch:#ee7d2f"></button>
@@ -522,7 +522,7 @@
   </div>
  </section>
  <section class="settings-card">
-  <div class="section-head settings-section-head"><div><h3>Quick button vibration</h3><p class="settings-copy">Vibrate briefly when a Quick Expense, Quick Supplier or Daily Quest button is tapped.</p></div></div>
+  <div class="section-head settings-section-head"><div><h3>Quick button vibration</h3></div></div>
   <label class="settings-toggle-row"><input id="quickButtonVibration" type="checkbox" checked> <span>Enable vibration on quick buttons</span></label>
  </section>
  <section class="settings-card settings-quick-actions-card">
@@ -554,17 +554,17 @@
   </details>
  </section>
  <section class="settings-card">
-  <div class="section-head settings-section-head"><div><h3>Supplier requirement for credit purchases</h3><p class="settings-copy">Choose whether a supplier must be selected when a purchase bill has an unpaid balance.</p></div></div>
-  <label class="settings-toggle-row"><input id="requireSupplierForDuePurchase" type="checkbox" checked> <span>Supplier name is mandatory when a purchase has a due balance</span></label>
-  <p class="hint">When disabled, unpaid purchases without a supplier are recorded under “Unassigned supplier” so the due still appears in Creditors.</p>
+  <div class="section-head settings-section-head"><div><h3>Supplier requirement for credit purchases</h3></div></div>
+  <label class="settings-toggle-row"><input id="requireSupplierForDuePurchase" type="checkbox" checked> <span>As Due Supplier Mandatory</span></label>
+  
  </section>
  <section class="settings-card">
-  <div class="section-head settings-section-head"><div><h3>Purchase bill editing</h3><p class="settings-copy">Control whether saved purchase bills can be edited from Purchase and Inventory.</p></div></div>
+  <div class="section-head settings-section-head"><div><h3>Purchase bill editing</h3></div></div>
   <label class="settings-toggle-row"><input id="allowPurchaseBillEdits" type="checkbox" checked> <span>Allow editing saved purchase bills</span></label>
-  <p class="hint">When enabled, saved bill changes refresh inventory values and all reports. Bills with recorded stock usage, production or sales are locked. If the supplier has payment history, keep the supplier, purchase date and outstanding credit amount unchanged to protect creditor allocations. Equivalent units such as kg/g and litre/ml convert automatically while preserving the line amount.</p>
+  
  </section>
  <section class="settings-card">
-  <div class="section-head settings-section-head"><div><h3>Custom lists</h3><p class="settings-copy">Open any list to add, rename or manage its entries. Renaming updates saved references; deleting is blocked while an item is in use.</p></div></div>
+  <div class="section-head settings-section-head"><div><h3>Custom lists</h3></div></div>
   <div class="settings-master-grid settings-master-accordions">
    <details class="settings-master-group"><summary>Suppliers</summary><form id="addSettingSupplierForm" class="category-add-form"><input id="newSettingSupplier" maxlength="80" placeholder="Add supplier" required><button class="primary" type="submit">＋ Add</button></form><div id="settingsSupplierList" class="list category-settings-list"></div></details>
    <details class="settings-master-group"><summary>Product Dictionary · English / বাংলা</summary><p class="settings-copy">Search, edit or add product names in English and Bangla. Both names are suggested in the Purchase Form product field.</p><form id="addProductDictionaryForm" class="product-dictionary-add-form"><input id="newProductDictionaryEnglish" maxlength="80" placeholder="English product name" required><input id="newProductDictionaryBangla" maxlength="80" placeholder="বাংলা পণ্যের নাম" lang="bn" required><label class="dictionary-meal-check"><input id="newProductDictionaryMeal" type="checkbox"> Meals</label><button class="primary" type="submit">＋ Add product</button></form><label class="product-dictionary-search">Search dictionary <input id="productDictionarySearch" type="search" placeholder="Search English or বাংলা"></label><div class="section-head"><span class="muted" id="productDictionaryCount">0 dictionary entries</span></div><div id="productDictionaryList" class="product-dictionary-list"></div></details>
@@ -603,13 +603,13 @@
  <section class="settings-card settings-danger-card">
   <div class="section-head settings-section-head"><div><h3>Delete Account</h3><p class="settings-copy">Permanently remove this Family Account login. This affects every family member sharing the same account.</p></div></div>
   <button class="delete-profile-btn" id="deleteAccountBtn" type="button">Permanently Delete Account</button>
-  <p class="hint">Requires an internet connection and the current Family Account password. Export a backup before deleting. This action cannot be undone.</p>
-  <p class="hint">The secure Supabase delete-account function must be deployed before this option can work.</p>
+  
+  
  </section>
  <section class="settings-card">
   <div class="section-head settings-section-head"><div><h3>Data & backup</h3><p class="settings-copy">Export a backup regularly before clearing browser data or changing devices.</p></div></div>
   <div class="quick"><button class="secondary" id="exportBtn">Export backup</button><label class="secondary import">Import backup<input id="importFile" type="file" accept="application/json"></label></div>
-  <p class="hint">Your data syncs to your Family Account when online and is cached on this device for offline work. Export a backup before migration or restoring a different copy.</p>
+  
  </section>
 </section>
 <section id="reports" class="panel">
@@ -779,5 +779,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261121-share-name-only"></script>
+<script src="app.js?v=20261121-settings-hint-cleanup"></script>
 </body></html>
