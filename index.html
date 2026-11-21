@@ -489,8 +489,8 @@
 </section>
 <section id="settings" class="panel">
  <div class="section-head"><h2>Settings</h2><span class="pill">Personalize DayQuest</span></div>
- <section class="settings-card notification-settings-card">
-  <div class="section-head settings-section-head"><div><h3>Choose Reminder Receive</h3></div></div>
+ <details class="settings-card notification-settings-card">
+  <summary class="section-head settings-section-head"><h3>Choose Reminder Receive</h3></summary>
   <label class="settings-toggle-row"><input id="notifyDailyQuest" type="checkbox" checked> <span>Daily Quest alarms · At each scheduled time range</span></label>
   <label class="settings-toggle-row"><input id="notifyExpenseDue" type="checkbox" checked> <span>Expense due reminders · Pay or collect</span></label>
   <label class="settings-toggle-row"><input id="notifyIncomeDue" type="checkbox" checked> <span>Income due reminders · Collect money</span></label>
@@ -498,7 +498,7 @@
   <label class="settings-toggle-row"><input id="notifyLoanTaken" type="checkbox" checked> <span>Loan repayment reminders · Loans I take</span></label>
   <div class="quick"><button id="enableDayQuestNotifications" class="primary" type="button">Enable Background Notifications</button><button id="disableDayQuestNotifications" class="secondary" type="button">Disable Notifications</button></div>
   <p class="hint" id="notificationPermissionStatus" role="status" aria-live="polite" hidden></p>
- </section>
+ </details>
  <section class="settings-card share-app-card">
   <div class="section-head settings-section-head"><div><h3>Share DayQuest</h3></div></div>
   <div class="quick share-app-actions">
@@ -638,8 +638,8 @@
   <label class="settings-toggle-row"><input id="allowPurchaseBillEdits" type="checkbox" checked> <span>Allow editing saved purchase bills</span></label>
   
  </section>
- <section class="settings-card">
-  <div class="section-head settings-section-head"><div><h3>Custom lists</h3></div></div>
+ <details class="settings-card custom-lists-settings-card">
+  <summary class="section-head settings-section-head"><h3>Custom lists</h3></summary>
   <div class="settings-master-grid settings-master-accordions">
    <details class="settings-master-group"><summary>Suppliers</summary><form id="addSettingSupplierForm" class="category-add-form"><input id="newSettingSupplier" maxlength="80" placeholder="Add supplier" required><button class="primary" type="submit">＋ Add</button></form><div id="settingsSupplierList" class="list category-settings-list"></div></details>
    <details class="settings-master-group"><summary>Product Dictionary · English / বাংলা</summary><p class="settings-copy">Search, edit or add product names in English and Bangla. Both names are suggested in the Purchase Form product field.</p><form id="addProductDictionaryForm" class="product-dictionary-add-form"><input id="newProductDictionaryEnglish" maxlength="80" placeholder="English product name" required><input id="newProductDictionaryBangla" maxlength="80" placeholder="বাংলা পণ্যের নাম" lang="bn" required><label class="dictionary-meal-check"><input id="newProductDictionaryMeal" type="checkbox"> Meals</label><button class="primary" type="submit">＋ Add product</button></form><label class="product-dictionary-search">Search dictionary <input id="productDictionarySearch" type="search" placeholder="Search English or বাংলা"></label><div class="section-head"><span class="muted" id="productDictionaryCount">0 dictionary entries</span></div><div id="productDictionaryList" class="product-dictionary-list"></div></details>
@@ -647,7 +647,7 @@
    <details class="settings-master-group"><summary>Units</summary><form id="addSettingUnitForm" class="category-add-form"><input id="newSettingUnit" maxlength="30" placeholder="Add unit name" required><button class="primary" type="submit">＋ Add</button></form><div id="settingsUnitList" class="list category-settings-list"></div></details>
    <details class="settings-master-group settings-master-category"><summary>Purchase item categories</summary><form id="addPurchaseCategoryForm" class="category-add-form"><input id="newPurchaseCategory" maxlength="40" placeholder="Add a category name" aria-label="New purchase category" required><button class="primary" type="submit">＋ Add category</button></form><div id="purchaseCategoryList" class="list category-settings-list"></div><p class="hint">These categories are available beside Product Name on purchase lines and are used in cost and asset reports.</p></details>
   </div>
- </section>
+ </details>
  <details class="settings-card meal-person-date-settings-card">
   <summary class="section-head settings-section-head"><h3>Member Meal Dates</h3></summary>
   <div id="mealPersonDateSettings" class="meal-person-date-settings"></div>

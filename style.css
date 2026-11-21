@@ -1714,3 +1714,12 @@ img,canvas,svg{max-width:100%}
 
 /* Apply the selected font color consistently throughout the app. */
 body{color:var(--dq-font-color,#263b5c)}
+
+
+/* Collapsible Settings groups: Custom lists and reminder preferences. */
+.custom-lists-settings-card>summary,.notification-settings-card>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;list-style:none;margin:0;min-height:24px}
+.custom-lists-settings-card>summary::-webkit-details-marker,.notification-settings-card>summary::-webkit-details-marker{display:none}
+.custom-lists-settings-card>summary::after,.notification-settings-card>summary::after{content:'＋';font-size:17px;line-height:1;color:#64748b;font-weight:700}
+.custom-lists-settings-card[open]>summary,.notification-settings-card[open]>summary{margin-bottom:12px}
+.custom-lists-settings-card[open]>summary::after,.notification-settings-card[open]>summary::after{content:'−'}
+.custom-lists-settings-card>summary:focus-visible,.notification-settings-card>summary:focus-visible{outline:2px solid #16834b;outline-offset:4px;border-radius:5px}

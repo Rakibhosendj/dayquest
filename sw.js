@@ -1,12 +1,12 @@
-const CACHE = 'dayquest-cache-v135-color-customization';
+const CACHE = 'dayquest-cache-v136-settings-dropdowns';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261121-color-customization',
-  './app.js?v=20261121-color-customization',
+  './style.css?v=20261121-settings-dropdowns',
+  './app.js?v=20261121-settings-dropdowns',
   './manifest.json',
-  './icons/icon-192.png?v=20261121-color-customization',
+  './icons/icon-192.png?v=20261121-settings-dropdowns',
   './icons/icon-512.svg',
   './icons/icon-512.png',
   './cloud-config.js'
