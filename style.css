@@ -1723,3 +1723,12 @@ body{color:var(--dq-font-color,#263b5c)}
 .custom-lists-settings-card[open]>summary,.notification-settings-card[open]>summary{margin-bottom:12px}
 .custom-lists-settings-card[open]>summary::after,.notification-settings-card[open]>summary::after{content:'−'}
 .custom-lists-settings-card>summary:focus-visible,.notification-settings-card>summary:focus-visible{outline:2px solid #16834b;outline-offset:4px;border-radius:5px}
+
+ 
+/* Separate administrator password gate for cloud configuration controls. */
+.admin-access-form{gap:10px}
+.admin-access-card .admin-access-form label{display:grid;gap:5px}
+.admin-cloud-toolbar{justify-content:flex-end;margin:0 0 10px}
+.admin-cloud-settings-card[hidden]{display:none!important}
+.admin-access-card[hidden]{display:none!important}
+.admin-password-change{margin-top:12px}

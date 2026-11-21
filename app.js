@@ -1,4 +1,6 @@
 const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slice(0,10);
+let adminCloudUnlocked=false;
+const ADMIN_PASSWORD_ITERATIONS=310000;
 const SIDE_MENU_DEFAULT_ORDER=['home','expenses','inventory','budget','production','supplierAccounts','outstanding','loans','income','meals','quests','reports','profile','settings'];
 function normalizeSideMenuOrder(value){
  const valid=new Set(SIDE_MENU_DEFAULT_ORDER);
@@ -3210,7 +3212,7 @@ function makeSupabaseClient(){
  return window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'dayquest-supabase-auth-v1'}});
 }
 function showAuthView(view,message=''){
- $('authScreen').hidden=false;$('appShell').hidden=true;document.title='Day Quest';hideCloudStatus();
+ $('authScreen').hidden=false;$('appShell').hidden=true;document.title='Day Quest';hideCloudStatus();lockAdminCloudSettings();
  // Keep login fields directly interactive even after a failed session restore.
  ['loginEmail','loginPassword','signupFamilyName','signupAddress','signupEmail','signupPassword','signupPasswordConfirm','recoveryPassword','recoveryPasswordConfirm'].forEach(id=>{const field=$(id);if(field){field.disabled=false;field.readOnly=false;field.removeAttribute('aria-disabled');field.style.pointerEvents='auto';field.style.userSelect='text'}});
  ['authSignupView','authLoginView','authResetView'].forEach(id=>$(id).hidden=true);
@@ -3479,32 +3481,101 @@ function refreshAdminCloudConfig(){
    ?'Using the shared DayQuest deployment connection. All devices use cloud-config.js by default.'
    :'No cloud connection is configured. Ask an administrator to repair the published cloud-config.js file.';
 }
-$('adminCloudUnlockForm').onsubmit=async e=>{
+
+function bytesToBase64(bytes){
+ let binary='';for(const value of bytes)binary+=String.fromCharCode(value);return btoa(binary);
+}
+function base64ToBytes(value){
+ return Uint8Array.from(atob(value),character=>character.charCodeAt(0));
+}
+async function deriveAdminPasswordHash(password,salt,iterations=ADMIN_PASSWORD_ITERATIONS){
+ if(!window.crypto?.subtle)throw new Error('Secure password protection is unavailable in this browser. Update your browser and try again.');
+ const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveBits']);
+ const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations,hash:'SHA-256'},key,256);
+ return new Uint8Array(bits);
+}
+async function makeAdminPasswordRecord(password){
+ const salt=crypto.getRandomValues(new Uint8Array(16));
+ const hash=await deriveAdminPasswordHash(password,salt);
+ return {version:1,algorithm:'PBKDF2-SHA-256',iterations:ADMIN_PASSWORD_ITERATIONS,salt:bytesToBase64(salt),hash:bytesToBase64(hash)};
+}
+async function verifyAdminPassword(password,record){
+ if(!record||record.algorithm!=='PBKDF2-SHA-256'||!record.salt||!record.hash)return false;
+ const actual=await deriveAdminPasswordHash(password,base64ToBytes(record.salt),Math.max(100000,Math.min(600000,Number(record.iterations)||ADMIN_PASSWORD_ITERATIONS)));
+ const expected=base64ToBytes(record.hash);
+ if(actual.length!==expected.length)return false;
+ let difference=0;for(let i=0;i<actual.length;i++)difference|=actual[i]^expected[i];
+ return difference===0;
+}
+function getAdminPasswordRecord(){return db.settings?.adminPasswordRecord||null}
+function refreshAdminAccessGate(){
+ const configured=!!getAdminPasswordRecord();
+ $('adminAccessConfirmRow').hidden=configured;
+ $('adminAccessPassword').value='';
+ $('adminAccessPassword').minLength=configured?1:10;
+ $('adminAccessPassword').autocomplete=configured?'current-password':'new-password';
+ $('adminAccessIntro').textContent=configured
+  ?'Administrator settings are hidden. Enter the separate administrator password to unlock them.'
+  :'First-time setup: the family account owner should create the separate administrator password before other family members use this app.';
+ $('adminAccessSubmit').textContent=configured?'Unlock Administrator':'Set Administrator Password';
+ $('adminAccessMessage').textContent='';
+}
+function lockAdminCloudSettings(){
+ adminCloudUnlocked=false;
+ const panel=$('adminCloudSettings'),gate=$('adminAccessCard'),details=$('adminCloudConnection');
+ if(panel)panel.hidden=true;
+ if(gate)gate.hidden=false;
+ if(details)details.open=false;
+ const password=$('adminAccessPassword');if(password)password.value='';
+ const confirmPassword=$('adminAccessConfirmPassword');if(confirmPassword)confirmPassword.value='';
+}
+function unlockAdminCloudSettings(){
+ adminCloudUnlocked=true;
+ $('adminAccessCard').hidden=true;
+ $('adminCloudSettings').hidden=false;
+ $('adminCloudConnection').open=true;
+ refreshAdminCloudConfig();
+}
+$('adminAccessForm').onsubmit=async e=>{
  e.preventDefault();
- const password=$('adminCloudPassword').value;
- $('adminCloudUnlockMessage').textContent='';
- if(!cloudUser?.email||!supabaseClient){$('adminCloudUnlockMessage').textContent='Sign in to the Family Account before unlocking administrator settings.';return}
- const button=$('adminCloudUnlockForm').querySelector('button[type="submit"]');button.disabled=true;
+ const password=$('adminAccessPassword').value;
+ const record=getAdminPasswordRecord();
+ const button=$('adminAccessSubmit');button.disabled=true;
+ $('adminAccessMessage').textContent='';
  try{
-  const {data,error}=await supabaseClient.auth.signInWithPassword({email:cloudUser.email,password});
-  if(error)throw error;
-  if(data.user?.id!==cloudUser.id)throw new Error('The confirmed account does not match the active Family Account.');
-  $('adminCloudPassword').value='';
-  $('adminCloudUnlockMessage').textContent='Administrator settings unlocked for this session.';
-  $('adminCloudConnectionLocked').hidden=true;
-  $('cloudConfigForm').hidden=false;
-  refreshAdminCloudConfig();
- }catch(error){$('adminCloudUnlockMessage').textContent=error.message||'Password confirmation failed.'}
+  if(record){
+   if(!await verifyAdminPassword(password,record))throw new Error('Incorrect administrator password.');
+  }else{
+   const confirmation=$('adminAccessConfirmPassword').value;
+   if(password.length<10)throw new Error('Use at least 10 characters for the administrator password.');
+   if(password!==confirmation)throw new Error('The administrator passwords do not match.');
+   db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};
+   db.settings.adminPasswordRecord=await makeAdminPasswordRecord(password);
+   save();
+   $('adminAccessMessage').textContent='Administrator password created and saved with the shared family settings.';
+  }
+  $('adminAccessPassword').value='';$('adminAccessConfirmPassword').value='';
+  unlockAdminCloudSettings();
+ }catch(error){$('adminAccessMessage').textContent=error.message||'Could not unlock administrator settings.'}
  finally{button.disabled=false}
 };
-$('adminCloudConnection').addEventListener('toggle',()=>{
- if(!$('adminCloudConnection').open){
-  $('cloudConfigForm').hidden=true;
-  $('adminCloudConnectionLocked').hidden=false;
-  $('adminCloudPassword').value='';
-  $('adminCloudUnlockMessage').textContent='';
- }
-});
+$('adminLockButton').onclick=()=>lockAdminCloudSettings();
+$('adminChangePasswordForm').onsubmit=async e=>{
+ e.preventDefault();
+ const current=$('adminCurrentPassword').value,newPassword=$('adminNewPassword').value,confirmation=$('adminConfirmNewPassword').value;
+ const button=$('adminChangePasswordForm').querySelector('button[type="submit"]');button.disabled=true;
+ $('adminChangePasswordMessage').textContent='';
+ try{
+  if(!adminCloudUnlocked)throw new Error('Unlock Administrator Access first.');
+  if(!await verifyAdminPassword(current,getAdminPasswordRecord()))throw new Error('Current administrator password is incorrect.');
+  if(newPassword.length<10)throw new Error('Use at least 10 characters for the new password.');
+  if(newPassword!==confirmation)throw new Error('The new passwords do not match.');
+  db.settings.adminPasswordRecord=await makeAdminPasswordRecord(newPassword);
+  save();$('adminChangePasswordForm').reset();
+  $('adminChangePasswordMessage').textContent='Administrator password updated.';
+ }catch(error){$('adminChangePasswordMessage').textContent=error.message||'Could not update administrator password.'}
+ finally{button.disabled=false}
+};
 $('cloudConfigForm').onsubmit=async e=>{
  e.preventDefault();const url=$('cloudProjectUrl').value.trim().replace(/\/+$/,''),key=$('cloudPublishableKey').value.trim();
  try{
@@ -3515,7 +3586,7 @@ $('cloudConfigForm').onsubmit=async e=>{
   localStorage.setItem(CLOUD_CONFIG_KEY,JSON.stringify({url,key,override:true}));
   try{await supabaseClient?.auth.signOut()}catch(error){console.warn('Could not sign out before applying the new cloud connection.',error)}
   location.reload();
- }catch(error){$('adminCloudUnlockMessage').textContent=error.message||'Enter a valid Supabase project URL and public key.'}
+ }catch(error){$('adminCloudConfigMessage').textContent=error.message||'Enter a valid Supabase project URL and public key.'}
 };
 $('useSharedCloudConfig').onclick=async()=>{
  if(!confirm('Remove this browser’s cloud override and use the shared cloud-config.js settings? DayQuest will sign out and reload.'))return;

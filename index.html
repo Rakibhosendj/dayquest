@@ -652,19 +652,23 @@
   <summary class="section-head settings-section-head"><h3>Member Meal Dates</h3></summary>
   <div id="mealPersonDateSettings" class="meal-person-date-settings"></div>
  </details>
- <section class="settings-card admin-cloud-settings-card">
+ <section id="adminAccessCard" class="settings-card admin-access-card">
+  <div class="section-head settings-section-head"><div><h3>Administrator Access</h3></div></div>
+  <p class="settings-copy" id="adminAccessIntro">Enter the separate administrator password to open restricted settings.</p>
+  <form id="adminAccessForm" class="form admin-access-form">
+   <label>Administrator password <input id="adminAccessPassword" type="password" autocomplete="current-password" minlength="10" required></label>
+   <label id="adminAccessConfirmRow" hidden>Confirm administrator password <input id="adminAccessConfirmPassword" type="password" autocomplete="new-password" minlength="10"></label>
+   <button class="primary" id="adminAccessSubmit" type="submit">Unlock Administrator</button>
+   <p class="hint" id="adminAccessMessage" role="status" aria-live="polite"></p>
+  </form>
+ </section>
+ <section id="adminCloudSettings" class="settings-card admin-cloud-settings-card" hidden>
+  <div class="quick admin-cloud-toolbar"><button id="adminLockButton" class="secondary" type="button">Lock Administrator Settings</button></div>
   <details id="adminCloudConnection" class="settings-master-group">
    <summary>Administrator: Cloud connection</summary>
-   <p class="settings-copy">Advanced connection controls. Normal users should not change these settings. The shared Family Account password is required to unlock this section.</p>
+   <p class="settings-copy">Advanced connection controls. Only unlock these settings when changing or repairing the DayQuest cloud connection.</p>
    <p class="hint" id="adminCloudConnectionStatus">Checking the active cloud configuration…</p>
-   <div id="adminCloudConnectionLocked">
-    <form id="adminCloudUnlockForm" class="form admin-cloud-unlock-form">
-     <label>Confirm Family Account password <input id="adminCloudPassword" type="password" autocomplete="current-password" required></label>
-     <button class="secondary" type="submit">Unlock administrator settings</button>
-     <p class="hint" id="adminCloudUnlockMessage" role="status" aria-live="polite"></p>
-    </form>
-   </div>
-   <form id="cloudConfigForm" class="form admin-cloud-config-form" hidden>
+   <form id="cloudConfigForm" class="form admin-cloud-config-form">
     <label>Supabase Project URL <input id="cloudProjectUrl" type="url" inputmode="url" placeholder="https://your-project.supabase.co" autocomplete="url" required></label>
     <label>Supabase Publishable Key <input id="cloudPublishableKey" type="password" autocomplete="off" placeholder="sb_publishable_… or legacy anon key" required></label>
     <div class="quick">
@@ -672,6 +676,17 @@
      <button class="secondary" id="useSharedCloudConfig" type="button">Use shared deployment settings</button>
     </div>
     <p class="hint">A saved override affects this browser only. To change the default connection for every device, an administrator must update cloud-config.js in the published GitHub repository. Never enter a secret or service-role key here.</p>
+    <p class="hint" id="adminCloudConfigMessage" role="status" aria-live="polite"></p>
+   </form>
+  </details>
+  <details class="settings-master-group admin-password-change">
+   <summary>Change administrator password</summary>
+   <form id="adminChangePasswordForm" class="form">
+    <label>Current administrator password <input id="adminCurrentPassword" type="password" autocomplete="current-password" required></label>
+    <label>New administrator password <input id="adminNewPassword" type="password" autocomplete="new-password" minlength="10" required></label>
+    <label>Confirm new password <input id="adminConfirmNewPassword" type="password" autocomplete="new-password" minlength="10" required></label>
+    <button class="secondary" type="submit">Update administrator password</button>
+    <p class="hint" id="adminChangePasswordMessage" role="status" aria-live="polite"></p>
    </form>
   </details>
  </section>
