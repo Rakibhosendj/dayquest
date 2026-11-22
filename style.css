@@ -2071,3 +2071,10 @@ body{color:var(--dq-font-color,#263b5c)}
   max-height:112px!important;
  }
 }
+
+
+/* Overview: minimize the vertical gap between the balance header and summary card. */
+#home.panel{padding-top:2px!important}
+#home .hero.overview-summary{margin-top:4px!important}
+.app-main main:has(#home.active)>.page-balance-header{min-height:24px;margin-bottom:3px;padding:2px 2px}
+@media(max-width:759px){#home.panel{padding-top:1px!important}#home .hero.overview-summary{margin-top:3px!important}.app-main main:has(#home.active)>.page-balance-header{min-height:22px;margin-bottom:2px;padding:1px 2px}}
