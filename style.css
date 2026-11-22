@@ -2032,3 +2032,42 @@ body{color:var(--dq-font-color,#263b5c)}
  #overviewQuickSupplierList .quick-action-button-stats{width:100%;gap:4px 5px}
  #overviewQuickSupplierList .quick-action-button-stats>span{font-size:9px!important}
 }
+
+
+/* Final Overview tile layout: fit all possible fixed-size tiles in each desktop row. */
+#overviewQuickActionList,
+#overviewQuickSupplierList{
+ display:grid!important;
+ grid-template-columns:repeat(auto-fit,220px)!important;
+ grid-auto-flow:row!important;
+ grid-auto-rows:140px!important;
+ justify-content:start!important;
+ align-content:start!important;
+ gap:10px!important;
+}
+#overviewQuickActionList .quick-action-card,
+#overviewQuickSupplierList .quick-supplier-card{
+ width:220px!important;
+ min-width:220px!important;
+ max-width:220px!important;
+ height:140px!important;
+ min-height:140px!important;
+ max-height:140px!important;
+}
+@media(max-width:620px){
+ #overviewQuickActionList,
+ #overviewQuickSupplierList{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  grid-auto-rows:112px!important;
+  gap:8px!important;
+ }
+ #overviewQuickActionList .quick-action-card,
+ #overviewQuickSupplierList .quick-supplier-card{
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  height:112px!important;
+  min-height:112px!important;
+  max-height:112px!important;
+ }
+}
