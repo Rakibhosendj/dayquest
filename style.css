@@ -2124,3 +2124,21 @@ body{color:var(--dq-font-color,#263b5c)}
  .app-main>.top #pageBalanceHeader .page-balance-values>span{font-size:10px!important}
  .app-main>.top #pageBalanceHeader .page-balance-values>span strong{font-size:11px!important}
 }
+
+/* Final targeted override: the top header is a direct .top element, not .app-main>.top. */
+.top #pageBalanceHeader .page-balance-values,
+.top #pageBalanceHeader .page-balance-values>span,
+.top #pageBalanceHeader .page-balance-values>span strong,
+.top #pageBalanceHeader .page-balance-values strong{
+ color:var(--topbar-text-color,#fff)!important;
+ opacity:1!important;
+ visibility:visible!important;
+ -webkit-text-fill-color:var(--topbar-text-color,#fff)!important;
+ text-shadow:none!important;
+}
+.top #pageBalanceHeader .page-balance-values>span{font-size:12px!important;font-weight:850!important}
+.top #pageBalanceHeader .page-balance-values>span strong{font-size:13px!important;font-weight:950!important;font-variant-numeric:tabular-nums}
+@media(max-width:600px){
+ .top #pageBalanceHeader .page-balance-values>span{font-size:10px!important}
+ .top #pageBalanceHeader .page-balance-values>span strong{font-size:11px!important}
+}
