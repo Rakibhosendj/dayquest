@@ -2,7 +2,7 @@ const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slic
 const appPageHistory=[];
 let adminCloudUnlocked=false;
 const ADMIN_PASSWORD_ITERATIONS=310000;
-const SIDE_MENU_DEFAULT_ORDER=['home','expenses','inventory','budget','production','supplierAccounts','outstanding','loans','income','meals','quests','reports','profile','settings'];
+const SIDE_MENU_DEFAULT_ORDER=['home','expenses','inventory','budget','production','supplierAccounts','accounts','outstanding','loans','income','meals','quests','reports','profile','settings'];
 function normalizeSideMenuOrder(value){
  const valid=new Set(SIDE_MENU_DEFAULT_ORDER);
  const picked=Array.isArray(value)?value.filter(key=>valid.has(key)):[];
