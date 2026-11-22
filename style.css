@@ -1116,15 +1116,17 @@ button,input,select,textarea{
 .meal-person-guest-setting{grid-template-columns:minmax(90px,1fr) minmax(115px,.7fr) minmax(115px,.7fr)}
 .meal-person-guest-setting .meal-guest-assignment{grid-column:1/-1}
 #mealMemberControls .meal-guest-slot input{accent-color:#a65b20}
-.dq-date-wrap{position:relative;display:inline-flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-width:0;min-height:38px;box-sizing:border-box;padding:0 10px;border:1px solid var(--line,#dfe5ed);border-radius:10px;background:var(--input-bg,#fbfcfe);color:var(--text,#172033);font:inherit;font-size:13px;line-height:1.2}
+.dq-date-wrap{position:relative;display:flex;align-items:center;gap:8px;width:100%;min-width:0;min-height:38px;box-sizing:border-box;padding:0 10px;border:1px solid var(--line,#dfe5ed);border-radius:10px;background:var(--input-bg,#fbfcfe);color:var(--text,#172033);font:inherit;font-size:13px;line-height:1.2}
 .dq-date-wrap:focus-within{outline:2px solid var(--accent-color,#315b91);outline-offset:1px}
-.dq-date-display{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;font-variant-numeric:tabular-nums}
-.dq-date-display.is-empty{color:#8b95a5}
+.dq-date-wrap input.dq-date-entry{display:block;flex:1 1 auto;min-width:0;width:100%;height:auto;min-height:30px;margin:0;padding:0;border:0;outline:0;box-shadow:none;background:transparent;color:inherit;font:inherit;font-size:inherit;line-height:inherit}
+.dq-date-wrap input.dq-date-entry:focus{outline:0;box-shadow:none}
+.dq-date-wrap input.dq-date-entry::placeholder{color:#8b95a5;opacity:1}
+.dq-date-wrap input.dq-date-entry.is-invalid{color:#b42318}
 .dq-date-icon{flex:0 0 auto;color:#64748b;font-size:15px;line-height:1;pointer-events:none}
-.dq-date-wrap input.dq-native-date-control{position:absolute!important;inset:0!important;z-index:2;width:100%!important;height:100%!important;min-height:100%!important;margin:0!important;padding:0!important;border:0!important;border-radius:inherit!important;opacity:0!important;cursor:pointer!important;background:transparent!important}
+.dq-date-wrap input.dq-native-date-control{position:absolute!important;top:0!important;right:0!important;left:auto!important;z-index:3;width:42px!important;height:100%!important;min-height:100%!important;margin:0!important;padding:0!important;border:0!important;border-radius:inherit!important;opacity:0!important;cursor:pointer!important;background:transparent!important}
 .dq-date-wrap input.dq-native-date-control::-webkit-calendar-picker-indicator{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;cursor:pointer}
 .dq-date-wrap input.dq-native-date-control::-webkit-date-and-time-value{opacity:0}
-@media(max-width:520px){.dq-date-wrap{min-height:36px;padding:0 7px;font-size:12px}.dq-date-icon{font-size:13px}}
+@media(max-width:520px){.dq-date-wrap{min-height:36px;padding:0 7px;font-size:12px}.dq-date-icon{font-size:13px}.dq-date-wrap input.dq-date-entry{min-height:28px}}
 
 /* Guest Assign controls in Members Report */
 .member-report-guest-assignments{display:grid;gap:8px;margin:8px 0 14px}
