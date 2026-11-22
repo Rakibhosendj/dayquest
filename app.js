@@ -3120,18 +3120,18 @@ async function copyDayQuestAppLink(){
   return true;
  }catch(error){
   console.warn('DayQuest could not copy the app link:',error);
-  if(status)status.textContent='Could not copy automatically. App link: '+DAYQUEST_APP_URL;
+  if(status)status.textContent='Could not copy the DayQuest app link automatically.';
   return false;
  }
 }
 $('shareDayQuestAppLink').onclick=async()=>{
  const status=$('shareDayQuestAppLinkStatus');
  if(status)status.textContent='';
- const shareText='DayQuest — Family finance and daily goals. Open the link to create your Family Account.';
+ const shareText='DayQuest · Plan • Track • Achieve';
  if(typeof navigator.share==='function'){
   try{
    await navigator.share({title:'DayQuest',text:shareText,url:DAYQUEST_APP_URL});
-   if(status)status.textContent='DayQuest registration link shared.';
+   if(status)status.textContent='DayQuest shared successfully.';
   }catch(error){
    if(error?.name==='AbortError')return;
    console.warn('DayQuest share sheet could not be opened:',error);
