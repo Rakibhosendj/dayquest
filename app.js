@@ -2006,12 +2006,15 @@ $('mealMemberControls').onchange=e=>{
  if(countInput){const member=countInput.dataset.mealCount,n=Number(countInput.value);if(!Number.isInteger(n)||n<0){alert('Enter a whole number of meals, zero or more.');renderMeals();return}db.mealPlan.memberCounts[date]=db.mealPlan.memberCounts[date]||{};db.mealPlan.memberCounts[date][member]=n;save();renderMeals()}
 };
 $('supplierEntryCancel').onclick=resetSupplierEntryForm;
-$('overviewQuickSetupLink').onclick=()=>{
+const openQuickExpenseSetup=()=>{
  setTab('settings');
  const setup=$('quickActionSettings');
  if(setup)setup.open=true;
  $('quickActionForm')?.scrollIntoView({behavior:'smooth',block:'start'});
 };
+$('overviewQuickSetupLink').onclick=openQuickExpenseSetup;
+$('quickExpensesTitleSetupLink').onclick=openQuickExpenseSetup;
+$('quickExpensesBackOverview').onclick=()=>{setTab('home');$('home')?.scrollIntoView({behavior:'instant',block:'start'});};
 $('quickActionModeToggle').onclick=toggleQuickActionMode;
 $('overviewQuickActionModeToggle').onclick=toggleQuickActionMode;
 $('overviewQuickActionTapToggle').onclick=()=>{
