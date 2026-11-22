@@ -2158,3 +2158,16 @@ body{color:var(--dq-font-color,#263b5c)}
  .app-main>.top #pageBalanceHeader .page-balance-values>span{font-size:9px!important;gap:1px!important}
  .app-main>.top #pageBalanceHeader .page-balance-values>span strong{font-size:10px!important}
 }
+
+/* TS and QP compact second row in the top bar. */
+.app-main>.top #pageBalanceHeader{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:3px!important}
+.app-main>.top #pageBalanceHeader .top-balance-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;width:100%}
+.app-main>.top #pageBalanceHeader .top-daily-row{display:flex;align-items:center;gap:10px;min-width:0;width:100%;font-size:10px;line-height:1.1;white-space:nowrap}
+.app-main>.top #pageBalanceHeader .top-daily-metric{display:inline-flex;align-items:center;gap:4px;min-width:0}
+.app-main>.top #pageBalanceHeader .top-daily-label{font-size:9px;font-weight:950;letter-spacing:.3px;opacity:.9}
+.app-main>.top #pageBalanceHeader .top-daily-metric strong{font-size:11px;font-weight:950;color:var(--topbar-text-color,#fff)!important}
+.app-main>.top #pageBalanceHeader .top-daily-date{font-size:9px;opacity:.82;overflow:hidden;text-overflow:ellipsis}
+.app-main>.top #pageBalanceHeader .top-quest-metric{margin-left:auto}
+.app-main>.top #pageBalanceHeader .top-quest-track{display:inline-block;width:52px;height:5px;border-radius:99px;background:color-mix(in srgb,var(--topbar-text-color,#fff) 25%,transparent);overflow:hidden}
+.app-main>.top #pageBalanceHeader .top-quest-track i{display:block;height:100%;width:0;background:var(--topbar-text-color,#fff);border-radius:99px}
+@media(max-width:600px){.app-main>.top #pageBalanceHeader{gap:2px!important}.app-main>.top #pageBalanceHeader .top-daily-row{gap:6px;font-size:9px}.app-main>.top #pageBalanceHeader .top-daily-label{font-size:8px}.app-main>.top #pageBalanceHeader .top-daily-metric strong{font-size:9px}.app-main>.top #pageBalanceHeader .top-daily-date{font-size:8px}.app-main>.top #pageBalanceHeader .top-quest-track{width:32px;height:4px}}
