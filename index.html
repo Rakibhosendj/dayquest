@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261122-purchase-supplier-brand">
+<link rel="stylesheet" href="style.css?v=20261122-member-profiles">
 <title>DayQuest</title>
 </head>
 <body>
@@ -37,7 +37,19 @@
    <p class="auth-copy">One shared family login. Use the same email and password on every device.</p>
    <form id="authSignupForm" class="form auth-form">
     <label>Family name <input id="signupFamilyName" maxlength="80" autocomplete="organization" placeholder="e.g. Rakib Family" required></label>
-    <label>Address <textarea id="signupAddress" rows="2" maxlength="300" autocomplete="street-address" placeholder="Enter your family address" required></textarea></label>
+    <label>Account holder / first member name <input id="signupMemberName" maxlength="80" autocomplete="name" placeholder="Enter your full name" required></label>
+    <label>Phone number <input id="signupPhone" type="tel" maxlength="30" autocomplete="tel" placeholder="Optional"></label>
+    <div class="signup-address-group"><strong>Address details</strong><div class="form-grid">
+     <label>Country <input id="signupCountry" maxlength="80" autocomplete="country-name" value="Bangladesh" required></label>
+     <label>District <input id="signupDistrict" maxlength="80" autocomplete="address-level2" placeholder="District" required></label>
+     <label>Village / Area <input id="signupVillage" maxlength="100" autocomplete="address-level3" placeholder="Village or area" required></label>
+     <label>Road / Street name <input id="signupRoad" maxlength="120" placeholder="Optional"></label>
+    </div></div>
+    <div class="form-grid">
+     <label>Gender <select id="signupGender"><option value="">Select (optional)</option><option>Male</option><option>Female</option><option>Other</option><option>Prefer not to say</option></select></label>
+     <label>Religion <input id="signupReligion" maxlength="60" placeholder="Optional"></label>
+    </div>
+    <label>Date of birth <input id="signupBirthDate" type="date"></label>
     <label>Email address <input id="signupEmail" type="email" autocomplete="email" placeholder="family@example.com" required></label>
     <label>Password <input id="signupPassword" type="password" minlength="8" autocomplete="new-password" placeholder="At least 8 characters" required></label>
     <label>Confirm password <input id="signupPasswordConfirm" type="password" minlength="8" autocomplete="new-password" placeholder="Enter password again" required></label>
@@ -472,9 +484,22 @@
   </div>
   <label>Full name <input id="profileName" maxlength="80" placeholder="Enter your name"></label>
   <label>Phone number <input id="profilePhone" maxlength="30" type="tel" placeholder="Optional"></label>
-  <label>Address <textarea id="profileAddress" rows="2" maxlength="300" autocomplete="street-address" placeholder="Enter your address"></textarea></label>
+  <input id="profileAddress" type="hidden">
+  <div class="section-head form-section-head"><h3>Personal information</h3></div>
+  <div class="form-grid">
+   <label>Gender <select id="profileGender"><option value="">Not specified</option><option>Male</option><option>Female</option><option>Other</option><option>Prefer not to say</option></select></label>
+   <label>Religion <input id="profileReligion" maxlength="60" placeholder="Optional"></label>
+   <label>Date of birth <input id="profileBirthDate" type="date"></label>
+  </div>
+  <div class="section-head form-section-head"><h3>Address details</h3></div>
+  <div class="form-grid profile-address-grid">
+   <label>Country <input id="profileCountry" maxlength="80" placeholder="Country"></label>
+   <label>District <input id="profileDistrict" maxlength="80" placeholder="District"></label>
+   <label>Village / Area <input id="profileVillage" maxlength="100" placeholder="Village or area"></label>
+   <label>Road / Street name <input id="profileRoad" maxlength="120" placeholder="Road name"></label>
+  </div>
   <label>Family name <input id="familyName" maxlength="80" placeholder="e.g. Rahman Family"></label>
-  <div class="section-head form-section-head"><h3>Family members</h3><span class="muted">Available in Income By</span></div>
+  <div class="section-head form-section-head"><h3>Family members</h3><span class="muted">Hold a member to open their individual page</span></div>
   <div class="family-member-add"><input id="newFamilyMember" maxlength="80" placeholder="Enter family member name" aria-label="New family member"><button class="secondary" id="addFamilyMember" type="button">＋ Add member</button></div>
   <div id="familyMemberList" class="list family-member-list"></div>
   <p class="hint">Every saved family member is automatically available in the Income By selector. Existing income records keep their original earner names.</p>
@@ -489,6 +514,32 @@
  </form>
  <div class="section-head"><h2>Current balance</h2></div>
  <div class="cards balance-cards"><article class="stat balance-main"><span class="muted">Earned balance</span><strong id="profileEarnedBalance">৳0.00</strong><small>Cash + bank after recorded transactions</small></article><article class="stat"><span class="muted">Cash balance</span><strong id="profileCashBalance">৳0.00</strong></article><article class="stat"><span class="muted">Bank balance</span><strong id="profileBankBalance">৳0.00</strong></article></div>
+</section>
+<section id="memberProfilePage" class="panel">
+ <div class="section-head member-profile-page-head"><button type="button" class="secondary" id="memberProfileBack">← Back to Profile</button><div><h2 id="memberProfilePageTitle">Member details</h2><span class="muted">Individual family member profile</span></div></div>
+ <form id="memberProfileForm" class="form member-profile-form">
+  <div class="section-head form-section-head"><h3>Personal details</h3></div>
+  <label>Member name <input id="memberProfileName" readonly></label>
+  <div class="form-grid">
+   <label>Phone number <input id="memberProfilePhone" type="tel" maxlength="30"></label>
+   <label>Email address <input id="memberProfileEmail" type="email" maxlength="120"></label>
+   <label>Gender <select id="memberProfileGender"><option value="">Not specified</option><option>Male</option><option>Female</option><option>Other</option><option>Prefer not to say</option></select></label>
+   <label>Religion <input id="memberProfileReligion" maxlength="60"></label>
+   <label>Date of birth <input id="memberProfileBirthDate" type="date"></label>
+   <label>Relation in family <input id="memberProfileRelation" maxlength="60" placeholder="e.g. Father, Mother, Son"></label>
+   <label>Occupation <input id="memberProfileOccupation" maxlength="80"></label>
+  </div>
+  <div class="section-head form-section-head"><h3>Address details</h3></div>
+  <div class="form-grid">
+   <label>Country <input id="memberProfileCountry" maxlength="80"></label>
+   <label>District <input id="memberProfileDistrict" maxlength="80"></label>
+   <label>Village / Area <input id="memberProfileVillage" maxlength="100"></label>
+   <label>Road / Street name <input id="memberProfileRoad" maxlength="120"></label>
+  </div>
+  <label>Notes / Custom information <textarea id="memberProfileNotes" rows="3" maxlength="1000"></textarea></label>
+  <p class="hint">Personal information is optional and saved in your family profile and cloud sync.</p>
+  <button class="primary full" type="submit">Save Member Information</button>
+ </form>
 </section>
 <section id="settings" class="panel">
  <div class="section-head"><h2 id="settingsTitle" class="settings-admin-secret-trigger" tabindex="0" aria-label="Settings">Settings</h2><span class="pill">Personalize DayQuest</span></div>
@@ -890,5 +941,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261122-purchase-supplier-brand"></script>
+<script src="app.js?v=20261122-member-profiles"></script>
 </body></html>
