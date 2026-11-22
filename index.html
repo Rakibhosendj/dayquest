@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261122-member-profiles">
+<link rel="stylesheet" href="style.css?v=20261122-member-page-balance">
 <title>DayQuest</title>
 </head>
 <body>
@@ -141,6 +141,10 @@
  <div class="app-main">
 <header class="top" aria-label="App controls"><button id="menuToggle" class="menu-toggle" type="button" aria-label="Open side menu" title="Open side menu" aria-expanded="false" aria-controls="sidebar"><span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button><div class="header-actions"><button id="installBtn" class="ghost" hidden>Install</button></div></header>
 <main>
+<div id="pageBalanceHeader" class="page-balance-header" aria-live="polite">
+ <h2 id="pageBalanceTitle">Overview</h2>
+ <div class="page-balance-values"><span>Total <strong id="pageTotalBalance">৳0.00</strong></span><span>Cash <strong id="pageCashBalance">৳0.00</strong></span><span>Bank <strong id="pageBankBalance">৳0.00</strong></span></div>
+</div>
 <section id="home" class="panel active">
  <section class="hero overview-summary">
   <div class="hero-metric"><div class="eyebrow">TODAY'S SPENDING</div><div class="money" id="todayTotal">৳0.00</div><div class="muted" id="todayDate"></div></div>
@@ -474,50 +478,64 @@
  <div id="questSetupList" class="list"></div>
 </section>
 <section id="profile" class="panel">
- <div class="section-head"><h2>User profile</h2><span class="pill">Stored on this device</span></div>
+ <div class="section-head"><h2>User profile</h2><span class="pill">Stored in your family account</span></div>
  <form id="profileForm" class="form">
-  <div class="profile-photo-row">
-   <div class="profile-photo-frame"><img id="profilePhotoPreview" alt="Profile photo" hidden><span id="profilePhotoFallback">DQ</span></div>
-   <div class="profile-photo-copy"><strong>Profile photo</strong><small>Upload a family or profile picture. It is stored on this device.</small>
-    <div class="profile-photo-actions"><label class="secondary photo-upload-label">Upload photo<input id="profilePhotoInput" type="file" accept="image/*"></label><button class="ghost-light" id="removeProfilePhoto" type="button">Remove photo</button></div>
+  <details class="profile-foldout">
+   <summary>General Settings</summary>
+   <div class="profile-foldout-content">
+    <div class="profile-photo-row">
+     <div class="profile-photo-frame"><img id="profilePhotoPreview" alt="Profile photo" hidden><span id="profilePhotoFallback">DQ</span></div>
+     <div class="profile-photo-copy"><strong>Profile photo</strong><small>Upload a family or profile picture.</small>
+      <div class="profile-photo-actions"><label class="secondary photo-upload-label">Upload photo<input id="profilePhotoInput" type="file" accept="image/*"></label><button class="ghost-light" id="removeProfilePhoto" type="button">Remove photo</button></div>
+     </div>
+    </div>
+    <label>Full name <input id="profileName" maxlength="80" placeholder="Enter your name"></label>
+    <label>Phone number <input id="profilePhone" maxlength="30" type="tel" placeholder="Optional"></label>
+    <input id="profileAddress" type="hidden">
+    <div class="section-head form-section-head"><h3>Personal information</h3></div>
+    <div class="form-grid">
+     <label>Gender <select id="profileGender"><option value="">Not specified</option><option>Male</option><option>Female</option><option>Other</option><option>Prefer not to say</option></select></label>
+     <label>Religion <input id="profileReligion" maxlength="60" placeholder="Optional"></label>
+     <label>Date of birth <input id="profileBirthDate" type="date"></label>
+    </div>
+    <div class="section-head form-section-head"><h3>Address details</h3></div>
+    <div class="form-grid profile-address-grid">
+     <label>Country <input id="profileCountry" maxlength="80" placeholder="Country"></label>
+     <label>District <input id="profileDistrict" maxlength="80" placeholder="District"></label>
+     <label>Village / Area <input id="profileVillage" maxlength="100" placeholder="Village or area"></label>
+     <label>Road / Street name <input id="profileRoad" maxlength="120" placeholder="Road name"></label>
+    </div>
+    <label>Family name <input id="familyName" maxlength="80" placeholder="e.g. Rahman Family"></label>
    </div>
-  </div>
-  <label>Full name <input id="profileName" maxlength="80" placeholder="Enter your name"></label>
-  <label>Phone number <input id="profilePhone" maxlength="30" type="tel" placeholder="Optional"></label>
-  <input id="profileAddress" type="hidden">
-  <div class="section-head form-section-head"><h3>Personal information</h3></div>
-  <div class="form-grid">
-   <label>Gender <select id="profileGender"><option value="">Not specified</option><option>Male</option><option>Female</option><option>Other</option><option>Prefer not to say</option></select></label>
-   <label>Religion <input id="profileReligion" maxlength="60" placeholder="Optional"></label>
-   <label>Date of birth <input id="profileBirthDate" type="date"></label>
-  </div>
-  <div class="section-head form-section-head"><h3>Address details</h3></div>
-  <div class="form-grid profile-address-grid">
-   <label>Country <input id="profileCountry" maxlength="80" placeholder="Country"></label>
-   <label>District <input id="profileDistrict" maxlength="80" placeholder="District"></label>
-   <label>Village / Area <input id="profileVillage" maxlength="100" placeholder="Village or area"></label>
-   <label>Road / Street name <input id="profileRoad" maxlength="120" placeholder="Road name"></label>
-  </div>
-  <label>Family name <input id="familyName" maxlength="80" placeholder="e.g. Rahman Family"></label>
-  <div class="section-head form-section-head"><h3>Family members</h3><span class="muted">Hold a member to open their individual page</span></div>
-  <div class="family-member-add"><input id="newFamilyMember" maxlength="80" placeholder="Enter family member name" aria-label="New family member"><button class="secondary" id="addFamilyMember" type="button">＋ Add member</button></div>
-  <div id="familyMemberList" class="list family-member-list"></div>
-  <p class="hint">Every saved family member is automatically available in the Income By selector. Existing income records keep their original earner names.</p>
-  <div class="section-head form-section-head"><h3>Starting balances</h3></div>
-  <div class="form-grid">
-   <label>Opening cash balance <input id="openingCash" type="number" min="0" step="0.01" value="0"></label>
-   <label>Opening bank balance <input id="openingBank" type="number" min="0" step="0.01" value="0"></label>
-  </div>
+  </details>
+  <details class="profile-foldout">
+   <summary>Family Members</summary>
+   <div class="profile-foldout-content">
+    <div class="family-member-add"><input id="newFamilyMember" maxlength="80" placeholder="Enter family member name" aria-label="New family member"><button class="secondary" id="addFamilyMember" type="button">＋ Add member</button></div>
+    <div id="familyMemberList" class="list family-member-list"></div>
+   </div>
+  </details>
+  <details class="profile-foldout">
+   <summary>Starting Balances</summary>
+   <div class="profile-foldout-content">
+    <div class="form-grid">
+     <label>Opening cash balance <input id="openingCash" type="number" min="0" step="0.01" value="0"></label>
+     <label>Opening bank balance <input id="openingBank" type="number" min="0" step="0.01" value="0"></label>
+    </div>
+   </div>
+  </details>
   <button class="primary full">Save profile</button>
   <button class="delete-profile-btn" id="deleteProfileBtn" type="button">Delete Profile</button>
   <button class="clear-transactions-btn" id="clearAllExpensesIncomeBtn" type="button">Clear All Expenses &amp; Income</button>
  </form>
- <div class="section-head"><h2>Current balance</h2></div>
- <div class="cards balance-cards"><article class="stat balance-main"><span class="muted">Earned balance</span><strong id="profileEarnedBalance">৳0.00</strong><small>Cash + bank after recorded transactions</small></article><article class="stat"><span class="muted">Cash balance</span><strong id="profileCashBalance">৳0.00</strong></article><article class="stat"><span class="muted">Bank balance</span><strong id="profileBankBalance">৳0.00</strong></article></div>
 </section>
 <section id="memberProfilePage" class="panel">
  <div class="section-head member-profile-page-head"><button type="button" class="secondary" id="memberProfileBack">← Back to Profile</button><div><h2 id="memberProfilePageTitle">Member details</h2><span class="muted">Individual family member profile</span></div></div>
  <form id="memberProfileForm" class="form member-profile-form">
+  <div class="member-profile-photo-row">
+   <div class="member-profile-photo-frame"><img id="memberProfilePhotoPreview" alt="Member photo" hidden><span id="memberProfilePhotoFallback">DQ</span></div>
+   <div class="member-profile-photo-actions"><strong>Member Picture</strong><label class="secondary photo-upload-label">Upload Picture<input id="memberProfilePhotoInput" type="file" accept="image/*"></label><button type="button" class="ghost-light" id="removeMemberProfilePhoto">Remove Picture</button></div>
+  </div>
   <div class="section-head form-section-head"><h3>Personal details</h3></div>
   <label>Member name <input id="memberProfileName" readonly></label>
   <div class="form-grid">
@@ -941,5 +959,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261122-member-profiles"></script>
+<script src="app.js?v=20261122-member-page-balance"></script>
 </body></html>
