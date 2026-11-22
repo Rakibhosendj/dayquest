@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261122-today-activity-quick-buttons-v1">
+<link rel="stylesheet" href="style.css?v=20261122-overview-button-sorting-v1">
 <title>DayQuest</title>
 </head>
 <body>
@@ -183,7 +183,7 @@
  </section>
  <section class="overview-sortable-section overview-activity-section" id="overviewSectionActivity" data-overview-section="todayActivity">
   <div class="section-head"><h2 data-overview-drag-handle>Today's Activity</h2><span class="pill" id="todayQuestLabel">0 quests done</span></div>
-  <div class="cards activity-cards"><article class="stat activity-quick-button"><span class="muted">W</span><strong id="weekTotal">৳0</strong><small>Week expense</small></article><article class="stat activity-quick-button"><span class="muted">M</span><strong id="monthTotal">৳0</strong><small>Month expense</small></article><article class="stat activity-quick-button"><span class="muted">TIC</span><strong id="todayIncome">৳0</strong><small>Today income</small></article><article class="stat activity-quick-button"><span class="muted">MIC</span><strong id="monthIncome">৳0</strong><small>Month income</small></article></div>
+  <div class="cards activity-cards" data-overview-button-group="todayActivity"><article class="stat activity-quick-button" data-overview-button="weekExpense"><span class="muted">W</span><strong id="weekTotal">৳0</strong><small>Week expense</small></article><article class="stat activity-quick-button" data-overview-button="monthExpense"><span class="muted">M</span><strong id="monthTotal">৳0</strong><small>Month expense</small></article><article class="stat activity-quick-button" data-overview-button="todayIncome"><span class="muted">TIC</span><strong id="todayIncome">৳0</strong><small>Today income</small></article><article class="stat activity-quick-button" data-overview-button="monthIncome"><span class="muted">MIC</span><strong id="monthIncome">৳0</strong><small>Month income</small></article></div>
  </section>
  <section class="overview-sortable-section overview-actions-section" id="overviewSectionQuickActions" data-overview-section="quickActions">
   <div class="section-head"><h2 data-overview-drag-handle>Quick actions</h2></div>
@@ -1042,5 +1042,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261122-today-activity-quick-buttons-v1"></script>
+<script src="app.js?v=20261122-overview-button-sorting-v1"></script>
 </body></html>
