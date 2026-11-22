@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261122-overview-gap-tight">
+<link rel="stylesheet" href="style.css?v=20261122-topbar-balance-install-settings">
 <title>DayQuest</title>
 </head>
 <body>
@@ -142,12 +142,8 @@
  </aside>
  <button id="sidebarBackdrop" class="sidebar-backdrop" type="button" aria-label="Close navigation" hidden></button>
  <div class="app-main">
-<header class="top" aria-label="App controls"><button id="menuToggle" class="menu-toggle" type="button" aria-label="Open side menu" title="Open side menu" aria-expanded="false" aria-controls="sidebar"><span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button><button id="backButton" class="back-button" type="button" aria-label="Back to previous page" title="Back to previous page" hidden><span aria-hidden="true">←</span><span>Back</span></button><div class="header-actions"><button id="installBtn" class="ghost" hidden>Install</button></div></header>
+<header class="top" aria-label="App controls"><button id="menuToggle" class="menu-toggle" type="button" aria-label="Open side menu" title="Open side menu" aria-expanded="false" aria-controls="sidebar"><span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button><div id="pageBalanceHeader" class="page-balance-header top-page-balance" aria-live="polite"><h2 id="pageBalanceTitle">Overview</h2><div class="page-balance-values"><span>Total <strong id="pageTotalBalance">৳0.00</strong></span><span>Cash <strong id="pageCashBalance">৳0.00</strong></span><span>Bank <strong id="pageBankBalance">৳0.00</strong></span></div></div><button id="backButton" class="back-button" type="button" aria-label="Back to previous page" title="Back to previous page" hidden><span aria-hidden="true">←</span><span>Back</span></button></header>
 <main>
-<div id="pageBalanceHeader" class="page-balance-header" aria-live="polite">
- <h2 id="pageBalanceTitle">Overview</h2>
- <div class="page-balance-values"><span>Total <strong id="pageTotalBalance">৳0.00</strong></span><span>Cash <strong id="pageCashBalance">৳0.00</strong></span><span>Bank <strong id="pageBankBalance">৳0.00</strong></span></div>
-</div>
 <section id="home" class="panel active">
  <section class="hero overview-summary">
   <div class="hero-metric"><div class="eyebrow">TODAY'S SPENDING</div><div class="money" id="todayTotal">৳0.00</div><div class="muted" id="todayDate"></div></div>
@@ -565,6 +561,7 @@
   <div class="quick"><button id="enableDayQuestNotifications" class="primary" type="button">Enable Background Notifications</button><button id="disableDayQuestNotifications" class="secondary" type="button">Disable Notifications</button></div>
   <p class="hint" id="notificationPermissionStatus" role="status" aria-live="polite" hidden></p>
  </details>
+ <section class="settings-card install-app-card"><div class="section-head settings-section-head"><div><h3>Install DayQuest</h3></div></div><button id="installBtn" class="primary" type="button" hidden>Install App</button></section>
  <section class="settings-card share-app-card">
   <div class="section-head settings-section-head"><div><h3>Share DayQuest</h3></div></div>
   <div class="quick share-app-actions">
