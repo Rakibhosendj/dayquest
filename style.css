@@ -2457,3 +2457,5 @@ body{color:var(--dq-font-color,#263b5c)}
 
 /* Overview button sorting feedback */
 .overview-button-dragging{opacity:.55;outline:2px dashed var(--quick-button-color,#ee7d2f);transform:scale(.98);z-index:3}.overview-buttons-reordering [data-overview-button]{touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+
+.opening-loan-rows{display:grid;gap:10px}.opening-loan-row{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(110px,.8fr) minmax(100px,.8fr) auto;gap:8px;align-items:end;padding:10px;border:1px solid var(--border-color);border-radius:12px}.opening-loan-row label{min-width:0}.opening-loan-row input,.opening-loan-row select{width:100%;min-width:0}@media(max-width:560px){.opening-loan-row{grid-template-columns:1fr 1fr}.opening-loan-row label:first-child{grid-column:1/-1}.opening-loan-row button{justify-self:start}}
