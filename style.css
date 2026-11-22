@@ -2096,3 +2096,11 @@ body{color:var(--dq-font-color,#263b5c)}
 .app-main>.top .top-page-balance .page-balance-values{color:#dce7f5!important;font-size:11px;font-weight:700}
 .app-main>.top .top-page-balance .page-balance-values strong{color:#fff!important;font-size:12px;font-weight:900;text-shadow:0 1px 1px #0005}
 @media(max-width:600px){.app-main>.top .top-page-balance .page-balance-values{font-size:9px}.app-main>.top .top-page-balance .page-balance-values strong{font-size:10px}}
+
+/* Use the selected top-bar background and its calculated accessible text color. */
+.app-main>.top{background:var(--topbar-color,#101827)!important;color:var(--topbar-text-color,#fff)!important}
+.app-main>.top .top-page-balance,
+.app-main>.top .top-page-balance h2,
+.app-main>.top .top-page-balance .page-balance-values,
+.app-main>.top .top-page-balance .page-balance-values strong{color:var(--topbar-text-color,#fff)!important;text-shadow:none!important}
+.app-main>.top .menu-toggle{color:var(--topbar-text-color,#fff)!important;border-color:color-mix(in srgb,var(--topbar-text-color,#fff) 30%,transparent);background:color-mix(in srgb,var(--topbar-text-color,#fff) 10%,transparent)}
