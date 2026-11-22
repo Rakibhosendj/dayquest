@@ -2531,7 +2531,7 @@ function openMemberIndividualPage(name){
 }
 function renderFamilyMembers(){
  const list=$('familyMemberList');if(!list)return;
- list.innerHTML=db.familyMembers.map((name,index)=>`<div class="family-member-row" data-family-member-name="${esc(name)}" tabindex="0" role="button" aria-label="Hold ${esc(name)} to open individual details"><span class="family-member-avatar">${esc(name.trim().split(/\\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase())}</span><span class="family-member-name"><strong>${esc(name)}</strong><small>Hold to open individual page</small></span><button type="button" class="delete" data-remove-family-member="${index}" aria-label="Remove ${esc(name)}">×</button></div>`).join('')||empty('No family members added yet.');
+ list.innerHTML=db.familyMembers.map((name,index)=>`<div class="family-member-row" data-family-member-name="${esc(name)}" tabindex="0" role="button" aria-label="Hold ${esc(name)} to open individual details"><span class="family-member-avatar">${esc(name.trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase())}</span><span class="family-member-name"><strong>${esc(name)}</strong><small>Hold to open individual page</small></span><button type="button" class="delete" data-remove-family-member="${index}" aria-label="Remove ${esc(name)}">×</button></div>`).join('')||empty('No family members added yet.');
  list.querySelectorAll('.family-member-row').forEach(row=>{
   const start=event=>{if(event.target.closest('button')||(event.pointerType==='mouse'&&event.button!==0))return;clearTimeout(memberLongPressTimer);memberLongPressTimer=setTimeout(()=>openMemberIndividualPage(row.dataset.familyMemberName),650)};
   const cancel=()=>clearTimeout(memberLongPressTimer);
