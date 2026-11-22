@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261122-income-type-dialog-v1">
+<link rel="stylesheet" href="style.css?v=20261122-income-person-branded-dialog-v2">
 <title>DayQuest</title>
 </head>
 <body>
@@ -445,7 +445,7 @@
  <div class="section-head form-section-head"><h3 id="incomeFormTitle">Add other income</h3><span class="muted" id="incomeEditHint" hidden>Editing saved income</span></div>
  <form id="incomeForm" class="form">
   <label>Income type <span class="select-add"><select id="incomeSource" required></select><button type="button" class="mini-add" id="addIncomeHead">＋ Add type</button></span></label>
-  <label>Income by (person who earned) <span class="select-add"><select id="incomeBy" required></select><button type="button" class="mini-add" id="addIncomePerson">＋ Add person</button></span></label>
+  <label>Income by (person who earned) <span class="select-add"><select id="incomeBy" required></select><button type="button" class="mini-add" id="addIncomePerson" aria-label="Add person" title="Add person">＋</button></span></label>
   <label>Amount <input id="incomeAmount" type="number" min="0.01" step="0.01" placeholder="0.00" required></label>
   <label>Payment type <select id="incomePaymentType"><option>Cash</option><option>Bank</option><option>Due</option></select></label>
   <div id="incomeDueFields" class="due-fields" hidden>
@@ -984,6 +984,15 @@
   <div class="dq-message-actions"><button class="secondary" id="loanSettlementCancel" type="button">Cancel</button><button class="primary" type="submit" id="loanSettlementSave">Save</button></div>
  </form>
 </dialog>
+<dialog id="addIncomePersonDialog" class="dq-message-dialog income-type-dialog" aria-labelledby="addIncomePersonTitle">
+ <form id="addIncomePersonForm" class="dq-message-card income-type-dialog-card">
+  <div class="dq-message-brand"><img src="icons/icon-192.png?v=20261121-coin-check" alt="DayQuest app icon"><h2 id="addIncomePersonTitle">DayQuest</h2></div>
+  <p class="income-type-dialog-caption">Add Income Person</p>
+  <label for="newIncomePersonName">Person name</label>
+  <input id="newIncomePersonName" type="text" maxlength="60" placeholder="Enter person name" required>
+  <div class="dq-message-actions"><button class="secondary" id="cancelIncomePerson" type="button">Cancel</button><button class="primary" type="submit">Save person</button></div>
+ </form>
+</dialog>
 <dialog id="addIncomeHeadDialog" class="dq-message-dialog income-type-dialog" aria-labelledby="addIncomeHeadTitle">
  <form id="addIncomeHeadForm" class="dq-message-card income-type-dialog-card">
   <div class="dq-message-brand"><img src="icons/icon-192.png?v=20261121-coin-check" alt="DayQuest app icon"><h2 id="addIncomeHeadTitle">DayQuest</h2></div>
@@ -999,5 +1008,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261122-income-type-dialog-v1"></script>
+<script src="app.js?v=20261122-income-person-branded-dialog-v2"></script>
 </body></html>
