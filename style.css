@@ -2434,3 +2434,15 @@ body{color:var(--dq-font-color,#263b5c)}
 
 /* Bank credit setting helper text. */
 .settings-card>.hint{margin:7px 0 0;font-size:11px;line-height:1.45}
+
+
+/* Compact report headings and remove excess vertical space. */
+.report-pane{gap:2px}
+.report-tools{justify-content:flex-end;padding:3px 0 5px}
+.report-tools>div{justify-content:flex-end;width:100%}
+.report-detail-summary{padding:9px 11px}
+.report-detail-body{padding:7px;gap:4px}
+.report-detail-body>.section-head{margin:4px 0 2px}
+.report-detail-body>.section-head:first-child{margin-top:0}
+.report-detail-body>.report-total-stat{margin:4px 0 6px}
+.budget-intro{margin:0 0 5px;font-size:12px;line-height:1.25;font-weight:650;color:#68778d}
