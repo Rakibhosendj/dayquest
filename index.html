@@ -25,10 +25,11 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261122-type-or-pick-date">
+<link rel="stylesheet" href="style.css?v=20261122-address-cascade">
 <title>DayQuest</title>
 </head>
 <body>
+<datalist id="dayquestCountryOptions"><option value="Bangladesh"></option><option value="India"></option><option value="Pakistan"></option><option value="Nepal"></option><option value="Bhutan"></option><option value="United States"></option><option value="United Kingdom"></option><option value="Canada"></option><option value="Australia"></option><option value="Saudi Arabia"></option><option value="United Arab Emirates"></option><option value="Malaysia"></option><option value="Singapore"></option></datalist>
 <section id="authScreen" class="auth-screen" hidden aria-labelledby="authTitle">
  <div class="auth-card cloud-auth-card">
   <div class="auth-brand"><img class="auth-logo" src="icons/icon-192.png?v=20261121-coin-check" alt="DayQuest app logo"><div><div class="eyebrow">FAMILY FINANCE & DAILY MANAGEMENT</div><h1 id="authTitle">Day Quest</h1></div></div>
@@ -40,10 +41,12 @@
     <label>User Name <input id="signupMemberName" maxlength="80" autocomplete="name" placeholder="Enter your full name" required></label>
     <div class="form-grid profile-phone-grid"><label>Phone Number 1 <input id="signupPhone" type="tel" maxlength="30" autocomplete="tel" placeholder="Primary phone (optional)"></label><label>Phone Number 2 <input id="signupPhone2" type="tel" maxlength="30" placeholder="Additional phone (optional)"></label></div>
     <div class="signup-address-group"><strong>Address details</strong><div class="form-grid">
-     <label>Country <input id="signupCountry" maxlength="80" autocomplete="country-name" value="Bangladesh" required></label>
-     <label>District <input id="signupDistrict" maxlength="80" autocomplete="address-level2" placeholder="District" required></label>
-     <label>Village / Area <input id="signupVillage" maxlength="100" autocomplete="address-level3" placeholder="Village or area" required></label>
-     <label>Road / Street name <input id="signupRoad" maxlength="120" placeholder="Optional"></label>
+     <label>Country <input id="signupCountry" list="dayquestCountryOptions" maxlength="80" autocomplete="country-name" value="Bangladesh" required></label>
+     <label>Division <input id="signupDivision" list="signupDivisionOptions" data-location-level="division" maxlength="80" autocomplete="address-level1" placeholder="Select or type division" required><datalist id="signupDivisionOptions"></datalist></label>
+     <label>District <input id="signupDistrict" list="signupDistrictOptions" data-location-level="district" maxlength="80" autocomplete="address-level2" placeholder="Select or type district" required><datalist id="signupDistrictOptions"></datalist></label>
+     <label>Sub-District (Upazila) <input id="signupSubDistrict" list="signupSubDistrictOptions" data-location-level="upazila" maxlength="80" placeholder="Select or type sub-district"><datalist id="signupSubDistrictOptions"></datalist></label>
+     <label>Village <input id="signupVillage" maxlength="100" autocomplete="address-level3" placeholder="Village or area" required></label>
+     <label>Road No. <input id="signupRoad" maxlength="120" placeholder="Road number or name"></label>
     </div></div>
     <div class="form-grid">
      <label>Gender <select id="signupGender"><option value="">Select (optional)</option><option>Male</option><option>Female</option><option>Other</option><option>Prefer not to say</option></select></label>
@@ -501,10 +504,12 @@
     </div>
     <div class="section-head form-section-head"><h3>Address Details</h3></div>
     <div class="form-grid profile-address-grid">
-     <label>Country <input id="profileCountry" maxlength="80" placeholder="Country"></label>
-     <label>District <input id="profileDistrict" maxlength="80" placeholder="District"></label>
-     <label>Village / Area <input id="profileVillage" maxlength="100" placeholder="Village or area"></label>
-     <label>Road / Street name <input id="profileRoad" maxlength="120" placeholder="Road name"></label>
+     <label>Country <input id="profileCountry" list="dayquestCountryOptions" maxlength="80" placeholder="Select or type country"></label>
+     <label>Division <input id="profileDivision" list="profileDivisionOptions" data-location-level="division" maxlength="80" placeholder="Select or type division"><datalist id="profileDivisionOptions"></datalist></label>
+     <label>District <input id="profileDistrict" list="profileDistrictOptions" data-location-level="district" maxlength="80" placeholder="Select or type district"><datalist id="profileDistrictOptions"></datalist></label>
+     <label>Sub-District (Upazila) <input id="profileSubDistrict" list="profileSubDistrictOptions" data-location-level="upazila" maxlength="80" placeholder="Select or type sub-district"><datalist id="profileSubDistrictOptions"></datalist></label>
+     <label>Village <input id="profileVillage" maxlength="100" placeholder="Village or area"></label>
+     <label>Road No. <input id="profileRoad" maxlength="120" placeholder="Road number or name"></label>
     </div>
    </div>
   </details>
@@ -535,11 +540,14 @@
   </div>
   <div class="section-head form-section-head"><h3>Address details</h3></div>
   <div class="form-grid">
-   <label>Country <input id="memberProfileCountry" maxlength="80"></label>
-   <label>District <input id="memberProfileDistrict" maxlength="80"></label>
-   <label>Village / Area <input id="memberProfileVillage" maxlength="100"></label>
-   <label>Road / Street name <input id="memberProfileRoad" maxlength="120"></label>
+   <label>Country <input id="memberProfileCountry" list="dayquestCountryOptions" maxlength="80"></label>
+   <label>Division <input id="memberProfileDivision" list="memberProfileDivisionOptions" data-location-level="division" maxlength="80" placeholder="Select or type division"><datalist id="memberProfileDivisionOptions"></datalist></label>
+   <label>District <input id="memberProfileDistrict" list="memberProfileDistrictOptions" data-location-level="district" maxlength="80"></label>
+   <label>Sub-District (Upazila) <input id="memberProfileSubDistrict" list="memberProfileSubDistrictOptions" data-location-level="upazila" maxlength="80"><datalist id="memberProfileSubDistrictOptions"></datalist></label>
+   <label>Village <input id="memberProfileVillage" maxlength="100"></label>
+   <label>Road No. <input id="memberProfileRoad" maxlength="120"></label>
   </div>
+  <datalist id="memberProfileDistrictOptions"></datalist>
   <label>Notes / Custom information <textarea id="memberProfileNotes" rows="3" maxlength="1000"></textarea></label>
   <p class="hint">Personal information is optional and saved in your family profile and cloud sync.</p>
   <button class="primary full" type="submit">Save Member Information</button>
@@ -945,5 +953,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261122-type-or-pick-date"></script>
+<script src="app.js?v=20261122-address-cascade"></script>
 </body></html>
