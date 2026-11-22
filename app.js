@@ -1616,7 +1616,7 @@ function editLoan(id){
  editingLoanId=id;$('loanType').value=loan.type;$('loanParty').value=loan.party;$('loanAmount').value=Number(loan.amount||0);$('loanMethod').value=loan.method||'Cash';$('loanDate').value=loan.date||today();$('loanDueDate').value=loan.installments&&loan.installments.length?loan.installments[0].dueDate:loan.dueDate||'';$('loanInstallmentCount').value=loan.installments&&loan.installments.length?loan.installments.length:(loan.installmentCount||1);$('loanInstallmentFrequency').value=loan.installmentFrequency||'monthly';$('loanNote').value=loan.note||'';
  $('loanDueDateLabel').textContent='First installment date';$('loanFormTitle').textContent='Edit loan';$('loanSaveButton').textContent='Update loan';$('loanCancelEdit').hidden=false;$('loanForm').scrollIntoView({behavior:'smooth',block:'start'});
 }
-function deleteLoan(id){
+async function deleteLoan(id){
  const loan=db.loans.find(item=>item.id===id);if(!loan)return;
  if(!await window.dayQuestConfirm('Delete this loan and its collection / repayment history? The cash and bank balances will be recalculated.'))return;
  db.loans=db.loans.filter(item=>item.id!==id);if(editingLoanId===id)resetLoanForm();save();
