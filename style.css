@@ -2325,3 +2325,17 @@ body{color:var(--dq-font-color,#263b5c)}
  .app-main>main>#pageContextBar>#backButton.page-context-back{padding:4px 8px!important;font-size:11px!important}
  .app-main>main>#pageContextBar>#pageContextTitle{font-size:13px!important}
 }
+
+
+/* Overview sections can be reordered by holding their headings and dragging. */
+#home .overview-sortable-section{position:relative;transition:opacity .12s ease,outline-color .12s ease}
+#home [data-overview-drag-handle]{cursor:grab;user-select:none;-webkit-user-select:none;touch-action:pan-y}
+#home [data-overview-drag-handle]:active{cursor:grabbing}
+#home .overview-section-dragging{position:relative;z-index:40;opacity:.72;outline:2px dashed var(--accent,#2563eb);outline-offset:3px;border-radius:10px}
+#home.overview-sections-reordering{user-select:none;-webkit-user-select:none}
+#home.overview-sections-reordering [data-overview-drag-handle]{cursor:grabbing}
+#overviewQuickSupplierTapToggle{min-width:44px}
+#pageContextBar.page-context-header{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:flex-start!important;gap:9px!important}
+#pageContextBar #backButton{order:0!important;position:static!important;float:none!important;flex:0 0 auto!important;margin:0!important}
+#pageContextBar #pageContextTitle{order:1!important;display:block!important;position:static!important;flex:0 1 auto!important;margin:0!important;text-align:left!important;white-space:nowrap!important}
+#pageContextBar #backButton[hidden]{display:none!important}
