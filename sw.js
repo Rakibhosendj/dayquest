@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v156-back-left-title-line';
+const CACHE = 'dayquest-cache-v157-page-context-grid-v2';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261122-back-left-title-line',
-  './app.js?v=20261122-page-back-cloud-preparing',
+  './style.css?v=20261122-page-context-grid-v2',
+  './app.js?v=20261122-page-context-grid-v2',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
   './icons/icon-512.svg',
