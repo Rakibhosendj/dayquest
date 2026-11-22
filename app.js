@@ -1946,7 +1946,7 @@ function renderQuickSuppliers(){
   </button>`;
  }).join(''):[1,2].map(n=>`<button type="button" class="quick-action-card quick-supplier-card quick-demo-card" data-supplier-demo="${n}"><span class="quick-action-button-title">Supplier Demo ${n}</span><span class="quick-action-button-kind">Tap to customize</span></button>`).join('');
  list.querySelectorAll('[data-quick-supplier]').forEach(button=>button.onclick=()=>{if(db.settings?.overviewQuickSuppliersEnabled===false)return;openQuickSupplierPurchase(button.dataset.quickSupplier)});
- list.querySelectorAll('[data-supplier-demo]').forEach(button=>button.onclick=()=>{setTab('supplierEntry');$('supplierEntryForm').scrollIntoView({behavior:'smooth',block:'start'});$('supplierEntryName')?.focus()});
+ list.querySelectorAll('[data-supplier-demo]').forEach(button=>button.onclick=()=>{setTab('supplierEntry');$('supplierEntryForm').scrollIntoView({behavior:'smooth',block:'start'});$('supplierEntryCompany')?.focus()});
 }
 function openQuickSupplierPurchase(name){
  const supplier=String(name||'').trim();if(!supplier||!db.suppliers.includes(supplier))return;
