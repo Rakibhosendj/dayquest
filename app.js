@@ -762,7 +762,20 @@ $('addIncomeHeadForm').onsubmit=e=>{
  if(existing)name=existing;else db.incomeHeads.push(name);
  fillChoices();$('incomeSource').value=name;localSaveOnly();dialog?.close();
 };
-$('addIncomePerson').onclick=()=>{let n=prompt('Add the person who earned this income:');if(n&&n.trim()){n=n.trim();if(!db.incomePeople.includes(n))db.incomePeople.push(n);fillChoices();$('incomeBy').value=n;localSaveOnly()}};
+$('addIncomePerson').onclick=()=>{
+ const dialog=$('addIncomePersonDialog'),input=$('newIncomePersonName');
+ if(!dialog||!input){alert('Add person dialog is unavailable.');return}
+ input.value='';dialog.showModal();input.focus();
+};
+$('cancelIncomePerson').onclick=()=>$('addIncomePersonDialog')?.close();
+$('addIncomePersonForm').onsubmit=e=>{
+ e.preventDefault();
+ const input=$('newIncomePersonName'),dialog=$('addIncomePersonDialog');
+ let name=String(input?.value||'').trim();if(!name)return;
+ const existing=db.incomePeople.find(value=>value.toLocaleLowerCase()===name.toLocaleLowerCase());
+ if(existing)name=existing;else db.incomePeople.push(name);
+ fillChoices();$('incomeBy').value=name;localSaveOnly();dialog?.close();
+};
 function localSaveOnly(){localStorage.setItem('dayquest_v1',JSON.stringify(db));queueCloudSave();showBalances();notifySaveButtonSuccess()}
 
 function renderProductDictionary(){
@@ -3462,7 +3475,7 @@ $('installBtn').onclick=async()=>{
  }
  showDayQuestInstallHelp();
 };
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261122-income-type-dialog-v1').then(registration=>{
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261122-income-person-branded-dialog-v2').then(registration=>{
  console.info('DayQuest offline support is ready:',registration.scope);
 }).catch(error=>{
  console.warn('DayQuest offline support could not be registered:',error);
