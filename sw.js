@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v154-cloud-preparing-ts-qp-align';
+const CACHE = 'dayquest-cache-v155-inline-balances-page-back';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261122-ts-qp-balance-align',
-  './app.js?v=20261122-cloud-preparing',
+  './style.css?v=20261122-balance-inline-page-back',
+  './app.js?v=20261122-page-back-cloud-preparing',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
   './icons/icon-512.svg',
