@@ -3127,10 +3127,9 @@ async function copyDayQuestAppLink(){
 $('shareDayQuestAppLink').onclick=async()=>{
  const status=$('shareDayQuestAppLinkStatus');
  if(status)status.textContent='';
- const shareText='DayQuest · Plan • Track • Achieve';
  if(typeof navigator.share==='function'){
   try{
-   await navigator.share({title:'DayQuest',text:shareText,url:DAYQUEST_APP_URL});
+   await navigator.share({title:'DayQuest',url:DAYQUEST_APP_URL});
    if(status)status.textContent='DayQuest shared successfully.';
   }catch(error){
    if(error?.name==='AbortError')return;
