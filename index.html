@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261122-page-context-grid-v2">
+<link rel="stylesheet" href="style.css?v=20261122-overview-sorting-settings">
 <title>DayQuest</title>
 </head>
 <body>
@@ -171,25 +171,36 @@
 </div>
 <section id="home" class="panel active">
  <section class="hero overview-summary" hidden>
-  
   <div class="hero-metric hero-balance"><div class="eyebrow">AVAILABLE BALANCE</div><div class="money" id="earnedBalance">৳0.00</div><div class="hero-balance-breakdown"><span>Cash <strong id="cashBalance">৳0.00</strong></span><span>Bank <strong id="bankBalance">৳0.00</strong></span></div></div>
-  
  </section>
- <section class="overview-quick-panel">
-  <div class="section-head overview-quick-head"><div><h2><button type="button" class="overview-quick-title" id="overviewQuickSetupLink">Quick Expenses</button></h2><small class="overview-quick-hint">Tap 1 · Record 1</small></div><div class="overview-quick-controls"><button type="button" id="overviewQuickActionTapToggle" class="quick-action-tap-toggle is-on" aria-pressed="true">ON</button><button type="button" id="overviewQuickActionModeToggle" class="quick-action-mode-toggle add-mode" aria-pressed="false">＋ Add</button></div></div>
+ <section class="overview-quick-panel overview-sortable-section" id="overviewSectionQuickExpenses" data-overview-section="quickExpenses">
+  <div class="section-head overview-quick-head"><div><h2 data-overview-drag-handle><button type="button" class="overview-quick-title" id="overviewQuickSetupLink">Quick Expenses</button></h2><small class="overview-quick-hint">Tap 1 · Record 1 · Hold title to move</small></div><div class="overview-quick-controls"><button type="button" id="overviewQuickActionTapToggle" class="quick-action-tap-toggle is-on" aria-pressed="true">ON</button><button type="button" id="overviewQuickActionModeToggle" class="quick-action-mode-toggle add-mode" aria-pressed="false">＋ Add</button></div></div>
   <div id="overviewQuickActionList" class="quick-action-list"></div>
  </section>
- <section class="overview-quick-panel quick-suppliers-panel" id="overviewQuickSuppliersPanel" hidden>
-  <div class="section-head overview-quick-head"><div><h2><button type="button" class="overview-quick-title" id="overviewQuickSupplierSetupLink">Quick Suppliers</button></h2><span class="muted">Tap a supplier to start a purchase bill</span></div></div>
+ <section class="overview-quick-panel quick-suppliers-panel overview-sortable-section" id="overviewQuickSuppliersPanel" data-overview-section="quickSuppliers" hidden>
+  <div class="section-head overview-quick-head"><div><h2 data-overview-drag-handle><button type="button" class="overview-quick-title" id="overviewQuickSupplierSetupLink">Quick Suppliers</button></h2><span class="muted">Hold title to move · tap a supplier to start a purchase bill</span></div><div class="overview-quick-controls"><button type="button" id="overviewQuickSupplierTapToggle" class="quick-action-tap-toggle is-on" aria-pressed="true">ON</button></div></div>
   <div id="overviewQuickSupplierList" class="quick-action-list"></div>
  </section>
- <div class="section-head"><h2>Today's Activity</h2><span class="pill" id="todayQuestLabel">0 quests done</span></div>
- <div class="cards activity-cards"><article class="stat"><span class="muted">W</span><strong id="weekTotal">৳0</strong><small>Week expense</small></article><article class="stat"><span class="muted">M</span><strong id="monthTotal">৳0</strong><small>Month expense</small></article><article class="stat"><span class="muted">TIC</span><strong id="todayIncome">৳0</strong><small>Today income</small></article><article class="stat"><span class="muted">MIC</span><strong id="monthIncome">৳0</strong><small>Month income</small></article></div>
- <div class="section-head"><h2>Quick actions</h2></div>
- <div class="quick"><button class="primary" data-go="expenseEntries">＋ Add expense</button><button class="secondary" data-go="income">＋ Add income</button><button class="secondary" data-go="quests">＋ Add daily quest</button></div>
- <div class="section-head"><h2>Recent expenses</h2><button class="link" data-go="expenseEntries">See all</button></div><div id="recentExpenses" class="list"></div>
- <div class="section-head"><h2>Recent income</h2><button class="link" data-go="income">See all</button></div><div id="recentIncome" class="list"></div>
- <div class="section-head"><h2>Today's quests</h2><button class="link" data-go="quests">Manage</button></div><div id="todayQuests" class="list"></div>
+ <section class="overview-sortable-section overview-activity-section" id="overviewSectionActivity" data-overview-section="todayActivity">
+  <div class="section-head"><h2 data-overview-drag-handle>Today's Activity</h2><span class="pill" id="todayQuestLabel">0 quests done</span></div>
+  <div class="cards activity-cards"><article class="stat"><span class="muted">W</span><strong id="weekTotal">৳0</strong><small>Week expense</small></article><article class="stat"><span class="muted">M</span><strong id="monthTotal">৳0</strong><small>Month expense</small></article><article class="stat"><span class="muted">TIC</span><strong id="todayIncome">৳0</strong><small>Today income</small></article><article class="stat"><span class="muted">MIC</span><strong id="monthIncome">৳0</strong><small>Month income</small></article></div>
+ </section>
+ <section class="overview-sortable-section overview-actions-section" id="overviewSectionQuickActions" data-overview-section="quickActions">
+  <div class="section-head"><h2 data-overview-drag-handle>Quick actions</h2></div>
+  <div class="quick"><button class="primary" data-go="expenseEntries">＋ Add expense</button><button class="secondary" data-go="income">＋ Add income</button><button class="secondary" data-go="quests">＋ Add daily quest</button></div>
+ </section>
+ <section class="overview-sortable-section" id="overviewSectionRecentExpenses" data-overview-section="recentExpenses">
+  <div class="section-head"><h2 data-overview-drag-handle>Recent expenses</h2><button class="link" data-go="expenseEntries">See all</button></div>
+  <div id="recentExpenses" class="list"></div>
+ </section>
+ <section class="overview-sortable-section" id="overviewSectionRecentIncome" data-overview-section="recentIncome">
+  <div class="section-head"><h2 data-overview-drag-handle>Recent income</h2><button class="link" data-go="income">See all</button></div>
+  <div id="recentIncome" class="list"></div>
+ </section>
+ <section class="overview-sortable-section" id="overviewSectionTodayQuests" data-overview-section="todayQuests">
+  <div class="section-head"><h2 data-overview-drag-handle>Today's quests</h2><button class="link" data-go="quests">Manage</button></div>
+  <div id="todayQuests" class="list"></div>
+ </section>
 </section>
 <section id="supplierEntry" class="panel">
  <div class="section-head"><div><h2>Supplier Entry</h2><span class="muted">Save supplier company details for purchases and supplier accounts</span></div><button type="button" class="secondary" data-go="overview">Back to Overview</button></div>
@@ -688,6 +699,11 @@
   <div class="section-head settings-section-head"><div><h3>Quick button vibration</h3></div></div>
   <label class="settings-toggle-row"><input id="quickButtonVibration" type="checkbox" checked> <span>Enable vibration on quick buttons</span></label>
  </section>
+ <section class="settings-card overview-sorting-settings-card">
+  <div class="section-head settings-section-head"><div><h3>Overview Sorting</h3></div></div>
+  <label class="settings-toggle-row"><input id="overviewSortingEnabled" type="checkbox" checked> <span>Enable hold-and-drag sorting of Overview sections</span></label>
+  <p class="settings-copy">When enabled, hold a section title on Overview and drag it to the position you prefer. Turn off to lock the current order.</p>
+ </section>
  <section class="settings-card settings-quick-actions-card">
   <details id="quickActionSettings" class="settings-master-group settings-quick-action-settings">
    <summary>Create Quick Button</summary>
@@ -973,5 +989,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261122-page-context-grid-v2"></script>
+<script src="app.js?v=20261122-overview-sorting-settings"></script>
 </body></html>
