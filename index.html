@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261122-income-person-branded-dialog-v2">
+<link rel="stylesheet" href="style.css?v=20261122-bank-credit-option-v1">
 <title>DayQuest</title>
 </head>
 <body>
@@ -775,6 +775,11 @@
   <label class="settings-toggle-row"><input id="allowPurchaseBillEdits" type="checkbox" checked> <span>Allow editing saved purchase bills</span></label>
   
  </section>
+ <section class="settings-card">
+  <div class="section-head settings-section-head"><div><h3>Bank Credit Option</h3></div></div>
+  <label class="settings-toggle-row"><input id="bankCreditOption" type="checkbox"> <span>Allow Bank payments beyond available Bank balance</span></label>
+  <p class="hint">When enabled, Bank payments can create a negative Bank balance. Cash expenses and Cash payments are always limited to the available Cash balance.</p>
+ </section>
  <details class="settings-card custom-lists-settings-card">
   <summary class="section-head settings-section-head"><h3>Custom lists</h3></summary>
   <div class="settings-master-grid settings-master-accordions">
@@ -1040,5 +1045,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261122-income-person-branded-dialog-v2"></script>
+<script src="app.js?v=20261122-bank-credit-option-v1"></script>
 </body></html>
