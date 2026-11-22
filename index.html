@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261122-ts-qp-balance-align">
+<link rel="stylesheet" href="style.css?v=20261122-balance-inline-page-back">
 <title>DayQuest</title>
 </head>
 <body>
@@ -142,10 +142,34 @@
  </aside>
  <button id="sidebarBackdrop" class="sidebar-backdrop" type="button" aria-label="Close navigation" hidden></button>
  <div class="app-main">
-<header class="top" aria-label="App controls"><button id="menuToggle" class="menu-toggle" type="button" aria-label="Open side menu" title="Open side menu" aria-expanded="false" aria-controls="sidebar"><span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button><div id="pageBalanceHeader" class="page-balance-header top-page-balance" aria-live="polite"><div class="top-balance-row"><h2 id="pageBalanceTitle">Overview</h2><div class="page-balance-values"><span class="top-balance-item top-total-item"><span class="top-balance-label">Total</span><strong id="pageTotalBalance">৳0.00</strong><span class="top-daily-metric top-spending-metric"><span class="top-daily-label">TS</span><strong id="todayTotal">৳0.00</strong><span class="top-daily-date" id="todayDate"></span></span></span><span class="top-balance-item top-cash-item"><span class="top-balance-label">Cash</span><strong id="pageCashBalance">৳0.00</strong><span class="top-daily-metric top-quest-metric"><span class="top-daily-label">QP</span><strong id="questProgress">0/0</strong><span class="top-quest-track"><i id="questBar"></i></span></span></span><span class="top-balance-item top-bank-item"><span class="top-balance-label">Bank</span><strong id="pageBankBalance">৳0.00</strong></span></div></div></div><button id="backButton" class="back-button" type="button" aria-label="Back to previous page" title="Back to previous page" hidden><span aria-hidden="true">←</span><span>Back</span></button></header>
+<header class="top" aria-label="App controls">
+ <button id="menuToggle" class="menu-toggle" type="button" aria-label="Open side menu" title="Open side menu" aria-expanded="false" aria-controls="sidebar"><span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button>
+ <div id="pageBalanceHeader" class="page-balance-header top-page-balance" aria-live="polite">
+  <div class="top-balance-row">
+   <div class="page-balance-values">
+    <div class="top-balance-item top-total-item">
+     <div class="top-balance-inline"><span class="top-balance-label">Total</span><strong id="pageTotalBalance">৳0.00</strong></div>
+     <div class="top-daily-metric top-spending-metric"><span class="top-daily-label">TS</span><strong id="todayTotal">৳0.00</strong></div>
+    </div>
+    <div class="top-balance-item top-cash-item">
+     <div class="top-balance-inline"><span class="top-balance-label">Cash</span><strong id="pageCashBalance">৳0.00</strong></div>
+     <div class="top-daily-metric top-quest-metric"><span class="top-daily-label">QP</span><strong id="questProgress">0/0</strong><span class="top-quest-track"><i id="questBar"></i></span></div>
+    </div>
+    <div class="top-balance-item top-bank-item">
+     <div class="top-balance-inline"><span class="top-balance-label">Bank</span><strong id="pageBankBalance">৳0.00</strong></div>
+    </div>
+   </div>
+  </div>
+  <span id="todayDate" hidden></span>
+ </div>
+</header>
+<div id="pageContextBar" class="page-context-header" aria-live="polite">
+ <button id="backButton" class="page-context-back" type="button" aria-label="Back to previous page" title="Back to previous page" hidden><span aria-hidden="true">←</span><span>Back</span></button>
+ <h2 id="pageContextTitle">Overview</h2>
+</div>
 <main>
 <section id="home" class="panel active">
- <section class="hero overview-summary">
+ <section class="hero overview-summary" hidden>
   
   <div class="hero-metric hero-balance"><div class="eyebrow">AVAILABLE BALANCE</div><div class="money" id="earnedBalance">৳0.00</div><div class="hero-balance-breakdown"><span>Cash <strong id="cashBalance">৳0.00</strong></span><span>Bank <strong id="bankBalance">৳0.00</strong></span></div></div>
   
@@ -192,7 +216,7 @@
 </section>
 <section id="purchaseBills" class="panel">
 
- <div class="section-head purchase-page-heading"><h2>Purchase bill entry</h2><div class="purchase-balance-strip" aria-live="polite"><div><span>Cash</span><strong id="purchaseCashBalance">৳0.00</strong></div><div><span>Bank</span><strong id="purchaseBankBalance">৳0.00</strong></div></div></div>
+ <div class="section-head purchase-page-heading"><h2>Purchase bill entry</h2><div class="purchase-balance-strip" aria-live="polite" hidden><div><span>Cash</span><strong id="purchaseCashBalance">৳0.00</strong></div><div><span>Bank</span><strong id="purchaseBankBalance">৳0.00</strong></div></div></div>
  <datalist id="productNameSuggestions"></datalist>
  <form id="purchaseBillForm" class="form purchase-form">
   <div class="purchase-header-grid">
@@ -880,9 +904,7 @@
   <div class="cards"><article class="stat"><span class="muted">Income entries</span><strong id="reportIncomeTotal">৳0.00</strong><small>by entry date</small></article><article class="stat"><span class="muted">Money collected</span><strong id="reportIncomeCollected">৳0.00</strong><small>by collection date</small></article></div>
   <div class="section-head"><h2>Income by person</h2></div><label class="report-filter-label">Show person <select id="reportIncomePersonFilter"></select></label><div id="incomePersonBreakdown" class="list"></div>
   <div class="section-head"><h2>Income by type</h2></div><div id="incomeHeadBreakdown" class="list"></div>
-  <div class="section-head"><h2>Current cash & bank balance</h2><span class="pill">All-time balance</span></div>
-  <p class="hint">These balances reflect all saved transactions, not only the selected report date range.</p>
-  <div class="cards balance-cards"><article class="stat"><span class="muted">Earned balance</span><strong id="reportEarnedBalance">৳0.00</strong><small>Cash + bank</small></article><article class="stat"><span class="muted">Cash</span><strong id="reportCashBalance">৳0.00</strong><small>Cash available</small></article><article class="stat"><span class="muted">Bank</span><strong id="reportBankBalance">৳0.00</strong><small>Bank available</small></article></div>
+
  </section>
 
 
@@ -950,5 +972,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261122-cloud-preparing"></script>
+<script src="app.js?v=20261122-page-back-cloud-preparing"></script>
 </body></html>
