@@ -3420,6 +3420,14 @@ function makeSupabaseClient(){
  if(!window.supabase?.createClient)throw new Error('The Supabase library could not load. Connect to the internet and reload DayQuest.');
  return window.supabase.createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'dayquest-supabase-auth-v1'}});
 }
+function rememberLoginIdentity(email,name=''){
+ const identity={email:String(email||'').trim().toLowerCase(),name:String(name||'').trim()};
+ if(!identity.email)return;
+ try{localStorage.setItem('dayquest_last_login_identity_v1',JSON.stringify(identity))}catch{}
+}
+function getRememberedLoginIdentity(){
+ try{const value=JSON.parse(localStorage.getItem('dayquest_last_login_identity_v1')||'null');return value&&typeof value.email==='string'?value:null}catch{return null}
+}
 function showAuthView(view,message=''){
  $('authScreen').hidden=false;$('appShell').hidden=true;document.title='Day Quest';hideCloudStatus();lockAdminCloudSettings();
  // Keep login fields directly interactive even after a failed session restore.
@@ -3427,6 +3435,10 @@ function showAuthView(view,message=''){
  ['authSignupView','authLoginView','authResetView'].forEach(id=>$(id).hidden=true);
  // Cloud connection editing is available only after login in Settings → Administrator.
  const target={signup:'authSignupView',login:'authLoginView',reset:'authResetView'}[view]||'authLoginView';$(target).hidden=false;
+ if(view==='login'){
+  const remembered=getRememberedLoginIdentity();
+  if(remembered&&$('loginEmail')&&!$('loginEmail').value)$('loginEmail').value=remembered.email;
+ }
  $('authMessage').textContent=message;
 }
 function startAppSession(user,{offline=false}={}){
@@ -3848,6 +3860,7 @@ $('authSignupForm').onsubmit=async e=>{
  const button=$('authSignupForm').querySelector('button[type="submit"]');button.disabled=true;$('authMessage').textContent='Creating your Family Account…';
  try{
   const metadata={family_name:familyName,full_name:memberName,phone,phone2,address,country,division,district,sub_district:subDistrict,village,road,religion,gender,birth_date:birthDate};
+  rememberLoginIdentity(email,memberName);
   const {data,error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:location.href.split('#')[0],data:metadata}});if(error)throw error;
   db.profile={...db.profile,name:memberName,phone,phone2,address,country,division,district,subDistrict,village,road,religion,gender,birthDate,familyName};
   db.familyMembers=uniquePeople([memberName,...db.familyMembers]);db.incomePeople=uniquePeople([memberName,...db.incomePeople]);
@@ -3862,7 +3875,7 @@ $('authSignupForm').onsubmit=async e=>{
 $('authLoginForm').onsubmit=async e=>{
  e.preventDefault();if(!supabaseClient){$('authMessage').textContent='Cloud connection unavailable. Please contact your DayQuest administrator.';return}
  const email=$('loginEmail').value.trim().toLowerCase(),password=$('loginPassword').value,button=$('authLoginForm').querySelector('button[type="submit"]');button.disabled=true;$('authMessage').textContent='Signing in…';
- try{const {data,error}=await withCloudRequestTimeout(supabaseClient.auth.signInWithPassword({email,password}),20000);if(error)throw error;$('loginPassword').value='';$('authMessage').textContent='Signed in. Loading your family data…';await connectCloudSession(data.user||data.session.user)}
+ try{const {data,error}=await withCloudRequestTimeout(supabaseClient.auth.signInWithPassword({email,password}),20000);if(error)throw error;rememberLoginIdentity(email,data.user?.user_metadata?.full_name||'');$('loginPassword').value='';$('authMessage').textContent='Signed in. Loading your family data…';await connectCloudSession(data.user||data.session.user)}
  catch(error){
   const code=String(error.code||'').toLowerCase(),message=String(error.message||'');
   const accountMissing=['user_not_found','email_not_found','account_not_found'].includes(code)||/user (does not exist|not found)|email (does not exist|not found)|account not found|not registered/i.test(message);
