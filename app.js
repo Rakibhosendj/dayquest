@@ -63,14 +63,15 @@ function ensureMemberProfile(name){
  const key=memberProfileKey(name);if(!key)return null;
  db.memberProfiles=db.memberProfiles&&typeof db.memberProfiles==='object'&&!Array.isArray(db.memberProfiles)?db.memberProfiles:{};
  const p=db.memberProfiles[key]&&typeof db.memberProfiles[key]==='object'?db.memberProfiles[key]:{};
- db.memberProfiles[key]={fullName:String(name).trim(),phone:'',email:'',gender:'',religion:'',birthDate:'',relation:'',occupation:'',country:'',district:'',village:'',road:'',notes:'',...p};
+ db.memberProfiles[key]={fullName:String(name).trim(),phone:'',email:'',gender:'',religion:'',birthDate:'',relation:'',occupation:'',country:'',district:'',village:'',road:'',notes:'',photoData:'',...p};
+ db.memberProfiles[key].photoData=typeof db.memberProfiles[key].photoData==='string'&&db.memberProfiles[key].photoData.startsWith('data:image/')?db.memberProfiles[key].photoData:'';
  return db.memberProfiles[key];
 }
 function ensureAccountHolderMember(){
  const name=String(db.profile?.name||'').trim();if(!name)return;
  db.familyMembers=uniquePeople([name,...(db.familyMembers||[])]);
  db.incomePeople=uniquePeople([name,...(db.incomePeople||[])]);
- const p=ensureMemberProfile(name);Object.assign(p,{phone:p.phone||db.profile.phone||'',gender:p.gender||db.profile.gender||'',religion:p.religion||db.profile.religion||'',birthDate:p.birthDate||db.profile.birthDate||'',country:p.country||db.profile.country||'',district:p.district||db.profile.district||'',village:p.village||db.profile.village||'',road:p.road||db.profile.road||''});
+ const p=ensureMemberProfile(name);Object.assign(p,{phone:p.phone||db.profile.phone||'',gender:p.gender||db.profile.gender||'',religion:p.religion||db.profile.religion||'',birthDate:p.birthDate||db.profile.birthDate||'',country:p.country||db.profile.country||'',district:p.district||db.profile.district||'',village:p.village||db.profile.village||'',road:p.road||db.profile.road||'',photoData:p.photoData||db.profile.photoData||''});
 }
 function assignedMembers(item){
  if(Array.isArray(item?.costMembers))return uniquePeople(item.costMembers);
@@ -167,7 +168,12 @@ db.quickActions.forEach(action=>{
   if(!db.expenseNames.some(name=>name.toLocaleLowerCase()===action.name.toLocaleLowerCase()))db.expenseNames.push(action.name);
  }
 });
-const save=()=>{localStorage.setItem('dayquest_v1',JSON.stringify(db));queueCloudSave();updateAppBrand();render();renderReport()};
+let pendingSaveAction=null;
+function notifySaveButtonSuccess(){
+ const action=pendingSaveAction;if(!action||action.saved||Date.now()-action.time>20000)return;
+ action.saved=true;queueMicrotask(()=>{if(pendingSaveAction!==action||action.noticeShown)return;action.noticeShown=true;pendingSaveAction=null;window.alert('Saved successfully.')});
+}
+const save=()=>{localStorage.setItem('dayquest_v1',JSON.stringify(db));queueCloudSave();updateAppBrand();render();renderReport();notifySaveButtonSuccess()};
 const money=n=>'৳'+Number(n||0).toLocaleString('en-BD',{minimumFractionDigits:2,maximumFractionDigits:2});
 const dateObj=s=>new Date(s+'T12:00:00');
 const fmt=s=>{if(!s)return '';const d=dateObj(s);if(Number.isNaN(d.getTime()))return String(s);const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return String(d.getDate()).padStart(2,'0')+'-'+months[d.getMonth()]+'-'+d.getFullYear()};
@@ -272,7 +278,16 @@ function calculateBalances(){
  });
  return {cash,bank,total:cash+bank};
 }
-function showBalances(){const b=calculateBalances();[['earnedBalance',b.total],['cashBalance',b.cash],['bankBalance',b.bank],['reportEarnedBalance',b.total],['reportCashBalance',b.cash],['reportBankBalance',b.bank],['profileEarnedBalance',b.total],['profileCashBalance',b.cash],['profileBankBalance',b.bank]].forEach(([id,v])=>{if($(id))$(id).textContent=money(v)});}
+function showBalances(){
+ const b=calculateBalances();
+ [['earnedBalance',b.total],['cashBalance',b.cash],['bankBalance',b.bank],['reportEarnedBalance',b.total],['reportCashBalance',b.cash],['reportBankBalance',b.bank],['profileEarnedBalance',b.total],['profileCashBalance',b.cash],['profileBankBalance',b.bank],['pageTotalBalance',b.total],['pageCashBalance',b.cash],['pageBankBalance',b.bank]].forEach(([id,v])=>{if($(id))$(id).textContent=money(v)});
+}
+function updatePageBalanceTitle(tab){
+ const titles={home:'Overview',purchaseBills:'Purchase',inventory:'Inventory',budget:'Budget',budgetViewPage:'Budget',production:'Production',supplierAccounts:'Supplier Accounts',supplierEntry:'Supplier Entry',payExpenseDue:'Outstanding',loans:'Loans',income:'Income',meals:'Meals',quests:'Daily Quest',questSetup:'Daily Quest',profile:'Profile',memberProfilePage:selectedMemberProfileName||'Member Profile',settings:'Settings',costChartPage:'Cost Chart',quickExpenses:'Quick Expenses',expenseEntries:'Expenses'};
+ let title=titles[tab]||String(tab||'DayQuest').replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase());
+ if(tab==='reports'){const selected=document.querySelector('[data-report-go].active')?.dataset.reportGo||'members';title=selected==='all'?'All Reports':(REPORT_TITLES[selected]||'Reports')}
+ const element=$('pageBalanceTitle');if(element)element.textContent=title;showBalances();
+}
 const startWeek=d=>{let x=dateObj(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return x.toISOString().slice(0,10)};
 function questLocalDate(date=new Date()){
  const y=date.getFullYear(),m=String(date.getMonth()+1).padStart(2,'0'),d=String(date.getDate()).padStart(2,'0');
@@ -439,6 +454,7 @@ function setTab(t){
  if(t==='supplierEntry'){renderSupplierEntryList();resetSupplierEntryForm()}
  if(t==='meals'){if(!$('mealControlDate').value)$('mealControlDate').value=today();if(!$('mealFromDate').value)$('mealFromDate').value=today();if(!$('mealToDate').value)$('mealToDate').value=today();renderMeals()}
  if(t==='purchaseBills'){fillChoices();renderPurchaseLines();renderSupplierAccounts();}
+ updatePageBalanceTitle(t);
 }
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>setTab(b.dataset.go));
@@ -521,7 +537,7 @@ $('addUnit').onclick=()=>addUnitName($('unitName'),n=>{$('unitName').value=n});
 $('addProductionUnit').onclick=()=>addUnitName($('productionUnit'),n=>{fillProductionOptions();$('productionUnit').value=n});
 $('addIncomeHead').onclick=()=>{let n=prompt('Add an income type (e.g. Salary, Business, Rent, Freelance):');if(n&&n.trim()){n=n.trim();if(!db.incomeHeads.includes(n))db.incomeHeads.push(n);fillChoices();$('incomeSource').value=n;localSaveOnly()}};
 $('addIncomePerson').onclick=()=>{let n=prompt('Add the person who earned this income:');if(n&&n.trim()){n=n.trim();if(!db.incomePeople.includes(n))db.incomePeople.push(n);fillChoices();$('incomeBy').value=n;localSaveOnly()}};
-function localSaveOnly(){localStorage.setItem('dayquest_v1',JSON.stringify(db));queueCloudSave()}
+function localSaveOnly(){localStorage.setItem('dayquest_v1',JSON.stringify(db));queueCloudSave();showBalances();notifySaveButtonSuccess()}
 
 function renderProductDictionary(){
  db.productDictionary.sort((x,y)=>x.english.localeCompare(y.english,undefined,{sensitivity:'base'}));
@@ -2284,6 +2300,7 @@ function activateReportSection(key){
  });
  const group=document.querySelector('[data-side-group="reports"]');if(group){group.open=true;group.classList.add('has-active')}
  updateReportSummaryMetrics();
+ updatePageBalanceTitle('reports');
  const target=selected==='all'?document.querySelector('[data-report-pane="purchase"]'):document.querySelector(`[data-report-pane="${selected}"]`);
  if(target&&$('reports')?.classList.contains('active'))target.scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -2522,16 +2539,26 @@ function renderMealPersonDates(){
  host.innerHTML='<div class="meal-person-date-group"><h4>Members</h4>'+(rows||'<p class="muted meal-person-date-empty">No family members added.</p>')+'</div>';
 }
 let memberLongPressTimer=null,selectedMemberProfileName='';
+function updateMemberProfilePhotoPreview(){
+ const p=ensureMemberProfile(selectedMemberProfileName),photo=p?.photoData||'';
+ const image=$('memberProfilePhotoPreview'),fallback=$('memberProfilePhotoFallback');
+ if(image){image.src=photo;image.hidden=!photo}
+ if(fallback){fallback.hidden=!!photo;fallback.textContent=String(selectedMemberProfileName||'DQ').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'DQ'}
+}
 function openMemberIndividualPage(name){
  const profile=ensureMemberProfile(name);if(!profile)return;
  selectedMemberProfileName=String(name).trim();$('memberProfilePageTitle').textContent=selectedMemberProfileName;$('memberProfileName').value=selectedMemberProfileName;
  const fields=['Phone','Email','Gender','Religion','BirthDate','Relation','Occupation','Country','District','Village','Road','Notes'];
  fields.forEach(field=>{const el=$('memberProfile'+field);if(el)el.value=profile[field[0].toLowerCase()+field.slice(1)]||''});
- setTab('memberProfilePage');
+ updateMemberProfilePhotoPreview();setTab('memberProfilePage');
 }
 function renderFamilyMembers(){
  const list=$('familyMemberList');if(!list)return;
- list.innerHTML=db.familyMembers.map((name,index)=>`<div class="family-member-row" data-family-member-name="${esc(name)}" tabindex="0" role="button" aria-label="Hold ${esc(name)} to open individual details"><span class="family-member-avatar">${esc(name.trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase())}</span><span class="family-member-name"><strong>${esc(name)}</strong><small>Hold to open individual page</small></span><button type="button" class="delete" data-remove-family-member="${index}" aria-label="Remove ${esc(name)}">×</button></div>`).join('')||empty('No family members added yet.');
+ list.innerHTML=db.familyMembers.map((name,index)=>{
+  const photo=ensureMemberProfile(name)?.photoData||'';
+  const avatar=photo?`<img src="${esc(photo)}" alt="" loading="lazy">`:`<span>${esc(name.trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase())}</span>`;
+  return `<div class="family-member-row" data-family-member-name="${esc(name)}" tabindex="0" role="button" aria-label="Hold To Open: ${esc(name)}"><span class="family-member-avatar">${avatar}</span><span class="family-member-name"><strong>${esc(name)}</strong><small>Hold To Open</small></span><button type="button" class="delete" data-remove-family-member="${index}" aria-label="Remove ${esc(name)}">×</button></div>`;
+ }).join('')||empty('No family members added yet.');
  list.querySelectorAll('.family-member-row').forEach(row=>{
   const start=event=>{if(event.target.closest('button')||(event.pointerType==='mouse'&&event.button!==0))return;clearTimeout(memberLongPressTimer);memberLongPressTimer=setTimeout(()=>openMemberIndividualPage(row.dataset.familyMemberName),650)};
   const cancel=()=>clearTimeout(memberLongPressTimer);
@@ -2545,6 +2572,13 @@ function renderFamilyMembers(){
   if(!confirm(`Remove ${name} from the family member list? Past income records will keep this person's name.`))return;
   db.familyMembers.splice(index,1);delete db.memberProfiles[memberProfileKey(name)];renderFamilyMembers();fillChoices();save();
  });
+}
+function loadProfileForm(){
+ $('profileName').value=db.profile.name||'';$('profilePhone').value=db.profile.phone||'';
+ ['Country','District','Village','Road','Religion','Gender','BirthDate'].forEach(field=>{const key=field[0].toLowerCase()+field.slice(1);$('profile'+field).value=db.profile[key]||''});
+ $('profileAddress').value=composeMemberAddress(db.profile)||db.profile.address||'';$('familyName').value=db.profile.familyName||'';
+ $('openingCash').value=Number(db.profile.openingCash||0);$('openingBank').value=Number(db.profile.openingBank||0);
+ updateAppBrand();updateProfilePhotoPreview();renderFamilyMembers();renderMealPersonDates();
 }
 function loadProfileForm(){
  $('profileName').value=db.profile.name||'';$('profilePhone').value=db.profile.phone||'';
@@ -2571,6 +2605,29 @@ $('profilePhotoInput').onchange=async e=>{
 };
 $('removeProfilePhoto').onclick=()=>{db.profile.photoData='';$('profilePhotoInput').value='';updateProfilePhotoPreview();localSaveOnly()};
 $('memberProfileBack').onclick=()=>setTab('profile');
+$('memberProfilePhotoInput').onchange=event=>{
+ const file=event.target.files?.[0];if(!file)return;
+ if(!file.type.startsWith('image/')){alert('Choose an image file.');event.target.value='';return}
+ if(file.size>10*1024*1024){alert('Choose an image smaller than 10 MB.');event.target.value='';return}
+ const url=URL.createObjectURL(file),image=new Image();
+ image.onload=()=>{
+  try{
+   const max=480,scale=Math.min(1,max/Math.max(image.naturalWidth,image.naturalHeight)),canvas=document.createElement('canvas');
+   canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
+   canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
+   const photoData=canvas.toDataURL('image/jpeg',0.82),p=ensureMemberProfile(selectedMemberProfileName);p.photoData=photoData;
+   if(memberProfileKey(selectedMemberProfileName)===memberProfileKey(db.profile.name)){db.profile.photoData=photoData;updateProfilePhotoPreview()}
+   updateMemberProfilePhotoPreview();renderFamilyMembers();save();alert('Member picture saved successfully.');
+  }catch{alert('Could not process this picture. Try another photo.')}
+  URL.revokeObjectURL(url);
+ };
+ image.onerror=()=>{URL.revokeObjectURL(url);alert('Could not open this picture. Try another photo.')};image.src=url;
+};
+$('removeMemberProfilePhoto').onclick=()=>{
+ const p=ensureMemberProfile(selectedMemberProfileName);if(!p)return;p.photoData='';
+ if(memberProfileKey(selectedMemberProfileName)===memberProfileKey(db.profile.name)){db.profile.photoData='';updateProfilePhotoPreview()}
+ $('memberProfilePhotoInput').value='';updateMemberProfilePhotoPreview();renderFamilyMembers();save();alert('Member picture removed successfully.');
+};
 $('memberProfileForm').onsubmit=event=>{
  event.preventDefault();const name=selectedMemberProfileName;
  if(!name||!db.familyMembers.some(person=>memberProfileKey(person)===memberProfileKey(name))){alert('This family member is no longer in the member list.');setTab('profile');return}
@@ -4051,5 +4108,21 @@ function installDayQuestMessageAlerts(){
  };
 }
 installDayQuestMessageAlerts();
+const nativeDayQuestAlert=window.alert;
+window.alert=value=>{
+ const action=pendingSaveAction,text=String(value??'');
+ if(action?.saved&&/saved|updated|added|created|removed|deleted|recorded|completed|success/i.test(text)){action.noticeShown=true;pendingSaveAction=null}
+ return nativeDayQuestAlert(value);
+};
+function trackSaveUpdateButton(button){
+ if(!button)return;const label=String(button.textContent||button.getAttribute('aria-label')||'').trim();
+ if(!/^(save|update)\\b/i.test(label))return;
+ if(pendingSaveAction&&Date.now()-pendingSaveAction.time<1000)return;
+ pendingSaveAction={label,time:Date.now(),saved:false,noticeShown:false};
+ setTimeout(()=>{if(pendingSaveAction&&Date.now()-pendingSaveAction.time>20000)pendingSaveAction=null},21000);
+}
+document.addEventListener('click',event=>trackSaveUpdateButton(event.target.closest('button')),true);
+document.addEventListener('submit',event=>trackSaveUpdateButton(event.submitter),true);
+updatePageBalanceTitle('home');
 setupDQDateDisplays();
 const reportToday=today();$('productReportFromDate').value=reportToday.slice(0,7)+'-01';$('productReportToDate').value=reportToday;fillChoices();loadProfileForm();calcTotal();$('dueFields').hidden=true;$('duePaidFromField').hidden=true;$('incomeDueFields').hidden=true;$('salesMemoWrap').hidden=true;resetSalesMemoForm();$('expenseDueActionForm').hidden=true;$('incomeCollectForm').hidden=true;$('incomeTotalPreview').textContent=money(0);render();initAuth();
