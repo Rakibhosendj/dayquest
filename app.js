@@ -48,7 +48,7 @@ db.profile.address=String(db.profile.address||'');
 db.profile.phone=String(db.profile.phone||'');db.profile.phone2=String(db.profile.phone2||'');
 db.profile.familyName=String(db.profile.familyName||'');
 db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';
-['country','district','village','road','religion','gender','birthDate'].forEach(field=>db.profile[field]=String(db.profile[field]||''));
+['country','division','district','subDistrict','village','road','religion','gender','birthDate'].forEach(field=>db.profile[field]=String(db.profile[field]||''));
 db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];
 db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];
 db.guestPeople=Array.isArray(db.guestPeople)?db.guestPeople.map(n=>String(n||'').trim()).filter(Boolean):[];
@@ -59,12 +59,62 @@ db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.me
 function uniquePeople(names){return [...new Map((names||[]).map(n=>String(n||'').trim()).filter(Boolean).map(n=>[n.toLocaleLowerCase(),n])).values()]}
 function assignablePeople(){return uniquePeople([...db.familyMembers,...db.guestPeople])}
 function memberProfileKey(name){return String(name||'').trim().toLocaleLowerCase()}
-function composeMemberAddress(p){return [p?.road,p?.village,p?.district,p?.country].map(v=>String(v||'').trim()).filter(Boolean).join(', ')}
+function composeMemberAddress(p){return [p?.road,p?.village,p?.subDistrict,p?.district,p?.division,p?.country].map(v=>String(v||'').trim()).filter(Boolean).join(', ')}
+
+const BD_LOCATION_DATA_URL='https://iqbalhasandev.github.io/bangladesh-geo-json/bangladesh-geo.json';
+let bdLocationTree=null;
+function locationName(item){const value=item?.name;return String(typeof value==='object'?(value.en||value.local||''):(value||item?.name_en||'')).trim()}
+function locationChildren(list){return Array.isArray(list)?list:[]}
+async function loadBangladeshLocations(){
+ if(bdLocationTree)return bdLocationTree;
+ try{
+  const cached=localStorage.getItem('dayquest-bd-location-tree-v1');
+  if(cached){const parsed=JSON.parse(cached);if(Array.isArray(parsed)&&parsed.length){bdLocationTree=parsed;return parsed}}
+ }catch{}
+ try{
+  const response=await fetch(BD_LOCATION_DATA_URL,{cache:'force-cache'});
+  if(!response.ok)throw new Error('Location data unavailable');
+  const data=await response.json();
+  const tree=Array.isArray(data)?data:(Array.isArray(data.divisions)?data.divisions:[]);
+  if(tree.length){bdLocationTree=tree;try{localStorage.setItem('dayquest-bd-location-tree-v1',JSON.stringify(tree))}catch{}}
+ }catch(error){console.warn('Bangladesh location list could not be loaded; manual address entry remains available.',error)}
+ return bdLocationTree||[];
+}
+function setLocationOptions(inputId,values){
+ const input=$(inputId);if(!input)return;
+ const listId=input.getAttribute('list'),list=listId?$(listId):null;if(!list)return;
+ list.innerHTML=[...new Set(values.map(v=>String(v||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b)).map(v=>`<option value="${esc(v)}"></option>`).join('');
+}
+function attachAddressCascade(prefix){
+ const country=$(prefix+'Country'),division=$(prefix+'Division'),district=$(prefix+'District'),subDistrict=$(prefix+'SubDistrict');
+ if(!country||!division||!district||!subDistrict)return;
+ const update=async()=>{
+  const tree=await loadBangladeshLocations();
+  const isBangladesh=/^bangladesh$/i.test(country.value.trim());
+  if(!isBangladesh){setLocationOptions(division.id,[]);setLocationOptions(district.id,[]);setLocationOptions(subDistrict.id,[]);return}
+  const divisions=tree.map(locationName).filter(Boolean);
+  setLocationOptions(division.id,divisions);
+  const selectedDivision=tree.find(x=>locationName(x).toLocaleLowerCase()===division.value.trim().toLocaleLowerCase());
+  const districts=locationChildren(selectedDivision?.districts);
+  setLocationOptions(district.id,districts.map(locationName));
+  const selectedDistrict=districts.find(x=>locationName(x).toLocaleLowerCase()===district.value.trim().toLocaleLowerCase());
+  setLocationOptions(subDistrict.id,locationChildren(selectedDistrict?.upazilas).map(locationName));
+ };
+ country.addEventListener('change',update);country.addEventListener('input',update);
+ division.addEventListener('change',()=>{district.value='';subDistrict.value='';update()});
+ division.addEventListener('input',()=>{district.value='';subDistrict.value='';update()});
+ district.addEventListener('change',()=>{subDistrict.value='';update()});
+ district.addEventListener('input',()=>{subDistrict.value='';update()});
+ update();
+}
+function initializeAddressCascades(){
+ ['signup','profile','memberProfile'].forEach(attachAddressCascade);
+}
 function ensureMemberProfile(name){
  const key=memberProfileKey(name);if(!key)return null;
  db.memberProfiles=db.memberProfiles&&typeof db.memberProfiles==='object'&&!Array.isArray(db.memberProfiles)?db.memberProfiles:{};
  const p=db.memberProfiles[key]&&typeof db.memberProfiles[key]==='object'?db.memberProfiles[key]:{};
- db.memberProfiles[key]={fullName:String(name).trim(),phone:'',phone2:'',email:'',gender:'',religion:'',birthDate:'',relation:'',occupation:'',country:'',district:'',village:'',road:'',notes:'',photoData:'',...p};
+ db.memberProfiles[key]={fullName:String(name).trim(),phone:'',phone2:'',email:'',gender:'',religion:'',birthDate:'',relation:'',occupation:'',country:'',division:'',district:'',subDistrict:'',village:'',road:'',notes:'',photoData:'',...p};
  db.memberProfiles[key].photoData=typeof db.memberProfiles[key].photoData==='string'&&db.memberProfiles[key].photoData.startsWith('data:image/')?db.memberProfiles[key].photoData:'';
  return db.memberProfiles[key];
 }
@@ -72,7 +122,7 @@ function ensureAccountHolderMember(){
  const name=String(db.profile?.name||'').trim();if(!name)return;
  db.familyMembers=uniquePeople([name,...(db.familyMembers||[])]);
  db.incomePeople=uniquePeople([name,...(db.incomePeople||[])]);
- const p=ensureMemberProfile(name);Object.assign(p,{phone:p.phone||db.profile.phone||'',phone2:p.phone2||db.profile.phone2||'',gender:p.gender||db.profile.gender||'',religion:p.religion||db.profile.religion||'',birthDate:p.birthDate||db.profile.birthDate||'',country:p.country||db.profile.country||'',district:p.district||db.profile.district||'',village:p.village||db.profile.village||'',road:p.road||db.profile.road||'',photoData:p.photoData||db.profile.photoData||''});
+ const p=ensureMemberProfile(name);Object.assign(p,{phone:p.phone||db.profile.phone||'',phone2:p.phone2||db.profile.phone2||'',gender:p.gender||db.profile.gender||'',religion:p.religion||db.profile.religion||'',birthDate:p.birthDate||db.profile.birthDate||'',country:p.country||db.profile.country||'',division:p.division||db.profile.division||'',district:p.district||db.profile.district||'',subDistrict:p.subDistrict||db.profile.subDistrict||'',village:p.village||db.profile.village||'',road:p.road||db.profile.road||'',photoData:p.photoData||db.profile.photoData||''});
 }
 function assignedMembers(item){
  if(Array.isArray(item?.costMembers))return uniquePeople(item.costMembers);
@@ -2592,7 +2642,7 @@ function updateMemberProfilePhotoPreview(){
 function openMemberIndividualPage(name){
  const profile=ensureMemberProfile(name);if(!profile)return;
  selectedMemberProfileName=String(name).trim();$('memberProfilePageTitle').textContent=selectedMemberProfileName;$('memberProfileName').value=selectedMemberProfileName;
- const fields=['Phone','Phone2','Email','Gender','Religion','BirthDate','Relation','Occupation','Country','District','Village','Road','Notes'];
+ const fields=['Phone','Phone2','Email','Gender','Religion','BirthDate','Relation','Occupation','Country','Division','District','SubDistrict','Village','Road','Notes'];
  fields.forEach(field=>{const el=$('memberProfile'+field);if(el)el.value=profile[field[0].toLowerCase()+field.slice(1)]||''});
  updateMemberProfilePhotoPreview();setTab('memberProfilePage');
 }
@@ -2620,11 +2670,12 @@ function renderFamilyMembers(){
 
 function loadProfileForm(){
  $('profileName').value=db.profile.name||'';$('profilePhone').value=db.profile.phone||'';$('profilePhone2').value=db.profile.phone2||'';
- ['Country','District','Village','Road','Religion','Gender','BirthDate'].forEach(field=>{const key=field[0].toLowerCase()+field.slice(1);$('profile'+field).value=db.profile[key]||''});
+ ['Country','Division','District','SubDistrict','Village','Road','Religion','Gender','BirthDate'].forEach(field=>{const key=field[0].toLowerCase()+field.slice(1);$('profile'+field).value=db.profile[key]||''});
  $('profileAddress').value=composeMemberAddress(db.profile)||db.profile.address||'';$('familyName').value=db.profile.familyName||'';
  $('openingCash').value=Number(db.profile.openingCash||0);$('openingBank').value=Number(db.profile.openingBank||0);
  updateAppBrand();updateProfilePhotoPreview();renderFamilyMembers();renderMealPersonDates();
 }
+initializeAddressCascades();
 $('profilePhotoInput').onchange=async e=>{
  const file=e.target.files?.[0];if(!file)return;
  if(!file.type.startsWith('image/')){alert('Choose an image file.');e.target.value='';return}
@@ -2670,8 +2721,8 @@ $('memberProfileForm').onsubmit=event=>{
  event.preventDefault();const name=selectedMemberProfileName;
  if(!name||!db.familyMembers.some(person=>memberProfileKey(person)===memberProfileKey(name))){alert('This family member is no longer in the member list.');setTab('profile');return}
  const p=ensureMemberProfile(name);
- Object.assign(p,{phone:$('memberProfilePhone').value.trim(),phone2:$('memberProfilePhone2').value.trim(),email:$('memberProfileEmail').value.trim(),gender:$('memberProfileGender').value,religion:$('memberProfileReligion').value.trim(),birthDate:$('memberProfileBirthDate').value,relation:$('memberProfileRelation').value.trim(),occupation:$('memberProfileOccupation').value.trim(),country:$('memberProfileCountry').value.trim(),district:$('memberProfileDistrict').value.trim(),village:$('memberProfileVillage').value.trim(),road:$('memberProfileRoad').value.trim(),notes:$('memberProfileNotes').value.trim()});
- if(memberProfileKey(name)===memberProfileKey(db.profile.name)){Object.assign(db.profile,{phone:p.phone,phone2:p.phone2,gender:p.gender,religion:p.religion,birthDate:p.birthDate,country:p.country,district:p.district,village:p.village,road:p.road,address:composeMemberAddress(p)});loadProfileForm()}
+ Object.assign(p,{phone:$('memberProfilePhone').value.trim(),phone2:$('memberProfilePhone2').value.trim(),email:$('memberProfileEmail').value.trim(),gender:$('memberProfileGender').value,religion:$('memberProfileReligion').value.trim(),birthDate:$('memberProfileBirthDate').value,relation:$('memberProfileRelation').value.trim(),occupation:$('memberProfileOccupation').value.trim(),country:$('memberProfileCountry').value.trim(),division:$('memberProfileDivision').value.trim(),district:$('memberProfileDistrict').value.trim(),subDistrict:$('memberProfileSubDistrict').value.trim(),village:$('memberProfileVillage').value.trim(),road:$('memberProfileRoad').value.trim(),notes:$('memberProfileNotes').value.trim()});
+ if(memberProfileKey(name)===memberProfileKey(db.profile.name)){Object.assign(db.profile,{phone:p.phone,phone2:p.phone2,gender:p.gender,religion:p.religion,birthDate:p.birthDate,country:p.country,division:p.division,district:p.district,subDistrict:p.subDistrict,village:p.village,road:p.road,address:composeMemberAddress(p)});loadProfileForm()}
  save();renderFamilyMembers();alert('Member information saved.');
 };
 $('familyName').addEventListener('input',updateAppBrand);
@@ -2684,7 +2735,7 @@ $('addFamilyMember').onclick=()=>{
 $('profileForm').onsubmit=e=>{
  e.preventDefault();const openingCash=Number($('openingCash').value),openingBank=Number($('openingBank').value);
  if(!Number.isFinite(openingCash)||openingCash<0||!Number.isFinite(openingBank)||openingBank<0){alert('Opening balances must be zero or greater.');return}
- const name=$('profileName').value.trim(),details={country:$('profileCountry').value.trim(),district:$('profileDistrict').value.trim(),village:$('profileVillage').value.trim(),road:$('profileRoad').value.trim(),religion:$('profileReligion').value.trim(),gender:$('profileGender').value,birthDate:$('profileBirthDate').value};
+ const name=$('profileName').value.trim(),details={country:$('profileCountry').value.trim(),division:$('profileDivision').value.trim(),district:$('profileDistrict').value.trim(),subDistrict:$('profileSubDistrict').value.trim(),village:$('profileVillage').value.trim(),road:$('profileRoad').value.trim(),religion:$('profileReligion').value.trim(),gender:$('profileGender').value,birthDate:$('profileBirthDate').value};
  db.profile={...db.profile,...details,name,phone:$('profilePhone').value.trim(),phone2:$('profilePhone2').value.trim(),address:composeMemberAddress(details),familyName:$('familyName').value.trim(),openingCash,openingBank};
  if(name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===name.toLocaleLowerCase()))db.familyMembers.unshift(name);
  if(name&&!db.incomePeople.includes(name))db.incomePeople.unshift(name);
@@ -3190,7 +3241,7 @@ $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:
 $('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.loans))x.loans=[];if(!Array.isArray(x.quickActions))x.quickActions=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.productTypes))x.productTypes=['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];if(!Array.isArray(x.purchaseCategories))x.purchaseCategories=['Assets','Staples','Fixed Ex.'];if(!x.settings||typeof x.settings!=='object')x.settings={themeColor:'#263b5c'};if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.productions))x.productions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};if(!Array.isArray(x.familyMembers))x.familyMembers=[];if(!Array.isArray(x.guestPeople))x.guestPeople=[];if(!Array.isArray(x.guests))x.guests=[];if(confirm('Replace current data with this backup?')){db=x;db.sideMenuOrder=normalizeSideMenuOrder(db.sideMenuOrder);db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};db.productDictionary=normalizeProductDictionary(db.productDictionary);db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(item=>{item.costMember=String(item.costMember||'').trim()});db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
 db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};
 db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers.filter(name=>db.suppliers.includes(name)))]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];
-db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.productions=Array.isArray(db.productions)?db.productions.filter(p=>p&&p.id&&p.product&&Number(p.quantity)>0):[];normalizePurchaseInventory();db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;if(typeof db.settings.allowPurchaseBillEdits!=='boolean')db.settings.allowPurchaseBillEdits=true;db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];db.units=Array.isArray(db.units)?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];normalizePurchaseBillNumbers();db.profile=db.profile||{name:'',phone:'',phone2:'',familyName:'',photoData:'',openingCash:0,openingBank:0};db.profile.familyName=String(db.profile.familyName||'');db.profile.phone=String(db.profile.phone||'');db.profile.phone2=String(db.profile.phone2||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';['country','district','village','road','religion','gender','birthDate'].forEach(field=>db.profile[field]=String(db.profile[field]||''));db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];db.memberProfiles=db.memberProfiles&&typeof db.memberProfiles==='object'&&!Array.isArray(db.memberProfiles)?db.memberProfiles:{};db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestPeople=Array.isArray(db.guestPeople)?db.guestPeople.map(n=>String(n||'').trim()).filter(Boolean):[];db.guestPeople=[...new Map(db.guestPeople.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestRelations=db.guestRelations&&typeof db.guestRelations==='object'&&!Array.isArray(db.guestRelations)?db.guestRelations:{};db.guests=Array.isArray(db.guests)?db.guests.filter(g=>g&&Array.isArray(g.members)&&g.members.length&&/^\d{4}-\d{2}-\d{2}$/.test(String(g.entryDate||''))):[];db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.members.forEach(n=>{if(!assignablePeople().some(x=>x.toLocaleLowerCase()===String(n).toLocaleLowerCase()))db.guestPeople.push(String(n).trim())})});db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);normalizeMemberAssignments();db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeople.push(name)});db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);applySideMenuColor(db.settings.sideMenuColor||'#111d30',false);applyTopBarColor(db.settings.topBarColor||'#101827',false);applyQuickButtonColor(db.settings.quickButtonColor||'#ee7d2f',false);applyBackgroundColor(db.settings.backgroundColor||'#f3f5f9',false);applyFontColor(db.settings.fontColor||'#263b5c',false);applyFontColor(db.settings.fontColor||'#263b5c',false);renderPurchaseCategorySettings();renderMasterLists();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
+db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.productions=Array.isArray(db.productions)?db.productions.filter(p=>p&&p.id&&p.product&&Number(p.quantity)>0):[];normalizePurchaseInventory();db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;if(typeof db.settings.allowPurchaseBillEdits!=='boolean')db.settings.allowPurchaseBillEdits=true;db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];db.units=Array.isArray(db.units)?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];normalizePurchaseBillNumbers();db.profile=db.profile||{name:'',phone:'',phone2:'',familyName:'',photoData:'',openingCash:0,openingBank:0};db.profile.familyName=String(db.profile.familyName||'');db.profile.phone=String(db.profile.phone||'');db.profile.phone2=String(db.profile.phone2||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';['country','division','district','subDistrict','village','road','religion','gender','birthDate'].forEach(field=>db.profile[field]=String(db.profile[field]||''));db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];db.memberProfiles=db.memberProfiles&&typeof db.memberProfiles==='object'&&!Array.isArray(db.memberProfiles)?db.memberProfiles:{};db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestPeople=Array.isArray(db.guestPeople)?db.guestPeople.map(n=>String(n||'').trim()).filter(Boolean):[];db.guestPeople=[...new Map(db.guestPeople.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestRelations=db.guestRelations&&typeof db.guestRelations==='object'&&!Array.isArray(db.guestRelations)?db.guestRelations:{};db.guests=Array.isArray(db.guests)?db.guests.filter(g=>g&&Array.isArray(g.members)&&g.members.length&&/^\d{4}-\d{2}-\d{2}$/.test(String(g.entryDate||''))):[];db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.members.forEach(n=>{if(!assignablePeople().some(x=>x.toLocaleLowerCase()===String(n).toLocaleLowerCase()))db.guestPeople.push(String(n).trim())})});db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);normalizeMemberAssignments();db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeople.push(name)});db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);applySideMenuColor(db.settings.sideMenuColor||'#111d30',false);applyTopBarColor(db.settings.topBarColor||'#101827',false);applyQuickButtonColor(db.settings.quickButtonColor||'#ee7d2f',false);applyBackgroundColor(db.settings.backgroundColor||'#f3f5f9',false);applyFontColor(db.settings.fontColor||'#263b5c',false);applyFontColor(db.settings.fontColor||'#263b5c',false);renderPurchaseCategorySettings();renderMasterLists();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
 const isAppleTouchDevice=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const isAndroidDevice=/Android/i.test(navigator.userAgent);
 const isMobileInstallDevice=isAppleTouchDevice||isAndroidDevice;
@@ -3372,7 +3423,7 @@ function makeSupabaseClient(){
 function showAuthView(view,message=''){
  $('authScreen').hidden=false;$('appShell').hidden=true;document.title='Day Quest';hideCloudStatus();lockAdminCloudSettings();
  // Keep login fields directly interactive even after a failed session restore.
- ['loginEmail','loginPassword','signupFamilyName','signupMemberName','signupPhone','signupPhone2','signupCountry','signupDistrict','signupVillage','signupRoad','signupGender','signupReligion','signupBirthDate','signupEmail','signupPassword','signupPasswordConfirm','recoveryPassword','recoveryPasswordConfirm'].forEach(id=>{const field=$(id);if(field){field.disabled=false;field.readOnly=false;field.removeAttribute('aria-disabled');field.style.pointerEvents='auto';field.style.userSelect='text'}});
+ ['loginEmail','loginPassword','signupFamilyName','signupMemberName','signupPhone','signupPhone2','signupCountry','signupDivision','signupDistrict','signupSubDistrict','signupVillage','signupRoad','signupGender','signupReligion','signupBirthDate','signupEmail','signupPassword','signupPasswordConfirm','recoveryPassword','recoveryPasswordConfirm'].forEach(id=>{const field=$(id);if(field){field.disabled=false;field.readOnly=false;field.removeAttribute('aria-disabled');field.style.pointerEvents='auto';field.style.userSelect='text'}});
  ['authSignupView','authLoginView','authResetView'].forEach(id=>$(id).hidden=true);
  // Cloud connection editing is available only after login in Settings → Administrator.
  const target={signup:'authSignupView',login:'authLoginView',reset:'authResetView'}[view]||'authLoginView';$(target).hidden=false;
@@ -3417,7 +3468,7 @@ db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers
  db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.productions=Array.isArray(db.productions)?db.productions.filter(x=>x&&x.id&&x.product&&Number(x.quantity)>0):[];
  db.profile=db.profile&&typeof db.profile==='object'?db.profile:{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};
  db.profile.familyName=String(db.profile.familyName||'');db.profile.phone=String(db.profile.phone||'');db.profile.phone2=String(db.profile.phone2||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';
- ['country','district','village','road','religion','gender','birthDate'].forEach(field=>db.profile[field]=String(db.profile[field]||''));
+ ['country','division','district','subDistrict','village','road','religion','gender','birthDate'].forEach(field=>db.profile[field]=String(db.profile[field]||''));
  db.memberProfiles=db.memberProfiles&&typeof db.memberProfiles==='object'&&!Array.isArray(db.memberProfiles)?db.memberProfiles:{};
  db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};
  if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.themeColor||'')))db.settings.themeColor='#263b5c';
@@ -3791,17 +3842,17 @@ $('useSharedCloudConfig').onclick=async()=>{
 };
 $('authSignupForm').onsubmit=async e=>{
  e.preventDefault();if(!supabaseClient){$('authMessage').textContent='Cloud connection unavailable. Please contact your DayQuest administrator.';return}
- const familyName=$('signupFamilyName').value.trim(),memberName=$('signupMemberName').value.trim(),phone=$('signupPhone').value.trim(),phone2=$('signupPhone2').value.trim(),country=$('signupCountry').value.trim(),district=$('signupDistrict').value.trim(),village=$('signupVillage').value.trim(),road=$('signupRoad').value.trim(),religion=$('signupReligion').value.trim(),gender=$('signupGender').value,birthDate=$('signupBirthDate').value,email=$('signupEmail').value.trim().toLowerCase(),password=$('signupPassword').value,confirmPassword=$('signupPasswordConfirm').value;
- const address=composeMemberAddress({country,district,village,road});
- if(!familyName||!memberName||!country||!district||!village){$('authMessage').textContent='Enter the family name, account holder name, country, district and village / area.';return}if(password.length<8){$('authMessage').textContent='Use a password with at least 8 characters.';return}if(password!==confirmPassword){$('authMessage').textContent='The passwords do not match.';return}
+ const familyName=$('signupFamilyName').value.trim(),memberName=$('signupMemberName').value.trim(),phone=$('signupPhone').value.trim(),phone2=$('signupPhone2').value.trim(),country=$('signupCountry').value.trim(),division=$('signupDivision').value.trim(),district=$('signupDistrict').value.trim(),subDistrict=$('signupSubDistrict').value.trim(),village=$('signupVillage').value.trim(),road=$('signupRoad').value.trim(),religion=$('signupReligion').value.trim(),gender=$('signupGender').value,birthDate=$('signupBirthDate').value,email=$('signupEmail').value.trim().toLowerCase(),password=$('signupPassword').value,confirmPassword=$('signupPasswordConfirm').value;
+ const address=composeMemberAddress({country,division,district,subDistrict,village,road});
+ if(!familyName||!memberName||!country||!division||!district||!village){$('authMessage').textContent='Enter the family name, account holder name, country, division, district and village.';return}if(password.length<8){$('authMessage').textContent='Use a password with at least 8 characters.';return}if(password!==confirmPassword){$('authMessage').textContent='The passwords do not match.';return}
  const button=$('authSignupForm').querySelector('button[type="submit"]');button.disabled=true;$('authMessage').textContent='Creating your Family Account…';
  try{
-  const metadata={family_name:familyName,full_name:memberName,phone,phone2,address,country,district,village,road,religion,gender,birth_date:birthDate};
+  const metadata={family_name:familyName,full_name:memberName,phone,phone2,address,country,division,district,sub_district:subDistrict,village,road,religion,gender,birth_date:birthDate};
   const {data,error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:location.href.split('#')[0],data:metadata}});if(error)throw error;
-  db.profile={...db.profile,name:memberName,phone,phone2,address,country,district,village,road,religion,gender,birthDate,familyName};
+  db.profile={...db.profile,name:memberName,phone,phone2,address,country,division,district,subDistrict,village,road,religion,gender,birthDate,familyName};
   db.familyMembers=uniquePeople([memberName,...db.familyMembers]);db.incomePeople=uniquePeople([memberName,...db.incomePeople]);
   db.memberProfiles=db.memberProfiles&&typeof db.memberProfiles==='object'?db.memberProfiles:{};
-  db.memberProfiles[memberProfileKey(memberName)]={fullName:memberName,phone,phone2,email,gender,religion,birthDate,relation:'',occupation:'',country,district,village,road,notes:''};
+  db.memberProfiles[memberProfileKey(memberName)]={fullName:memberName,phone,phone2,email,gender,religion,birthDate,relation:'',occupation:'',country,division,district,subDistrict,village,road,notes:''};
   localSaveOnly();$('signupPassword').value='';$('signupPasswordConfirm').value='';
   if(data.session){await connectCloudSession(data.user||data.session.user)}else{showAuthView('login','Account created. Check your email for the confirmation link, then log in here.')}
  }
