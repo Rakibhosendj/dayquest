@@ -47,6 +47,7 @@ db.profile=db.profile&&typeof db.profile==='object'?db.profile:{name:'',phone:''
 db.profile.address=String(db.profile.address||'');
 db.profile.familyName=String(db.profile.familyName||'');
 db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';
+['country','district','village','road','religion','gender','birthDate'].forEach(field=>db.profile[field]=String(db.profile[field]||''));
 db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];
 db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];
 db.guestPeople=Array.isArray(db.guestPeople)?db.guestPeople.map(n=>String(n||'').trim()).filter(Boolean):[];
@@ -56,6 +57,21 @@ db.guests=Array.isArray(db.guests)?db.guests.filter(g=>g&&Array.isArray(g.member
 db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.relation=String(g.relation||'');g.members.forEach(n=>{if(!db.guestPeople.some(x=>x.toLocaleLowerCase()===n.toLocaleLowerCase())&&!db.familyMembers.some(x=>x.toLocaleLowerCase()===n.toLocaleLowerCase()))db.guestPeople.push(n)})});
 function uniquePeople(names){return [...new Map((names||[]).map(n=>String(n||'').trim()).filter(Boolean).map(n=>[n.toLocaleLowerCase(),n])).values()]}
 function assignablePeople(){return uniquePeople([...db.familyMembers,...db.guestPeople])}
+function memberProfileKey(name){return String(name||'').trim().toLocaleLowerCase()}
+function composeMemberAddress(p){return [p?.road,p?.village,p?.district,p?.country].map(v=>String(v||'').trim()).filter(Boolean).join(', ')}
+function ensureMemberProfile(name){
+ const key=memberProfileKey(name);if(!key)return null;
+ db.memberProfiles=db.memberProfiles&&typeof db.memberProfiles==='object'&&!Array.isArray(db.memberProfiles)?db.memberProfiles:{};
+ const p=db.memberProfiles[key]&&typeof db.memberProfiles[key]==='object'?db.memberProfiles[key]:{};
+ db.memberProfiles[key]={fullName:String(name).trim(),phone:'',email:'',gender:'',religion:'',birthDate:'',relation:'',occupation:'',country:'',district:'',village:'',road:'',notes:'',...p};
+ return db.memberProfiles[key];
+}
+function ensureAccountHolderMember(){
+ const name=String(db.profile?.name||'').trim();if(!name)return;
+ db.familyMembers=uniquePeople([name,...(db.familyMembers||[])]);
+ db.incomePeople=uniquePeople([name,...(db.incomePeople||[])]);
+ const p=ensureMemberProfile(name);Object.assign(p,{phone:p.phone||db.profile.phone||'',gender:p.gender||db.profile.gender||'',religion:p.religion||db.profile.religion||'',birthDate:p.birthDate||db.profile.birthDate||'',country:p.country||db.profile.country||'',district:p.district||db.profile.district||'',village:p.village||db.profile.village||'',road:p.road||db.profile.road||''});
+}
 function assignedMembers(item){
  if(Array.isArray(item?.costMembers))return uniquePeople(item.costMembers);
  if(item?.costType==='family')return db.familyMembers.slice();
@@ -133,6 +149,8 @@ function normalizePurchaseInventory(){
 normalizePurchaseInventory();
 db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});
 if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);
+db.memberProfiles=db.memberProfiles&&typeof db.memberProfiles==='object'&&!Array.isArray(db.memberProfiles)?db.memberProfiles:{};
+ensureAccountHolderMember();
 normalizeMemberAssignments();
 db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeople.push(name)});
 if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);
@@ -2503,17 +2521,35 @@ function renderMealPersonDates(){
  }).join('');
  host.innerHTML='<div class="meal-person-date-group"><h4>Members</h4>'+(rows||'<p class="muted meal-person-date-empty">No family members added.</p>')+'</div>';
 }
+let memberLongPressTimer=null,selectedMemberProfileName='';
+function openMemberIndividualPage(name){
+ const profile=ensureMemberProfile(name);if(!profile)return;
+ selectedMemberProfileName=String(name).trim();$('memberProfilePageTitle').textContent=selectedMemberProfileName;$('memberProfileName').value=selectedMemberProfileName;
+ const fields=['Phone','Email','Gender','Religion','BirthDate','Relation','Occupation','Country','District','Village','Road','Notes'];
+ fields.forEach(field=>{const el=$('memberProfile'+field);if(el)el.value=profile[field[0].toLowerCase()+field.slice(1)]||''});
+ setTab('memberProfilePage');
+}
 function renderFamilyMembers(){
  const list=$('familyMemberList');if(!list)return;
- list.innerHTML=db.familyMembers.map((name,index)=>`<div class="family-member-row"><span class="family-member-avatar">${esc(name.trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase())}</span><span class="family-member-name"><strong>${esc(name)}</strong><small>Available in Income By</small></span><button type="button" class="delete" data-remove-family-member="${index}" aria-label="Remove ${esc(name)}">×</button></div>`).join('')||empty('No family members added yet.');
+ list.innerHTML=db.familyMembers.map((name,index)=>`<div class="family-member-row" data-family-member-name="${esc(name)}" tabindex="0" role="button" aria-label="Hold ${esc(name)} to open individual details"><span class="family-member-avatar">${esc(name.trim().split(/\\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase())}</span><span class="family-member-name"><strong>${esc(name)}</strong><small>Hold to open individual page</small></span><button type="button" class="delete" data-remove-family-member="${index}" aria-label="Remove ${esc(name)}">×</button></div>`).join('')||empty('No family members added yet.');
+ list.querySelectorAll('.family-member-row').forEach(row=>{
+  const start=event=>{if(event.target.closest('button')||(event.pointerType==='mouse'&&event.button!==0))return;clearTimeout(memberLongPressTimer);memberLongPressTimer=setTimeout(()=>openMemberIndividualPage(row.dataset.familyMemberName),650)};
+  const cancel=()=>clearTimeout(memberLongPressTimer);
+  row.addEventListener('pointerdown',start);row.addEventListener('pointerup',cancel);row.addEventListener('pointerleave',cancel);row.addEventListener('pointercancel',cancel);
+  row.addEventListener('contextmenu',event=>{event.preventDefault();cancel();openMemberIndividualPage(row.dataset.familyMemberName)});
+  row.addEventListener('keydown',event=>{if(event.target===row&&['Enter',' '].includes(event.key)){event.preventDefault();openMemberIndividualPage(row.dataset.familyMemberName)}});
+ });
  list.querySelectorAll('[data-remove-family-member]').forEach(button=>button.onclick=()=>{
   const index=Number(button.dataset.removeFamilyMember),name=db.familyMembers[index];if(!name)return;
+  if(memberProfileKey(name)===memberProfileKey(db.profile.name)){alert('The account holder is the first family member and cannot be removed.');return}
   if(!confirm(`Remove ${name} from the family member list? Past income records will keep this person's name.`))return;
-  db.familyMembers.splice(index,1);renderFamilyMembers();fillChoices();save();
+  db.familyMembers.splice(index,1);delete db.memberProfiles[memberProfileKey(name)];renderFamilyMembers();fillChoices();save();
  });
 }
 function loadProfileForm(){
- $('profileName').value=db.profile.name||'';$('profilePhone').value=db.profile.phone||'';$('profileAddress').value=db.profile.address||'';$('familyName').value=db.profile.familyName||'';
+ $('profileName').value=db.profile.name||'';$('profilePhone').value=db.profile.phone||'';
+ ['Country','District','Village','Road','Religion','Gender','BirthDate'].forEach(field=>{const key=field[0].toLowerCase()+field.slice(1);$('profile'+field).value=db.profile[key]||''});
+ $('profileAddress').value=composeMemberAddress(db.profile)||db.profile.address||'';$('familyName').value=db.profile.familyName||'';
  $('openingCash').value=Number(db.profile.openingCash||0);$('openingBank').value=Number(db.profile.openingBank||0);
  updateAppBrand();updateProfilePhotoPreview();renderFamilyMembers();renderMealPersonDates();
 }
@@ -2534,20 +2570,30 @@ $('profilePhotoInput').onchange=async e=>{
  img.onerror=()=>{URL.revokeObjectURL(objectUrl);alert('Could not open this image. Try another photo.')};img.src=objectUrl;
 };
 $('removeProfilePhoto').onclick=()=>{db.profile.photoData='';$('profilePhotoInput').value='';updateProfilePhotoPreview();localSaveOnly()};
+$('memberProfileBack').onclick=()=>setTab('profile');
+$('memberProfileForm').onsubmit=event=>{
+ event.preventDefault();const name=selectedMemberProfileName;
+ if(!name||!db.familyMembers.some(person=>memberProfileKey(person)===memberProfileKey(name))){alert('This family member is no longer in the member list.');setTab('profile');return}
+ const p=ensureMemberProfile(name);
+ Object.assign(p,{phone:$('memberProfilePhone').value.trim(),email:$('memberProfileEmail').value.trim(),gender:$('memberProfileGender').value,religion:$('memberProfileReligion').value.trim(),birthDate:$('memberProfileBirthDate').value,relation:$('memberProfileRelation').value.trim(),occupation:$('memberProfileOccupation').value.trim(),country:$('memberProfileCountry').value.trim(),district:$('memberProfileDistrict').value.trim(),village:$('memberProfileVillage').value.trim(),road:$('memberProfileRoad').value.trim(),notes:$('memberProfileNotes').value.trim()});
+ if(memberProfileKey(name)===memberProfileKey(db.profile.name)){Object.assign(db.profile,{phone:p.phone,gender:p.gender,religion:p.religion,birthDate:p.birthDate,country:p.country,district:p.district,village:p.village,road:p.road,address:composeMemberAddress(p)});loadProfileForm()}
+ save();renderFamilyMembers();alert('Member information saved.');
+};
 $('familyName').addEventListener('input',updateAppBrand);
 $('addFamilyMember').onclick=()=>{
  const input=$('newFamilyMember'),name=input.value.trim();if(!name){alert('Enter a family member name.');input.focus();return}
  if(db.familyMembers.some(n=>n.toLocaleLowerCase()===name.toLocaleLowerCase())){alert('This family member is already listed.');return}
- db.familyMembers.push(name);if(!db.incomePeople.includes(name))db.incomePeople.push(name);
+ db.familyMembers.push(name);if(!db.incomePeople.includes(name))db.incomePeople.push(name);ensureMemberProfile(name);
  input.value='';renderFamilyMembers();renderMealPersonDates();fillChoices();save();
 };
 $('profileForm').onsubmit=e=>{
  e.preventDefault();const openingCash=Number($('openingCash').value),openingBank=Number($('openingBank').value);
  if(!Number.isFinite(openingCash)||openingCash<0||!Number.isFinite(openingBank)||openingBank<0){alert('Opening balances must be zero or greater.');return}
- const name=$('profileName').value.trim();
- db.profile={...db.profile,name,phone:$('profilePhone').value.trim(),address:$('profileAddress').value.trim(),familyName:$('familyName').value.trim(),openingCash,openingBank};
+ const name=$('profileName').value.trim(),details={country:$('profileCountry').value.trim(),district:$('profileDistrict').value.trim(),village:$('profileVillage').value.trim(),road:$('profileRoad').value.trim(),religion:$('profileReligion').value.trim(),gender:$('profileGender').value,birthDate:$('profileBirthDate').value};
+ db.profile={...db.profile,...details,name,phone:$('profilePhone').value.trim(),address:composeMemberAddress(details),familyName:$('familyName').value.trim(),openingCash,openingBank};
  if(name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===name.toLocaleLowerCase()))db.familyMembers.unshift(name);
  if(name&&!db.incomePeople.includes(name))db.incomePeople.unshift(name);
+ if(name){const p=ensureMemberProfile(name);Object.assign(p,{phone:db.profile.phone,...details})}
  fillChoices();renderFamilyMembers();updateProfilePhotoPreview();save();alert('Family profile and starting balances saved.');
 };
 
@@ -3049,7 +3095,7 @@ $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:
 $('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.loans))x.loans=[];if(!Array.isArray(x.quickActions))x.quickActions=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.productTypes))x.productTypes=['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];if(!Array.isArray(x.purchaseCategories))x.purchaseCategories=['Assets','Staples','Fixed Ex.'];if(!x.settings||typeof x.settings!=='object')x.settings={themeColor:'#263b5c'};if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.productions))x.productions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};if(!Array.isArray(x.familyMembers))x.familyMembers=[];if(!Array.isArray(x.guestPeople))x.guestPeople=[];if(!Array.isArray(x.guests))x.guests=[];if(confirm('Replace current data with this backup?')){db=x;db.sideMenuOrder=normalizeSideMenuOrder(db.sideMenuOrder);db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};db.productDictionary=normalizeProductDictionary(db.productDictionary);db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(item=>{item.costMember=String(item.costMember||'').trim()});db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
 db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};
 db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers.filter(name=>db.suppliers.includes(name)))]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];
-db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.productions=Array.isArray(db.productions)?db.productions.filter(p=>p&&p.id&&p.product&&Number(p.quantity)>0):[];normalizePurchaseInventory();db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;if(typeof db.settings.allowPurchaseBillEdits!=='boolean')db.settings.allowPurchaseBillEdits=true;db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];db.units=Array.isArray(db.units)?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];normalizePurchaseBillNumbers();db.profile=db.profile||{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};db.profile.familyName=String(db.profile.familyName||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestPeople=Array.isArray(db.guestPeople)?db.guestPeople.map(n=>String(n||'').trim()).filter(Boolean):[];db.guestPeople=[...new Map(db.guestPeople.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestRelations=db.guestRelations&&typeof db.guestRelations==='object'&&!Array.isArray(db.guestRelations)?db.guestRelations:{};db.guests=Array.isArray(db.guests)?db.guests.filter(g=>g&&Array.isArray(g.members)&&g.members.length&&/^\d{4}-\d{2}-\d{2}$/.test(String(g.entryDate||''))):[];db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.members.forEach(n=>{if(!assignablePeople().some(x=>x.toLocaleLowerCase()===String(n).toLocaleLowerCase()))db.guestPeople.push(String(n).trim())})});db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);normalizeMemberAssignments();db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeople.push(name)});db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);applySideMenuColor(db.settings.sideMenuColor||'#111d30',false);applyTopBarColor(db.settings.topBarColor||'#101827',false);applyQuickButtonColor(db.settings.quickButtonColor||'#ee7d2f',false);applyBackgroundColor(db.settings.backgroundColor||'#f3f5f9',false);applyFontColor(db.settings.fontColor||'#263b5c',false);applyFontColor(db.settings.fontColor||'#263b5c',false);renderPurchaseCategorySettings();renderMasterLists();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
+db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.productions=Array.isArray(db.productions)?db.productions.filter(p=>p&&p.id&&p.product&&Number(p.quantity)>0):[];normalizePurchaseInventory();db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;if(typeof db.settings.allowPurchaseBillEdits!=='boolean')db.settings.allowPurchaseBillEdits=true;db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];db.units=Array.isArray(db.units)?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];normalizePurchaseBillNumbers();db.profile=db.profile||{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};db.profile.familyName=String(db.profile.familyName||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';['country','district','village','road','religion','gender','birthDate'].forEach(field=>db.profile[field]=String(db.profile[field]||''));db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];db.memberProfiles=db.memberProfiles&&typeof db.memberProfiles==='object'&&!Array.isArray(db.memberProfiles)?db.memberProfiles:{};db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestPeople=Array.isArray(db.guestPeople)?db.guestPeople.map(n=>String(n||'').trim()).filter(Boolean):[];db.guestPeople=[...new Map(db.guestPeople.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestRelations=db.guestRelations&&typeof db.guestRelations==='object'&&!Array.isArray(db.guestRelations)?db.guestRelations:{};db.guests=Array.isArray(db.guests)?db.guests.filter(g=>g&&Array.isArray(g.members)&&g.members.length&&/^\d{4}-\d{2}-\d{2}$/.test(String(g.entryDate||''))):[];db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.members.forEach(n=>{if(!assignablePeople().some(x=>x.toLocaleLowerCase()===String(n).toLocaleLowerCase()))db.guestPeople.push(String(n).trim())})});db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);normalizeMemberAssignments();db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeople.push(name)});db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);applySideMenuColor(db.settings.sideMenuColor||'#111d30',false);applyTopBarColor(db.settings.topBarColor||'#101827',false);applyQuickButtonColor(db.settings.quickButtonColor||'#ee7d2f',false);applyBackgroundColor(db.settings.backgroundColor||'#f3f5f9',false);applyFontColor(db.settings.fontColor||'#263b5c',false);applyFontColor(db.settings.fontColor||'#263b5c',false);renderPurchaseCategorySettings();renderMasterLists();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
 const isAppleTouchDevice=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const isAndroidDevice=/Android/i.test(navigator.userAgent);
 const isMobileInstallDevice=isAppleTouchDevice||isAndroidDevice;
@@ -3231,7 +3277,7 @@ function makeSupabaseClient(){
 function showAuthView(view,message=''){
  $('authScreen').hidden=false;$('appShell').hidden=true;document.title='Day Quest';hideCloudStatus();lockAdminCloudSettings();
  // Keep login fields directly interactive even after a failed session restore.
- ['loginEmail','loginPassword','signupFamilyName','signupAddress','signupEmail','signupPassword','signupPasswordConfirm','recoveryPassword','recoveryPasswordConfirm'].forEach(id=>{const field=$(id);if(field){field.disabled=false;field.readOnly=false;field.removeAttribute('aria-disabled');field.style.pointerEvents='auto';field.style.userSelect='text'}});
+ ['loginEmail','loginPassword','signupFamilyName','signupMemberName','signupPhone','signupCountry','signupDistrict','signupVillage','signupRoad','signupGender','signupReligion','signupBirthDate','signupEmail','signupPassword','signupPasswordConfirm','recoveryPassword','recoveryPasswordConfirm'].forEach(id=>{const field=$(id);if(field){field.disabled=false;field.readOnly=false;field.removeAttribute('aria-disabled');field.style.pointerEvents='auto';field.style.userSelect='text'}});
  ['authSignupView','authLoginView','authResetView'].forEach(id=>$(id).hidden=true);
  // Cloud connection editing is available only after login in Settings → Administrator.
  const target={signup:'authSignupView',login:'authLoginView',reset:'authResetView'}[view]||'authLoginView';$(target).hidden=false;
@@ -3276,6 +3322,8 @@ db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers
  db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.productions=Array.isArray(db.productions)?db.productions.filter(x=>x&&x.id&&x.product&&Number(x.quantity)>0):[];
  db.profile=db.profile&&typeof db.profile==='object'?db.profile:{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};
  db.profile.familyName=String(db.profile.familyName||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';
+ ['country','district','village','road','religion','gender','birthDate'].forEach(field=>db.profile[field]=String(db.profile[field]||''));
+ db.memberProfiles=db.memberProfiles&&typeof db.memberProfiles==='object'&&!Array.isArray(db.memberProfiles)?db.memberProfiles:{};
  db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};
  if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.themeColor||'')))db.settings.themeColor='#263b5c';
  if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;
@@ -3284,6 +3332,7 @@ db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers
  db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([k,v])=>k&&v))].map(([k,v])=>v);
  db.units=[...new Map(db.units.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([k,v])=>k&&v))].map(([k,v])=>v);
  if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);
+ ensureAccountHolderMember();
  db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.members.forEach(n=>{if(!assignablePeople().some(x=>x.toLocaleLowerCase()===n.toLocaleLowerCase()))db.guestPeople.push(n)})});
  db.supplierPayments.forEach(x=>{if(x.supplier&&!db.suppliers.includes(x.supplier))db.suppliers.push(x.supplier)});
  db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});
@@ -3377,6 +3426,15 @@ async function connectCloudSession(user,{silent=false}={}){
   showAuthView('login',message);return;
  }
  const hasLocal=localHasRecords(db);
+ if(!hasLocal&&user?.user_metadata){
+  const m=user.user_metadata,n=String(m.full_name||'').trim();
+  if(n){const d={country:String(m.country||''),district:String(m.district||''),village:String(m.village||''),road:String(m.road||''),religion:String(m.religion||''),gender:String(m.gender||''),birthDate:String(m.birth_date||'')};
+   db.profile={...db.profile,name:n,phone:String(m.phone||''),familyName:String(m.family_name||''),...d,address:String(m.address||composeMemberAddress(d))};
+   db.familyMembers=uniquePeople([n,...db.familyMembers]);db.incomePeople=uniquePeople([n,...db.incomePeople]);db.memberProfiles=db.memberProfiles||{};
+   db.memberProfiles[memberProfileKey(n)]={fullName:n,phone:db.profile.phone,email:String(user.email||''),...d,relation:'',occupation:'',notes:''};
+   localStorage.setItem('dayquest_v1',JSON.stringify(db));
+  }
+ }
  // Never upload one Family Account's cached local data into a different account.
  // This matters on shared computers and when multiple family accounts use one browser.
  if(linkedToOtherAccount&&hasLocal){
@@ -3638,10 +3696,20 @@ $('useSharedCloudConfig').onclick=async()=>{
 };
 $('authSignupForm').onsubmit=async e=>{
  e.preventDefault();if(!supabaseClient){$('authMessage').textContent='Cloud connection unavailable. Please contact your DayQuest administrator.';return}
- const familyName=$('signupFamilyName').value.trim(),address=$('signupAddress').value.trim(),email=$('signupEmail').value.trim().toLowerCase(),password=$('signupPassword').value,confirmPassword=$('signupPasswordConfirm').value;
- if(!familyName){$('authMessage').textContent='Enter your family name.';return}if(!address){$('authMessage').textContent='Enter your family address.';return}if(password.length<8){$('authMessage').textContent='Use a password with at least 8 characters.';return}if(password!==confirmPassword){$('authMessage').textContent='The passwords do not match.';return}
+ const familyName=$('signupFamilyName').value.trim(),memberName=$('signupMemberName').value.trim(),phone=$('signupPhone').value.trim(),country=$('signupCountry').value.trim(),district=$('signupDistrict').value.trim(),village=$('signupVillage').value.trim(),road=$('signupRoad').value.trim(),religion=$('signupReligion').value.trim(),gender=$('signupGender').value,birthDate=$('signupBirthDate').value,email=$('signupEmail').value.trim().toLowerCase(),password=$('signupPassword').value,confirmPassword=$('signupPasswordConfirm').value;
+ const address=composeMemberAddress({country,district,village,road});
+ if(!familyName||!memberName||!country||!district||!village){$('authMessage').textContent='Enter the family name, account holder name, country, district and village / area.';return}if(password.length<8){$('authMessage').textContent='Use a password with at least 8 characters.';return}if(password!==confirmPassword){$('authMessage').textContent='The passwords do not match.';return}
  const button=$('authSignupForm').querySelector('button[type="submit"]');button.disabled=true;$('authMessage').textContent='Creating your Family Account…';
- try{const {data,error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:location.href.split('#')[0],data:{family_name:familyName,address}}});if(error)throw error;$('signupPassword').value='';$('signupPasswordConfirm').value='';if(data.session){await connectCloudSession(data.user||data.session.user)}else{showAuthView('login','Account created. Check your email for the confirmation link, then log in here.')}}
+ try{
+  const metadata={family_name:familyName,full_name:memberName,phone,address,country,district,village,road,religion,gender,birth_date:birthDate};
+  const {data,error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:location.href.split('#')[0],data:metadata}});if(error)throw error;
+  db.profile={...db.profile,name:memberName,phone,address,country,district,village,road,religion,gender,birthDate,familyName};
+  db.familyMembers=uniquePeople([memberName,...db.familyMembers]);db.incomePeople=uniquePeople([memberName,...db.incomePeople]);
+  db.memberProfiles=db.memberProfiles&&typeof db.memberProfiles==='object'?db.memberProfiles:{};
+  db.memberProfiles[memberProfileKey(memberName)]={fullName:memberName,phone,email,gender,religion,birthDate,relation:'',occupation:'',country,district,village,road,notes:''};
+  localSaveOnly();$('signupPassword').value='';$('signupPasswordConfirm').value='';
+  if(data.session){await connectCloudSession(data.user||data.session.user)}else{showAuthView('login','Account created. Check your email for the confirmation link, then log in here.')}
+ }
  catch(error){$('authMessage').textContent=error.message||'Could not create the Family Account.'}
  finally{button.disabled=false}
 };
