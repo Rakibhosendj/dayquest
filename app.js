@@ -1907,9 +1907,10 @@ function renderQuickActions(){
    </span>
    <span class="quick-action-button-kind">${kind}</span>
   </button>`;
- }).join(''):empty('No quick buttons yet. Open Settings → Create Quick Button to add one.');
+ }).join(''):[1,2].map(n=>`<button type="button" class="quick-action-card quick-demo-card" data-quick-demo="${n}"><span class="quick-action-button-title">Expense Demo ${n}</span><span class="quick-action-button-kind">Tap to customize</span></button>`).join('');
  if(list)list.innerHTML=makeHtml(false);
  if(overview)overview.innerHTML=makeHtml(true);
+ [list,overview].forEach(container=>container?.querySelectorAll('[data-quick-demo]').forEach(button=>button.onclick=()=>{openQuickExpenseSetup();$('quickActionName').value=`Expense Demo ${button.dataset.quickDemo}`;$('quickActionRate').focus()}));
 }
 
 function updateOverviewQuickSupplierTapButton(){
@@ -1943,8 +1944,9 @@ function renderQuickSuppliers(){
     <span>P: <strong>${money(paid)}</strong></span>
    </span>
   </button>`;
- }).join(''):empty('No Quick Suppliers yet. Click the Quick Suppliers title to add supplier details, then enable Q in Settings → Custom Lists → Suppliers.');
+ }).join(''):[1,2].map(n=>`<button type="button" class="quick-action-card quick-supplier-card quick-demo-card" data-supplier-demo="${n}"><span class="quick-action-button-title">Supplier Demo ${n}</span><span class="quick-action-button-kind">Tap to customize</span></button>`).join('');
  list.querySelectorAll('[data-quick-supplier]').forEach(button=>button.onclick=()=>{if(db.settings?.overviewQuickSuppliersEnabled===false)return;openQuickSupplierPurchase(button.dataset.quickSupplier)});
+ list.querySelectorAll('[data-supplier-demo]').forEach(button=>button.onclick=()=>{setTab('supplierEntry');$('supplierEntryForm').scrollIntoView({behavior:'smooth',block:'start'});$('supplierEntryName')?.focus()});
 }
 function openQuickSupplierPurchase(name){
  const supplier=String(name||'').trim();if(!supplier||!db.suppliers.includes(supplier))return;
@@ -3008,6 +3010,7 @@ $('questTimeRanges').onclick=e=>{
  remove.closest('[data-time-range-row]').remove();
 };
 $('questList').onclick=e=>{
+ const demo=e.target.closest('[data-quest-demo]');if(demo){setTab('questSetup');$('questTitle').value=`Quest Demo ${demo.dataset.questDemo}`;$('questTitle').focus();return}
  const tile=e.target.closest('[data-quest-advance]');if(!tile||tile.disabled)return;
  const q=db.quests.find(item=>item.id===tile.dataset.questAdvance);if(!q)return;
  toggleQuest(q.id,Number(tile.dataset.rangeIndex),tile.dataset.questDate||questLocalDate());
@@ -3174,7 +3177,7 @@ function questTileHTML(items){
    <span class="quick-action-button-stats"><span>Done: <strong>${doneInRange}/${Math.max(1,Math.floor(Number(q.times)||1))}</strong></span><span>Achieved: <strong>${numberText(achieved)}/${numberText(target)}</strong></span></span>
    <span class="quick-action-button-kind">${buttonText}</span>
   </button>`;
- }).join(''):empty('No Daily Quests scheduled for this date.');
+ }).join(''):[1,2].map(n=>`<button type="button" class="quick-action-card daily-quest-tile quick-demo-card" data-quest-demo="${n}"><span class="quick-action-button-title">Quest Demo ${n}</span><span class="quick-action-button-kind">Tap to customize</span></button>`).join('');
 }
 function questHTML(items,del){return items.length?items.map(q=>{
  const d=q._occurrenceDate||questLocalDate(),state=questCheckState(q,d),checked=state.filter(Boolean).length,achieved=questAchieved(q,d),target=questTarget(q);
