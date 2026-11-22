@@ -2454,3 +2454,6 @@ body{color:var(--dq-font-color,#263b5c)}
 .activity-cards .activity-quick-button strong{font-size:clamp(17px,2vw,22px);font-weight:850;line-height:1.15}
 .activity-cards .activity-quick-button small{font-size:10px;font-weight:700;opacity:.94}
 @media(max-width:620px){.activity-cards .activity-quick-button{min-height:76px;padding:8px 6px}}
+
+/* Overview button sorting feedback */
+.overview-button-dragging{opacity:.55;outline:2px dashed var(--quick-button-color,#ee7d2f);transform:scale(.98);z-index:3}.overview-buttons-reordering [data-overview-button]{touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
