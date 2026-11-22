@@ -2430,3 +2430,7 @@ body{color:var(--dq-font-color,#263b5c)}
 .balance-transfer-amount{font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .balance-transfer-row .delete{flex:0 0 auto}
 @media(max-width:520px){.sales-payment-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.sales-payment-grid label{font-size:11px}.sales-payment-grid input{min-width:0;padding:9px 7px;font-size:12px}}
+
+
+/* Bank credit setting helper text. */
+.settings-card>.hint{margin:7px 0 0;font-size:11px;line-height:1.45}
