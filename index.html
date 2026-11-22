@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261122-bank-credit-option-v1">
+<link rel="stylesheet" href="style.css?v=20261122-reports-cleanup-v1">
 <title>DayQuest</title>
 </head>
 <body>
@@ -274,7 +274,7 @@
  <div id="inventoryList" class="list"></div>
 </section>
 <section id="budget" class="panel">
- <div class="section-head"><div><h2>Budget</h2><span class="muted">Plan future product quantities using average purchase rates</span></div></div>
+ <p class="muted budget-intro">Budget Planning</p>
  <div class="form budget-filter-form">
   <div class="budget-date-row">
    <label>From <input id="budgetFromDate" type="date"></label>
@@ -391,7 +391,7 @@
 
 </section>
 <section id="loans" class="panel">
- <div class="section-head"><div><h2>Loans</h2><span class="muted">Track money given and received, with collection or repayment dates</span></div></div>
+ <div class="section-head"><h2>Loans</h2></div>
  <div class="cards loan-summary-cards">
   <article class="stat"><span class="muted">To collect</span><strong id="loanGivenOutstanding">৳0.00</strong><small>Loans given to others</small></article>
   <article class="stat"><span class="muted">To repay</span><strong id="loanTakenOutstanding">৳0.00</strong><small>Loans received from others</small></article>
@@ -777,7 +777,7 @@
  </section>
  <section class="settings-card">
   <div class="section-head settings-section-head"><div><h3>Bank Credit Option</h3></div></div>
-  <label class="settings-toggle-row"><input id="bankCreditOption" type="checkbox"> <span>Allow Bank payments beyond available Bank balance</span></label>
+  <label class="settings-toggle-row"><input id="bankCreditOption" type="checkbox"> <span>Enable Bank Credit</span></label>
   <p class="hint">When enabled, Bank payments can create a negative Bank balance. Cash expenses and Cash payments are always limited to the available Cash balance.</p>
  </section>
  <details class="settings-card custom-lists-settings-card">
@@ -870,7 +870,7 @@
  </section>
 
  <section class="report-pane" data-report-pane="assets" hidden>
-  <div class="section-head"><h2>Assets Report</h2><span class="pill">Purchase category: Assets</span></div>
+  <div class="section-head"><span class="pill">Purchase category: Assets</span></div>
   <div class="cards">
    <article class="stat"><span class="muted">Asset purchases</span><strong id="assetPurchaseTotal">৳0.00</strong><small>In selected date range</small></article>
    <article class="stat"><span class="muted">Asset purchase lines</span><strong id="assetPurchaseLines">0</strong><small>Products recorded</small></article>
@@ -881,7 +881,6 @@
  </section>
 
  <section class="report-pane" data-report-pane="members" hidden>
-  <div class="section-head"><h2>Members Report</h2></div>
   <div class="section-head"><h2>Member-wise costing</h2><span class="pill" id="memberCostCount">0 members</span></div>
   <div class="cards costing-summary">
    <article class="stat"><span class="muted">As Assigned</span><strong id="familyCostTotal">৳0.00</strong><small id="familyCostMemberCount">Shared across 0 selected people</small></article>
@@ -913,7 +912,6 @@
  </section>
 
  <section class="report-pane" data-report-pane="production" hidden>
-  <div class="section-head"><h2>Production Report</h2><span class="pill">Selected date range</span></div>
   <div class="cards">
    <article class="stat"><span class="muted">Production batches</span><strong id="productionReportBatchCount">0</strong><small>Saved batches in range</small></article>
    <article class="stat"><span class="muted">Produced quantity</span><strong id="productionReportQuantity">0</strong><small id="productionReportUnitLabel">Output quantity</small></article>
@@ -933,7 +931,7 @@
  </section>
 
  <section class="report-pane" data-report-pane="debitors" hidden>
-  <div class="section-head"><h2>Debitors · People who owe me</h2><span class="pill" id="debitorAsOfLabel">Balance at To date</span></div>
+  <div class="section-head"><span class="pill" id="debitorAsOfLabel">Balance at To date</span></div>
   <article class="stat report-total-stat"><span class="muted">Total debtors · receivable expenses + income due</span><strong id="owedToMeTotal">৳0.00</strong><small>Outstanding as of the To date</small></article>
   <article class="stat report-total-stat"><span class="muted">Total receivable expenses</span><strong id="owedToMeExpenseTotal">৳0.00</strong><small>Outstanding as of the To date</small></article>
   <div id="owedToMeList" class="list"></div>
@@ -943,7 +941,7 @@
  </section>
 
  <section class="report-pane" data-report-pane="cost" hidden>
-  <div class="section-head cost-report-head"><h2>Cost Report</h2><button type="button" class="secondary" id="showCostChartBtn">Show Chart</button></div>
+  <div class="section-head cost-report-head"><button type="button" class="secondary" id="showCostChartBtn">Show Chart</button></div>
   <article class="report-card"><div class="eyebrow" id="reportLabel">SELECTED DATE RANGE</div><strong class="report-total" id="reportTotal">৳0.00</strong><div class="muted" id="reportRange"></div></article>
   <div class="cost-report-filter-row">
    <label>Cost by <select id="costGroupBy"><option value="category">Category</option><option value="type">Type</option><option value="product">Product</option></select></label>
@@ -955,7 +953,6 @@
  </section>
 
  <section class="report-pane" data-report-pane="income" hidden>
-  <div class="section-head"><h2>Income report</h2><span class="pill">Selected date range</span></div>
   <div class="cards"><article class="stat"><span class="muted">Income entries</span><strong id="reportIncomeTotal">৳0.00</strong><small>by entry date</small></article><article class="stat"><span class="muted">Money collected</span><strong id="reportIncomeCollected">৳0.00</strong><small>by collection date</small></article></div>
   <div class="section-head"><h2>Income by person</h2></div><label class="report-filter-label">Show person <select id="reportIncomePersonFilter"></select></label><div id="incomePersonBreakdown" class="list"></div>
   <div class="section-head"><h2>Income by type</h2></div><div id="incomeHeadBreakdown" class="list"></div>
@@ -1045,5 +1042,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261122-bank-credit-option-v1"></script>
+<script src="app.js?v=20261122-reports-cleanup-v1"></script>
 </body></html>
