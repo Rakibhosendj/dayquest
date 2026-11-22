@@ -427,10 +427,17 @@
   <div class="section-head form-section-head"><h3 id="salesMemoFormTitle">Create sales memo</h3><span class="muted" id="salesMemoEditHint" hidden>Editing saved sales memo</span></div>
   <form id="salesMemoForm" class="form sales-memo-form">
    <div class="form-grid"><label>Sales memo number <input id="salesMemoNo" readonly aria-readonly="true"></label><label>Sales date <input id="salesMemoDate" type="date" required></label></div>
-   <label>Customer name <input id="salesMemoCustomer" maxlength="90" placeholder="Customer / buyer name" required></label>
-   <div class="form-grid"><label>Customer phone <input id="salesMemoPhone" maxlength="30" placeholder="Optional phone"></label><label>Prepared by <select id="salesMemoBy" required></select></label></div>
-   <label>Customer address <input id="salesMemoAddress" maxlength="140" placeholder="Optional address"></label>
-   <div class="form-grid"><label>Payment type <select id="salesMemoPayment"><option>Cash</option><option>Bank</option><option>Due</option></select></label><label>Memo note <input id="salesMemoNote" maxlength="120" placeholder="Optional note"></label></div>
+   <div class="form-grid sales-customer-row"><label>Customer name <input id="salesMemoCustomer" maxlength="90" placeholder="Customer / buyer name" required></label><label>Customer phone <input id="salesMemoPhone" maxlength="30" placeholder="Optional phone"></label></div>
+   <div class="signup-address-group sales-memo-address-group"><strong>Customer address</strong><div class="form-grid">
+    <label>Country <input id="salesMemoCountry" list="dayquestCountryOptions" maxlength="80" placeholder="Select or type country"></label>
+    <label>Division <input id="salesMemoDivision" list="salesMemoDivisionOptions" data-location-level="division" maxlength="80" placeholder="Select or type division"><datalist id="salesMemoDivisionOptions"></datalist></label>
+    <label>District <input id="salesMemoDistrict" list="salesMemoDistrictOptions" data-location-level="district" maxlength="80" placeholder="Select or type district"><datalist id="salesMemoDistrictOptions"></datalist></label>
+    <label>Sub-District (Upazila) <input id="salesMemoSubDistrict" list="salesMemoSubDistrictOptions" data-location-level="upazila" maxlength="80" placeholder="Select or type sub-district"><datalist id="salesMemoSubDistrictOptions"></datalist></label>
+    <label>Village <input id="salesMemoVillage" maxlength="100" placeholder="Village or area"></label>
+    <label>Road No. <input id="salesMemoRoad" maxlength="120" placeholder="Road number or name"></label>
+   </div></div>
+   <label class="sales-prepared-by">Prepared by <select id="salesMemoBy" required></select></label>
+   <div class="form-grid"><label>Payment type <select id="salesMemoPayment"><option value="Cash">Cash</option><option value="Bank">Bank</option><option value="Due">Due</option></select></label><label>Memo note <input id="salesMemoNote" maxlength="120" placeholder="Optional note"></label></div>
    <label id="salesMemoDueDateField" hidden>Collect by date <input id="salesMemoDueDate" type="date"></label>
    <div class="section-head form-section-head sales-lines-heading"><h3>Products sold</h3><button type="button" class="mini-add" id="addSalesMemoLine">＋ Add product</button></div>
    <div id="salesMemoLines" class="sales-memo-lines"></div>
@@ -442,9 +449,9 @@
  </div>
  <div class="section-head form-section-head"><h3>Sales memo register</h3><span class="muted" id="salesMemoCount">0 memos</span></div>
  <div id="salesMemoList" class="list"></div>
- <div class="section-head form-section-head"><h3 id="incomeFormTitle">Add other income</h3><span class="muted" id="incomeEditHint" hidden>Editing saved income</span></div>
  <form id="incomeForm" class="form">
-  <label>Income type <span class="select-add"><select id="incomeSource" required></select><button type="button" class="mini-add" id="addIncomeHead">＋ Add type</button></span></label>
+  <span class="muted income-edit-hint" id="incomeEditHint" hidden>Editing saved income</span>
+  <label>Type <span class="select-add"><select id="incomeSource" required></select><button type="button" class="mini-add income-add-type" id="addIncomeHead" aria-label="Add type" title="Add type">＋</button></span></label>
   <label>Income by (person who earned) <span class="select-add"><select id="incomeBy" required></select><button type="button" class="mini-add" id="addIncomePerson" aria-label="Add person" title="Add person">＋</button></span></label>
   <label>Amount <input id="incomeAmount" type="number" min="0.01" step="0.01" placeholder="0.00" required></label>
   <label>Payment type <select id="incomePaymentType"><option>Cash</option><option>Bank</option><option>Due</option></select></label>
