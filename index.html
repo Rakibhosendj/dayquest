@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261122-reports-cleanup-v1">
+<link rel="stylesheet" href="style.css?v=20261122-transfer-ledger-fix-v1">
 <title>DayQuest</title>
 </head>
 <body>
@@ -982,9 +982,9 @@
   <h2 id="deleteProfileDialogTitle">Delete Profile</h2>
   <p>Select the DayQuest data you want to permanently delete. Profile details are always cleared; all other selections are optional.</p>
   <div class="delete-profile-options">
-   <label class="delete-profile-option mandatory"><input type="checkbox" checked disabled><span><strong>Profile details</strong><small>Name, phone, family name, photo and opening balances</small></span><em>Required</em></label>
+   <label class="delete-profile-option mandatory"><input type="checkbox" checked disabled><span><strong>Profile details</strong><small>Name, phone, family name, photo, opening balances and balance transfer records</small></span><em>Required</em></label>
    <label class="delete-profile-option"><input type="checkbox" data-delete-group="reports"><span><strong>Reports &amp; all report source data</strong><small>Clears report results and the underlying transactions, bills, stock, production, guest, meal, quest and budget records</small></span></label>
-   <label class="delete-profile-option"><input type="checkbox" data-delete-group="transactions"><span><strong>Expenses &amp; income transactions</strong><small>Quick Expenses history, due balances, collections and sales memo entries</small></span></label>
+   <label class="delete-profile-option"><input type="checkbox" data-delete-group="transactions"><span><strong>Expenses, income &amp; balance transfer transactions</strong><small>Quick Expenses history, due balances, collections, sales memos and transfer records</small></span></label>
    <label class="delete-profile-option"><input type="checkbox" data-delete-group="purchases"><span><strong>Purchase bills &amp; supplier accounts</strong><small>Purchase bills, supplier payments and supplier details</small></span></label>
    <label class="delete-profile-option"><input type="checkbox" data-delete-group="inventory"><span><strong>Inventory stock movements</strong><small>Stock usage and consumption history</small></span></label>
    <label class="delete-profile-option"><input type="checkbox" data-delete-group="production"><span><strong>Production records</strong><small>Production batches and their linked stock movements</small></span></label>
@@ -1042,5 +1042,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261122-reports-cleanup-v1"></script>
+<script src="app.js?v=20261122-transfer-ledger-fix-v1"></script>
 </body></html>
