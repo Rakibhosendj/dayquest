@@ -1907,3 +1907,52 @@ body{color:var(--dq-font-color,#263b5c)}
  #quickExpenses .quick-action-button-stats>span{font-size:9px}
  #quickExpenses .quick-action-button-kind{right:7px;top:6px;padding:2px 5px;font-size:7px}
 }
+
+
+/* Overview quick buttons: fixed desktop tiles, two equal columns on phones. */
+#overviewQuickActionList{
+ display:grid!important;
+ grid-template-columns:repeat(auto-fill,220px)!important;
+ justify-content:start!important;
+ align-items:start!important;
+ gap:10px!important;
+}
+#overviewQuickActionList .quick-action-card{
+ box-sizing:border-box!important;
+ display:flex!important;
+ width:220px!important;
+ min-width:220px!important;
+ max-width:220px!important;
+ height:140px!important;
+ min-height:140px!important;
+ max-height:140px!important;
+ aspect-ratio:auto!important;
+ padding:14px 12px!important;
+ gap:8px!important;
+ border-radius:16px!important;
+}
+#overviewQuickActionList .quick-action-button-title{font-size:15px!important;line-height:1.15}
+#overviewQuickActionList .quick-action-button-stats{width:100%;max-width:190px;gap:5px 9px}
+#overviewQuickActionList .quick-action-button-stats>span{font-size:11px!important}
+#overviewQuickActionList .quick-action-button-kind{right:9px;top:8px;font-size:8px}
+@media(max-width:620px){
+ #overviewQuickActionList{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:8px!important;
+ }
+ #overviewQuickActionList .quick-action-card{
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  height:112px!important;
+  min-height:112px!important;
+  max-height:112px!important;
+  padding:9px 6px!important;
+  gap:6px!important;
+  border-radius:12px!important;
+ }
+ #overviewQuickActionList .quick-action-button-title{font-size:12px!important}
+ #overviewQuickActionList .quick-action-button-stats{width:100%;gap:4px 5px}
+ #overviewQuickActionList .quick-action-button-stats>span{font-size:9px!important}
+ #overviewQuickActionList .quick-action-button-kind{right:6px;top:6px;font-size:7px}
+}
