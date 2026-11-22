@@ -109,7 +109,7 @@ function attachAddressCascade(prefix){
  update();
 }
 function initializeAddressCascades(){
- ['signup','profile','memberProfile'].forEach(attachAddressCascade);
+ ['signup','profile','memberProfile','salesMemo'].forEach(attachAddressCascade);
 }
 function ensureMemberProfile(name){
  const key=memberProfileKey(name);if(!key)return null;
@@ -2272,6 +2272,7 @@ function nextSalesMemoNo(date,excludeId=null){
 function resetSalesMemoForm(){
  editingSalesMemoId=null;salesMemoLines=[defaultSalesMemoLine()];$('salesMemoForm').reset();$('salesMemoDate').value=today();$('salesMemoDueDate').value='';$('salesMemoDueDateField').hidden=true;$('salesMemoDueDate').disabled=true;$('salesMemoNo').value=nextSalesMemoNo(today());
  const preferred=db.profile.name&&db.incomePeople.includes(db.profile.name)?db.profile.name:(db.incomePeople[0]||'');$('salesMemoBy').value=preferred;
+ ['Country','Division','District','SubDistrict','Village','Road'].forEach(field=>{$('salesMemo'+field).value=String(db.profile[field[0].toLowerCase()+field.slice(1)]||'')});
  $('salesMemoFormTitle').textContent='Create sales memo';$('salesMemoSubmit').textContent='Save sales memo';$('cancelSalesMemoEdit').hidden=true;$('salesMemoEditHint').hidden=true;
  renderSalesMemoLines();
 }
@@ -2288,7 +2289,9 @@ $('cancelSalesMemoEdit').onclick=()=>{resetSalesMemoForm();$('salesMemoWrap').hi
 function editSalesMemo(id){
  const x=db.incomes.find(item=>item.id===id&&item.salesMemo);if(!x)return;
  editingSalesMemoId=id;$('salesMemoWrap').hidden=false;
- $('salesMemoCustomer').value=x.salesMemo.customerName||'';$('salesMemoPhone').value=x.salesMemo.customerPhone||'';$('salesMemoAddress').value=x.salesMemo.customerAddress||'';
+ $('salesMemoCustomer').value=x.salesMemo.customerName||'';$('salesMemoPhone').value=x.salesMemo.customerPhone||'';
+ const addressDetails=x.salesMemo.customerAddressDetails&&typeof x.salesMemo.customerAddressDetails==='object'?x.salesMemo.customerAddressDetails:{village:x.salesMemo.customerAddress||''};
+ ['Country','Division','District','SubDistrict','Village','Road'].forEach(field=>{$('salesMemo'+field).value=String(addressDetails[field[0].toLowerCase()+field.slice(1)]||'')});
  $('salesMemoDate').value=x.date||today();$('salesMemoNo').value=x.salesMemo.memoNo||nextSalesMemoNo(x.date,id);$('salesMemoBy').value=x.incomeBy||db.profile.name||db.incomePeople[0]||'';
  $('salesMemoPayment').value=x.paymentType||'Cash';$('salesMemoDueDate').value=x.dueDate||'';$('salesMemoDueDateField').hidden=$('salesMemoPayment').value!=='Due';$('salesMemoDueDate').disabled=$('salesMemoPayment').value!=='Due';$('salesMemoNote').value=x.note||'';
  salesMemoLines=(x.salesMemo.items||[]).map(item=>({product:item.product||'',unit:item.unit||'pcs',quantity:Number(item.quantity||0),rate:Number(item.rate||0)}));
@@ -2320,7 +2323,7 @@ $('salesMemoForm').onsubmit=e=>{
  if(!memoNo){alert('Select a valid sales date to generate the memo number.');return}
  if(db.incomes.some(x=>x.id!==editingSalesMemoId&&String(x.salesMemo?.memoNo||'').toLocaleLowerCase()===memoNo.toLocaleLowerCase())){alert('This sales memo number already exists. Please save again to generate a new number.');return}
  const id=old?old.id:crypto.randomUUID();
- const values={source:'Sales',incomeBy,amount,paymentType,duePerson:paymentType==='Due'?customerName:null,dueDate:paymentType==='Due'?$('salesMemoDueDate').value||null:null,date,note:$('salesMemoNote').value.trim(),salesMemo:{memoNo,customerName,customerPhone:$('salesMemoPhone').value.trim(),customerAddress:$('salesMemoAddress').value.trim(),items}};
+ const values={source:'Sales',incomeBy,amount,paymentType,duePerson:paymentType==='Due'?customerName:null,dueDate:paymentType==='Due'?$('salesMemoDueDate').value||null:null,date,note:$('salesMemoNote').value.trim(),salesMemo:{memoNo,customerName,customerPhone:$('salesMemoPhone').value.trim(),customerAddress:composeMemberAddress({country:$('salesMemoCountry').value,division:$('salesMemoDivision').value,district:$('salesMemoDistrict').value,subDistrict:$('salesMemoSubDistrict').value,village:$('salesMemoVillage').value,road:$('salesMemoRoad').value}),customerAddressDetails:{country:$('salesMemoCountry').value.trim(),division:$('salesMemoDivision').value.trim(),district:$('salesMemoDistrict').value.trim(),subDistrict:$('salesMemoSubDistrict').value.trim(),village:$('salesMemoVillage').value.trim(),road:$('salesMemoRoad').value.trim()},items}};
  db.consumptions=db.consumptions.filter(c=>c.salesMemoId!==id);
  allocated.consumptions.forEach(c=>db.consumptions.push({id:crypto.randomUUID(),...c,salesMemoId:id,salesMemoNo:memoNo,date}));
  if(old){Object.assign(old,values);if(paymentType!=='Due')old.collections=[]}else db.incomes.unshift({id,...values,collections:[]});
@@ -2352,7 +2355,7 @@ function resetIncomeForm(){
  editingIncomeId=null;$('incomeForm').reset();$('incomeDate').value=today();$('incomeDueDate').value='';$('incomeDueDate').disabled=true;if($('incomeSource').options.length)$('incomeSource').selectedIndex=0;
  const preferred=db.profile.name&&db.incomePeople.includes(db.profile.name)?db.profile.name:(db.incomePeople[0]||'Unassigned');$('incomeBy').value=preferred;
  $('incomeDueFields').hidden=true;$('incomeDuePerson').required=false;
- $('incomeFormTitle').textContent='Add income';$('incomeSubmitBtn').textContent='Save income';$('cancelIncomeEdit').hidden=true;$('incomeEditHint').hidden=true;$('incomeTotalPreview').textContent=money(0);
+ $('incomeSubmitBtn').textContent='Save income';$('cancelIncomeEdit').hidden=true;$('incomeEditHint').hidden=true;$('incomeTotalPreview').textContent=money(0);
 }
 function editIncome(id){
  const x=db.incomes.find(item=>item.id===id);if(!x)return;if(x.salesMemo){editSalesMemo(id);return;}
@@ -2361,7 +2364,7 @@ function editIncome(id){
  $('incomeAmount').value=Number(x.amount||0);$('incomePaymentType').value=x.paymentType||'Cash';
  $('incomeDuePerson').value=x.duePerson||'';$('incomeDueDate').value=x.dueDate||'';$('incomeDueFields').hidden=$('incomePaymentType').value!=='Due';$('incomeDuePerson').required=$('incomePaymentType').value==='Due';$('incomeDueDate').disabled=$('incomePaymentType').value!=='Due';
  $('incomeDate').value=x.date||today();$('incomeNote').value=x.note||'';$('incomeTotalPreview').textContent=money(x.amount||0);
- $('incomeFormTitle').textContent='Edit income';$('incomeSubmitBtn').textContent='Update income';$('cancelIncomeEdit').hidden=false;$('incomeEditHint').hidden=false;
+ $('incomeSubmitBtn').textContent='Update income';$('cancelIncomeEdit').hidden=false;$('incomeEditHint').hidden=false;
  $('incomeForm').scrollIntoView({behavior:'smooth',block:'start'});
 }
 $('cancelIncomeEdit').onclick=resetIncomeForm;
@@ -3475,7 +3478,7 @@ $('installBtn').onclick=async()=>{
  }
  showDayQuestInstallHelp();
 };
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261122-income-person-branded-dialog-v2').then(registration=>{
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261122-sales-income-layout-profile-address-v1').then(registration=>{
  console.info('DayQuest offline support is ready:',registration.scope);
 }).catch(error=>{
  console.warn('DayQuest offline support could not be registered:',error);
