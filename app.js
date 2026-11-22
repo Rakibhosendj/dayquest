@@ -866,7 +866,22 @@ $('purchaseAmountMode').addEventListener('change',()=>{
 });
 $('addPurchaseLine').onclick=()=>{const line=defaultPurchaseLine();line.amountMode=$('purchaseAmountMode').value==='quantity'?'quantity':'rate';purchaseLines.push(line);renderPurchaseLines()};
 $('purchaseCashPaid').oninput=updatePurchaseTotals;$('purchaseBankPaid').oninput=updatePurchaseTotals;$('purchaseTransitCost').oninput=updatePurchaseTotals;$('purchaseTransitPaidFrom').onchange=updatePurchaseTotals;$('purchaseDiscount').oninput=updatePurchaseTotals;
-$('addSupplier').onclick=()=>{let n=prompt('Enter supplier / store name:');if(n&&n.trim()){n=n.trim();if(!db.suppliers.includes(n))db.suppliers.push(n);fillChoices();renderMasterLists();$('purchaseSupplier').value=n;localSaveOnly()}};
+const purchaseSupplierDialog=$('purchaseSupplierDialog'),purchaseSupplierDialogForm=$('purchaseSupplierDialogForm'),purchaseSupplierDialogName=$('purchaseSupplierDialogName');
+$('addSupplier').onclick=()=>{
+ purchaseSupplierDialogName.value='';
+ purchaseSupplierDialog.showModal();
+ purchaseSupplierDialogName.focus();
+};
+$('purchaseSupplierDialogCancel').onclick=()=>purchaseSupplierDialog.close();
+purchaseSupplierDialogForm.onsubmit=event=>{
+ event.preventDefault();
+ let name=purchaseSupplierDialogName.value.trim();
+ if(!name){purchaseSupplierDialogName.focus();return}
+ const existing=db.suppliers.find(value=>value.toLocaleLowerCase()===name.toLocaleLowerCase());
+ if(existing)name=existing;else db.suppliers.push(name);
+ fillChoices();renderMasterLists();$('purchaseSupplier').value=name;localSaveOnly();
+ purchaseSupplierDialog.close();
+};
 $('purchaseBillForm').onsubmit=e=>{
  e.preventDefault();if(editingPurchaseBillId&&db.settings.allowPurchaseBillEdits===false){if($('purchaseEditHint')){$('purchaseEditHint').textContent='Editing is disabled. Enable “Allow editing saved purchase bills” in Settings, then reopen this bill.';$('purchaseEditHint').hidden=false}return}const supplierInput=$('purchaseSupplier').value.trim(),date=$('purchaseDate').value,cashPaid=Number($('purchaseCashPaid').value||0),bankPaid=Number($('purchaseBankPaid').value||0),subtotal=currentPurchaseSubtotal(),transitCost=Math.max(0,Number($('purchaseTransitCost').value||0)),transitPaidFrom=$('purchaseTransitPaidFrom').value==='Bank'?'Bank':'Cash',discount=Math.max(0,Number($('purchaseDiscount').value||0)),total=currentPurchaseTotal(),unpaid=Math.max(0,total-cashPaid-bankPaid);
  const supplier=supplierInput||(unpaid>0?'Unassigned supplier':'');
