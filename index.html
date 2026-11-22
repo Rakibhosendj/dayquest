@@ -437,8 +437,16 @@
     <label>Road No. <input id="salesMemoRoad" maxlength="120" placeholder="Road number or name"></label>
    </div></div>
    <label class="sales-prepared-by">Prepared by <select id="salesMemoBy" required></select></label>
-   <div class="form-grid"><label>Payment type <select id="salesMemoPayment"><option value="Cash">Cash</option><option value="Bank">Bank</option><option value="Due">Due</option></select></label><label>Memo note <input id="salesMemoNote" maxlength="120" placeholder="Optional note"></label></div>
-   <label id="salesMemoDueDateField" hidden>Collect by date <input id="salesMemoDueDate" type="date"></label>
+   <div class="section-head form-section-head"><h3>Payment details</h3></div>
+   <div class="form-grid sales-payment-grid">
+    <label>Cash received <input id="salesMemoCashPaid" type="number" min="0" step="0.01" value="0" inputmode="decimal"></label>
+    <label>Bank received <input id="salesMemoBankPaid" type="number" min="0" step="0.01" value="0" inputmode="decimal"></label>
+   </div>
+   <div class="form-grid sales-payment-grid">
+    <label>Due amount <input id="salesMemoDueAmount" type="number" value="0.00" readonly></label>
+    <label id="salesMemoDueDateField" hidden>Collect by date <input id="salesMemoDueDate" type="date"></label>
+   </div>
+   <label>Memo note <input id="salesMemoNote" maxlength="120" placeholder="Optional note"></label>
    <div class="section-head form-section-head sales-lines-heading"><h3>Products sold</h3><button type="button" class="mini-add" id="addSalesMemoLine">＋ Add product</button></div>
    <div id="salesMemoLines" class="sales-memo-lines"></div>
    <p class="hint sales-stock-hint">Only products with available Inventory stock can be selected. Saving a memo reduces the available stock automatically.</p>
@@ -554,6 +562,23 @@
   </details>
   <details class="profile-foldout"><summary>Family Members</summary><div class="profile-foldout-content"><div class="family-member-add"><input id="newFamilyMember" maxlength="80" placeholder="Enter family member name" aria-label="New family member"><button class="secondary" id="addFamilyMember" type="button">＋ Add member</button></div><div id="familyMemberList" class="list family-member-list"></div></div></details>
   <details class="profile-foldout"><summary>Starting Balances</summary><div class="profile-foldout-content"><div class="form-grid"><label>Opening cash balance <input id="openingCash" type="number" min="0" step="0.01" value="0"></label><label>Opening bank balance <input id="openingBank" type="number" min="0" step="0.01" value="0"></label></div></div></details>
+  <details class="profile-foldout">
+   <summary>Balance Transfer</summary>
+   <div class="profile-foldout-content balance-transfer-content">
+    <p class="hint">Move money between Cash and Bank. A transfer changes the two account balances but does not change your total balance, income or expenses.</p>
+    <div class="form-grid">
+     <label>Transfer direction <select id="balanceTransferDirection"><option value="Cash-Bank">Cash to Bank</option><option value="Bank-Cash">Bank to Cash</option></select></label>
+     <label>Amount <input id="balanceTransferAmount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00"></label>
+    </div>
+    <div class="form-grid">
+     <label>Transfer date <input id="balanceTransferDate" type="date" required></label>
+     <label>Note <input id="balanceTransferNote" maxlength="120" placeholder="Optional note"></label>
+    </div>
+    <button class="primary full" id="balanceTransferSubmit" type="button">Transfer Balance</button>
+    <div class="section-head form-section-head"><h3>Transfer history</h3></div>
+    <div id="balanceTransferList" class="list"></div>
+   </div>
+  </details>
   <button class="primary full">Save profile</button>
   <button class="delete-profile-btn" id="deleteProfileBtn" type="button">Delete Profile</button>
   <button class="clear-transactions-btn" id="clearAllExpensesIncomeBtn" type="button">Clear All Expenses &amp; Income</button>
