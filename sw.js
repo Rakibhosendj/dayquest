@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v149-auto-topbar-contrast';
+const CACHE = 'dayquest-cache-v150-balance-label-contrast';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261122-auto-topbar-contrast',
+  './style.css?v=20261122-balance-label-contrast',
   './app.js?v=20261122-topbar-balance-install-settings',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
