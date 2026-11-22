@@ -2471,7 +2471,7 @@ function prepareReportPresentation(){
  if(reportPresentationReady)return;reportPresentationReady=true;
  document.querySelectorAll('[data-report-pane]').forEach(pane=>{
   const key=pane.dataset.reportPane,title=REPORT_TITLES[key]||'Report';
-  const toolbar=document.createElement('div');toolbar.className='report-tools';toolbar.innerHTML=`<strong>${title}</strong><div><button type="button" class="secondary report-export-btn" data-report-export="${key}" data-export-format="pdf">Print / PDF</button><button type="button" class="secondary report-export-btn" data-report-export="${key}" data-export-format="excel">Excel</button></div>`;
+  const toolbar=document.createElement('div');toolbar.className='report-tools';toolbar.innerHTML=`<div><button type="button" class="secondary report-export-btn" data-report-export="${key}" data-export-format="pdf">Print / PDF</button><button type="button" class="secondary report-export-btn" data-report-export="${key}" data-export-format="excel">Excel</button></div>`;
   const detail=document.createElement('details');detail.className='report-detail-disclosure';
   const summary=document.createElement('summary');summary.className='report-detail-summary';summary.innerHTML=`<span>${title}</span><span class="report-summary-metrics" data-report-summary="${key}">Summary</span><span class="report-summary-arrow" aria-hidden="true">▾</span>`;
   const content=document.createElement('div');content.className='report-detail-body';
