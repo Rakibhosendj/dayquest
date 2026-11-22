@@ -522,6 +522,100 @@ function setupSideMenuReordering(){
   if(nav.classList.contains('side-menu-reordering'))event.preventDefault();
  });
 }
+const OVERVIEW_SECTION_KEYS=['quickExpenses','quickSuppliers','todayActivity','quickActions','recentExpenses','recentIncome','todayQuests'];
+function normalizeOverviewSectionOrder(order){
+ const requested=Array.isArray(order)?order.map(String):[];
+ const normalized=requested.filter((key,index)=>OVERVIEW_SECTION_KEYS.includes(key)&&requested.indexOf(key)===index);
+ OVERVIEW_SECTION_KEYS.forEach(key=>{if(!normalized.includes(key))normalized.push(key)});
+ return normalized;
+}
+function applyOverviewSectionOrder(){
+ const home=$('home');if(!home)return;
+ db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};
+ const order=normalizeOverviewSectionOrder(db.settings.overviewSectionOrder);
+ const byKey=new Map([...home.children].filter(node=>node.dataset.overviewSection).map(node=>[node.dataset.overviewSection,node]));
+ order.forEach(key=>{const node=byKey.get(key);if(node)home.appendChild(node)});
+ db.settings.overviewSectionOrder=order;
+}
+function setupOverviewSectionReordering(){
+ const home=$('home');if(!home||home.dataset.overviewSortBound==='true')return;
+ home.dataset.overviewSortBound='true';
+ let active=null,holdTimer=null,suppressClickUntil=0;
+ const clearTimer=()=>{if(holdTimer!==null){clearTimeout(holdTimer);holdTimer=null}};
+ const begin=(section,x,y,pointerId,kind)=>{
+  if(db.settings?.overviewSortingEnabled===false||!section||section.parentElement!==home)return;
+  clearTimer();active={section,x,y,pointerId,kind,dragging:false};
+  holdTimer=setTimeout(()=>{
+   if(!active||db.settings?.overviewSortingEnabled===false)return;
+   active.dragging=true;section.classList.add('overview-section-dragging');home.classList.add('overview-sections-reordering');
+   section.setAttribute('aria-grabbed','true');
+   if(kind==='pointer'&&home.setPointerCapture){try{home.setPointerCapture(pointerId)}catch{}}
+   if(kind==='touch'&&navigator.vibrate)navigator.vibrate(20);
+  },420);
+ };
+ const move=(x,y,event)=>{
+  if(!active)return;
+  if(db.settings?.overviewSortingEnabled===false){clearTimer();active.section.classList.remove('overview-section-dragging');active=null;home.classList.remove('overview-sections-reordering');return}
+  if(!active.dragging){
+   if(Math.hypot(x-active.x,y-active.y)>9){clearTimer();active=null}
+   return;
+  }
+  event?.preventDefault?.();
+  const under=document.elementFromPoint(x,y)?.closest('[data-overview-section]');
+  if(!under||under.parentElement!==home||under===active.section)return;
+  const rect=under.getBoundingClientRect();
+  home.insertBefore(active.section,y<rect.top+rect.height/2?under:under.nextElementSibling);
+ };
+ const finish=(persist=true)=>{
+  clearTimer();if(!active)return;
+  const dragged=active.dragging;
+  active.section.classList.remove('overview-section-dragging');
+  active.section.setAttribute('aria-grabbed','false');
+  home.classList.remove('overview-sections-reordering');
+  if(dragged){
+   db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};
+   db.settings.overviewSectionOrder=normalizeOverviewSectionOrder([...home.children].filter(node=>node.dataset.overviewSection).map(node=>node.dataset.overviewSection));
+   suppressClickUntil=Date.now()+500;
+   applyOverviewSectionOrder();
+   if(persist)save();
+  }
+  active=null;
+ };
+ home.addEventListener('pointerdown',event=>{
+  if(db.settings?.overviewSortingEnabled===false||event.pointerType==='touch'||event.button!==0)return;
+  const handle=event.target.closest('[data-overview-drag-handle]'),section=handle?.closest('[data-overview-section]');
+  if(!handle||!section)return;
+  begin(section,event.clientX,event.clientY,event.pointerId,'pointer');
+ });
+ home.addEventListener('pointermove',event=>{
+  if(!active||active.kind!=='pointer'||event.pointerId!==active.pointerId)return;
+  move(event.clientX,event.clientY,event);
+ });
+ home.addEventListener('pointerup',event=>{if(active?.kind==='pointer'&&event.pointerId===active.pointerId)finish(true)});
+ home.addEventListener('pointercancel',event=>{if(active?.kind==='pointer'&&event.pointerId===active.pointerId)finish(true)});
+ home.addEventListener('touchstart',event=>{
+  if(db.settings?.overviewSortingEnabled===false||event.touches.length!==1)return;
+  const touch=event.touches[0],handle=event.target.closest('[data-overview-drag-handle]'),section=handle?.closest('[data-overview-section]');
+  if(!handle||!section)return;
+  begin(section,touch.clientX,touch.clientY,touch.identifier,'touch');
+ },{passive:true});
+ home.addEventListener('touchmove',event=>{
+  if(!active||active.kind!=='touch')return;
+  const touch=[...event.changedTouches].find(item=>item.identifier===active.pointerId);
+  if(touch)move(touch.clientX,touch.clientY,event);
+ },{passive:false});
+ home.addEventListener('touchend',event=>{
+  if(active?.kind==='touch'&&[...event.changedTouches].some(item=>item.identifier===active.pointerId))finish(true);
+ },{passive:true});
+ home.addEventListener('touchcancel',()=>{if(active?.kind==='touch')finish(true)},{passive:true});
+ home.addEventListener('click',event=>{
+  if(Date.now()>=suppressClickUntil)return;
+  if(event.target.closest('[data-overview-drag-handle]')){event.preventDefault();event.stopImmediatePropagation()}
+ },true);
+ home.addEventListener('contextmenu',event=>{
+  if(home.classList.contains('overview-sections-reordering'))event.preventDefault();
+ });
+}
 function updateBackButton(){
  const button=$('backButton');if(!button)return;
  const currentPage=document.querySelector('.panel.active')?.id||'home';
@@ -555,7 +649,7 @@ function setTab(t,options={}){
  if(activeGroup)activeGroup.open=true;
  closeSidebar();
  if(t==='reports'){renderReport();if(!document.querySelector('[data-report-go].active'))activateReportSection('members')}
- if(t==='settings'){renderPurchaseCategorySettings();renderMasterLists();renderProductDictionary();renderMealPersonDates();renderNotificationSettings();$('quickButtonColorInput').value=db.settings.quickButtonColor||'#ee7d2f';$('quickButtonColorValue').textContent=(db.settings.quickButtonColor||'#ee7d2f').toUpperCase();if($('quickButtonVibration'))$('quickButtonVibration').checked=db.settings.quickButtonVibration!==false;$('requireSupplierForDuePurchase').checked=db.settings.requireSupplierForDuePurchase!==false;$('allowPurchaseBillEdits').checked=db.settings.allowPurchaseBillEdits!==false;fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickMemberOptions(quickSelectedMembers());updateQuickActionTypeFields();renderQuickActionManager();}
+ if(t==='settings'){renderPurchaseCategorySettings();renderMasterLists();renderProductDictionary();renderMealPersonDates();renderNotificationSettings();$('quickButtonColorInput').value=db.settings.quickButtonColor||'#ee7d2f';$('quickButtonColorValue').textContent=(db.settings.quickButtonColor||'#ee7d2f').toUpperCase();if($('quickButtonVibration'))$('quickButtonVibration').checked=db.settings.quickButtonVibration!==false;if($('overviewSortingEnabled'))$('overviewSortingEnabled').checked=db.settings.overviewSortingEnabled!==false;$('requireSupplierForDuePurchase').checked=db.settings.requireSupplierForDuePurchase!==false;$('allowPurchaseBillEdits').checked=db.settings.allowPurchaseBillEdits!==false;fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickMemberOptions(quickSelectedMembers());updateQuickActionTypeFields();renderQuickActionManager();}
  if(t==='payExpenseDue')renderExpenseDueList();
  if(t==='loans'){if(!$('loanDate').value)$('loanDate').value=today();renderLoans();}
  if(t==='quickExpenses'){renderQuickMemberOptions(quickSelectedMembers());fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickActions();}
@@ -577,7 +671,7 @@ function setTab(t,options={}){
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 $('backButton').onclick=goBackToPreviousPage;
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>setTab(b.dataset.go));
-setupSideMenuReordering();applySideMenuOrder();
+setupSideMenuReordering();applySideMenuOrder();setupOverviewSectionReordering();applyOverviewSectionOrder();
 $('menuToggle').onclick=()=>{
  if(window.innerWidth>=760){
   const hidden=$('appLayout').classList.toggle('sidebar-collapsed');
@@ -1730,6 +1824,7 @@ function bindQuickButtonHaptics(container){
   const tile=event.target.closest('[data-quick-activate],[data-quick-supplier],[data-quest-advance]');
   if(!tile||tile.disabled)return;
   if(container.id==='overviewQuickActionList'&&db.settings?.overviewQuickActionsEnabled===false)return;
+  if(container.id==='overviewQuickSupplierList'&&db.settings?.overviewQuickSuppliersEnabled===false)return;
   vibrateQuickButton();
  },{passive:true});
 }
@@ -1758,9 +1853,20 @@ function renderQuickActions(){
  if(overview)overview.innerHTML=makeHtml(true);
 }
 
+function updateOverviewQuickSupplierTapButton(){
+ const button=$('overviewQuickSupplierTapToggle');if(!button)return;
+ const enabled=db.settings?.overviewQuickSuppliersEnabled!==false;
+ button.textContent=enabled?'ON':'OFF';
+ button.classList.toggle('is-on',enabled);
+ button.classList.toggle('is-off',!enabled);
+ button.setAttribute('aria-pressed',String(enabled));
+ button.setAttribute('aria-label',`Overview Quick Suppliers tap is ${enabled?'ON':'OFF'}. Click to switch.`);
+}
 function renderQuickSuppliers(){
  const panel=$('overviewQuickSuppliersPanel'),list=$('overviewQuickSupplierList');if(!panel||!list)return;
  const names=db.suppliers.filter(name=>db.quickSuppliers.includes(name));
+ const tapDisabled=db.settings?.overviewQuickSuppliersEnabled===false;
+ updateOverviewQuickSupplierTapButton();
  panel.hidden=false;
  list.innerHTML=names.length?names.map(name=>{
   const bills=db.purchaseBills.filter(b=>b.supplier===name);
@@ -1769,8 +1875,8 @@ function renderQuickSuppliers(){
   const paidOnBills=bills.reduce((total,bill)=>total+Number(bill.cashPaid||0)+Number(bill.bankPaid||0),0);
   const laterPayments=db.supplierPayments.filter(payment=>payment.supplier===name).reduce((total,payment)=>total+Number(payment.amount||0),0);
   const paid=paidOnBills+laterPayments;
-  const aria=`${name}. Total purchase ${money(totalPurchase)}, total due ${money(totalDue)}, paid ${money(paid)}. Open a new purchase form for this supplier.`;
-  return `<button type="button" class="quick-action-card quick-supplier-card" data-quick-supplier="${esc(name)}" aria-label="${esc(aria)}">
+  const aria=`${name}. Total purchase ${money(totalPurchase)}, total due ${money(totalDue)}, paid ${money(paid)}. ${tapDisabled?'Overview Quick Suppliers is OFF':'Open a new purchase form for this supplier.'}`;
+  return `<button type="button" class="quick-action-card quick-supplier-card" data-quick-supplier="${esc(name)}" aria-label="${esc(aria)}" ${tapDisabled?'disabled':''}>
    <span class="quick-action-button-title">${esc(name)}</span>
    <span class="quick-action-button-stats">
     <span>TP: <strong>${money(totalPurchase)}</strong></span>
@@ -1779,7 +1885,7 @@ function renderQuickSuppliers(){
    </span>
   </button>`;
  }).join(''):empty('No Quick Suppliers yet. Click the Quick Suppliers title to add supplier details, then enable Q in Settings → Custom Lists → Suppliers.');
- list.querySelectorAll('[data-quick-supplier]').forEach(button=>button.onclick=()=>openQuickSupplierPurchase(button.dataset.quickSupplier));
+ list.querySelectorAll('[data-quick-supplier]').forEach(button=>button.onclick=()=>{if(db.settings?.overviewQuickSuppliersEnabled===false)return;openQuickSupplierPurchase(button.dataset.quickSupplier)});
 }
 function openQuickSupplierPurchase(name){
  const supplier=String(name||'').trim();if(!supplier||!db.suppliers.includes(supplier))return;
@@ -2025,6 +2131,17 @@ $('overviewQuickActionTapToggle').onclick=()=>{
  db.settings.overviewQuickActionsEnabled=db.settings.overviewQuickActionsEnabled===false;
  save();
 };
+$('overviewQuickSupplierTapToggle').onclick=()=>{
+ db.settings=db.settings||{};
+ db.settings.overviewQuickSuppliersEnabled=db.settings.overviewQuickSuppliersEnabled===false;
+ save();
+};
+$('overviewSortingEnabled').onchange=()=>{
+ db.settings=db.settings||{};
+ db.settings.overviewSortingEnabled=$('overviewSortingEnabled').checked;
+ save();
+};
+
 $('quickActionForm').onsubmit=e=>{e.preventDefault();saveQuickAction()};
 $('quickActionCancel').onclick=()=>{resetQuickActionForm();if($('quickActionSettings'))$('quickActionSettings').open=false};
 const handleQuickActionTileClick=e=>{
@@ -2870,7 +2987,7 @@ function delExpense(id){if(confirm('Delete this expense?')){if(editingExpenseId=
 function delQuest(id){if(confirm('Delete this quest?')){db.quests=db.quests.filter(x=>x.id!==id);Object.values(db.checks).forEach(v=>delete v[id]);save()}}
 function empty(msg){return `<div class="empty">${msg}</div>`}
 function render(){
- applySideMenuOrder();
+ applySideMenuOrder();applyOverviewSectionOrder();
  let d=today(),questDate=questLocalDate(),exToday=db.expenses.filter(x=>x.date===d),billsToday=db.purchaseBills.filter(x=>x.date===d),qToday=dayQuestsForNow(questDate),done=qToday.filter(q=>completed(q,q._occurrenceDate||questDate)).length;
  $('todayTotal').textContent=money(sum(exToday)+billsToday.reduce((t,b)=>t+billTotal(b),0));$('questProgress').textContent=`${done}/${qToday.length}`;$('questBar').style.width=(qToday.length?done/qToday.length*100:0)+'%';$('todayQuestLabel').textContent=`${done} quests done`;
  let ws=startWeek(d),ms=d.slice(0,7);$('weekTotal').textContent=money(sum(db.expenses.filter(x=>x.date>=ws&&x.date<=d))+db.purchaseBills.filter(b=>b.date>=ws&&b.date<=d).reduce((t,b)=>t+billTotal(b),0));$('monthTotal').textContent=money(sum(db.expenses.filter(x=>x.date.startsWith(ms)))+db.purchaseBills.filter(b=>b.date.startsWith(ms)).reduce((t,b)=>t+billTotal(b),0));
@@ -3332,7 +3449,7 @@ $('installBtn').onclick=async()=>{
  }
  showDayQuestInstallHelp();
 };
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261122-page-context-grid-v2').then(registration=>{
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261122-overview-sorting-settings').then(registration=>{
  console.info('DayQuest offline support is ready:',registration.scope);
 }).catch(error=>{
  console.warn('DayQuest offline support could not be registered:',error);
