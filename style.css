@@ -2396,3 +2396,13 @@ body{color:var(--dq-font-color,#263b5c)}
 @media(max-width:600px){
  .app-main>main>#pageContextBar.page-context-header{grid-template-columns:minmax(0,1fr) max-content!important}
 }
+
+/* Branded Add Income Type dialog */
+.income-type-dialog{width:min(92vw,410px)}
+.income-type-dialog-card{display:grid;gap:12px}
+.income-type-dialog-card .income-type-dialog-caption{font-size:1rem;font-weight:750;color:var(--text,#172033);margin:0}
+.income-type-dialog-card>label{font-size:.82rem;font-weight:650;margin:0}
+.income-type-dialog-card>input{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--line,#dce2ea);border-radius:10px;background:var(--input-bg,var(--card,#fff));color:var(--text,#172033);font:inherit;box-sizing:border-box}
+.income-type-dialog-card .dq-message-actions{margin-top:5px}
+#incomeForm #addIncomeHead.mini-add{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:3px 9px!important;border:1px solid color-mix(in srgb,var(--accent,#2563eb) 28%,transparent)!important;border-radius:8px!important;background:color-mix(in srgb,var(--accent,#2563eb) 8%,transparent)!important;text-decoration:none!important;font-size:.78rem;white-space:nowrap}
+#incomeForm #addIncomeHead.mini-add:hover{background:color-mix(in srgb,var(--accent,#2563eb) 15%,transparent)!important}
