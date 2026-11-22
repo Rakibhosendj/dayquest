@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261122-right-aligned-header-v2">
+<link rel="stylesheet" href="style.css?v=20261122-income-type-dialog-v1">
 <title>DayQuest</title>
 </head>
 <body>
@@ -984,11 +984,20 @@
   <div class="dq-message-actions"><button class="secondary" id="loanSettlementCancel" type="button">Cancel</button><button class="primary" type="submit" id="loanSettlementSave">Save</button></div>
  </form>
 </dialog>
+<dialog id="addIncomeHeadDialog" class="dq-message-dialog income-type-dialog" aria-labelledby="addIncomeHeadTitle">
+ <form id="addIncomeHeadForm" class="dq-message-card income-type-dialog-card">
+  <div class="dq-message-brand"><img src="icons/icon-192.png?v=20261121-coin-check" alt="DayQuest app icon"><h2 id="addIncomeHeadTitle">DayQuest</h2></div>
+  <p class="income-type-dialog-caption">Add Income Type</p>
+  <label for="newIncomeHeadName">Income type name</label>
+  <input id="newIncomeHeadName" type="text" maxlength="60" placeholder="e.g. Salary, Business, Rent" required>
+  <div class="dq-message-actions"><button class="secondary" id="cancelIncomeHead" type="button">Cancel</button><button class="primary" type="submit">Save type</button></div>
+ </form>
+</dialog>
 <dialog id="dqMessageDialog" class="dq-message-dialog" aria-labelledby="dqMessageTitle"><div class="dq-message-card"><div class="dq-message-brand"><img src="icons/icon-192.png?v=20261121-coin-check" alt="DayQuest app icon"><h2 id="dqMessageTitle">DayQuest</h2></div><p id="dqMessageText"></p><div class="dq-message-actions"><button id="dqMessageCancel" class="secondary" type="button" hidden>Cancel</button><button id="dqMessageOk" class="primary" type="button">OK</button></div></div></dialog>
 </div>
 </div>
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261122-overview-sorting-settings"></script>
+<script src="app.js?v=20261122-income-type-dialog-v1"></script>
 </body></html>
