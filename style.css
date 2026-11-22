@@ -2416,3 +2416,17 @@ body{color:var(--dq-font-color,#263b5c)}
 .sales-memo-address-group label{min-width:0}
 .sales-prepared-by{margin-top:2px}
 @media(max-width:520px){.sales-customer-row,.sales-memo-address-group .form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.sales-customer-row label,.sales-memo-address-group label{font-size:10px}.sales-customer-row input,.sales-memo-address-group input{min-width:0;padding:9px 7px;font-size:11px}}
+
+
+/* Sales memo split payments and cash/bank transfer history. */
+.sales-payment-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.sales-payment-grid input[readonly]{font-weight:750;background:var(--surface-muted,#eef1f6)}
+.balance-transfer-content{display:grid;gap:10px}
+.balance-transfer-content>.hint{margin:0}
+.balance-transfer-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line,#e1e6ee);border-radius:11px;background:var(--card,#fff)}
+.balance-transfer-row .item-main{display:grid;gap:4px;min-width:0;flex:1}
+.balance-transfer-row .item-main strong{font-size:12px;color:var(--text,#263b5c)}
+.balance-transfer-row .item-main small{font-size:10px;color:var(--muted,#68768a)}
+.balance-transfer-amount{font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.balance-transfer-row .delete{flex:0 0 auto}
+@media(max-width:520px){.sales-payment-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.sales-payment-grid label{font-size:11px}.sales-payment-grid input{min-width:0;padding:9px 7px;font-size:12px}}
