@@ -2171,3 +2171,28 @@ body{color:var(--dq-font-color,#263b5c)}
 .app-main>.top #pageBalanceHeader .top-quest-track{display:inline-block;width:52px;height:5px;border-radius:99px;background:color-mix(in srgb,var(--topbar-text-color,#fff) 25%,transparent);overflow:hidden}
 .app-main>.top #pageBalanceHeader .top-quest-track i{display:block;height:100%;width:0;background:var(--topbar-text-color,#fff);border-radius:99px}
 @media(max-width:600px){.app-main>.top #pageBalanceHeader{gap:2px!important}.app-main>.top #pageBalanceHeader .top-daily-row{gap:6px;font-size:9px}.app-main>.top #pageBalanceHeader .top-daily-label{font-size:8px}.app-main>.top #pageBalanceHeader .top-daily-metric strong{font-size:9px}.app-main>.top #pageBalanceHeader .top-daily-date{font-size:8px}.app-main>.top #pageBalanceHeader .top-quest-track{width:32px;height:4px}}
+
+
+/* Align today's spending below Total and quest progress below Cash. */
+.top #pageBalanceHeader .top-balance-row{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;min-width:0!important;width:100%!important}
+.top #pageBalanceHeader .page-balance-values{display:flex!important;align-items:stretch!important;justify-content:flex-end!important;gap:clamp(7px,1.2vw,14px)!important;min-width:0!important;white-space:nowrap!important}
+.top #pageBalanceHeader .page-balance-values>span.top-balance-item{display:flex!important;flex:0 1 auto!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;gap:2px!important;min-width:0!important;white-space:nowrap!important}
+.top #pageBalanceHeader .top-balance-label{display:block!important;font-size:10px!important;font-weight:850!important;line-height:1.05!important;color:var(--topbar-text-color,#fff)!important}
+.top #pageBalanceHeader .top-balance-item>strong{display:block!important;font-size:12px!important;font-weight:950!important;line-height:1.05!important;color:var(--topbar-text-color,#fff)!important}
+.top #pageBalanceHeader .top-daily-metric{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;gap:3px!important;min-width:0!important;line-height:1!important}
+.top #pageBalanceHeader .top-daily-label{font-size:9px!important;font-weight:950!important;line-height:1!important;color:var(--topbar-text-color,#fff)!important}
+.top #pageBalanceHeader .top-daily-metric strong{font-size:10px!important;font-weight:950!important;line-height:1!important;color:var(--topbar-text-color,#fff)!important}
+.top #pageBalanceHeader .top-daily-date{font-size:8px!important;line-height:1!important;opacity:.82!important;color:var(--topbar-text-color,#fff)!important}
+.top #pageBalanceHeader .top-quest-track{display:inline-block!important;flex:0 0 42px!important;width:42px!important;height:4px!important;border-radius:99px!important;background:color-mix(in srgb,var(--topbar-text-color,#fff) 25%,transparent)!important;overflow:hidden!important}
+.top #pageBalanceHeader .top-quest-track i{display:block!important;height:100%!important;width:0;background:var(--topbar-text-color,#fff)!important;border-radius:99px!important}
+@media(max-width:600px){
+ .top #pageBalanceHeader .top-balance-row{gap:4px!important}
+ .top #pageBalanceHeader .page-balance-values{gap:clamp(4px,1.5vw,8px)!important}
+ .top #pageBalanceHeader .page-balance-values>span.top-balance-item{gap:2px!important}
+ .top #pageBalanceHeader .top-balance-label{font-size:8px!important}
+ .top #pageBalanceHeader .top-balance-item>strong{font-size:10px!important}
+ .top #pageBalanceHeader .top-daily-label{font-size:8px!important}
+ .top #pageBalanceHeader .top-daily-metric strong{font-size:9px!important}
+ .top #pageBalanceHeader .top-daily-date{font-size:7px!important}
+ .top #pageBalanceHeader .top-quest-track{flex-basis:28px!important;width:28px!important;height:3px!important}
+}
