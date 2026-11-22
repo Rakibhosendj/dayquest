@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261122-ts-qp-topbar">
+<link rel="stylesheet" href="style.css?v=20261122-ts-qp-balance-align">
 <title>DayQuest</title>
 </head>
 <body>
@@ -142,7 +142,7 @@
  </aside>
  <button id="sidebarBackdrop" class="sidebar-backdrop" type="button" aria-label="Close navigation" hidden></button>
  <div class="app-main">
-<header class="top" aria-label="App controls"><button id="menuToggle" class="menu-toggle" type="button" aria-label="Open side menu" title="Open side menu" aria-expanded="false" aria-controls="sidebar"><span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button><div id="pageBalanceHeader" class="page-balance-header top-page-balance" aria-live="polite"><div class="top-balance-row"><h2 id="pageBalanceTitle">Overview</h2><div class="page-balance-values"><span>Total <strong id="pageTotalBalance">৳0.00</strong></span><span>Cash <strong id="pageCashBalance">৳0.00</strong></span><span>Bank <strong id="pageBankBalance">৳0.00</strong></span></div></div><div class="top-daily-row"><div class="top-daily-metric"><span class="top-daily-label">TS</span><strong id="todayTotal">৳0.00</strong></div><span class="top-daily-date" id="todayDate"></span><div class="top-daily-metric top-quest-metric"><span class="top-daily-label">QP</span><strong id="questProgress">0/0</strong><span class="top-quest-track"><i id="questBar"></i></span></div></div></div><button id="backButton" class="back-button" type="button" aria-label="Back to previous page" title="Back to previous page" hidden><span aria-hidden="true">←</span><span>Back</span></button></header>
+<header class="top" aria-label="App controls"><button id="menuToggle" class="menu-toggle" type="button" aria-label="Open side menu" title="Open side menu" aria-expanded="false" aria-controls="sidebar"><span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button><div id="pageBalanceHeader" class="page-balance-header top-page-balance" aria-live="polite"><div class="top-balance-row"><h2 id="pageBalanceTitle">Overview</h2><div class="page-balance-values"><span class="top-balance-item top-total-item"><span class="top-balance-label">Total</span><strong id="pageTotalBalance">৳0.00</strong><span class="top-daily-metric top-spending-metric"><span class="top-daily-label">TS</span><strong id="todayTotal">৳0.00</strong><span class="top-daily-date" id="todayDate"></span></span></span><span class="top-balance-item top-cash-item"><span class="top-balance-label">Cash</span><strong id="pageCashBalance">৳0.00</strong><span class="top-daily-metric top-quest-metric"><span class="top-daily-label">QP</span><strong id="questProgress">0/0</strong><span class="top-quest-track"><i id="questBar"></i></span></span></span><span class="top-balance-item top-bank-item"><span class="top-balance-label">Bank</span><strong id="pageBankBalance">৳0.00</strong></span></div></div></div><button id="backButton" class="back-button" type="button" aria-label="Back to previous page" title="Back to previous page" hidden><span aria-hidden="true">←</span><span>Back</span></button></header>
 <main>
 <section id="home" class="panel active">
  <section class="hero overview-summary">
@@ -950,5 +950,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261122-topbar-balance-install-settings"></script>
+<script src="app.js?v=20261122-cloud-preparing"></script>
 </body></html>
