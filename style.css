@@ -1838,3 +1838,30 @@ body{color:var(--dq-font-color,#263b5c)}
 .member-profile-form{gap:6px}
 .member-profile-form .form-grid{gap:5px}
 @media(max-width:620px){.profile-phone-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.profile-foldout-content{gap:5px}.profile-photo-frame{width:56px;height:56px}}
+
+
+/* Overview quick buttons: compact dashboard tiles (full-size buttons remain on Quick Expenses). */
+.overview-quick-panel .quick-action-list{
+ grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));
+ gap:7px;
+}
+.overview-quick-panel .quick-action-card{
+ min-height:78px;
+ aspect-ratio:2.35;
+ gap:5px;
+ padding:8px 9px;
+ border-radius:13px;
+ box-shadow:0 2px 6px #17203312;
+}
+.overview-quick-panel .quick-action-card:hover{transform:translateY(-1px);box-shadow:0 4px 9px #17203318}
+.overview-quick-panel .quick-action-button-title{font-size:clamp(12px,1.15vw,14px);line-height:1.1}
+.overview-quick-panel .quick-action-button-stats{width:min(100%,190px);gap:3px 7px}
+.overview-quick-panel .quick-action-button-stats>span{font-size:clamp(9px,.85vw,10px);line-height:1.1}
+.overview-quick-panel .quick-action-button-kind{right:7px;top:6px;padding:2px 5px;font-size:7px}
+@media(max-width:620px){
+ .overview-quick-panel .quick-action-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .overview-quick-panel .quick-action-card{min-height:72px;aspect-ratio:2.05;padding:7px 6px;gap:4px;border-radius:11px}
+ .overview-quick-panel .quick-action-button-title{font-size:12px}
+ .overview-quick-panel .quick-action-button-stats{gap:3px 5px}
+ .overview-quick-panel .quick-action-button-stats>span{font-size:9px}
+}
