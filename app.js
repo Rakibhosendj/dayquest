@@ -748,7 +748,20 @@ function addUnitName(select,afterAdd){
 }
 $('addUnit').onclick=()=>addUnitName($('unitName'),n=>{$('unitName').value=n});
 $('addProductionUnit').onclick=()=>addUnitName($('productionUnit'),n=>{fillProductionOptions();$('productionUnit').value=n});
-$('addIncomeHead').onclick=()=>{let n=prompt('Add an income type (e.g. Salary, Business, Rent, Freelance):');if(n&&n.trim()){n=n.trim();if(!db.incomeHeads.includes(n))db.incomeHeads.push(n);fillChoices();$('incomeSource').value=n;localSaveOnly()}};
+$('addIncomeHead').onclick=()=>{
+ const dialog=$('addIncomeHeadDialog'),input=$('newIncomeHeadName');
+ if(!dialog||!input){alert('Income type dialog is unavailable.');return}
+ input.value='';dialog.showModal();input.focus();
+};
+$('cancelIncomeHead').onclick=()=>$('addIncomeHeadDialog')?.close();
+$('addIncomeHeadForm').onsubmit=e=>{
+ e.preventDefault();
+ const input=$('newIncomeHeadName'),dialog=$('addIncomeHeadDialog');
+ let name=String(input?.value||'').trim();if(!name)return;
+ const existing=db.incomeHeads.find(value=>value.toLocaleLowerCase()===name.toLocaleLowerCase());
+ if(existing)name=existing;else db.incomeHeads.push(name);
+ fillChoices();$('incomeSource').value=name;localSaveOnly();dialog?.close();
+};
 $('addIncomePerson').onclick=()=>{let n=prompt('Add the person who earned this income:');if(n&&n.trim()){n=n.trim();if(!db.incomePeople.includes(n))db.incomePeople.push(n);fillChoices();$('incomeBy').value=n;localSaveOnly()}};
 function localSaveOnly(){localStorage.setItem('dayquest_v1',JSON.stringify(db));queueCloudSave();showBalances();notifySaveButtonSuccess()}
 
@@ -3449,7 +3462,7 @@ $('installBtn').onclick=async()=>{
  }
  showDayQuestInstallHelp();
 };
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261122-overview-sorting-settings').then(registration=>{
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261122-income-type-dialog-v1').then(registration=>{
  console.info('DayQuest offline support is ready:',registration.scope);
 }).catch(error=>{
  console.warn('DayQuest offline support could not be registered:',error);
