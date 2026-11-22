@@ -3102,7 +3102,7 @@ if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.ser
 }).catch(error=>{
  console.warn('DayQuest offline support could not be registered:',error);
 }));
-const DAYQUEST_APP_URL='https://rakibhosendj.github.io/dayquest/';
+const DAYQUEST_APP_URL='https://rakibhosendj.github.io/dayquest/?register=1';
 async function copyDayQuestAppLink(){
  const status=$('shareDayQuestAppLinkStatus');
  try{
@@ -3127,32 +3127,17 @@ async function copyDayQuestAppLink(){
 $('shareDayQuestAppLink').onclick=async()=>{
  const status=$('shareDayQuestAppLinkStatus');
  if(status)status.textContent='';
- const shareText='DayQuest — Family finance and daily goals';
+ const shareText='DayQuest — Family finance and daily goals. Open the link to create your Family Account.';
  if(typeof navigator.share==='function'){
   try{
-   let shareData={title:'DayQuest',text:shareText,url:DAYQUEST_APP_URL};
-   try{
-    const iconResponse=await fetch('./icons/icon-192.png',{cache:'no-cache'});
-    if(iconResponse.ok){
-     const iconBlob=await iconResponse.blob();
-     const iconFile=new File([iconBlob],'DayQuest-app-icon.png',{type:'image/png'});
-     if(navigator.canShare?.({files:[iconFile]})){
-      shareData={title:'DayQuest',text:shareText+'\n'+DAYQUEST_APP_URL,files:[iconFile]};
-     }
-    }
-   }catch(iconError){
-    console.warn('DayQuest icon could not be attached; sharing the app link instead:',iconError);
-   }
-   await navigator.share(shareData);
-   if(status)status.textContent=shareData.files?'DayQuest app link and icon shared.':'DayQuest app link shared with its app preview.';
+   await navigator.share({title:'DayQuest',text:shareText,url:DAYQUEST_APP_URL});
+   if(status)status.textContent='DayQuest registration link shared.';
   }catch(error){
    if(error?.name==='AbortError')return;
    console.warn('DayQuest share sheet could not be opened:',error);
    await copyDayQuestAppLink();
   }
- }else{
-  await copyDayQuestAppLink();
- }
+ }else await copyDayQuestAppLink();
 };
 $('copyDayQuestAppLink').onclick=copyDayQuestAppLink;
 // DayQuest cloud authentication and family-wide data sync.
@@ -3483,7 +3468,7 @@ async function initAuth(){
   if(error)throw error;
   if(cloudPasswordRecovery){showAuthView('reset','Enter a new password for your Family Account.');return}
   if(data.session){await connectCloudSession(data.session.user);return}
-  showAuthView('login');
+  showAuthView(new URLSearchParams(location.search).get('register')==='1'?'signup':'login');
  }catch(error){
   console.warn('DayQuest session restore failed:',error);
   showAuthView('login','Could not restore your cloud session. Please log in again. '+(error.message||''));
