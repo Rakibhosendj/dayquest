@@ -381,7 +381,7 @@ function updatePageBalanceTitle(tab){
  const titles={home:'Overview',purchaseBills:'Purchase',inventory:'Inventory',budget:'Budget',budgetViewPage:'Budget',production:'Production',supplierAccounts:'Supplier Accounts',supplierEntry:'Supplier Entry',payExpenseDue:'Outstanding',loans:'Loans',income:'Income',meals:'Meals',quests:'Daily Quest',questSetup:'Daily Quest',profile:'Profile',memberProfilePage:selectedMemberProfileName||'Member Profile',settings:'Settings',costChartPage:'Cost Chart',quickExpenses:'Quick Expenses',expenseEntries:'Expenses'};
  let title=titles[tab]||String(tab||'DayQuest').replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase());
  if(tab==='reports'){const selected=document.querySelector('[data-report-go].active')?.dataset.reportGo||'members';title=selected==='all'?'All Reports':(REPORT_TITLES[selected]||'Reports')}
- const element=$('pageBalanceTitle');if(element)element.textContent=title;showBalances();
+ const element=$('pageContextTitle');if(element)element.textContent=title;showBalances();
 }
 const startWeek=d=>{let x=dateObj(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return x.toISOString().slice(0,10)};
 function questLocalDate(date=new Date()){
@@ -524,8 +524,10 @@ function setupSideMenuReordering(){
 }
 function updateBackButton(){
  const button=$('backButton');if(!button)return;
- button.hidden=appPageHistory.length===0;
- button.disabled=appPageHistory.length===0;
+ const currentPage=document.querySelector('.panel.active')?.id||'home';
+ const canGoBack=appPageHistory.length>0||currentPage!=='home';
+ button.hidden=!canGoBack;
+ button.disabled=!canGoBack;
 }
 function goBackToPreviousPage(){
  let previous='';
@@ -534,6 +536,7 @@ function goBackToPreviousPage(){
   if($(candidate)?.classList.contains('panel'))previous=candidate;
  }
  if(previous)setTab(previous,{skipHistory:true});
+ else if(document.querySelector('.panel.active')?.id!=='home')setTab('home',{skipHistory:true});
  else updateBackButton();
 }
 function setTab(t,options={}){
