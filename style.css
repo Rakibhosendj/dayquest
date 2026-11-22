@@ -2368,3 +2368,31 @@ body{color:var(--dq-font-color,#263b5c)}
 /* Present Add type beside Income type as a clear text link. */
 #incomeForm #addIncomeHead.mini-add{background:transparent!important;border:0!important;padding:2px 4px!important;color:var(--accent,#2563eb)!important;text-decoration:underline!important;font-weight:700!important;box-shadow:none!important}
 #incomeForm #addIncomeHead.mini-add:hover{background:transparent!important;opacity:.8}
+
+
+/* Final high-specificity page toolbar layout: title left, Back button at far right. */
+.app-main>main>#pageContextBar.page-context-header{
+ display:grid!important;
+ grid-template-columns:minmax(0,1fr) max-content!important;
+ grid-template-rows:auto!important;
+ justify-content:stretch!important;
+ justify-items:stretch!important;
+ align-items:center!important;
+ width:100%!important;
+}
+.app-main>main>#pageContextBar>#pageContextTitle{
+ grid-column:1!important;
+ grid-row:1!important;
+ justify-self:start!important;
+ text-align:left!important;
+}
+.app-main>main>#pageContextBar>#backButton.page-context-back{
+ grid-column:2!important;
+ grid-row:1!important;
+ justify-self:end!important;
+ margin-left:auto!important;
+}
+.app-main>main>#pageContextBar>#backButton[hidden]{display:none!important}
+@media(max-width:600px){
+ .app-main>main>#pageContextBar.page-context-header{grid-template-columns:minmax(0,1fr) max-content!important}
+}
