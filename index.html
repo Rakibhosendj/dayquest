@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261122-member-page-balance">
+<link rel="stylesheet" href="style.css?v=20261122-profile-phone2">
 <title>DayQuest</title>
 </head>
 <body>
@@ -37,8 +37,8 @@
    <p class="auth-copy">One shared family login. Use the same email and password on every device.</p>
    <form id="authSignupForm" class="form auth-form">
     <label>Family name <input id="signupFamilyName" maxlength="80" autocomplete="organization" placeholder="e.g. Rakib Family" required></label>
-    <label>Account holder / first member name <input id="signupMemberName" maxlength="80" autocomplete="name" placeholder="Enter your full name" required></label>
-    <label>Phone number <input id="signupPhone" type="tel" maxlength="30" autocomplete="tel" placeholder="Optional"></label>
+    <label>User Name <input id="signupMemberName" maxlength="80" autocomplete="name" placeholder="Enter your full name" required></label>
+    <div class="form-grid profile-phone-grid"><label>Phone Number 1 <input id="signupPhone" type="tel" maxlength="30" autocomplete="tel" placeholder="Primary phone (optional)"></label><label>Phone Number 2 <input id="signupPhone2" type="tel" maxlength="30" placeholder="Additional phone (optional)"></label></div>
     <div class="signup-address-group"><strong>Address details</strong><div class="form-grid">
      <label>Country <input id="signupCountry" maxlength="80" autocomplete="country-name" value="Bangladesh" required></label>
      <label>District <input id="signupDistrict" maxlength="80" autocomplete="address-level2" placeholder="District" required></label>
@@ -480,50 +480,35 @@
 <section id="profile" class="panel">
  <div class="section-head"><h2>User profile</h2><span class="pill">Stored in your family account</span></div>
  <form id="profileForm" class="form">
+  <details class="profile-foldout"><summary>General Settings</summary><div class="profile-foldout-content"><label>Family Name <input id="familyName" maxlength="80" placeholder="e.g. Rahman Family"></label></div></details>
   <details class="profile-foldout">
-   <summary>General Settings</summary>
-   <div class="profile-foldout-content">
-    <div class="profile-photo-row">
-     <div class="profile-photo-frame"><img id="profilePhotoPreview" alt="Profile photo" hidden><span id="profilePhotoFallback">DQ</span></div>
-     <div class="profile-photo-copy"><strong>Profile photo</strong><small>Upload a family or profile picture.</small>
-      <div class="profile-photo-actions"><label class="secondary photo-upload-label">Upload photo<input id="profilePhotoInput" type="file" accept="image/*"></label><button class="ghost-light" id="removeProfilePhoto" type="button">Remove photo</button></div>
-     </div>
+   <summary>Personal Information</summary><div class="profile-foldout-content">
+    <div class="profile-photo-row"><div class="profile-photo-frame"><img id="profilePhotoPreview" alt="Profile photo" hidden><span id="profilePhotoFallback">DQ</span></div>
+     <div class="profile-photo-copy"><strong>Profile photo</strong><small>Upload a family or profile picture.</small><div class="profile-photo-actions"><label class="secondary photo-upload-label">Upload photo<input id="profilePhotoInput" type="file" accept="image/*"></label><button class="ghost-light" id="removeProfilePhoto" type="button">Remove photo</button></div></div>
     </div>
-    <label>Full name <input id="profileName" maxlength="80" placeholder="Enter your name"></label>
-    <label>Phone number <input id="profilePhone" maxlength="30" type="tel" placeholder="Optional"></label>
+    <label>User Name <input id="profileName" maxlength="80" placeholder="Enter your name"></label>
+    <div class="form-grid profile-phone-grid">
+     <label>Phone Number 1 <input id="profilePhone" maxlength="30" type="tel" placeholder="Primary phone"></label>
+     <label>Phone Number 2 <input id="profilePhone2" maxlength="30" type="tel" placeholder="Additional phone (optional)"></label>
+    </div>
     <input id="profileAddress" type="hidden">
-    <div class="section-head form-section-head"><h3>Personal information</h3></div>
+    <div class="section-head form-section-head"><h3>Personal Details</h3></div>
     <div class="form-grid">
      <label>Gender <select id="profileGender"><option value="">Not specified</option><option>Male</option><option>Female</option><option>Other</option><option>Prefer not to say</option></select></label>
      <label>Religion <input id="profileReligion" maxlength="60" placeholder="Optional"></label>
      <label>Date of birth <input id="profileBirthDate" type="date"></label>
     </div>
-    <div class="section-head form-section-head"><h3>Address details</h3></div>
+    <div class="section-head form-section-head"><h3>Address Details</h3></div>
     <div class="form-grid profile-address-grid">
      <label>Country <input id="profileCountry" maxlength="80" placeholder="Country"></label>
      <label>District <input id="profileDistrict" maxlength="80" placeholder="District"></label>
      <label>Village / Area <input id="profileVillage" maxlength="100" placeholder="Village or area"></label>
      <label>Road / Street name <input id="profileRoad" maxlength="120" placeholder="Road name"></label>
     </div>
-    <label>Family name <input id="familyName" maxlength="80" placeholder="e.g. Rahman Family"></label>
    </div>
   </details>
-  <details class="profile-foldout">
-   <summary>Family Members</summary>
-   <div class="profile-foldout-content">
-    <div class="family-member-add"><input id="newFamilyMember" maxlength="80" placeholder="Enter family member name" aria-label="New family member"><button class="secondary" id="addFamilyMember" type="button">＋ Add member</button></div>
-    <div id="familyMemberList" class="list family-member-list"></div>
-   </div>
-  </details>
-  <details class="profile-foldout">
-   <summary>Starting Balances</summary>
-   <div class="profile-foldout-content">
-    <div class="form-grid">
-     <label>Opening cash balance <input id="openingCash" type="number" min="0" step="0.01" value="0"></label>
-     <label>Opening bank balance <input id="openingBank" type="number" min="0" step="0.01" value="0"></label>
-    </div>
-   </div>
-  </details>
+  <details class="profile-foldout"><summary>Family Members</summary><div class="profile-foldout-content"><div class="family-member-add"><input id="newFamilyMember" maxlength="80" placeholder="Enter family member name" aria-label="New family member"><button class="secondary" id="addFamilyMember" type="button">＋ Add member</button></div><div id="familyMemberList" class="list family-member-list"></div></div></details>
+  <details class="profile-foldout"><summary>Starting Balances</summary><div class="profile-foldout-content"><div class="form-grid"><label>Opening cash balance <input id="openingCash" type="number" min="0" step="0.01" value="0"></label><label>Opening bank balance <input id="openingBank" type="number" min="0" step="0.01" value="0"></label></div></div></details>
   <button class="primary full">Save profile</button>
   <button class="delete-profile-btn" id="deleteProfileBtn" type="button">Delete Profile</button>
   <button class="clear-transactions-btn" id="clearAllExpensesIncomeBtn" type="button">Clear All Expenses &amp; Income</button>
@@ -537,9 +522,9 @@
    <div class="member-profile-photo-actions"><strong>Member Picture</strong><label class="secondary photo-upload-label">Upload Picture<input id="memberProfilePhotoInput" type="file" accept="image/*"></label><button type="button" class="ghost-light" id="removeMemberProfilePhoto">Remove Picture</button></div>
   </div>
   <div class="section-head form-section-head"><h3>Personal details</h3></div>
-  <label>Member name <input id="memberProfileName" readonly></label>
+  <label>User Name <input id="memberProfileName" readonly></label>
   <div class="form-grid">
-   <label>Phone number <input id="memberProfilePhone" type="tel" maxlength="30"></label>
+   <label>Phone Number 1 <input id="memberProfilePhone" type="tel" maxlength="30"></label><label>Phone Number 2 <input id="memberProfilePhone2" type="tel" maxlength="30"></label>
    <label>Email address <input id="memberProfileEmail" type="email" maxlength="120"></label>
    <label>Gender <select id="memberProfileGender"><option value="">Not specified</option><option>Male</option><option>Female</option><option>Other</option><option>Prefer not to say</option></select></label>
    <label>Religion <input id="memberProfileReligion" maxlength="60"></label>
@@ -959,5 +944,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261122-member-page-balance"></script>
+<script src="app.js?v=20261122-profile-phone2"></script>
 </body></html>
