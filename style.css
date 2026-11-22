@@ -2339,3 +2339,32 @@ body{color:var(--dq-font-color,#263b5c)}
 #pageContextBar #backButton{order:0!important;position:static!important;float:none!important;flex:0 0 auto!important;margin:0!important}
 #pageContextBar #pageContextTitle{order:1!important;display:block!important;position:static!important;flex:0 1 auto!important;margin:0!important;text-align:left!important;white-space:nowrap!important}
 #pageContextBar #backButton[hidden]{display:none!important}
+
+
+/* Keep page title on the left and Back control on the right, aligned in one row. */
+#pageContextBar.page-context-header{
+ display:grid!important;grid-template-columns:minmax(0,1fr) max-content!important;
+ grid-template-rows:auto!important;align-items:center!important;justify-content:stretch!important;
+ column-gap:10px!important;width:100%!important;
+}
+#pageContextBar #pageContextTitle{
+ grid-column:1!important;grid-row:1!important;justify-self:start!important;
+ order:0!important;min-width:0!important;max-width:100%!important;
+ margin:0!important;text-align:left!important;white-space:nowrap!important;
+}
+#pageContextBar #backButton{
+ grid-column:2!important;grid-row:1!important;justify-self:end!important;
+ order:1!important;position:static!important;float:none!important;
+ flex:none!important;margin:0!important;white-space:nowrap!important;
+}
+#pageContextBar #backButton[hidden]{display:none!important}
+
+/* Brand identity inside the Share DayQuest settings box. */
+.share-app-brand{display:flex;align-items:center;gap:11px;margin:0 0 12px;min-width:0}
+.share-app-brand img{width:48px;height:48px;flex:0 0 48px;object-fit:cover;border-radius:12px}
+.share-app-brand>div{display:grid;gap:3px;min-width:0}
+.share-app-brand strong{font-size:17px;line-height:1.2}
+.share-app-brand span{font-size:11px;color:var(--muted,#64748b)}
+/* Present Add type beside Income type as a clear text link. */
+#incomeForm #addIncomeHead.mini-add{background:transparent!important;border:0!important;padding:2px 4px!important;color:var(--accent,#2563eb)!important;text-decoration:underline!important;font-weight:700!important;box-shadow:none!important}
+#incomeForm #addIncomeHead.mini-add:hover{background:transparent!important;opacity:.8}
