@@ -1817,3 +1817,22 @@ body{color:var(--dq-font-color,#263b5c)}
  .member-profile-photo-row{align-items:flex-start}
  .member-profile-photo-actions{gap:7px}
 }
+
+.profile-foldout-content{gap:6px;padding:2px 2px 7px}
+.profile-foldout>summary{padding:8px 3px}
+.profile-foldout{margin-bottom:6px}
+.profile-foldout-content .form-grid{gap:5px}
+.profile-foldout-content label{gap:3px;margin:0}
+.profile-foldout-content .form-section-head{margin:4px 1px 1px}
+.profile-foldout-content .form-section-head h3{font-size:11px}
+.profile-phone-grid{gap:5px}
+.profile-photo-row{gap:8px;margin:0;padding:0}
+.profile-photo-frame{width:60px;height:60px}
+.profile-photo-copy small{font-size:10px;line-height:1.2}
+.profile-foldout-content input:not([type="checkbox"]):not([type="file"]),.profile-foldout-content select{min-height:33px;padding:5px 7px}
+.auth-form{gap:7px}
+.auth-form label{gap:3px}
+.auth-form .form-grid{gap:5px}
+.member-profile-form{gap:6px}
+.member-profile-form .form-grid{gap:5px}
+@media(max-width:620px){.profile-phone-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.profile-foldout-content{gap:5px}.profile-photo-frame{width:56px;height:56px}}
