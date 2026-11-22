@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v160-header-share-brand';
+const CACHE = 'dayquest-cache-v161-right-aligned-header-v2';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261122-header-share-brand',
+  './style.css?v=20261122-right-aligned-header-v2',
   './app.js?v=20261122-overview-sorting-settings',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
