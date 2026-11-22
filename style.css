@@ -1776,3 +1776,14 @@ body{color:var(--dq-font-color,#263b5c)}
 .purchase-supplier-dialog .purchase-supplier-dialog-heading{margin:0;color:#263b5c;font-size:1rem}
 .purchase-supplier-dialog label{display:grid;gap:6px;font-size:13px;font-weight:700;text-align:left}
 .purchase-supplier-dialog input{width:100%;min-width:0}
+
+.signup-address-group{display:grid;gap:8px;padding:12px;border:1px solid var(--line,#dbe2ea);border-radius:12px;background:var(--card,#fff)}
+.signup-address-group>strong{font-size:13px}
+.member-profile-page-head{align-items:center;gap:12px;flex-wrap:wrap}
+.member-profile-page-head>div{margin-left:auto;text-align:right}
+.member-profile-page-head h2{margin:0}
+.member-profile-form{max-width:760px}
+.member-profile-form textarea{width:100%;min-width:0}
+.family-member-row[data-family-member-name]{touch-action:pan-y;cursor:pointer;user-select:none;-webkit-user-select:none}
+.family-member-row[data-family-member-name]:active{background:var(--surface-soft,#f4f7fa)}
+@media(max-width:620px){.signup-address-group .form-grid,.profile-address-grid,.member-profile-form .form-grid{grid-template-columns:minmax(0,1fr)}.member-profile-page-head{align-items:flex-start}.member-profile-page-head>div{margin-left:0;text-align:left;width:100%}}
