@@ -1865,3 +1865,45 @@ body{color:var(--dq-font-color,#263b5c)}
  .overview-quick-panel .quick-action-button-stats{gap:3px 5px}
  .overview-quick-panel .quick-action-button-stats>span{font-size:9px}
 }
+
+
+/* Quick Expenses page: keep tiles compact instead of stretching across the page. */
+#quickExpenses .quick-action-list{
+ display:grid;
+ grid-template-columns:repeat(auto-fill,minmax(190px,220px));
+ justify-content:start;
+ align-items:start;
+ gap:12px;
+}
+#quickExpenses .quick-action-card{
+ width:220px;
+ height:140px;
+ min-height:140px;
+ max-height:140px;
+ aspect-ratio:auto;
+ padding:14px 12px;
+ gap:8px;
+ border-radius:18px;
+}
+#quickExpenses .quick-action-button-title{font-size:16px}
+#quickExpenses .quick-action-button-stats{width:min(100%,190px);gap:5px 10px}
+#quickExpenses .quick-action-button-stats>span{font-size:11px}
+@media(max-width:620px){
+ #quickExpenses .quick-action-list{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+ }
+ #quickExpenses .quick-action-card{
+  width:100%;
+  height:112px;
+  min-height:112px;
+  max-height:112px;
+  padding:9px 6px;
+  gap:6px;
+  border-radius:13px;
+ }
+ #quickExpenses .quick-action-button-title{font-size:12px}
+ #quickExpenses .quick-action-button-stats{width:100%;gap:4px 5px}
+ #quickExpenses .quick-action-button-stats>span{font-size:9px}
+ #quickExpenses .quick-action-button-kind{right:7px;top:6px;padding:2px 5px;font-size:7px}
+}
