@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v163-income-person-branded-dialog-v2';
+const CACHE = 'dayquest-cache-v164-sales-income-layout-profile-address-v1';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261122-income-person-branded-dialog-v2',
-  './app.js?v=20261122-income-person-branded-dialog-v2',
+  './style.css?v=20261122-sales-income-layout-profile-address-v1',
+  './app.js?v=20261122-sales-income-layout-profile-address-v1',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
   './icons/icon-512.svg',
