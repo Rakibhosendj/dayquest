@@ -2142,3 +2142,19 @@ body{color:var(--dq-font-color,#263b5c)}
  .top #pageBalanceHeader .page-balance-values>span{font-size:10px!important}
  .top #pageBalanceHeader .page-balance-values>span strong{font-size:11px!important}
 }
+
+/* Compact single-row app header: no top-bar back button or secondary page title below it. */
+.app-main>.top #backButton{display:none!important}
+.app-main>.top #pageBalanceHeader{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;min-width:0!important;width:100%!important}
+.app-main>.top #pageBalanceTitle{display:block!important;flex:0 1 auto!important;min-width:0!important;max-width:28%!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.app-main>.top #pageBalanceHeader .page-balance-values{display:flex!important;flex:1 1 auto!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:flex-end!important;gap:clamp(4px,1.2vw,12px)!important;white-space:nowrap!important;min-width:0!important}
+.app-main>.top #pageBalanceHeader .page-balance-values>span{display:inline-flex!important;flex:0 0 auto!important;align-items:center!important;gap:2px!important;white-space:nowrap!important}
+.app-main main>.page-balance-header{display:none!important}
+@media(max-width:600px){
+ .app-main>.top{gap:5px!important}
+ .app-main>.top #pageBalanceHeader{gap:4px!important}
+ .app-main>.top #pageBalanceTitle{font-size:10px!important;max-width:22%!important}
+ .app-main>.top #pageBalanceHeader .page-balance-values{gap:4px!important;font-size:9px!important}
+ .app-main>.top #pageBalanceHeader .page-balance-values>span{font-size:9px!important;gap:1px!important}
+ .app-main>.top #pageBalanceHeader .page-balance-values>span strong{font-size:10px!important}
+}
