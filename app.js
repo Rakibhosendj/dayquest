@@ -46,6 +46,7 @@ db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business'
 db.incomes.forEach(x=>{if(x.source&&!db.incomeHeads.includes(x.source))db.incomeHeads.push(x.source)});
 db.profile=db.profile&&typeof db.profile==='object'?db.profile:{name:'',phone:'',address:'',openingCash:0,openingBank:0};
 db.profile.address=String(db.profile.address||'');
+db.profile.openingLoans=Array.isArray(db.profile.openingLoans)?db.profile.openingLoans.filter(item=>item&&String(item.party||'').trim()&&Number(item.amount)>0).map(item=>({id:String(item.id||crypto.randomUUID()),party:String(item.party||'').trim(),type:item.type==='taken'?'taken':'given',amount:Math.max(0,Number(item.amount)||0)})):[];
 db.profile.phone=String(db.profile.phone||'');db.profile.phone2=String(db.profile.phone2||'');
 db.profile.familyName=String(db.profile.familyName||'');
 db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';
@@ -368,7 +369,7 @@ function calculateBalances(){
  db.supplierPayments.forEach(p=>add(p.method||'Cash',-Number(p.amount||0)));
  // Loan advances change cash/bank when issued or received; settlements reverse that movement.
  db.loans.forEach(loan=>{
-  const given=loan.type!=='taken';add(loan.method||'Cash',given?-Number(loan.amount||0):Number(loan.amount||0));
+  const given=loan.type!=='taken';if(!loan.openingBalance)add(loan.method||'Cash',given?-Number(loan.amount||0):Number(loan.amount||0));
   (loan.settlements||[]).forEach(item=>add(item.method||'Cash',given?Number(item.amount||0):-Number(item.amount||0)));
  });
  (db.moneyTransfers||[]).forEach(transfer=>{
@@ -1617,7 +1618,7 @@ function editLoan(id){
 }
 function deleteLoan(id){
  const loan=db.loans.find(item=>item.id===id);if(!loan)return;
- if(!confirm('Delete this loan and its collection / repayment history? The cash and bank balances will be recalculated.'))return;
+ if(!await window.dayQuestConfirm('Delete this loan and its collection / repayment history? The cash and bank balances will be recalculated.'))return;
  db.loans=db.loans.filter(item=>item.id!==id);if(editingLoanId===id)resetLoanForm();save();
 }
 function openLoanSettlement(id){
@@ -2960,7 +2961,7 @@ function loadProfileForm(){
  $('profileName').value=db.profile.name||'';$('profilePhone').value=db.profile.phone||'';$('profilePhone2').value=db.profile.phone2||'';
  ['Country','Division','District','SubDistrict','Village','Road','Religion','Gender','BirthDate'].forEach(field=>{const key=field[0].toLowerCase()+field.slice(1);$('profile'+field).value=db.profile[key]||''});
  $('profileAddress').value=composeMemberAddress(db.profile)||db.profile.address||'';$('familyName').value=db.profile.familyName||'';
- $('openingCash').value=Number(db.profile.openingCash||0);$('openingBank').value=Number(db.profile.openingBank||0);
+ $('openingCash').value=Number(db.profile.openingCash||0);$('openingBank').value=Number(db.profile.openingBank||0);renderOpeningLoanRows();
  updateAppBrand();updateProfilePhotoPreview();renderFamilyMembers();renderMealPersonDates();
 }
 initializeAddressCascades();
@@ -3021,15 +3022,41 @@ $('addFamilyMember').onclick=()=>{
  input.value='';renderFamilyMembers();renderMealPersonDates();fillChoices();save();
 };
 $('profileForm').onsubmit=e=>{
- e.preventDefault();const openingCash=Number($('openingCash').value),openingBank=Number($('openingBank').value);
+ e.preventDefault();const openingCash=Number($('openingCash').value),openingBank=Number($('openingBank').value),openingLoans=readOpeningLoanRows();
  if(!Number.isFinite(openingCash)||openingCash<0||!Number.isFinite(openingBank)||openingBank<0){alert('Opening balances must be zero or greater.');return}
  const name=$('profileName').value.trim(),details={country:$('profileCountry').value.trim(),division:$('profileDivision').value.trim(),district:$('profileDistrict').value.trim(),subDistrict:$('profileSubDistrict').value.trim(),village:$('profileVillage').value.trim(),road:$('profileRoad').value.trim(),religion:$('profileReligion').value.trim(),gender:$('profileGender').value,birthDate:$('profileBirthDate').value};
  db.profile={...db.profile,...details,name,phone:$('profilePhone').value.trim(),phone2:$('profilePhone2').value.trim(),address:composeMemberAddress(details),familyName:$('familyName').value.trim(),openingCash,openingBank};
+ db.profile.openingLoans=openingLoans;syncOpeningLoansToRegister(openingLoans);
  if(name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===name.toLocaleLowerCase()))db.familyMembers.unshift(name);
  if(name&&!db.incomePeople.includes(name))db.incomePeople.unshift(name);
  if(name){const p=ensureMemberProfile(name);Object.assign(p,{phone:db.profile.phone,phone2:db.profile.phone2,...details})}
  fillChoices();renderFamilyMembers();updateProfilePhotoPreview();save();alert('Family profile and starting balances saved.');
 };
+
+
+function renderOpeningLoanRows(){
+ const host=$('openingLoanRows');if(!host)return;
+ const rows=Array.isArray(db.profile?.openingLoans)?db.profile.openingLoans:[];
+ host.innerHTML=rows.map((item,index)=>`<div class="opening-loan-row" data-opening-loan-row><label>Loan name <input type="text" data-opening-loan-party maxlength="100" value="${esc(item.party||'')}" placeholder="Person / bank name"></label><label>Loan type <select data-opening-loan-type><option value="given" ${item.type!=='taken'?'selected':''}>To collect</option><option value="taken" ${item.type==='taken'?'selected':''}>To repay</option></select></label><label>Amount <input type="number" data-opening-loan-amount min="0.01" step="0.01" value="${Number(item.amount||0)||''}" placeholder="0.00"></label><button type="button" class="delete" data-opening-loan-remove aria-label="Remove opening loan">Remove</button><input type="hidden" data-opening-loan-id value="${esc(item.id||crypto.randomUUID())}"></div>`).join('');
+ host.querySelectorAll('[data-opening-loan-remove]').forEach(button=>button.onclick=()=>{button.closest('[data-opening-loan-row]')?.remove()});
+}
+function readOpeningLoanRows(){
+ return [...($('openingLoanRows')?.querySelectorAll('[data-opening-loan-row]')||[])].map(row=>({id:row.querySelector('[data-opening-loan-id]')?.value||crypto.randomUUID(),party:row.querySelector('[data-opening-loan-party]')?.value.trim()||'',type:row.querySelector('[data-opening-loan-type]')?.value==='taken'?'taken':'given',amount:Number(row.querySelector('[data-opening-loan-amount]')?.value||0)})).filter(item=>item.party&&Number.isFinite(item.amount)&&item.amount>0);
+}
+function syncOpeningLoansToRegister(items){
+ const old=new Map(db.loans.filter(loan=>loan.openingBalance).map(loan=>[loan.id,loan]));
+ const next=items.map(item=>{
+  const previous=old.get(item.id);
+  return {...previous,id:item.id,type:item.type,party:item.party,amount:item.amount,method:previous?.method||'Cash',date:previous?.date||today(),dueDate:previous?.dueDate||'',note:previous?.note||'Opening loan balance',settlements:previous?.settlements||[],openingBalance:true};
+ });
+ const ids=new Set(next.map(item=>item.id));
+ db.loans=[...db.loans.filter(loan=>!loan.openingBalance||ids.has(loan.id)).filter(loan=>!loan.openingBalance),...next];
+}
+$('addOpeningLoan')?.addEventListener('click',()=>{
+ db.profile=db.profile||{};db.profile.openingLoans=readOpeningLoanRows();
+ db.profile.openingLoans.push({id:crypto.randomUUID(),party:'',type:'given',amount:0});
+ const host=$('openingLoanRows');if(host){const row=db.profile.openingLoans[db.profile.openingLoans.length-1];const wrap=document.createElement('div');wrap.innerHTML=`<div class="opening-loan-row" data-opening-loan-row><label>Loan name <input type="text" data-opening-loan-party maxlength="100" placeholder="Person / bank name"></label><label>Loan type <select data-opening-loan-type><option value="given">To collect</option><option value="taken">To repay</option></select></label><label>Amount <input type="number" data-opening-loan-amount min="0.01" step="0.01" placeholder="0.00"></label><button type="button" class="delete" data-opening-loan-remove>Remove</button><input type="hidden" data-opening-loan-id value="${esc(row.id)}"></div>`;host.appendChild(wrap.firstElementChild);host.lastElementChild.querySelector('[data-opening-loan-remove]').onclick=()=>host.lastElementChild.remove();host.lastElementChild.querySelector('[data-opening-loan-party]').focus()}
+});
 
 function renderGuestMemberControls(){fillGuestMemberOptions(selectedGuestMembers());renderExpenseMemberOptions(selectedExpenseMembers())}
 $('addGuestName').onclick=()=>{
