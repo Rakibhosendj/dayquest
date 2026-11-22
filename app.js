@@ -3580,15 +3580,19 @@ function renderDueReport(from,to){
  $('supplierCreditorReport').innerHTML=supplierRows||empty(`No supplier credits or payments to show by ${fmt(asOf)}.`);
  $('supplierCreditorReport').querySelectorAll('[data-creditor]').forEach(btn=>btn.onclick=()=>{setTab('supplierAccounts');openSupplierAccount(btn.dataset.creditor)});
  const supplierTotal=supplierNames.reduce((t,name)=>t+supplierBillBalancesAt(name,asOf).reduce((v,row)=>v+row.remaining,0),0);
+ const openingCreditors=Array.isArray(db.profile?.openingCreditors)?db.profile.openingCreditors:[];
+ const openingDebtors=Array.isArray(db.profile?.openingDebtors)?db.profile.openingDebtors:[];
+ const openingCreditorTotal=openingCreditors.reduce((t,x)=>t+Math.max(0,Number(x.amount)||0),0);
+ const openingDebtorTotal=openingDebtors.reduce((t,x)=>t+Math.max(0,Number(x.amount)||0),0);
  const expenseOweTotal=iOwe.reduce((t,x)=>t+expenseOutstandingAt(x,asOf),0);
  const owedExpenseTotal=owedExpenses.reduce((t,x)=>t+expenseOutstandingAt(x,asOf),0);
  const incomeDueAmount=incomeDue.reduce((t,x)=>t+incomeOutstandingAt(x,asOf),0);
- $('iOweTotal').textContent=money(supplierTotal+expenseOweTotal);$('iOweExpenseTotal').textContent=money(expenseOweTotal);
- $('owedToMeTotal').textContent=money(owedExpenseTotal+incomeDueAmount);$('owedToMeExpenseTotal').textContent=money(owedExpenseTotal);$('incomeDueTotal').textContent=money(incomeDueAmount);
+ $('iOweTotal').textContent=money(supplierTotal+expenseOweTotal+openingCreditorTotal);$('iOweExpenseTotal').textContent=money(expenseOweTotal+openingCreditorTotal);
+ $('owedToMeTotal').textContent=money(owedExpenseTotal+incomeDueAmount+openingDebtorTotal);$('owedToMeExpenseTotal').textContent=money(owedExpenseTotal+openingDebtorTotal);$('incomeDueTotal').textContent=money(incomeDueAmount);
  $('creditorAsOfLabel').textContent=`Balance at ${fmt(asOf)}`;$('debitorAsOfLabel').textContent=`Balance at ${fmt(asOf)}`;
- const grouped=expenseItems=>{let people={};expenseItems.forEach(x=>{const person=(x.duePerson||'Unknown person').trim()||'Unknown person';people[person]=(people[person]||0)+expenseOutstandingAt(x,asOf)});return Object.entries(people).sort((a,b)=>b[1]-a[1]).map(([person,total])=>`<div class="breakrow"><span>${esc(person)}</span><strong>${money(total)}</strong></div>`).join('')||empty('No expense dues recorded by this date.')};
- $('iOweList').innerHTML=grouped(iOwe);
- $('owedToMeList').innerHTML=grouped(owedExpenses);
+ const grouped=(expenseItems,openingItems=[])=>{let people={};expenseItems.forEach(x=>{const person=(x.duePerson||'Unknown person').trim()||'Unknown person';people[person]=(people[person]||0)+expenseOutstandingAt(x,asOf)});openingItems.forEach(x=>{const person=(x.party||'Unknown person').trim()||'Unknown person';people[person]=(people[person]||0)+Math.max(0,Number(x.amount)||0)});return Object.entries(people).sort((a,b)=>b[1]-a[1]).map(([person,total])=>`<div class="breakrow"><span>${esc(person)}</span><strong>${money(total)}</strong></div>`).join('')||empty('No balances recorded by this date.')};
+ $('iOweList').innerHTML=grouped(iOwe,openingCreditors);
+ $('owedToMeList').innerHTML=grouped(owedExpenses,openingDebtors);
  $('incomeDueList').innerHTML=incomeDue.length?incomeDue.map(x=>`<div class="breakrow"><span>${esc(x.source||'Income')} · ${esc(x.duePerson||'Unknown person')}<small>Entry: ${fmt(x.date)}</small></span><strong>${money(incomeOutstandingAt(x,asOf))}</strong></div>`).join(''):empty('No income due to collect by this date.');
  $('unassignedDueHint').hidden=!legacy.length;$('unassignedDueHint').textContent=legacy.length?`${legacy.length} older Due ${legacy.length===1?'entry is':'entries are'} not assigned to either side. These older records are preserved and excluded from creditor and debtor totals.`:'';
 }
