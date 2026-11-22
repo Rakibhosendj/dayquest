@@ -478,13 +478,15 @@
  <div id="questSetupList" class="list"></div>
 </section>
 <section id="profile" class="panel">
- <div class="section-head"><h2>Profile</h2></div>
  <form id="profileForm" class="form">
-  <details class="profile-foldout"><summary>Profile</summary><div class="profile-foldout-content"><label>Family Name <input id="familyName" maxlength="80" placeholder="e.g. Rahman Family"></label></div></details>
   <details class="profile-foldout">
-   <summary>Personal Information</summary><div class="profile-foldout-content">
-    <div class="profile-photo-row"><div class="profile-photo-frame"><img id="profilePhotoPreview" alt="Profile photo" hidden><span id="profilePhotoFallback">DQ</span></div>
-     <div class="profile-photo-copy"><strong>Profile photo</strong><small>Upload a family or profile picture.</small><div class="profile-photo-actions"><label class="secondary photo-upload-label">Upload photo<input id="profilePhotoInput" type="file" accept="image/*"></label><button class="ghost-light" id="removeProfilePhoto" type="button">Remove photo</button></div></div>
+   <summary>Profile</summary>
+   <div class="profile-foldout-content">
+    <label>Family Name <input id="familyName" maxlength="80" placeholder="e.g. Rahman Family"></label>
+    <div class="section-head form-section-head"><h3>Personal Information</h3></div>
+    <div class="profile-photo-row">
+     <div class="profile-photo-frame"><img id="profilePhotoPreview" alt="Picture" hidden><span id="profilePhotoFallback">DQ</span></div>
+     <div class="profile-photo-copy"><strong>Picture</strong><small>Choose a family picture or personal picture.</small><div class="profile-photo-actions"><label class="secondary photo-upload-label">Upload photo<input id="profilePhotoInput" type="file" accept="image/*"></label><button class="ghost-light" id="removeProfilePhoto" type="button">Remove photo</button></div></div>
     </div>
     <label>User Name <input id="profileName" maxlength="80" placeholder="Enter your name"></label>
     <div class="form-grid profile-phone-grid">
@@ -492,7 +494,6 @@
      <label>Phone Number 2 <input id="profilePhone2" maxlength="30" type="tel" placeholder="Additional phone (optional)"></label>
     </div>
     <input id="profileAddress" type="hidden">
-    <div class="section-head form-section-head"><h3>Personal Details</h3></div>
     <div class="form-grid">
      <label>Gender <select id="profileGender"><option value="">Not specified</option><option>Male</option><option>Female</option><option>Other</option><option>Prefer not to say</option></select></label>
      <label>Religion <input id="profileReligion" maxlength="60" placeholder="Optional"></label>
