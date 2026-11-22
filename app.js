@@ -629,6 +629,54 @@ function setupOverviewSectionReordering(){
   if(home.classList.contains('overview-sections-reordering'))event.preventDefault();
  });
 }
+
+function applyOverviewButtonOrder(container){
+ if(!container)return;
+ db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};
+ const group=container.dataset.overviewButtonGroup;if(!group)return;
+ const saved=db.settings.overviewButtonOrders?.[group];
+ if(!Array.isArray(saved))return;
+ const nodes=[...container.children].filter(node=>node.hasAttribute('data-overview-button'));
+ const byKey=new Map(nodes.map(node=>[node.dataset.overviewButton,node]));
+ saved.forEach(key=>{const node=byKey.get(key);if(node)container.appendChild(node)});
+}
+function setupOverviewButtonSorting(){
+ const home=$('home');if(!home||home.dataset.buttonSortBound==='true')return;
+ home.dataset.buttonSortBound='true';
+ let active=null,timer=null,suppressUntil=0;
+ const clear=()=>{if(timer!==null){clearTimeout(timer);timer=null}};
+ const begin=(item,x,y,id,kind)=>{
+  if(db.settings?.overviewSortingEnabled===false||!item?.hasAttribute('data-overview-button'))return;
+  const parent=item.parentElement;if(!parent?.dataset.overviewButtonGroup)return;
+  active={item,parent,x,y,id,kind,dragging:false};
+  timer=setTimeout(()=>{if(!active||db.settings?.overviewSortingEnabled===false)return;active.dragging=true;item.classList.add('overview-button-dragging');parent.classList.add('overview-buttons-reordering');if(kind==='pointer'&&home.setPointerCapture){try{home.setPointerCapture(id)}catch{}}if(kind==='touch'&&navigator.vibrate)navigator.vibrate(18)},420);
+ };
+ const move=(x,y,event)=>{
+  if(!active)return;
+  if(!active.dragging){if(Math.hypot(x-active.x,y-active.y)>9){clear();active=null}return}
+  event?.preventDefault?.();
+  const under=document.elementFromPoint(x,y)?.closest('[data-overview-button]');
+  if(!under||under.parentElement!==active.parent||under===active.item)return;
+  const rect=under.getBoundingClientRect();
+  const horizontal=active.parent.classList.contains('cards')||getComputedStyle(active.parent).gridTemplateColumns.split(' ').length>1;
+  active.parent.insertBefore(active.item,horizontal?(x<rect.left+rect.width/2?under:under.nextElementSibling):(y<rect.top+rect.height/2?under:under.nextElementSibling));
+ };
+ const finish=()=>{
+  clear();if(!active)return;
+  const {item,parent,dragging}=active;item.classList.remove('overview-button-dragging');parent.classList.remove('overview-buttons-reordering');
+  if(dragging){db.settings=db.settings||{};db.settings.overviewButtonOrders=db.settings.overviewButtonOrders||{};db.settings.overviewButtonOrders[parent.dataset.overviewButtonGroup]=[...parent.children].filter(node=>node.hasAttribute('data-overview-button')).map(node=>node.dataset.overviewButton);suppressUntil=Date.now()+450;save()}
+  active=null;
+ };
+ home.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch'&&e.button===0)begin(e.target.closest('[data-overview-button]'),e.clientX,e.clientY,e.pointerId,'pointer')});
+ home.addEventListener('pointermove',e=>{if(active?.kind==='pointer'&&active.id===e.pointerId)move(e.clientX,e.clientY,e)});
+ home.addEventListener('pointerup',e=>{if(active?.kind==='pointer'&&active.id===e.pointerId)finish()});
+ home.addEventListener('pointercancel',finish);
+ home.addEventListener('touchstart',e=>{if(e.touches.length===1){const t=e.touches[0];begin(e.target.closest('[data-overview-button]'),t.clientX,t.clientY,t.identifier,'touch')}},{passive:true});
+ home.addEventListener('touchmove',e=>{if(active?.kind==='touch'){const t=[...e.changedTouches].find(x=>x.identifier===active.id);if(t)move(t.clientX,t.clientY,e)}},{passive:false});
+ home.addEventListener('touchend',finish,{passive:true});home.addEventListener('touchcancel',finish,{passive:true});
+ home.addEventListener('click',e=>{if(Date.now()<suppressUntil&&e.target.closest('[data-overview-button]')){e.preventDefault();e.stopImmediatePropagation()}},true);
+}
+
 function updateBackButton(){
  const button=$('backButton');if(!button)return;
  const currentPage=document.querySelector('.panel.active')?.id||'home';
@@ -684,7 +732,7 @@ function setTab(t,options={}){
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 $('backButton').onclick=goBackToPreviousPage;
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>setTab(b.dataset.go));
-setupSideMenuReordering();applySideMenuOrder();setupOverviewSectionReordering();applyOverviewSectionOrder();
+setupSideMenuReordering();applySideMenuOrder();setupOverviewSectionReordering();applyOverviewSectionOrder();setupOverviewButtonSorting();
 $('menuToggle').onclick=()=>{
  if(window.innerWidth>=760){
   const hidden=$('appLayout').classList.toggle('sidebar-collapsed');
@@ -1909,7 +1957,7 @@ function renderQuickActions(){
   </button>`;
  }).join(''):[1,2].map(n=>`<button type="button" class="quick-action-card quick-demo-card" data-quick-demo="${n}"><span class="quick-action-button-title">Expense Demo ${n}</span><span class="quick-action-button-kind">Tap to customize</span></button>`).join('');
  if(list)list.innerHTML=makeHtml(false);
- if(overview)overview.innerHTML=makeHtml(true);
+ if(overview){overview.innerHTML=makeHtml(true);overview.dataset.overviewButtonGroup="quickActions";[...overview.children].forEach((node,index)=>node.dataset.overviewButton=node.dataset.quickActivate||`demo-${node.dataset.quickDemo||index}`);applyOverviewButtonOrder(overview);}
  [list,overview].forEach(container=>container?.querySelectorAll('[data-quick-demo]').forEach(button=>button.onclick=()=>{openQuickExpenseSetup();$('quickActionName').value=`Expense Demo ${button.dataset.quickDemo}`;$('quickActionRate').focus()}));
 }
 
@@ -1928,7 +1976,7 @@ function renderQuickSuppliers(){
  const tapDisabled=db.settings?.overviewQuickSuppliersEnabled===false;
  updateOverviewQuickSupplierTapButton();
  panel.hidden=false;
- list.innerHTML=names.length?names.map(name=>{
+ list.dataset.overviewButtonGroup='quickSuppliers';list.innerHTML=names.length?names.map(name=>{
   const bills=db.purchaseBills.filter(b=>b.supplier===name);
   const totalPurchase=bills.reduce((total,bill)=>total+billTotal(bill),0);
   const totalDue=supplierOutstanding(name);
@@ -1945,6 +1993,7 @@ function renderQuickSuppliers(){
    </span>
   </button>`;
  }).join(''):[1,2].map(n=>`<button type="button" class="quick-action-card quick-supplier-card quick-demo-card" data-supplier-demo="${n}"><span class="quick-action-button-title">Supplier Demo ${n}</span><span class="quick-action-button-kind">Tap to customize</span></button>`).join('');
+ [...list.children].forEach((node,index)=>node.dataset.overviewButton=node.dataset.quickSupplier||`demo-${node.dataset.supplierDemo||index}`);applyOverviewButtonOrder(list);
  list.querySelectorAll('[data-quick-supplier]').forEach(button=>button.onclick=()=>{if(db.settings?.overviewQuickSuppliersEnabled===false)return;openQuickSupplierPurchase(button.dataset.quickSupplier)});
  list.querySelectorAll('[data-supplier-demo]').forEach(button=>button.onclick=()=>{setTab('supplierEntry');$('supplierEntryForm').scrollIntoView({behavior:'smooth',block:'start'});$('supplierEntryCompany')?.focus()});
 }
