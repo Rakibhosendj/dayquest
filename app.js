@@ -3605,7 +3605,7 @@ async function connectCloudSession(user,{silent=false}={}){
   cloudReady=false;cloudUser=null;
   const message=networkFailure
    ?'This device needs an internet connection for the first sign-in or when switching Family Accounts. Your existing local records have not been changed.'
-   :'Cloud database is not ready: '+(error.message||'table access failed')+'. Run the SQL migration from the DayQuest cloud setup folder, then log in again.';
+   :'Cloud Database Preparing......';
   showAuthView('login',message);return;
  }
  const hasLocal=localHasRecords(db);
@@ -3898,7 +3898,7 @@ $('authSignupForm').onsubmit=async e=>{
  finally{button.disabled=false}
 };
 $('authLoginForm').onsubmit=async e=>{
- e.preventDefault();if(!supabaseClient){$('authMessage').textContent='Cloud connection unavailable. Please contact your DayQuest administrator.';return}
+ e.preventDefault();if(!supabaseClient){$('authMessage').textContent='Cloud Database Preparing......';return}
  const email=$('loginEmail').value.trim().toLowerCase(),password=$('loginPassword').value,button=$('authLoginForm').querySelector('button[type="submit"]');button.disabled=true;$('authMessage').textContent='Signing in…';
  try{const {data,error}=await withCloudRequestTimeout(supabaseClient.auth.signInWithPassword({email,password}),20000);if(error)throw error;rememberLoginIdentity(email,data.user?.user_metadata?.full_name||'');$('loginPassword').value='';$('authMessage').textContent='Signed in. Loading your family data…';await connectCloudSession(data.user||data.session.user)}
  catch(error){
@@ -3907,9 +3907,9 @@ $('authLoginForm').onsubmit=async e=>{
   if(accountMissing){$('signupEmail').value=email;showAuthView('signup','No registered Family Account was found for this email. Please create your Family Account.')}
   else{
    const connectionProblem=/fetch failed|failed to fetch|network|timeout|503|502|500|database|server error|temporarily unavailable/i.test(message)||!navigator.onLine;
-   const text=connectionProblem?'DayQuest could not connect to the family database. Check your internet connection and Supabase service status, then try logging in again.':(code==='invalid_credentials'?'Email or password is incorrect. If you have not registered yet, select Create Family Account.':(message||'Unable to log in. Please try again.'));
+   const text=connectionProblem?'Cloud Database Preparing......':(code==='invalid_credentials'?'Email or password is incorrect. If you have not registered yet, select Create Family Account.':(message||'Unable to log in. Please try again.'));
    $('authMessage').textContent=text;
-   if(connectionProblem)alert(text);
+   
   }
  }
  finally{button.disabled=false}
