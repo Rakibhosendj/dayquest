@@ -371,6 +371,11 @@ function calculateBalances(){
   const given=loan.type!=='taken';add(loan.method||'Cash',given?-Number(loan.amount||0):Number(loan.amount||0));
   (loan.settlements||[]).forEach(item=>add(item.method||'Cash',given?Number(item.amount||0):-Number(item.amount||0)));
  });
+ (db.moneyTransfers||[]).forEach(transfer=>{
+  const amount=Math.max(0,Number(transfer.amount)||0);
+  if(transfer.from==='Cash'&&transfer.to==='Bank'){cash-=amount;bank+=amount}
+  else if(transfer.from==='Bank'&&transfer.to==='Cash'){bank-=amount;cash+=amount}
+ });
  return {cash,bank,total:cash+bank};
 }
 function showBalances(){
@@ -2258,9 +2263,18 @@ function renderSalesMemoLines(){
  });
  updateSalesMemoTotals();
 }
+function salesMemoPreviouslyCollected(){
+ const old=editingSalesMemoId?db.incomes.find(item=>item.id===editingSalesMemoId&&item.salesMemo):null;
+ return old?incomeCollections(old).filter(item=>!item.salesMemoInitialPayment).reduce((total,item)=>total+Number(item.amount||0),0):0;
+}
 function updateSalesMemoTotals(){
  const total=salesMemoLines.reduce((t,line)=>t+salesMemoLineAmount(line),0);
+ const cash=Math.max(0,Number($('salesMemoCashPaid')?.value||0)),bank=Math.max(0,Number($('salesMemoBankPaid')?.value||0));
+ const due=Math.max(0,Math.round((total-cash-bank-salesMemoPreviouslyCollected())*100)/100);
  if($('salesMemoTotal'))$('salesMemoTotal').textContent=money(total);
+ if($('salesMemoDueAmount'))$('salesMemoDueAmount').value=due.toFixed(2);
+ if($('salesMemoDueDateField'))$('salesMemoDueDateField').hidden=due<=0.000001;
+ if($('salesMemoDueDate'))$('salesMemoDueDate').disabled=due<=0.000001;
  document.querySelectorAll('.sales-memo-line').forEach((node,index)=>{const strong=node.querySelector('.sales-line-amount strong');if(strong&&salesMemoLines[index])strong.textContent=money(salesMemoLineAmount(salesMemoLines[index]))});
 }
 function nextSalesMemoNo(date,excludeId=null){
@@ -2270,7 +2284,7 @@ function nextSalesMemoNo(date,excludeId=null){
  let sequence=highest+1,candidate=`${prefix}-${sequence}`;while(used.has(candidate.toLocaleLowerCase())){sequence++;candidate=`${prefix}-${sequence}`}return candidate;
 }
 function resetSalesMemoForm(){
- editingSalesMemoId=null;salesMemoLines=[defaultSalesMemoLine()];$('salesMemoForm').reset();$('salesMemoDate').value=today();$('salesMemoDueDate').value='';$('salesMemoDueDateField').hidden=true;$('salesMemoDueDate').disabled=true;$('salesMemoNo').value=nextSalesMemoNo(today());
+ editingSalesMemoId=null;salesMemoLines=[defaultSalesMemoLine()];$('salesMemoForm').reset();$('salesMemoDate').value=today();$('salesMemoCashPaid').value='0';$('salesMemoBankPaid').value='0';$('salesMemoDueAmount').value='0.00';$('salesMemoDueDate').value='';$('salesMemoDueDateField').hidden=true;$('salesMemoDueDate').disabled=true;$('salesMemoNo').value=nextSalesMemoNo(today());
  const preferred=db.profile.name&&db.incomePeople.includes(db.profile.name)?db.profile.name:(db.incomePeople[0]||'');$('salesMemoBy').value=preferred;
  ['Country','Division','District','SubDistrict','Village','Road'].forEach(field=>{$('salesMemo'+field).value=String(db.profile[field[0].toLowerCase()+field.slice(1)]||'')});
  $('salesMemoFormTitle').textContent='Create sales memo';$('salesMemoSubmit').textContent='Save sales memo';$('cancelSalesMemoEdit').hidden=true;$('salesMemoEditHint').hidden=true;
@@ -2278,7 +2292,8 @@ function resetSalesMemoForm(){
 }
 function openSalesMemoForm(){resetSalesMemoForm();$('salesMemoWrap').hidden=false;$('salesMemoForm').scrollIntoView({behavior:'smooth',block:'start'});}
 $('toggleSalesMemoForm').onclick=()=>{if($('salesMemoWrap').hidden)openSalesMemoForm();else{$('salesMemoWrap').hidden=true;resetSalesMemoForm()}};
-$('salesMemoPayment').addEventListener('change',()=>{$('salesMemoDueDateField').hidden=$('salesMemoPayment').value!=='Due';$('salesMemoDueDate').disabled=$('salesMemoPayment').value!=='Due'});
+$('salesMemoCashPaid').addEventListener('input',updateSalesMemoTotals);
+$('salesMemoBankPaid').addEventListener('input',updateSalesMemoTotals);
 $('addSalesMemoLine').onclick=()=>{salesMemoLines.push(defaultSalesMemoLine());renderSalesMemoLines()};
 $('salesMemoDate').onchange=()=>{
  const old=editingSalesMemoId?db.incomes.find(x=>x.id===editingSalesMemoId):null;
@@ -2293,7 +2308,11 @@ function editSalesMemo(id){
  const addressDetails=x.salesMemo.customerAddressDetails&&typeof x.salesMemo.customerAddressDetails==='object'?x.salesMemo.customerAddressDetails:{village:x.salesMemo.customerAddress||''};
  ['Country','Division','District','SubDistrict','Village','Road'].forEach(field=>{$('salesMemo'+field).value=String(addressDetails[field[0].toLowerCase()+field.slice(1)]||'')});
  $('salesMemoDate').value=x.date||today();$('salesMemoNo').value=x.salesMemo.memoNo||nextSalesMemoNo(x.date,id);$('salesMemoBy').value=x.incomeBy||db.profile.name||db.incomePeople[0]||'';
- $('salesMemoPayment').value=x.paymentType||'Cash';$('salesMemoDueDate').value=x.dueDate||'';$('salesMemoDueDateField').hidden=$('salesMemoPayment').value!=='Due';$('salesMemoDueDate').disabled=$('salesMemoPayment').value!=='Due';$('salesMemoNote').value=x.note||'';
+ const storedInitial=x.salesMemo.initialPayments&&typeof x.salesMemo.initialPayments==='object'?x.salesMemo.initialPayments:null;
+ const legacyDirect=x.paymentType!=='Due'&&!incomeCollections(x).length;
+ $('salesMemoCashPaid').value=Number(storedInitial?.cash??(legacyDirect&&x.paymentType==='Cash'?x.amount:0)).toFixed(2);
+ $('salesMemoBankPaid').value=Number(storedInitial?.bank??(legacyDirect&&x.paymentType==='Bank'?x.amount:0)).toFixed(2);
+ $('salesMemoDueDate').value=x.dueDate||'';$('salesMemoNote').value=x.note||'';
  salesMemoLines=(x.salesMemo.items||[]).map(item=>({product:item.product||'',unit:item.unit||'pcs',quantity:Number(item.quantity||0),rate:Number(item.rate||0)}));
  if(!salesMemoLines.length)salesMemoLines=[defaultSalesMemoLine()];
  $('salesMemoFormTitle').textContent=`Edit sales memo ${x.salesMemo.memoNo||''}`;$('salesMemoSubmit').textContent='Update sales memo';$('cancelSalesMemoEdit').hidden=false;$('salesMemoEditHint').hidden=false;
@@ -2311,22 +2330,30 @@ function allocateSalesStock(items,excludeMemoId=null){
 }
 $('salesMemoForm').onsubmit=e=>{
  e.preventDefault();
- const date=$('salesMemoDate').value,customerName=$('salesMemoCustomer').value.trim(),incomeBy=$('salesMemoBy').value.trim(),paymentType=$('salesMemoPayment').value;
+ const date=$('salesMemoDate').value,customerName=$('salesMemoCustomer').value.trim(),incomeBy=$('salesMemoBy').value.trim();
  const items=salesMemoLines.map(line=>({product:String(line.product||'').trim(),unit:String(line.unit||'pcs').trim()||'pcs',quantity:Number(line.quantity),rate:Number(line.rate),amount:salesMemoLineAmount(line)}));
  if(!date||!customerName||!incomeBy){alert('Enter the sales date, customer name and person who prepared the memo.');return}
  if(!items.length||items.some(item=>!item.product||!(item.quantity>0)||!(item.rate>0)||!Number.isFinite(item.quantity)||!Number.isFinite(item.rate)||!(item.amount>0))){alert('Select an inventory product and enter a valid quantity and sale rate for every line.');return}
  const old=editingSalesMemoId?db.incomes.find(x=>x.id===editingSalesMemoId):null;
- if(old&&incomeCollections(old).length&&(paymentType!=='Due'||items.reduce((t,x)=>t+x.amount,0)<collectedAmount(old)-0.000001)){alert('This sales memo already has collections. Keep it as Due and set the memo total to at least the amount already collected.');return}
- const allocated=allocateSalesStock(items,editingSalesMemoId);if(allocated.error){alert(allocated.error);return}
  const amount=items.reduce((t,item)=>t+item.amount,0);
+ const cashPaid=Number($('salesMemoCashPaid').value||0),bankPaid=Number($('salesMemoBankPaid').value||0);
+ if(!Number.isFinite(cashPaid)||!Number.isFinite(bankPaid)||cashPaid<0||bankPaid<0){alert('Cash and Bank received amounts must be zero or greater.');return}
+ if(cashPaid+bankPaid>amount+0.000001){alert('Cash plus Bank received cannot be greater than the Sales Memo total.');return}
+ const previousCollections=old?incomeCollections(old).filter(item=>!item.salesMemoInitialPayment):[];
+ const previouslyCollected=previousCollections.reduce((total,item)=>total+Number(item.amount||0),0);
+ if(cashPaid+bankPaid+previouslyCollected>amount+0.000001){alert('Cash, Bank and previously collected amounts cannot exceed the Sales Memo total.');return}
+ const dueAmount=Math.max(0,Math.round((amount-cashPaid-bankPaid-previouslyCollected)*100)/100);
+ const allocated=allocateSalesStock(items,editingSalesMemoId);if(allocated.error){alert(allocated.error);return}
  const memoNo=old&&date===old.date&&old.salesMemo.memoNo?String(old.salesMemo.memoNo):nextSalesMemoNo(date,editingSalesMemoId);
  if(!memoNo){alert('Select a valid sales date to generate the memo number.');return}
  if(db.incomes.some(x=>x.id!==editingSalesMemoId&&String(x.salesMemo?.memoNo||'').toLocaleLowerCase()===memoNo.toLocaleLowerCase())){alert('This sales memo number already exists. Please save again to generate a new number.');return}
  const id=old?old.id:crypto.randomUUID();
- const values={source:'Sales',incomeBy,amount,paymentType,duePerson:paymentType==='Due'?customerName:null,dueDate:paymentType==='Due'?$('salesMemoDueDate').value||null:null,date,note:$('salesMemoNote').value.trim(),salesMemo:{memoNo,customerName,customerPhone:$('salesMemoPhone').value.trim(),customerAddress:composeMemberAddress({country:$('salesMemoCountry').value,division:$('salesMemoDivision').value,district:$('salesMemoDistrict').value,subDistrict:$('salesMemoSubDistrict').value,village:$('salesMemoVillage').value,road:$('salesMemoRoad').value}),customerAddressDetails:{country:$('salesMemoCountry').value.trim(),division:$('salesMemoDivision').value.trim(),district:$('salesMemoDistrict').value.trim(),subDistrict:$('salesMemoSubDistrict').value.trim(),village:$('salesMemoVillage').value.trim(),road:$('salesMemoRoad').value.trim()},items}};
+ const initialPayments=[{method:'Cash',amount:cashPaid},{method:'Bank',amount:bankPaid}].filter(payment=>payment.amount>0).map(payment=>({id:crypto.randomUUID(),amount:payment.amount,date,method:payment.method,note:'Sales memo initial payment',salesMemoInitialPayment:true}));
+ const collections=[...previousCollections,...initialPayments];
+ const values={source:'Sales',incomeBy,amount,paymentType:'Due',duePerson:dueAmount>0?customerName:null,dueDate:dueAmount>0?$('salesMemoDueDate').value||null:null,date,note:$('salesMemoNote').value.trim(),salesMemo:{memoNo,customerName,customerPhone:$('salesMemoPhone').value.trim(),customerAddress:composeMemberAddress({country:$('salesMemoCountry').value,division:$('salesMemoDivision').value,district:$('salesMemoDistrict').value,subDistrict:$('salesMemoSubDistrict').value,village:$('salesMemoVillage').value,road:$('salesMemoRoad').value}),customerAddressDetails:{country:$('salesMemoCountry').value.trim(),division:$('salesMemoDivision').value.trim(),district:$('salesMemoDistrict').value.trim(),subDistrict:$('salesMemoSubDistrict').value.trim(),village:$('salesMemoVillage').value.trim(),road:$('salesMemoRoad').value.trim()},initialPayments:{cash:cashPaid,bank:bankPaid},items}};
  db.consumptions=db.consumptions.filter(c=>c.salesMemoId!==id);
  allocated.consumptions.forEach(c=>db.consumptions.push({id:crypto.randomUUID(),...c,salesMemoId:id,salesMemoNo:memoNo,date}));
- if(old){Object.assign(old,values);if(paymentType!=='Due')old.collections=[]}else db.incomes.unshift({id,...values,collections:[]});
+ if(old){Object.assign(old,values);old.collections=collections}else db.incomes.unshift({id,...values,collections});
  if(!db.incomeHeads.includes('Sales'))db.incomeHeads.push('Sales');if(!db.incomePeople.includes(incomeBy))db.incomePeople.push(incomeBy);
  resetSalesMemoForm();$('salesMemoWrap').hidden=true;save();
 };
@@ -2347,8 +2374,11 @@ function printSalesMemo(id){
  const x=db.incomes.find(item=>item.id===id&&item.salesMemo);if(!x)return;
  const popup=window.open('','_blank','width=900,height=800');if(!popup){alert('Please allow pop-ups to print the sales memo.');return}
  const memo=x.salesMemo,brand=db.profile.familyName||'DayQuest',seller=db.profile.name||brand,phone=db.profile.phone||'',items=(memo.items||[]).map((item,index)=>`<tr><td>${index+1}</td><td>${esc(item.product)}</td><td class="num">${numberText(item.quantity)} ${esc(item.unit||'pcs')}</td><td class="num">${money(item.rate)}</td><td class="num">${money(item.amount)}</td></tr>`).join('');
- const paid=x.paymentType==='Due'?collectedAmount(x):Number(x.amount||0),due=x.paymentType==='Due'?incomeOutstanding(x):0;
- popup.document.open();popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(memo.memoNo||'Sales Memo')}</title><style>@page{size:A4;margin:16mm}*{box-sizing:border-box}body{font:14px Arial,sans-serif;color:#172033;margin:0}.sheet{max-width:780px;margin:0 auto}.head{display:flex;justify-content:space-between;gap:24px;border-bottom:2px solid #263b5c;padding-bottom:16px}.brand{font-size:22px;font-weight:800;color:#263b5c}.sub{color:#687386;font-size:11px;margin-top:5px}.memo-title{text-align:right}.memo-title h1{font-size:24px;margin:0 0 7px}.memo-title strong{font-size:14px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;margin:18px 0 22px;font-size:12px}.meta div{padding:7px 0;border-bottom:1px solid #edf0f4}.meta b{display:block;font-size:10px;color:#7b8798;margin-bottom:4px;text-transform:uppercase}.table{width:100%;border-collapse:collapse;font-size:12px}.table th{background:#f0f3f8;text-align:left;color:#536176}.table th,.table td{padding:10px 8px;border-bottom:1px solid #e7ebf1}.num{text-align:right;white-space:nowrap}.total-box{margin:18px 0 0 auto;width:270px}.total-box div{display:flex;justify-content:space-between;padding:7px 0;font-size:12px}.total-box .grand{font-size:17px;font-weight:800;border-top:2px solid #263b5c;margin-top:5px;padding-top:11px}.note{margin-top:18px;color:#667286;font-size:11px}.sign{display:flex;justify-content:space-between;gap:70px;margin-top:68px}.sign div{border-top:1px solid #8b95a5;padding-top:8px;width:45%;text-align:center;font-size:11px;color:#637087}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><main class="sheet"><header class="head"><div><div class="brand">${esc(brand)}</div><div class="sub">${esc(seller)}${phone?` · ${esc(phone)}`:''}</div></div><div class="memo-title"><h1>SALES MEMO</h1><strong>${esc(memo.memoNo||'')}</strong></div></header><section class="meta"><div><b>Customer</b>${esc(memo.customerName||'Walk-in customer')}</div><div><b>Memo date</b>${fmt(x.date)}</div><div><b>Phone</b>${esc(memo.customerPhone||'—')}</div><div><b>Prepared by</b>${esc(x.incomeBy||seller)}</div><div style="grid-column:1/-1"><b>Address</b>${esc(memo.customerAddress||'—')}</div></section><table class="table"><thead><tr><th>#</th><th>Product</th><th class="num">Quantity</th><th class="num">Rate</th><th class="num">Amount</th></tr></thead><tbody>${items}</tbody></table><section class="total-box"><div><span>Payment method</span><strong>${esc(x.paymentType||'Cash')}</strong></div><div><span>Received</span><strong>${money(paid)}</strong></div>${due?`<div><span>Balance due</span><strong>${money(due)}</strong></div>`:''}<div class="grand"><span>Total</span><strong>${money(x.amount)}</strong></div></section>${x.note?`<p class="note">Note: ${esc(x.note)}</p>`:''}<section class="sign"><div>Customer signature</div><div>Authorized signature</div></section></main><script>window.addEventListener('load',()=>window.print());<\/script></body></html>`);popup.document.close();popup.focus();
+ const hasPaymentRecords=incomeCollections(x).length>0;
+ const cashReceived=hasPaymentRecords?incomeCollections(x).filter(payment=>(payment.method||'Cash')==='Cash').reduce((total,payment)=>total+Number(payment.amount||0),0):(x.paymentType==='Cash'?Number(x.amount||0):0);
+ const bankReceived=hasPaymentRecords?incomeCollections(x).filter(payment=>payment.method==='Bank').reduce((total,payment)=>total+Number(payment.amount||0),0):(x.paymentType==='Bank'?Number(x.amount||0):0);
+ const paid=cashReceived+bankReceived,due=Math.max(0,Number(x.amount||0)-paid);
+ popup.document.open();popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(memo.memoNo||'Sales Memo')}</title><style>@page{size:A4;margin:16mm}*{box-sizing:border-box}body{font:14px Arial,sans-serif;color:#172033;margin:0}.sheet{max-width:780px;margin:0 auto}.head{display:flex;justify-content:space-between;gap:24px;border-bottom:2px solid #263b5c;padding-bottom:16px}.brand{font-size:22px;font-weight:800;color:#263b5c}.sub{color:#687386;font-size:11px;margin-top:5px}.memo-title{text-align:right}.memo-title h1{font-size:24px;margin:0 0 7px}.memo-title strong{font-size:14px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;margin:18px 0 22px;font-size:12px}.meta div{padding:7px 0;border-bottom:1px solid #edf0f4}.meta b{display:block;font-size:10px;color:#7b8798;margin-bottom:4px;text-transform:uppercase}.table{width:100%;border-collapse:collapse;font-size:12px}.table th{background:#f0f3f8;text-align:left;color:#536176}.table th,.table td{padding:10px 8px;border-bottom:1px solid #e7ebf1}.num{text-align:right;white-space:nowrap}.total-box{margin:18px 0 0 auto;width:270px}.total-box div{display:flex;justify-content:space-between;padding:7px 0;font-size:12px}.total-box .grand{font-size:17px;font-weight:800;border-top:2px solid #263b5c;margin-top:5px;padding-top:11px}.note{margin-top:18px;color:#667286;font-size:11px}.sign{display:flex;justify-content:space-between;gap:70px;margin-top:68px}.sign div{border-top:1px solid #8b95a5;padding-top:8px;width:45%;text-align:center;font-size:11px;color:#637087}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><main class="sheet"><header class="head"><div><div class="brand">${esc(brand)}</div><div class="sub">${esc(seller)}${phone?` · ${esc(phone)}`:''}</div></div><div class="memo-title"><h1>SALES MEMO</h1><strong>${esc(memo.memoNo||'')}</strong></div></header><section class="meta"><div><b>Customer</b>${esc(memo.customerName||'Walk-in customer')}</div><div><b>Memo date</b>${fmt(x.date)}</div><div><b>Phone</b>${esc(memo.customerPhone||'—')}</div><div><b>Prepared by</b>${esc(x.incomeBy||seller)}</div><div style="grid-column:1/-1"><b>Address</b>${esc(memo.customerAddress||'—')}</div></section><table class="table"><thead><tr><th>#</th><th>Product</th><th class="num">Quantity</th><th class="num">Rate</th><th class="num">Amount</th></tr></thead><tbody>${items}</tbody></table><section class="total-box"><div><span>Cash received</span><strong>${money(cashReceived)}</strong></div><div><span>Bank received</span><strong>${money(bankReceived)}</strong></div><div><span>Total received</span><strong>${money(paid)}</strong></div>${due?`<div><span>Balance due</span><strong>${money(due)}</strong></div>`:''}<div class="grand"><span>Total</span><strong>${money(x.amount)}</strong></div></section>${x.note?`<p class="note">Note: ${esc(x.note)}</p>`:''}<section class="sign"><div>Customer signature</div><div>Authorized signature</div></section></main><script>window.addEventListener('load',()=>window.print());<\/script></body></html>`);popup.document.close();popup.focus();
 }
 
 function resetIncomeForm(){
@@ -3015,12 +3045,34 @@ function toggleQuest(id,rangeIndex,d){
 function delExpense(id){if(confirm('Delete this expense?')){if(editingExpenseId===id)resetExpenseForm();if(settlingExpenseId===id)closeExpenseDueAction();db.expenses=db.expenses.filter(x=>x.id!==id);save()}}
 function delQuest(id){if(confirm('Delete this quest?')){db.quests=db.quests.filter(x=>x.id!==id);Object.values(db.checks).forEach(v=>delete v[id]);save()}}
 function empty(msg){return `<div class="empty">${msg}</div>`}
+function renderBalanceTransfers(){
+ const list=$('balanceTransferList');if(!list)return;
+ const transfers=(db.moneyTransfers||[]).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+ list.innerHTML=transfers.length?transfers.map(item=>`<article class="balance-transfer-row"><div class="item-main"><strong>${esc(item.from)} → ${esc(item.to)}</strong><small>${fmt(item.date)}${item.note?' · '+esc(item.note):''}</small></div><strong class="balance-transfer-amount">${money(item.amount)}</strong><button type="button" class="delete" data-delete-balance-transfer="${esc(item.id)}" aria-label="Delete transfer">×</button></article>`).join(''):empty('No balance transfers recorded yet.');
+ list.querySelectorAll('[data-delete-balance-transfer]').forEach(button=>button.onclick=()=>{
+  const transfer=db.moneyTransfers.find(item=>item.id===button.dataset.deleteBalanceTransfer);if(!transfer)return;
+  if(!confirm('Delete this balance transfer? Cash and Bank balances will be recalculated.'))return;
+  db.moneyTransfers=db.moneyTransfers.filter(item=>item.id!==transfer.id);save();
+ });
+}
+$('balanceTransferDate').value=today();
+$('balanceTransferSubmit').onclick=()=>{
+ const direction=$('balanceTransferDirection').value.split('-'),amount=Number($('balanceTransferAmount').value),date=$('balanceTransferDate').value;
+ if(direction.length!==2||!['Cash','Bank'].includes(direction[0])||!['Cash','Bank'].includes(direction[1])||direction[0]===direction[1]){alert('Choose Cash to Bank or Bank to Cash.');return}
+ if(!(amount>0)||!Number.isFinite(amount)){alert('Enter a transfer amount greater than zero.');$('balanceTransferAmount').focus();return}
+ if(!date){alert('Choose the transfer date.');$('balanceTransferDate').focus();return}
+ const balances=calculateBalances(),available=balances[direction[0].toLowerCase()];
+ if(amount>available+0.000001){alert(`Insufficient ${direction[0]} balance. Available: ${money(Math.max(0,available))}.`);return}
+ db.moneyTransfers=db.moneyTransfers||[];
+ db.moneyTransfers.unshift({id:crypto.randomUUID(),from:direction[0],to:direction[1],amount,date,note:$('balanceTransferNote').value.trim(),createdAt:new Date().toISOString()});
+ $('balanceTransferAmount').value='';$('balanceTransferNote').value='';save();alert('Balance transferred successfully.');
+};
 function render(){
  applySideMenuOrder();applyOverviewSectionOrder();
  let d=today(),questDate=questLocalDate(),exToday=db.expenses.filter(x=>x.date===d),billsToday=db.purchaseBills.filter(x=>x.date===d),qToday=dayQuestsForNow(questDate),done=qToday.filter(q=>completed(q,q._occurrenceDate||questDate)).length;
  $('todayTotal').textContent=money(sum(exToday)+billsToday.reduce((t,b)=>t+billTotal(b),0));$('questProgress').textContent=`${done}/${qToday.length}`;$('questBar').style.width=(qToday.length?done/qToday.length*100:0)+'%';$('todayQuestLabel').textContent=`${done} quests done`;
  let ws=startWeek(d),ms=d.slice(0,7);$('weekTotal').textContent=money(sum(db.expenses.filter(x=>x.date>=ws&&x.date<=d))+db.purchaseBills.filter(b=>b.date>=ws&&b.date<=d).reduce((t,b)=>t+billTotal(b),0));$('monthTotal').textContent=money(sum(db.expenses.filter(x=>x.date.startsWith(ms)))+db.purchaseBills.filter(b=>b.date.startsWith(ms)).reduce((t,b)=>t+billTotal(b),0));
- $('todayIncome').textContent=money(db.incomes.reduce((t,x)=>t+incomeReceivedOn(x,d),0));$('monthIncome').textContent=money(incomeReceivedBetween(ms+'-01',d));showBalances();
+ $('todayIncome').textContent=money(db.incomes.reduce((t,x)=>t+incomeReceivedOn(x,d),0));$('monthIncome').textContent=money(incomeReceivedBetween(ms+'-01',d));showBalances();renderBalanceTransfers();
  renderRecentExpenses();
  $('recentIncome').innerHTML=incomeHTML([...db.incomes].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4),false);
  $('todayQuests').innerHTML=questHTML(qToday.slice(0,4),false);
@@ -3478,7 +3530,7 @@ $('installBtn').onclick=async()=>{
  }
  showDayQuestInstallHelp();
 };
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261122-sales-income-layout-profile-address-v1').then(registration=>{
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261122-sales-split-payments-balance-transfer-v1').then(registration=>{
  console.info('DayQuest offline support is ready:',registration.scope);
 }).catch(error=>{
  console.warn('DayQuest offline support could not be registered:',error);
@@ -3562,7 +3614,7 @@ function setCloudStatus(message,{conflict=false,remote=false,offline=false,autoH
 function hideCloudStatus(){clearTimeout(cloudStatusHideTimer);cloudStatusHideTimer=null;const bar=$('cloudSyncBar');if(bar)bar.hidden=true}
 function downloadJsonFile(value,name){const blob=new Blob([JSON.stringify(value,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
 function localHasRecords(value=db){
- const recordArrays=['expenses','incomes','loans','purchaseBills','supplierPayments','productions','consumptions','guests','quests','quickActions','familyMembers','guestPeople','suppliers','productNames','incomePeople'];
+ const recordArrays=['expenses','incomes','loans','moneyTransfers','purchaseBills','supplierPayments','productions','consumptions','guests','quests','quickActions','familyMembers','guestPeople','suppliers','productNames','incomePeople'];
  if(recordArrays.some(key=>Array.isArray(value?.[key])&&value[key].length>0))return true;
  if(value?.checks&&Object.keys(value.checks).length>0)return true;
  const defaultLists={
@@ -3586,7 +3638,7 @@ function createEmptyDayQuestDatabase(){
   settings:{themeColor:'#263b5c',fontColor:'#263b5c',quickButtonColor:'#ee7d2f',backgroundColor:'#f3f5f9',sideMenuColor:'#111d30',topBarColor:'#101827',requireSupplierForDuePurchase:true,allowPurchaseBillEdits:true},
   units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'],incomes:[],incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'],incomePeople:[],
   profile:{name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0},familyMembers:[],guestPeople:[],guests:[],
-  purchaseBills:[],supplierPayments:[],suppliers:[],productNames:[],consumptions:[],productions:[],loans:[]
+  purchaseBills:[],supplierPayments:[],suppliers:[],productNames:[],consumptions:[],productions:[],loans:[],moneyTransfers:[]
  };
 }
 function makeSupabaseClient(){
@@ -3637,6 +3689,7 @@ function normalizeCloudDatabase(raw){
  db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(x=>{if(!['family','member','unassigned','members'].includes(x.costType))x.costType=x.costMember?'member':'unassigned';x.costMember=String(x.costMember||'').trim();if(x.costType==='member'&&!x.costMember)x.costType='unassigned'});
  db.quests=Array.isArray(db.quests)?db.quests:[];db.checks=db.checks&&typeof db.checks==='object'?db.checks:{};
  db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];
+ db.moneyTransfers=Array.isArray(db.moneyTransfers)?db.moneyTransfers.filter(item=>item&&['Cash','Bank'].includes(item.from)&&['Cash','Bank'].includes(item.to)&&item.from!==item.to&&Number(item.amount)>0):[];
  db.loans=Array.isArray(db.loans)?db.loans:[];db.loans.forEach(loan=>{loan.id=String(loan.id||crypto.randomUUID());loan.type=loan.type==='taken'?'taken':'given';loan.amount=Math.max(0,Number(loan.amount)||0);loan.method=loan.method==='Bank'?'Bank':'Cash';loan.date=String(loan.date||'');loan.dueDate=String(loan.dueDate||'');loan.settlements=Array.isArray(loan.settlements)?loan.settlements:[];loan.installmentFrequency=['weekly','fortnightly','monthly'].includes(loan.installmentFrequency)?loan.installmentFrequency:'monthly';loan.installments=Array.isArray(loan.installments)?loan.installments:[];if(!loan.installments.length&&loan.dueDate)loan.installments=[{id:'legacy-'+loan.id,dueDate:loan.dueDate,amount:loan.amount}];loan.installments=loan.installments.map((item,index)=>({id:String(item.id||('installment-'+(index+1)+'-'+loan.id)),dueDate:String(item.dueDate||''),amount:Math.max(0,Number(item.amount)||0)})).filter(item=>item.dueDate&&item.amount>0);if(loan.installments.length)loan.dueDate=loan.installments[loan.installments.length-1].dueDate;loan.installmentCount=Math.max(1,Math.floor(Number(loan.installmentCount)||loan.installments.length||1))});
  db.settings.notificationPreferences={dailyQuest:true,expenseDue:true,incomeDue:true,loanGiven:true,loanTaken:true,enabled:false,...(db.settings.notificationPreferences&&typeof db.settings.notificationPreferences==='object'?db.settings.notificationPreferences:{})};
  db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];
