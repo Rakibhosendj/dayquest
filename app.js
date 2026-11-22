@@ -1,4 +1,5 @@
 const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slice(0,10);
+const appPageHistory=[];
 let adminCloudUnlocked=false;
 const ADMIN_PASSWORD_ITERATIONS=310000;
 const SIDE_MENU_DEFAULT_ORDER=['home','expenses','inventory','budget','production','supplierAccounts','outstanding','loans','income','meals','quests','reports','profile','settings'];
@@ -521,7 +522,26 @@ function setupSideMenuReordering(){
   if(nav.classList.contains('side-menu-reordering'))event.preventDefault();
  });
 }
-function setTab(t){
+function updateBackButton(){
+ const button=$('backButton');if(!button)return;
+ button.hidden=appPageHistory.length===0;
+ button.disabled=appPageHistory.length===0;
+}
+function goBackToPreviousPage(){
+ let previous='';
+ while(appPageHistory.length&&!previous){
+  const candidate=appPageHistory.pop();
+  if($(candidate)?.classList.contains('panel'))previous=candidate;
+ }
+ if(previous)setTab(previous,{skipHistory:true});
+ else updateBackButton();
+}
+function setTab(t,options={}){
+ const currentPage=document.querySelector('.panel.active')?.id;
+ if(!options.skipHistory&&currentPage&&currentPage!==t){
+  appPageHistory.push(currentPage);
+  if(appPageHistory.length>40)appPageHistory.shift();
+ }
  if(t!=='settings'&&adminCloudUnlocked)lockAdminCloudSettings();
  const tabs=[...document.querySelectorAll('.tab')];
  tabs.forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
@@ -549,8 +569,10 @@ function setTab(t){
  if(t==='meals'){if(!$('mealControlDate').value)$('mealControlDate').value=today();if(!$('mealFromDate').value)$('mealFromDate').value=today();if(!$('mealToDate').value)$('mealToDate').value=today();renderMeals()}
  if(t==='purchaseBills'){fillChoices();renderPurchaseLines();renderSupplierAccounts();}
  updatePageBalanceTitle(t);
+ updateBackButton();
 }
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+$('backButton').onclick=goBackToPreviousPage;
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>setTab(b.dataset.go));
 setupSideMenuReordering();applySideMenuOrder();
 $('menuToggle').onclick=()=>{
