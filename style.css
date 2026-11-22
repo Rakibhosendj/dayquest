@@ -2104,3 +2104,23 @@ body{color:var(--dq-font-color,#263b5c)}
 .app-main>.top .top-page-balance .page-balance-values,
 .app-main>.top .top-page-balance .page-balance-values strong{color:var(--topbar-text-color,#fff)!important;text-shadow:none!important}
 .app-main>.top .menu-toggle{color:var(--topbar-text-color,#fff)!important;border-color:color-mix(in srgb,var(--topbar-text-color,#fff) 30%,transparent);background:color-mix(in srgb,var(--topbar-text-color,#fff) 10%,transparent)}
+
+/* Explicitly override the label and amount colors on the top-bar balance children. */
+.app-main>.top #pageBalanceHeader .page-balance-values>span,
+.app-main>.top #pageBalanceHeader .page-balance-values>span strong,
+.app-main>.top #pageBalanceHeader .page-balance-values strong{
+ color:var(--topbar-text-color,#fff)!important;
+ opacity:1!important;
+ text-shadow:none!important;
+}
+.app-main>.top #pageBalanceHeader .page-balance-values>span{
+ font-weight:800!important;
+}
+.app-main>.top #pageBalanceHeader .page-balance-values>span strong{
+ font-size:12px!important;
+ font-weight:950!important;
+}
+@media(max-width:600px){
+ .app-main>.top #pageBalanceHeader .page-balance-values>span{font-size:10px!important}
+ .app-main>.top #pageBalanceHeader .page-balance-values>span strong{font-size:11px!important}
+}
