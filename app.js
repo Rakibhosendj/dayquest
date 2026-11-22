@@ -179,22 +179,65 @@ const money=n=>'৳'+Number(n||0).toLocaleString('en-BD',{minimumFractionDigits:
 const dateObj=s=>new Date(s+'T12:00:00');
 const fmt=s=>{if(!s)return '';const d=dateObj(s);if(Number.isNaN(d.getTime()))return String(s);const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return String(d.getDate()).padStart(2,'0')+'-'+months[d.getMonth()]+'-'+d.getFullYear()};
 const dateValueDescriptor=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');
+function parseDQTypedDate(raw){
+ const value=String(raw||'').trim();if(!value)return '';
+ let day=0,month=0,year=0,match;
+ if((match=value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))){year=Number(match[1]);month=Number(match[2]);day=Number(match[3])}
+ else if((match=value.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/))){day=Number(match[1]);month=Number(match[2]);year=Number(match[3])}
+ else if((match=value.match(/^(\d{1,2})[\s/-]([a-z]{3,9})[\s,-]+(\d{4})$/i))){
+  day=Number(match[1]);year=Number(match[3]);
+  const months=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  month=months.indexOf(match[2].slice(0,3).toLowerCase())+1;
+ }else return null;
+ const date=new Date(Date.UTC(year,month-1,day));
+ if(year<1000||year>9999||date.getUTCFullYear()!==year||date.getUTCMonth()!==month-1||date.getUTCDate()!==day)return null;
+ return String(year).padStart(4,'0')+'-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+}
 function syncDQDateDisplay(input){
- const output=input.parentElement?.querySelector(':scope > .dq-date-display');if(!output)return;
- output.textContent=input.value?fmt(input.value):'DD-MMM-YYYY';output.classList.toggle('is-empty',!input.value);
+ const entry=input.parentElement?.querySelector(':scope > .dq-date-entry');if(!entry)return;
+ const value=dateValueDescriptor?.get?dateValueDescriptor.get.call(input):input.value;
+ entry.value=value?fmt(value):'';
+ entry.setCustomValidity('');
+ entry.classList.remove('is-invalid');
+}
+function commitDQTypedDate(input,entry){
+ const raw=entry.value.trim();
+ if(!raw){
+  if(input.required){entry.setCustomValidity('Enter a date or choose one from the calendar.');entry.classList.add('is-invalid');return false}
+  if(dateValueDescriptor?.set)dateValueDescriptor.set.call(input,'');else input.value='';
+  input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true;
+ }
+ const parsed=parseDQTypedDate(raw);
+ if(!parsed){entry.setCustomValidity('Enter a valid date such as 22-Nov-2026, or choose from the calendar.');entry.classList.add('is-invalid');return false}
+ if(input.min&&parsed<input.min){entry.setCustomValidity('Date is earlier than the allowed range.');entry.classList.add('is-invalid');return false}
+ if(input.max&&parsed>input.max){entry.setCustomValidity('Date is later than the allowed range.');entry.classList.add('is-invalid');return false}
+ if(dateValueDescriptor?.set)dateValueDescriptor.set.call(input,parsed);else input.value=parsed;
+ entry.setCustomValidity('');entry.classList.remove('is-invalid');
+ input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));
+ syncDQDateDisplay(input);return true;
 }
 function enhanceDQDateInput(input){
  if(!(input instanceof HTMLInputElement)||input.type!=='date'||input.dataset.dqDateEnhanced==='1')return;
  input.dataset.dqDateEnhanced='1';
  const wrap=document.createElement('span');wrap.className='dq-date-wrap';
  input.parentNode.insertBefore(wrap,input);
- const output=document.createElement('span');output.className='dq-date-display';output.setAttribute('aria-hidden','true');
+ const entry=document.createElement('input');entry.type='text';entry.className='dq-date-entry';
+ entry.placeholder='DD-MMM-YYYY';entry.autocomplete='off';entry.spellcheck=false;entry.inputMode='text';
+ entry.setAttribute('aria-label',input.getAttribute('aria-label')||'Enter date in DD-MMM-YYYY format, or select from calendar');
+ entry.required=input.required;input.required=false;
+ entry.disabled=input.disabled;entry.readOnly=input.readOnly;
  const icon=document.createElement('span');icon.className='dq-date-icon';icon.textContent='▦';icon.setAttribute('aria-hidden','true');
- wrap.append(input,output,icon);input.classList.add('dq-native-date-control');
- input.setAttribute('title','DD-MMM-YYYY');
+ wrap.append(entry,icon,input);input.classList.add('dq-native-date-control');
+ input.setAttribute('title','Select a date from the calendar');
  if(dateValueDescriptor?.get&&dateValueDescriptor?.set){
   Object.defineProperty(input,'value',{configurable:true,get(){return dateValueDescriptor.get.call(this)},set(value){dateValueDescriptor.set.call(this,value);syncDQDateDisplay(this)}});
  }
+ entry.addEventListener('input',()=>{entry.setCustomValidity('');entry.classList.remove('is-invalid')});
+ entry.addEventListener('change',()=>commitDQTypedDate(input,entry));
+ entry.addEventListener('blur',()=>{if(entry.value.trim()!==''||input.value)commitDQTypedDate(input,entry)});
+ entry.addEventListener('keydown',event=>{
+  if(event.key==='Enter'){event.preventDefault();if(!commitDQTypedDate(input,entry))entry.reportValidity()}
+ });
  input.addEventListener('input',()=>syncDQDateDisplay(input));input.addEventListener('change',()=>syncDQDateDisplay(input));syncDQDateDisplay(input);
 }
 function setupDQDateDisplays(){
