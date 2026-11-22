@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v151-top-balance-final-fix';
+const CACHE = 'dayquest-cache-v152-single-row-topbar';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261122-top-balance-final-fix',
+  './style.css?v=20261122-single-row-topbar',
   './app.js?v=20261122-topbar-balance-install-settings',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
