@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261122-single-row-topbar">
+<link rel="stylesheet" href="style.css?v=20261122-ts-qp-topbar">
 <title>DayQuest</title>
 </head>
 <body>
@@ -142,13 +142,13 @@
  </aside>
  <button id="sidebarBackdrop" class="sidebar-backdrop" type="button" aria-label="Close navigation" hidden></button>
  <div class="app-main">
-<header class="top" aria-label="App controls"><button id="menuToggle" class="menu-toggle" type="button" aria-label="Open side menu" title="Open side menu" aria-expanded="false" aria-controls="sidebar"><span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button><div id="pageBalanceHeader" class="page-balance-header top-page-balance" aria-live="polite"><h2 id="pageBalanceTitle">Overview</h2><div class="page-balance-values"><span>Total <strong id="pageTotalBalance">৳0.00</strong></span><span>Cash <strong id="pageCashBalance">৳0.00</strong></span><span>Bank <strong id="pageBankBalance">৳0.00</strong></span></div></div><button id="backButton" class="back-button" type="button" aria-label="Back to previous page" title="Back to previous page" hidden><span aria-hidden="true">←</span><span>Back</span></button></header>
+<header class="top" aria-label="App controls"><button id="menuToggle" class="menu-toggle" type="button" aria-label="Open side menu" title="Open side menu" aria-expanded="false" aria-controls="sidebar"><span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span></button><div id="pageBalanceHeader" class="page-balance-header top-page-balance" aria-live="polite"><div class="top-balance-row"><h2 id="pageBalanceTitle">Overview</h2><div class="page-balance-values"><span>Total <strong id="pageTotalBalance">৳0.00</strong></span><span>Cash <strong id="pageCashBalance">৳0.00</strong></span><span>Bank <strong id="pageBankBalance">৳0.00</strong></span></div></div><div class="top-daily-row"><div class="top-daily-metric"><span class="top-daily-label">TS</span><strong id="todayTotal">৳0.00</strong></div><span class="top-daily-date" id="todayDate"></span><div class="top-daily-metric top-quest-metric"><span class="top-daily-label">QP</span><strong id="questProgress">0/0</strong><span class="top-quest-track"><i id="questBar"></i></span></div></div></div><button id="backButton" class="back-button" type="button" aria-label="Back to previous page" title="Back to previous page" hidden><span aria-hidden="true">←</span><span>Back</span></button></header>
 <main>
 <section id="home" class="panel active">
  <section class="hero overview-summary">
-  <div class="hero-metric"><div class="eyebrow">TODAY'S SPENDING</div><div class="money" id="todayTotal">৳0.00</div><div class="muted" id="todayDate"></div></div>
+  
   <div class="hero-metric hero-balance"><div class="eyebrow">AVAILABLE BALANCE</div><div class="money" id="earnedBalance">৳0.00</div><div class="hero-balance-breakdown"><span>Cash <strong id="cashBalance">৳0.00</strong></span><span>Bank <strong id="bankBalance">৳0.00</strong></span></div></div>
-  <div class="hero-side"><div class="eyebrow">QUEST PROGRESS</div><div class="big" id="questProgress">0/0</div><div class="progress"><i id="questBar"></i></div></div>
+  
  </section>
  <section class="overview-quick-panel">
   <div class="section-head overview-quick-head"><div><h2><button type="button" class="overview-quick-title" id="overviewQuickSetupLink">Quick Expenses</button></h2><small class="overview-quick-hint">Tap 1 · Record 1</small></div><div class="overview-quick-controls"><button type="button" id="overviewQuickActionTapToggle" class="quick-action-tap-toggle is-on" aria-pressed="true">ON</button><button type="button" id="overviewQuickActionModeToggle" class="quick-action-mode-toggle add-mode" aria-pressed="false">＋ Add</button></div></div>
