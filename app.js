@@ -4189,7 +4189,7 @@ $('loginPasswordChangeForm').onsubmit=async e=>{
 };
 function clearExpenseIncomeRecords(){
  const salesMemoIds=new Set(db.incomes.filter(item=>item.salesMemo).map(item=>String(item.id)));
- db.expenses=[];db.incomes=[];
+ db.expenses=[];db.incomes=[];db.moneyTransfers=[];
  if(Array.isArray(db.consumptions)&&salesMemoIds.size)db.consumptions=db.consumptions.filter(item=>!salesMemoIds.has(String(item.salesMemoId||'')));
 }
 function clearGuestRecords(){
@@ -4216,8 +4216,10 @@ function applyProfileDeleteSelection(groups){
  // Reports are generated from records, so clearing Reports also clears every data group that feeds report totals.
  if(groups.has('reports'))['transactions','purchases','inventory','production','guests','members','meals','quests','budgets','loans'].forEach(group=>groups.add(group));
  if(groups.has('loans'))db.loans=[];
- // Profile details are always part of Delete Profile.
+ // Profile deletion resets the starting balances, so its balance-transfer ledger must reset too.
+ // Transfers are also treated as transactions and are cleared with the transaction group.
  db.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};
+ db.moneyTransfers=[];
  if(groups.has('transactions'))clearExpenseIncomeRecords();
  if(groups.has('purchases')){
   const billIds=new Set(db.purchaseBills.map(bill=>String(bill.id)));
@@ -4274,7 +4276,7 @@ $('confirmDeleteProfile').onclick=async()=>{
  }finally{button.disabled=false}
 };
 $('clearAllExpensesIncomeBtn').onclick=async()=>{
- const confirmed=await window.dayQuestConfirm('DayQuest will permanently clear all expense and income transactions, including Quick Expenses history, due balances, collections and sales memo entries. Quick button settings, family members, purchases, inventory, production and profile will remain. Continue?');
+ const confirmed=await window.dayQuestConfirm('DayQuest will permanently clear all expense and income transactions, including balance transfers, Quick Expenses history, due balances, collections and sales memo entries. Quick button settings, family members, purchases, inventory, production and profile will remain. Continue?');
  if(!confirmed)return;
  clearExpenseIncomeRecords();save();
  alert('DayQuest cleared all expense and income transactions. Your quick button settings and other saved data remain.');
