@@ -2406,3 +2406,13 @@ body{color:var(--dq-font-color,#263b5c)}
 .income-type-dialog-card .dq-message-actions{margin-top:5px}
 #incomeForm #addIncomeHead.mini-add{display:inline-flex;align-items:center;justify-content:center;min-height:30px;padding:3px 9px!important;border:1px solid color-mix(in srgb,var(--accent,#2563eb) 28%,transparent)!important;border-radius:8px!important;background:color-mix(in srgb,var(--accent,#2563eb) 8%,transparent)!important;text-decoration:none!important;font-size:.78rem;white-space:nowrap}
 #incomeForm #addIncomeHead.mini-add:hover{background:color-mix(in srgb,var(--accent,#2563eb) 15%,transparent)!important}
+
+
+/* Income and sales memo layout refinements. */
+.income-edit-hint{display:block;margin:0 2px 8px;font-size:11px;font-weight:700}
+#incomeForm #addIncomeHead.income-add-type{width:34px;min-width:34px;height:32px;padding:0!important;display:inline-flex;align-items:center;justify-content:center;color:#000!important;font-size:1.2rem;line-height:1}
+.sales-customer-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.sales-memo-address-group .form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.sales-memo-address-group label{min-width:0}
+.sales-prepared-by{margin-top:2px}
+@media(max-width:520px){.sales-customer-row,.sales-memo-address-group .form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.sales-customer-row label,.sales-memo-address-group label{font-size:10px}.sales-customer-row input,.sales-memo-address-group input{min-width:0;padding:9px 7px;font-size:11px}}
