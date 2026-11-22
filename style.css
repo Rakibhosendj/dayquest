@@ -2446,3 +2446,11 @@ body{color:var(--dq-font-color,#263b5c)}
 .report-detail-body>.section-head:first-child{margin-top:0}
 .report-detail-body>.report-total-stat{margin:4px 0 6px}
 .budget-intro{margin:0 0 5px;font-size:12px;line-height:1.25;font-weight:650;color:#68778d}
+
+/* Today's activity metrics styled to match the Overview quick buttons. */
+.activity-cards .activity-quick-button{display:grid;align-content:center;justify-items:center;gap:5px;min-height:88px;padding:10px 8px;border:1px solid color-mix(in srgb,var(--quick-button-color,#ee7d2f),#fff 18%);border-radius:13px;background:var(--quick-button-color,#ee7d2f);color:#fff;text-align:center;box-shadow:0 2px 5px #17203312}
+.activity-cards .activity-quick-button .muted,.activity-cards .activity-quick-button strong,.activity-cards .activity-quick-button small{color:#fff}
+.activity-cards .activity-quick-button .muted{font-size:10px;font-weight:850;letter-spacing:.07em}
+.activity-cards .activity-quick-button strong{font-size:clamp(17px,2vw,22px);font-weight:850;line-height:1.15}
+.activity-cards .activity-quick-button small{font-size:10px;font-weight:700;opacity:.94}
+@media(max-width:620px){.activity-cards .activity-quick-button{min-height:76px;padding:8px 6px}}
