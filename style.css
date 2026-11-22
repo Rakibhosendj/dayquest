@@ -1956,3 +1956,32 @@ body{color:var(--dq-font-color,#263b5c)}
  #overviewQuickActionList .quick-action-button-stats>span{font-size:9px!important}
  #overviewQuickActionList .quick-action-button-kind{right:6px;top:6px;font-size:7px}
 }
+
+
+/* Previous-page navigation button in the top app bar. */
+.back-button{
+ display:inline-flex;
+ align-items:center;
+ justify-content:center;
+ gap:6px;
+ min-width:76px;
+ height:36px;
+ margin-left:8px;
+ padding:0 11px;
+ border:1px solid #ffffff45;
+ border-radius:9px;
+ background:#ffffff16;
+ color:inherit;
+ font:inherit;
+ font-size:12px;
+ font-weight:750;
+ cursor:pointer;
+ flex:0 0 auto;
+}
+.back-button>span:first-child{font-size:19px;line-height:1}
+.back-button:hover{background:#ffffff25}
+.back-button:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.back-button[hidden]{display:none!important}
+@media(max-width:480px){
+ .back-button{min-width:64px;height:34px;margin-left:6px;padding:0 9px;font-size:11px}
+}
