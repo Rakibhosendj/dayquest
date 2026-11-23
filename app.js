@@ -1483,7 +1483,7 @@ function renderProductionList(){
  const list=$('productionList');if(!list)return;
  const stockRows=inventoryEntries();
  const batches=db.productions.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
- $('productionCount').textContent=`${batches.length} ${batches.length===1?'batch':'batches'}`;
+ const count=$('productionCount');if(count)count.textContent=`${batches.length} ${batches.length===1?'batch':'batches'}`;
  list.innerHTML=batches.length?batches.map(batch=>{
   const inputs=(batch.inputs||[]).map(item=>`${esc(item.product)} ${numberText(item.quantity)} ${esc(item.unit)} (${money(item.cost)})`).join(' · ');
   const regular=batch.regularProduct===true||db.productNames.some(name=>String(name).toLocaleLowerCase()===String(batch.product||'').toLocaleLowerCase());
