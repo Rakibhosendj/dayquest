@@ -2534,3 +2534,15 @@ body{color:var(--dq-font-color,#263b5c)}
 .supplier-creditor-report-row.creditor-one-line .supplier-creditor-main{display:block}
 .supplier-creditor-report-row.creditor-one-line .supplier-creditor-balance{display:block;text-align:right}
 @media(max-width:420px){.creditor-one-line{gap:6px}.creditor-one-line>small,.creditor-row-date{font-size:9px}.page-context-icon{width:21px;height:21px;flex-basis:21px}}
+
+/* Recent creditor/debtor rows and single-line page title */
+#pageContextBar{display:flex;align-items:center;flex-wrap:nowrap;white-space:nowrap;gap:7px}
+#pageContextIcon{width:1em;height:1em;flex:0 0 1em;margin:0;vertical-align:middle}
+#pageContextTitle{white-space:nowrap;line-height:1.1}
+.recent-balance-heading{margin:12px 0 6px;font-size:13px;font-weight:800;color:var(--text,#263b5c)}
+.recent-balance-row{width:100%;text-align:left;cursor:pointer;background:transparent;border:0;border-bottom:1px solid var(--line,#e6eaf0);font:inherit;padding:10px 8px}
+.recent-balance-row:active{background:rgba(38,59,92,.06)}
+.recent-balance-row>span{display:flex;align-items:center;gap:8px;min-width:0;font-weight:750}
+.recent-balance-row>span small{font-size:10px;color:#8993a2;font-weight:600;white-space:nowrap}
+.recent-balance-row>small{font-size:10px;color:#8993a2;white-space:nowrap}
+.recent-balance-row>strong{font-size:12px;white-space:nowrap}
