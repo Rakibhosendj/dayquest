@@ -3647,7 +3647,7 @@ function renderReport(){
  const from=$('productReportFromDate')?.value||'',to=$('productReportToDate')?.value||'';
  renderMemberReportGuestAssignments();
  const hint=$('reportDateHint');
- const reportOutputs=['productTypePurchaseReport','productPurchaseReport','supplierCreditorReport','iOweList','owedToMeList','incomeDueList','categoryBreakdown','memberCostBreakdown','memberProductConsumption','guestReport','incomePersonBreakdown','incomeHeadBreakdown','salesReportList','productionReportList','assetPurchaseReportList'];
+ const reportOutputs=['productTypePurchaseReport','productPurchaseReport','supplierCreditorReport','iOweList','startingCreditorList','owedToMeList','incomeDueList','categoryBreakdown','memberCostBreakdown','memberProductConsumption','guestReport','incomePersonBreakdown','incomeHeadBreakdown','salesReportList','productionReportList','assetPurchaseReportList'];
  if(!from||!to||from>to){
   const message=!from||!to?'Choose both a From date and a To date to view reports.':'Invalid date range: the From date must be on or before the To date.';
   if(hint){hint.textContent=message;hint.classList.add('date-range-error')}
@@ -3738,7 +3738,8 @@ function renderDueReport(from,to){
  const supplierTotal=suppliersInRange.reduce((t,name)=>t+supplierBillBalancesAt(name,asOf).reduce((v,row)=>v+row.remaining,0),0);
  const openingCreditors=Array.isArray(db.profile?.openingCreditors)?db.profile.openingCreditors:[];
  const openingDebtors=Array.isArray(db.profile?.openingDebtors)?db.profile.openingDebtors:[];
- const openingCreditorsAsOf=openingCreditors.filter(x=>(!x.date||x.date<=asOf)&&(inRange(x.date)|| (x.settlements||[]).some(s=>inRange(s.date))));
+ const openingRemaining=x=>Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||String(s.date)<=asOf).reduce((t,s)=>t+Number(s.amount||0),0));
+ const openingCreditorsAsOf=openingCreditors.filter(x=>(!x.date||x.date<=asOf)&&openingRemaining(x)>0.000001);
  const openingDebtorsAsOf=openingDebtors.filter(x=>(!x.date||x.date<=asOf)&&(inRange(x.date)|| (x.settlements||[]).some(s=>inRange(s.date))));
  const openingCreditorTotal=openingCreditorsAsOf.reduce((t,x)=>t+Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||s.date<=asOf).reduce((v,s)=>v+Number(s.amount||0),0)),0);
  const openingDebtorTotal=openingDebtorsAsOf.reduce((t,x)=>t+Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||s.date<=asOf).reduce((v,s)=>v+Number(s.amount||0),0)),0);
@@ -3748,14 +3749,14 @@ function renderDueReport(from,to){
  $('iOweTotal').textContent=money(supplierTotal+expenseOweTotal+openingCreditorTotal);$('iOweExpenseTotal').textContent=money(expenseOweTotal+openingCreditorTotal);
  $('owedToMeTotal').textContent=money(owedExpenseTotal+incomeDueAmount+openingDebtorTotal);$('owedToMeExpenseTotal').textContent=money(owedExpenseTotal+openingDebtorTotal);$('incomeDueTotal').textContent=money(incomeDueAmount);
  $('creditorAsOfLabel').textContent=fmt(asOf);$('debitorAsOfLabel').textContent=fmt(asOf);
- const openingRemaining=x=>Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||String(s.date)<=asOf).reduce((t,s)=>t+Number(s.amount||0),0));
  const openingRows=(items,kind)=>items.filter(x=>openingRemaining(x)>0.000001).map(x=>`<button type="button" class="breakrow creditor-one-line recent-balance-row" data-opening-balance="${kind}" data-opening-id="${esc(x.id)}"><span>${esc(x.party)} <small>Starting</small></span><small>${fmt(x.date||today())}</small><strong>${money(openingRemaining(x))}</strong></button>`).join('');
  const expenseRows=items=>items.map(x=>`<button type="button" class="breakrow creditor-one-line recent-balance-row" data-due-expense="${esc(x.id)}"><span>${esc(x.duePerson||'Unknown person')} <small>${esc(x.name||x.category||'Expense')}</small></span><small>${fmt(x.date||asOf)}</small><strong>${money(expenseOutstandingAt(x,asOf))}</strong></button>`).join('');
  const grouped=(expenseItems,openingItems=[],kind='creditor')=>{const rows=[...openingItems.filter(x=>openingRemaining(x)>0.000001).map(x=>({date:x.date||'',html:openingRows([x],kind)})),...expenseItems.map(x=>({date:x.date||'',html:expenseRows([x])}))].sort((a,b)=>String(b.date).localeCompare(String(a.date)));return rows.map(x=>x.html).join('')||empty('No balances recorded by this date.')};
- $('iOweList').innerHTML=grouped(iOwe,openingCreditorsAsOf,'creditor');
+ $('iOweList').innerHTML=grouped(iOwe,[],'creditor');
+ $('startingCreditorList').innerHTML=openingCreditorsAsOf.length?openingCreditorsAsOf.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(x=>openingRows([x],'creditor')).join(''):empty('No starting creditor balances as of '+fmt(asOf)+'.');
  const debtorRows=[...incomeDue.map(x=>({date:x.date,html:`<button type="button" class="breakrow creditor-one-line recent-balance-row" data-due-income="${esc(x.id)}"><span>${esc(x.duePerson||'Unknown person')} <small>${esc(x.source||'Income')}</small></span><small>${fmt(x.date||asOf)}</small><strong>${money(incomeOutstandingAt(x,asOf))}</strong></button>`})),...owedExpenses.map(x=>({date:x.date,html:`<button type="button" class="breakrow creditor-one-line recent-balance-row" data-due-expense="${esc(x.id)}"><span>${esc(x.duePerson||'Unknown person')} <small>${esc(x.name||x.category||'Expense')}</small></span><small>${fmt(x.date||asOf)}</small><strong>${money(expenseOutstandingAt(x,asOf))}</strong></button>`})),...openingDebtorsAsOf.filter(x=>openingRemaining(x)>0.000001).map(x=>({date:x.date,html:openingRows([x],'debtor')}))].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
  $('owedToMeList').innerHTML=debtorRows.map(x=>x.html).join('')||empty('No balances recorded by this date.');$('incomeDueList').innerHTML='';
- $('iOweList').querySelectorAll('[data-opening-balance]').forEach(btn=>btn.onclick=()=>openStartingBalanceAction('creditor',btn.dataset.openingId));
+ $('startingCreditorList').querySelectorAll('[data-opening-balance]').forEach(btn=>btn.onclick=()=>openStartingBalanceAction('creditor',btn.dataset.openingId));
  $('owedToMeList').querySelectorAll('[data-opening-balance]').forEach(btn=>btn.onclick=()=>openStartingBalanceAction('debtor',btn.dataset.openingId));
  document.querySelectorAll('#iOweList [data-due-expense],#owedToMeList [data-due-expense]').forEach(btn=>btn.onclick=()=>openExpenseDueAction(btn.dataset.dueExpense));
  $('owedToMeList').querySelectorAll('[data-due-income]').forEach(btn=>btn.onclick=()=>openCollectIncome(btn.dataset.dueIncome));
