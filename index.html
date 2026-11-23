@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261123-production-header-removed-v1">
+<link rel="stylesheet" href="style.css?v=20261123-report-dropdown-date-range-v1">
 <title>DayQuest</title>
 </head>
 <body>
@@ -877,7 +877,7 @@
  </section>
 </section>
 <section id="reports" class="panel">
- <div class="report-global-tools" hidden><button type="button" class="secondary report-export-btn" data-report-export="all" data-export-format="pdf">Print / PDF all</button><button type="button" class="secondary report-export-btn" data-report-export="all" data-export-format="excel">Excel all</button></div>
+ <div class="report-export-control"><label for="reportExportFormat">Report</label><select id="reportExportFormat"><option value="">Select format</option><option value="pdf">PDF</option><option value="print">Print</option><option value="excel">Excel</option></select></div>
  <div class="report-date-range report-global-date-range" aria-label="Report date range">
   <label class="report-date-box"><span class="report-date-placeholder">From</span><input id="productReportFromDate" type="date" aria-label="From" required></label>
   <label class="report-date-box"><span class="report-date-placeholder">To</span><input id="productReportToDate" type="date" aria-label="To" required></label>
@@ -1063,5 +1063,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261123-production-header-removed-v1"></script>
+<script src="app.js?v=20261123-report-dropdown-date-range-v1"></script>
 </body></html>
