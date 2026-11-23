@@ -2180,7 +2180,7 @@ $('supplierEntryForm').onsubmit=e=>{e.preventDefault();saveSupplierEntry()};
 // New Product dialog controls are bound when the Purchase Form Add Product action is used.
 $('mealDefaultSave').onclick=saveMealDefault;
 $('mealDateSave').onclick=()=>{const date=$('mealDateEntry').value,n=Number($('mealDateCount').value);if(!date||!Number.isInteger(n)||n<0){alert('Choose a date and enter a whole number of meals, zero or more.');return}db.mealPlan.dateCounts[date]=n;$('mealControlDate').value=date;save();renderMeals()};
-$('mealsBackOverview').onclick=()=>{setTab('home');document.getElementById('home')?.scrollIntoView({behavior:'instant',block:'start'})};
+
 ['mealFromDate','mealToDate','mealControlDate'].forEach(id=>$(id).addEventListener('change',renderMeals));
 $('mealDateEntry').addEventListener('change',()=>{const date=$('mealDateEntry').value;$('mealControlDate').value=date;renderMeals()});
 $('memberReportGuestAssignments').onclick=e=>{
