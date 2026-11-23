@@ -2761,3 +2761,19 @@ body{color:var(--dq-font-color,#263b5c)}
 .balance-transfer-entry-grid>label{min-width:0}
 .balance-transfer-entry-grid>#balanceTransferCost{box-sizing:border-box;width:100%;min-width:0}
 @media(max-width:520px){.balance-transfer-entry-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:7px!important}.balance-transfer-entry-grid>#balanceTransferDirection{grid-column:1/-1}}
+
+/* Members Report: minimal labels and one-line per-member Personal / Shared costs. */
+#memberCostBreakdown{display:grid;gap:5px;overflow-x:auto}
+#memberCostBreakdown .member-cost-row{
+ display:grid!important;
+ grid-template-columns:minmax(110px,1fr) max-content max-content max-content!important;
+ align-items:center!important;
+ gap:10px!important;
+ min-width:480px!important;
+ padding:9px 11px!important;
+ white-space:nowrap!important;
+}
+#memberCostBreakdown .member-cost-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#263b5c;font-size:11px}
+#memberCostBreakdown .member-cost-personal,#memberCostBreakdown .member-cost-shared{font-size:10px;color:#68768a;white-space:nowrap}
+#memberCostBreakdown .member-cost-total{font-size:11px;color:#172033;white-space:nowrap;text-align:right}
+.costing-summary .stat small{display:block!important}
