@@ -4670,3 +4670,23 @@ document.addEventListener('submit',event=>trackSaveUpdateButton(event.submitter)
 updatePageBalanceTitle('home');
 setupDQDateDisplays();
 const reportToday=today();$('productReportFromDate').value=reportToday.slice(0,7)+'-01';$('productReportToDate').value=reportToday;fillChoices();loadProfileForm();calcTotal();$('dueFields').hidden=true;$('duePaidFromField').hidden=true;$('incomeDueFields').hidden=true;$('salesMemoWrap').hidden=true;resetSalesMemoForm();$('expenseDueActionForm').hidden=true;$('incomeCollectForm').hidden=true;$('incomeTotalPreview').textContent=money(0);render();initAuth();
+
+/* Remove the redundant Production page intro while keeping the main page title and form. */
+(function removeProductionIntro(){
+ const hideIntro=()=>{
+  const nodes=[...document.querySelectorAll('body *')];
+  const matches=nodes.filter(el=>{
+   if(el===document.body||el.children.length===0)return false;
+   const text=String(el.innerText||'').replace(/\\s+/g,' ').trim();
+   return /Use inventory materials to create a finished product/i.test(text)&&/\\b0 batches\\b/i.test(text)&&/\\bProduction\\b/i.test(text);
+  });
+  matches.forEach(el=>{
+   if(matches.some(other=>other!==el&&el.contains(other)))return;
+   el.hidden=true;
+   el.setAttribute('aria-hidden','true');
+  });
+ };
+ hideIntro();
+ const observer=new MutationObserver(hideIntro);
+ if(document.body)observer.observe(document.body,{childList:true,subtree:true,characterData:true});
+})();
