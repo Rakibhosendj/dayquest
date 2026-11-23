@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261123-all-pages-compact-spacing-v1">
+<link rel="stylesheet" href="style.css?v=20261123-balance-transfer-cost-v1">
 <title>DayQuest</title>
 </head>
 <body>
@@ -587,10 +587,10 @@
   <details class="profile-foldout">
    <summary>Balance Transfer</summary>
    <div class="profile-foldout-content balance-transfer-content">
-    <p class="hint">Move money between Cash and Bank. A transfer changes the two account balances but does not change your total balance, income or expenses.</p>
-    <div class="form-grid">
+    <div class="form-grid balance-transfer-entry-grid">
      <label>Transfer direction <select id="balanceTransferDirection"><option value="Cash-Bank">Cash to Bank</option><option value="Bank-Cash">Bank to Cash</option></select></label>
      <label>Amount <input id="balanceTransferAmount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00"></label>
+     <input id="balanceTransferCost" type="number" min="0" step="0.01" inputmode="decimal" value="0.00" placeholder="Cost 0.00" aria-label="Cost Amount" title="Cost Amount">
     </div>
     <div class="form-grid">
      <label>Transfer date <input id="balanceTransferDate" type="date" required></label>
@@ -1065,5 +1065,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261123-all-pages-compact-spacing-v1"></script>
+<script src="app.js?v=20261123-balance-transfer-cost-v1"></script>
 </body></html>
