@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v230-restore-quick-expenses-menu-v1';
+const CACHE = 'dayquest-cache-v231-report-submenu-click-fix-v1';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261123-restore-quick-expenses-menu-v1',
-  './app.js?v=20261123-restore-quick-expenses-menu-v1',
+  './style.css?v=20261123-report-submenu-delegated-click-v1',
+  './app.js?v=20261123-report-submenu-delegated-click-v1',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
   './icons/icon-512.svg',
