@@ -3642,7 +3642,7 @@ function renderReport(){
  const items=db.expenses.filter(x=>String(x.date||'')>=from&&String(x.date||'')<=to);
  const bills=db.purchaseBills.filter(x=>String(x.date||'')>=from&&String(x.date||'')<=to);
  const total=sum(items)+bills.reduce((t,x)=>t+billTotal(x),0);
- $('reportLabel').textContent='TOTAL COST · SELECTED DATE RANGE';$('reportTotal').textContent=money(total);$('reportRange').textContent=`${fmt(from)} – ${fmt(to)}`;
+ $('reportLabel').textContent='Total Cost';$('reportTotal').textContent=money(total);$('reportRange').textContent='';
  renderFamilyCostReport(items,bills,from,to);
  renderGuestReport(from,to);
  renderProductionReport(from,to);
