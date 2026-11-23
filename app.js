@@ -537,7 +537,7 @@ function setupSideMenuReordering(){
   if(nav.classList.contains('side-menu-reordering'))event.preventDefault();
  });
 }
-const OVERVIEW_SECTION_KEYS=['quickExpenses','quickSuppliers','todayActivity','quickActions','recentExpenses','recentIncome','todayQuests'];
+const OVERVIEW_SECTION_KEYS=['quickExpenses','quickSuppliers','todayActivity','quickActions','recentExpenses','githubLink','todayQuests'];
 function normalizeOverviewSectionOrder(order){
  const requested=Array.isArray(order)?order.map(String):[];
  const normalized=requested.filter((key,index)=>OVERVIEW_SECTION_KEYS.includes(key)&&requested.indexOf(key)===index);
@@ -2508,7 +2508,7 @@ $('incomeCollectForm').onsubmit=e=>{
  x.collections=incomeCollections(x);x.collections.push({id:crypto.randomUUID(),amount,date:$('collectDate').value,method:$('collectMethod').value,note:$('collectNote').value.trim()});
  closeCollectForm();save();
 };
-function deleteIncome(id){const item=db.incomes.find(x=>x.id===id);if(!item)return;const message=item.salesMemo?'Delete this sales memo and its collection history? Sold inventory quantities will be returned to stock.':'Delete this income entry and its collection history?';if(confirm(message)){if(collectingIncomeId===id)closeCollectForm();if(editingIncomeId===id)resetIncomeForm();if(editingSalesMemoId===id){resetSalesMemoForm();$('salesMemoWrap').hidden=true}if(item.salesMemo)db.consumptions=db.consumptions.filter(c=>c.salesMemoId!==id);db.incomes=db.incomes.filter(x=>x.id!==id);save()}}
+async function deleteIncome(id){const item=db.incomes.find(x=>x.id===id);if(!item)return;const message=item.salesMemo?'Delete this sales memo and its collection history? Sold inventory quantities will be returned to stock.':'Delete this income entry and its collection history?';if(await window.dayQuestConfirm('DayQuest: '+message)){if(collectingIncomeId===id)closeCollectForm();if(editingIncomeId===id)resetIncomeForm();if(editingSalesMemoId===id){resetSalesMemoForm();$('salesMemoWrap').hidden=true}if(item.salesMemo)db.consumptions=db.consumptions.filter(c=>c.salesMemoId!==id);db.incomes=db.incomes.filter(x=>x.id!==id);save()}}
 $('incomeDateFilter').onchange=render;
 $('incomeHeadFilter').onchange=render;
 $('incomePersonFilter').onchange=render;
@@ -3211,7 +3211,7 @@ function render(){
  let filtered=db.expenses.filter(x=>( $('expenseFilter').value==='all'||x.category===$('expenseFilter').value)&&(`${x.note} ${x.category}`).toLowerCase().includes($('expenseSearch').value.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date));
  $('expenseList').innerHTML=expenseHTML(filtered,true);$('questList').innerHTML=questTileHTML(dayQuestsForNow(questDate));if($('questSetupList'))$('questSetupList').innerHTML=questHTML(dayQuests(questDate),true);renderQuickActions();renderQuickSuppliers();renderQuickActionManager();renderSupplierAccounts();renderInventory();renderProductionList();renderExpenseDueList();renderGuestReport();
  $('questSummary').textContent=`${done}/${qToday.length} completed`;$('incomeCount').textContent=`${db.incomes.length} entries`;
- const incomeFilter=$('incomeDateFilter').value,incomeHead=$('incomeHeadFilter').value,incomePerson=$('incomePersonFilter').value;const incomes=[...db.incomes].filter(x=>(!incomeFilter||x.date===incomeFilter)&&(incomeHead==='all'||(x.source||'Other')===incomeHead)&&(incomePerson==='all'||(x.incomeBy||'Unassigned')===incomePerson)).sort((a,b)=>b.date.localeCompare(a.date));$('incomeList').innerHTML=incomeHTML(incomes,true);renderSalesMemoList();
+ const incomeFilter=$('incomeDateFilter').value,incomeHead=$('incomeHeadFilter').value,incomePerson=$('incomePersonFilter').value;const incomes=[...db.incomes].filter(x=>!x.salesMemo&&(!incomeFilter||x.date===incomeFilter)&&(incomeHead==='all'||(x.source||'Other')===incomeHead)&&(incomePerson==='all'||(x.incomeBy||'Unassigned')===incomePerson)).sort((a,b)=>b.date.localeCompare(a.date));$('incomeList').innerHTML=incomeHTML(incomes,true);renderSalesMemoList();
 }
 function renderRecentExpenses(){
  const rows=[];
