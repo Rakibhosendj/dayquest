@@ -3205,8 +3205,7 @@ function render(){
  let ws=startWeek(d),ms=d.slice(0,7);$('weekTotal').textContent=money(sum(db.expenses.filter(x=>x.date>=ws&&x.date<=d))+db.purchaseBills.filter(b=>b.date>=ws&&b.date<=d).reduce((t,b)=>t+billTotal(b),0));$('monthTotal').textContent=money(sum(db.expenses.filter(x=>x.date.startsWith(ms)))+db.purchaseBills.filter(b=>b.date.startsWith(ms)).reduce((t,b)=>t+billTotal(b),0));
  $('todayIncome').textContent=money(db.incomes.reduce((t,x)=>t+incomeReceivedOn(x,d),0));$('monthIncome').textContent=money(incomeReceivedBetween(ms+'-01',d));showBalances();renderBalanceTransfers();
  renderRecentExpenses();
- $('recentIncome').innerHTML=incomeHTML([...db.incomes].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4),false);
- $('todayQuests').innerHTML=questHTML(qToday.slice(0,4),false);
+  $('todayQuests').innerHTML=questHTML(qToday.slice(0,4),false);
  $('expenseCount').textContent=`${db.expenses.length} expenses · ${db.purchaseBills.length} bills`;renderLoans();
  let filtered=db.expenses.filter(x=>( $('expenseFilter').value==='all'||x.category===$('expenseFilter').value)&&(`${x.note} ${x.category}`).toLowerCase().includes($('expenseSearch').value.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date));
  $('expenseList').innerHTML=expenseHTML(filtered,true);$('questList').innerHTML=questTileHTML(dayQuestsForNow(questDate));if($('questSetupList'))$('questSetupList').innerHTML=questHTML(dayQuests(questDate),true);renderQuickActions();renderQuickSuppliers();renderQuickActionManager();renderSupplierAccounts();renderInventory();renderProductionList();renderExpenseDueList();renderGuestReport();
