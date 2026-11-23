@@ -2641,3 +2641,18 @@ body{color:var(--dq-font-color,#263b5c)}
  .report-total-inline .report-total-inline-row>small{font-size:10px!important}
  .report-total-inline .report-total-inline-row>strong{font-size:14px!important}
 }
+
+/* Report controls: date range and export format for the currently selected report. */
+#reports .report-export-control{display:flex;align-items:center;gap:8px;justify-content:flex-end;margin:8px 0 12px}
+#reports .report-export-control label{font-size:11px;font-weight:800;color:#566176;white-space:nowrap}
+#reports .report-export-control select{min-width:145px;border:1px solid #dfe5ed;border-radius:9px;padding:9px 11px;background:#fff;color:#263b5c;font:inherit;font-size:12px;font-weight:700}
+#reports .report-global-date-range{max-width:100%;margin-bottom:5px}
+.report-total-inline{display:block!important;width:100%!important}
+.report-total-inline .report-total-inline-row{
+ display:grid!important;grid-template-columns:minmax(0,1fr) auto minmax(max-content,auto)!important;
+ align-items:center!important;column-gap:10px!important;width:100%!important;min-width:0!important;
+}
+.report-total-inline .report-total-inline-row>.muted{grid-column:1!important;grid-row:1!important;text-align:left!important;white-space:nowrap!important;font-weight:800!important}
+.report-total-inline .report-total-inline-row>small{grid-column:2!important;grid-row:1!important;white-space:nowrap!important;margin:0!important}
+.report-total-inline .report-total-inline-row>strong{grid-column:3!important;grid-row:1!important;text-align:right!important;justify-self:end!important;white-space:nowrap!important;margin:0!important}
+@media(max-width:520px){#reports .report-export-control{justify-content:flex-end}.report-total-inline .report-total-inline-row{column-gap:6px!important}.report-total-inline .report-total-inline-row>.muted{font-size:12px!important}.report-total-inline .report-total-inline-row>small{font-size:9px!important}.report-total-inline .report-total-inline-row>strong{font-size:13px!important}}
