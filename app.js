@@ -401,7 +401,7 @@ function updatePageBalanceTitle(tab){
  const titles={home:'Overview',purchaseBills:'Purchase',inventory:'Inventory',budget:'Budget',budgetViewPage:'Budget',production:'Production',supplierAccounts:'Supplier Accounts',supplierEntry:'Supplier Entry',payExpenseDue:'Outstanding',loans:'Loans',income:'Income',meals:'Meals',quests:'Daily Quest',questSetup:'Daily Quest',profile:'Profile',memberProfilePage:selectedMemberProfileName||'Member Profile',settings:'Settings',costChartPage:'Cost Chart',quickExpenses:'Quick Expenses',expenseEntries:'Expenses'};
  let title=titles[tab]||String(tab||'DayQuest').replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase());
  if(tab==='reports'){const selected=document.querySelector('[data-report-go].active')?.dataset.reportGo||'members';title=selected==='all'?'All Reports':(REPORT_TITLES[selected]||'Reports')}
- const pageIcon=$('pageContextIcon');if(pageIcon){const showIcon=(tab==='reports'&&['creditors','debitors'].includes(document.querySelector('[data-report-go].active')?.dataset.reportGo||''))||tab==='payExpenseDue';pageIcon.hidden=!showIcon;}
+ const pageIcon=$('pageContextIcon');if(pageIcon)pageIcon.hidden=false;
  const element=$('pageContextTitle');if(element)element.textContent=title;showBalances();
 }
 const startWeek=d=>{let x=dateObj(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return x.toISOString().slice(0,10)};
