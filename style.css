@@ -2503,3 +2503,11 @@ body{color:var(--dq-font-color,#263b5c)}
 
 /* Income form layout cleanup: hide edit notice without leaving an empty grid cell. */
 #incomeEditHint{display:none!important}
+
+/* Compact Amount and single-choice checkbox payment selector. */
+.income-amount-payment-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(230px,.95fr);gap:9px;align-items:end}
+.income-payment-choice{min-width:0;margin:0;padding:9px 11px 10px;border:1px solid #e1e6ee;border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.income-payment-choice legend{padding:0 3px;font-size:11px;font-weight:750;color:#566176}
+.income-payment-choice label{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#263b5c;white-space:nowrap}
+.income-payment-choice input{width:15px;height:15px;margin:0;accent-color:#263b5c}
+@media(max-width:520px){.income-amount-payment-row{grid-template-columns:1fr}.income-payment-choice{justify-content:flex-start;gap:18px}}
