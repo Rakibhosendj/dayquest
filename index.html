@@ -877,10 +877,12 @@
  </section>
 </section>
 <section id="reports" class="panel">
- <div class="report-export-control"><label for="reportExportFormat">Report</label><select id="reportExportFormat"><option value="">Select format</option><option value="pdf">PDF</option><option value="print">Print</option><option value="excel">Excel</option></select></div>
- <div class="report-date-range report-global-date-range" aria-label="Report date range">
-  <label class="report-date-box"><span class="report-date-placeholder">From</span><input id="productReportFromDate" type="date" aria-label="From" required></label>
-  <label class="report-date-box"><span class="report-date-placeholder">To</span><input id="productReportToDate" type="date" aria-label="To" required></label>
+ <div class="report-filter-toolbar">
+  <div class="report-date-range report-global-date-range" aria-label="Report date range">
+   <label class="report-date-box"><span class="report-date-placeholder">From</span><input id="productReportFromDate" type="date" aria-label="From" required></label>
+   <label class="report-date-box"><span class="report-date-placeholder">To</span><input id="productReportToDate" type="date" aria-label="To" required></label>
+  </div>
+  <div class="report-export-control"><select id="reportExportFormat" aria-label="Reports"><option value="">Reports</option><option value="pdf">PDF</option><option value="print">Print</option><option value="excel">Excel</option></select></div>
  </div>
  
 
