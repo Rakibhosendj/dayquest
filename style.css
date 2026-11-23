@@ -2520,7 +2520,7 @@ body{color:var(--dq-font-color,#263b5c)}
 .report-date-box{position:relative;display:block;min-width:0}
 .report-date-box .report-date-placeholder{position:absolute;z-index:1;left:12px;top:50%;transform:translateY(-50%);font-size:12px;color:#8993a2;pointer-events:none}
 .report-date-box input{position:relative;background:transparent}
-.report-date-box:has(input:focus) .report-date-placeholder,.report-date-box:has(input:not([value=""])) .report-date-placeholder{display:none}
+.report-date-box:has(input:focus) .report-date-placeholder,.report-date-box:has(input:valid) .report-date-placeholder{display:none}
 #reports .report-date-range label{font-size:0}
 #reports .report-date-range input{font-size:13px}
 #reports .report-date-range input:focus{background:#fff}
