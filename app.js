@@ -47,7 +47,7 @@ db.incomes.forEach(x=>{if(x.source&&!db.incomeHeads.includes(x.source))db.income
 db.profile=db.profile&&typeof db.profile==='object'?db.profile:{name:'',phone:'',address:'',openingCash:0,openingBank:0};
 db.profile.address=String(db.profile.address||'');
 db.profile.openingLoans=Array.isArray(db.profile.openingLoans)?db.profile.openingLoans.filter(item=>item&&String(item.party||'').trim()&&Number(item.amount)>0).map(item=>({id:String(item.id||crypto.randomUUID()),party:String(item.party||'').trim(),type:item.type==='taken'?'taken':'given',amount:Math.max(0,Number(item.amount)||0)})):[];
-['openingDebtors','openingCreditors'].forEach(key=>{db.profile[key]=Array.isArray(db.profile[key])?db.profile[key].filter(item=>item&&String(item.party||'').trim()&&Number(item.amount)>0).map(item=>({id:String(item.id||crypto.randomUUID()),party:String(item.party||'').trim(),amount:Math.max(0,Number(item.amount)||0)})):[]});
+['openingDebtors','openingCreditors'].forEach(key=>{db.profile[key]=Array.isArray(db.profile[key])?db.profile[key].filter(item=>item&&String(item.party||'').trim()&&Number(item.amount)>0).map(item=>({id:String(item.id||crypto.randomUUID()),party:String(item.party||'').trim(),amount:Math.max(0,Number(item.amount)||0),date:String(item.date||today())})):[]});
 db.profile.phone=String(db.profile.phone||'');db.profile.phone2=String(db.profile.phone2||'');
 db.profile.familyName=String(db.profile.familyName||'');
 db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';
@@ -3025,10 +3025,9 @@ $('addFamilyMember').onclick=()=>{
 $('profileForm').onsubmit=e=>{
  e.preventDefault();const openingCash=Number($('openingCash').value),openingBank=Number($('openingBank').value),openingLoans=readOpeningLoanRows();
  if(!Number.isFinite(openingCash)||openingCash<0||!Number.isFinite(openingBank)||openingBank<0){alert('Opening balances must be zero or greater.');return}
- const openingDebtors=readOpeningAccountBalanceRows('Debtor'),openingCreditors=readOpeningAccountBalanceRows('Creditor');
  const name=$('profileName').value.trim(),details={country:$('profileCountry').value.trim(),division:$('profileDivision').value.trim(),district:$('profileDistrict').value.trim(),subDistrict:$('profileSubDistrict').value.trim(),village:$('profileVillage').value.trim(),road:$('profileRoad').value.trim(),religion:$('profileReligion').value.trim(),gender:$('profileGender').value,birthDate:$('profileBirthDate').value};
  db.profile={...db.profile,...details,name,phone:$('profilePhone').value.trim(),phone2:$('profilePhone2').value.trim(),address:composeMemberAddress(details),familyName:$('familyName').value.trim(),openingCash,openingBank};
- db.profile.openingLoans=openingLoans;db.profile.openingDebtors=openingDebtors;db.profile.openingCreditors=openingCreditors;syncOpeningLoansToRegister(openingLoans);
+ db.profile.openingLoans=openingLoans;syncOpeningLoansToRegister(openingLoans);
  if(name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===name.toLocaleLowerCase()))db.familyMembers.unshift(name);
  if(name&&!db.incomePeople.includes(name))db.incomePeople.unshift(name);
  if(name){const p=ensureMemberProfile(name);Object.assign(p,{phone:db.profile.phone,phone2:db.profile.phone2,...details})}
@@ -3046,22 +3045,33 @@ function readOpeningLoanRows(){
  return [...($('openingLoanRows')?.querySelectorAll('[data-opening-loan-row]')||[])].map(row=>({id:row.querySelector('[data-opening-loan-id]')?.value||crypto.randomUUID(),party:row.querySelector('[data-opening-loan-party]')?.value.trim()||'',type:row.querySelector('[data-opening-loan-type]')?.value==='taken'?'taken':'given',amount:Number(row.querySelector('[data-opening-loan-amount]')?.value||0)})).filter(item=>item.party&&Number.isFinite(item.amount)&&item.amount>0);
 }
 function renderOpeningAccountBalanceRows(kind){
- const key=kind.toLowerCase()+'s',host=$('opening'+kind+'Rows');if(!host)return;
+ const host=$('opening'+kind+'Rows');if(!host)return;
  const rows=Array.isArray(db.profile?.['opening'+kind+'s'])?db.profile['opening'+kind+'s']:[];
- host.innerHTML=rows.map(item=>`<div class="opening-loan-row" data-opening-${kind.toLowerCase()}-row><label>${kind} name <input type="text" data-opening-account-party maxlength="100" value="${esc(item.party||'')}" placeholder="Person / supplier name"></label><label>Amount <input type="number" data-opening-account-amount min="0.01" step="0.01" value="${Number(item.amount||0)||''}" placeholder="0.00"></label><button type="button" class="delete" data-opening-account-remove>Remove</button><input type="hidden" data-opening-account-id value="${esc(item.id||crypto.randomUUID())}"></div>`).join('');
- host.querySelectorAll('[data-opening-account-remove]').forEach(button=>button.onclick=()=>button.closest('[data-opening-${kind.toLowerCase()}-row]')?.remove());
+ host.innerHTML=rows.map(item=>`<div class="opening-loan-row" data-opening-${kind.toLowerCase()}-row><label>${kind==='Creditor'?'Supplier name':'Debtor name'} <input type="text" data-opening-account-party maxlength="100" value="${esc(item.party||'')}" placeholder="${kind==='Creditor'?'Supplier name':'Person name'}"></label><label>Date <input type="date" data-opening-account-date value="${esc(item.date||today())}"></label><label>Amount <input type="number" data-opening-account-amount min="0.01" step="0.01" value="${Number(item.amount||0)||''}" placeholder="0.00"></label><button type="button" class="delete" data-opening-account-remove>Remove</button><input type="hidden" data-opening-account-id value="${esc(item.id||crypto.randomUUID())}"></div>`).join('');
+ host.querySelectorAll('[data-opening-account-remove]').forEach(button=>button.onclick=()=>button.closest('[data-opening-'+kind.toLowerCase()+'-row]')?.remove());
 }
 function readOpeningAccountBalanceRows(kind){
  const host=$('opening'+kind+'Rows');
- return [...(host?.querySelectorAll('[data-opening-account-party]')||[])].map(input=>{const row=input.closest('[data-opening-'+kind.toLowerCase()+'-row]');return{id:row?.querySelector('[data-opening-account-id]')?.value||crypto.randomUUID(),party:input.value.trim(),amount:Number(row?.querySelector('[data-opening-account-amount]')?.value||0)}}).filter(item=>item.party&&Number.isFinite(item.amount)&&item.amount>0);
+ return [...(host?.querySelectorAll('[data-opening-account-party]')||[])].map(input=>{const row=input.closest('[data-opening-'+kind.toLowerCase()+'-row]');return{id:row?.querySelector('[data-opening-account-id]')?.value||crypto.randomUUID(),party:input.value.trim(),date:row?.querySelector('[data-opening-account-date]')?.value||today(),amount:Number(row?.querySelector('[data-opening-account-amount]')?.value||0)}}).filter(item=>item.party&&item.date&&Number.isFinite(item.amount)&&item.amount>0);
 }
 ['Debtor','Creditor'].forEach(kind=>{
  $('addOpening'+kind)?.addEventListener('click',()=>{
   const host=$('opening'+kind+'Rows');if(!host)return;
-  const wrap=document.createElement('div');wrap.innerHTML=`<div class="opening-loan-row" data-opening-${kind.toLowerCase()}-row><label>${kind} name <input type="text" data-opening-account-party maxlength="100" placeholder="Person / supplier name"></label><label>Amount <input type="number" data-opening-account-amount min="0.01" step="0.01" placeholder="0.00"></label><button type="button" class="delete" data-opening-account-remove>Remove</button><input type="hidden" data-opening-account-id value="${crypto.randomUUID()}"></div>`;
+  const wrap=document.createElement('div');wrap.innerHTML=`<div class="opening-loan-row" data-opening-${kind.toLowerCase()}-row><label>${kind==='Creditor'?'Supplier name':'Debtor name'} <input type="text" data-opening-account-party maxlength="100" placeholder="${kind==='Creditor'?'Supplier name':'Person name'}"></label><label>Date <input type="date" data-opening-account-date value="${today()}"></label><label>Amount <input type="number" data-opening-account-amount min="0.01" step="0.01" placeholder="0.00"></label><button type="button" class="delete" data-opening-account-remove>Remove</button><input type="hidden" data-opening-account-id value="${crypto.randomUUID()}"></div>`;
   host.appendChild(wrap.firstElementChild);const row=host.lastElementChild;row.querySelector('[data-opening-account-remove]').onclick=()=>row.remove();row.querySelector('[data-opening-account-party]').focus();
  });
 });
+function saveOpeningAccountBalanceRows(kind){
+ const items=readOpeningAccountBalanceRows(kind);
+ if(kind==='Creditor'){
+  items.forEach(item=>{if(!db.suppliers.some(name=>name.toLocaleLowerCase()===item.party.toLocaleLowerCase()))db.suppliers.push(item.party);db.supplierDetails[item.party]=db.supplierDetails[item.party]||{ownerName:'',address:''}});
+ }
+ db.profile['opening'+kind+'s']=items;
+ fillChoices();renderMasterLists();renderSupplierEntryList();renderSupplierAccounts();renderReport();save();
+ alert('Starting '+(kind==='Creditor'?'creditors':'debtors')+' balance saved.');
+}
+$('saveOpeningDebtors')?.addEventListener('click',()=>saveOpeningAccountBalanceRows('Debtor'));
+$('saveOpeningCreditors')?.addEventListener('click',()=>saveOpeningAccountBalanceRows('Creditor'));
 function syncOpeningLoansToRegister(items){
  const old=new Map(db.loans.filter(loan=>loan.openingBalance).map(loan=>[loan.id,loan]));
  const next=items.map(item=>{
@@ -3492,6 +3502,7 @@ function renderMemberReportGuestAssignments(){
  }).join(''):empty('No guest members added yet.');
 }
 function renderReport(){
+ renderOpeningAccountBalanceRows('Debtor');renderOpeningAccountBalanceRows('Creditor');
  const from=$('productReportFromDate')?.value||'',to=$('productReportToDate')?.value||'';
  renderMemberReportGuestAssignments();
  const hint=$('reportDateHint');
@@ -3581,17 +3592,19 @@ function renderDueReport(from,to){
  const supplierTotal=supplierNames.reduce((t,name)=>t+supplierBillBalancesAt(name,asOf).reduce((v,row)=>v+row.remaining,0),0);
  const openingCreditors=Array.isArray(db.profile?.openingCreditors)?db.profile.openingCreditors:[];
  const openingDebtors=Array.isArray(db.profile?.openingDebtors)?db.profile.openingDebtors:[];
- const openingCreditorTotal=openingCreditors.reduce((t,x)=>t+Math.max(0,Number(x.amount)||0),0);
- const openingDebtorTotal=openingDebtors.reduce((t,x)=>t+Math.max(0,Number(x.amount)||0),0);
+ const openingCreditorsAsOf=openingCreditors.filter(x=>!x.date||x.date<=asOf);
+ const openingDebtorsAsOf=openingDebtors.filter(x=>!x.date||x.date<=asOf);
+ const openingCreditorTotal=openingCreditorsAsOf.reduce((t,x)=>t+Math.max(0,Number(x.amount)||0),0);
+ const openingDebtorTotal=openingDebtorsAsOf.reduce((t,x)=>t+Math.max(0,Number(x.amount)||0),0);
  const expenseOweTotal=iOwe.reduce((t,x)=>t+expenseOutstandingAt(x,asOf),0);
  const owedExpenseTotal=owedExpenses.reduce((t,x)=>t+expenseOutstandingAt(x,asOf),0);
  const incomeDueAmount=incomeDue.reduce((t,x)=>t+incomeOutstandingAt(x,asOf),0);
  $('iOweTotal').textContent=money(supplierTotal+expenseOweTotal+openingCreditorTotal);$('iOweExpenseTotal').textContent=money(expenseOweTotal+openingCreditorTotal);
  $('owedToMeTotal').textContent=money(owedExpenseTotal+incomeDueAmount+openingDebtorTotal);$('owedToMeExpenseTotal').textContent=money(owedExpenseTotal+openingDebtorTotal);$('incomeDueTotal').textContent=money(incomeDueAmount);
  $('creditorAsOfLabel').textContent=`Balance at ${fmt(asOf)}`;$('debitorAsOfLabel').textContent=`Balance at ${fmt(asOf)}`;
- const grouped=(expenseItems,openingItems=[])=>{let people={};expenseItems.forEach(x=>{const person=(x.duePerson||'Unknown person').trim()||'Unknown person';people[person]=(people[person]||0)+expenseOutstandingAt(x,asOf)});openingItems.forEach(x=>{const person=(x.party||'Unknown person').trim()||'Unknown person';people[person]=(people[person]||0)+Math.max(0,Number(x.amount)||0)});return Object.entries(people).sort((a,b)=>b[1]-a[1]).map(([person,total])=>`<div class="breakrow"><span>${esc(person)}</span><strong>${money(total)}</strong></div>`).join('')||empty('No balances recorded by this date.')};
- $('iOweList').innerHTML=grouped(iOwe,openingCreditors);
- $('owedToMeList').innerHTML=grouped(owedExpenses,openingDebtors);
+ const grouped=(expenseItems,openingItems=[])=>{let people={};expenseItems.forEach(x=>{const person=(x.duePerson||'Unknown person').trim()||'Unknown person';people[person]=(people[person]||0)+expenseOutstandingAt(x,asOf)});openingItems.forEach(x=>{const person=(x.party||'Unknown person').trim()||'Unknown person';people[person]=(people[person]||0)+Math.max(0,Number(x.amount)||0)});const openingRows=openingItems.map(x=>`<div class="breakrow"><span>${esc(x.party)}<small>Starting balance · ${fmt(x.date||today())}</small></span><strong>${money(x.amount)}</strong></div>`).join('');const normalRows=Object.entries(people).filter(([person])=>!openingItems.some(x=>x.party===person)).sort((a,b)=>b[1]-a[1]).map(([person,total])=>`<div class="breakrow"><span>${esc(person)}</span><strong>${money(total)}</strong></div>`).join('');return openingRows+normalRows||empty('No balances recorded by this date.')};
+ $('iOweList').innerHTML=grouped(iOwe,openingCreditorsAsOf);
+ $('owedToMeList').innerHTML=grouped(owedExpenses,openingDebtorsAsOf);
  $('incomeDueList').innerHTML=incomeDue.length?incomeDue.map(x=>`<div class="breakrow"><span>${esc(x.source||'Income')} · ${esc(x.duePerson||'Unknown person')}<small>Entry: ${fmt(x.date)}</small></span><strong>${money(incomeOutstandingAt(x,asOf))}</strong></div>`).join(''):empty('No income due to collect by this date.');
  $('unassignedDueHint').hidden=!legacy.length;$('unassignedDueHint').textContent=legacy.length?`${legacy.length} older Due ${legacy.length===1?'entry is':'entries are'} not assigned to either side. These older records are preserved and excluded from creditor and debtor totals.`:'';
 }
