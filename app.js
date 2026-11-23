@@ -3720,21 +3720,21 @@ function supplierBillBalancesAt(supplier,asOf){
 function renderDueReport(from,to){
  const asOf=to;
  const inRange=(date)=>String(date||'')>=from&&String(date||'')<=to;
- const due=db.expenses.filter(x=>x.paymentType==='Due'&&String(x.date||'')<=asOf&&(inRange(x.date)||expenseSettlements(x).some(s=>inRange(s.date))));
+ const due=db.expenses.filter(x=>x.paymentType==='Due'&&String(x.date||'')<=asOf);
  const iOwe=due.filter(x=>x.dueDirection==='i_owe'&&expenseOutstandingAt(x,asOf)>0),owedExpenses=due.filter(x=>x.dueDirection==='owed_to_me'&&expenseOutstandingAt(x,asOf)>0);
- const incomeDue=db.incomes.filter(x=>x.paymentType==='Due'&&String(x.date||'')<=asOf&&(inRange(x.date)||incomeCollections(x).some(c=>inRange(c.date)))&&incomeOutstandingAt(x,asOf)>0),legacy=due.filter(x=>!['i_owe','owed_to_me'].includes(x.dueDirection));
+ const incomeDue=db.incomes.filter(x=>x.paymentType==='Due'&&String(x.date||'')<=asOf&&incomeOutstandingAt(x,asOf)>0),legacy=due.filter(x=>!['i_owe','owed_to_me'].includes(x.dueDirection));
  const supplierNames=[...new Set([...db.suppliers,...db.purchaseBills.map(b=>b.supplier),...db.supplierPayments.map(p=>p.supplier)].filter(Boolean))].sort((a,b)=>a.localeCompare(b));
  const supplierRows=supplierNames.map(name=>{
   const allocations=supplierBillBalancesAt(name,asOf),balance=allocations.reduce((t,row)=>t+row.remaining,0);
   const periodBills=db.purchaseBills.filter(b=>b.supplier===name&&b.date>=from&&b.date<=to);
   const periodPayments=db.supplierPayments.filter(p=>p.supplier===name&&p.date>=from&&p.date<=to).reduce((t,p)=>t+Number(p.amount||0)+Number(p.discount||0),0);
   const periodCredit=periodBills.reduce((t,b)=>t+billCredit(b),0);
-  if(!periodBills.length&&!periodPayments)return '';
+  if(balance<=0.000001&&!periodBills.length&&!periodPayments)return '';
   return `<button class="supplier-creditor-report-row creditor-one-line" type="button" data-creditor="${esc(name)}"><span class="supplier-creditor-main"><strong>${esc(name)}</strong><small>${periodBills.length} bills · Credit ${money(periodCredit)} · Payments / discounts ${money(periodPayments)}</small></span><span class="creditor-row-date">${fmt(asOf)}</span><span class="supplier-creditor-balance"><strong>${money(balance)}</strong></span></button>`;
  }).filter(Boolean).join('');
  $('supplierCreditorReport').innerHTML=supplierRows||empty(`No supplier credits or payments to show by ${fmt(asOf)}.`);
  $('supplierCreditorReport').querySelectorAll('[data-creditor]').forEach(btn=>btn.onclick=()=>{setTab('supplierAccounts');openSupplierAccount(btn.dataset.creditor);if(supplierOutstanding(btn.dataset.creditor)>0.000001)$('paySupplierBtn').click()});
- const suppliersInRange=supplierNames.filter(name=>db.purchaseBills.some(b=>b.supplier===name&&inRange(b.date))||db.supplierPayments.some(p=>p.supplier===name&&inRange(p.date)));
+ const suppliersInRange=supplierNames.filter(name=>supplierBillBalancesAt(name,asOf).some(row=>row.remaining>0.000001)||db.purchaseBills.some(b=>b.supplier===name&&inRange(b.date))||db.supplierPayments.some(p=>p.supplier===name&&inRange(p.date)));
  const supplierTotal=suppliersInRange.reduce((t,name)=>t+supplierBillBalancesAt(name,asOf).reduce((v,row)=>v+row.remaining,0),0);
  const openingCreditors=Array.isArray(db.profile?.openingCreditors)?db.profile.openingCreditors:[];
  const openingDebtors=Array.isArray(db.profile?.openingDebtors)?db.profile.openingDebtors:[];
