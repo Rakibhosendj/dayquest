@@ -2728,3 +2728,16 @@ body{color:var(--dq-font-color,#263b5c)}
 #payExpenseDue #expenseDueCashAmount,#payExpenseDue #expenseDueBankAmount{background:#fff!important;cursor:text!important;pointer-events:auto!important}
 #payExpenseDue #expenseDueActionAmount[readonly]{background:#f5f7fa!important;color:#536176!important;font-weight:750!important}
 @media(max-width:650px){#payExpenseDue .outstanding-payment-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}}
+
+/* Tighten the blank vertical gap above the Outstanding dues list. */
+.app-main>main:has(>#payExpenseDue.panel.active) > #pageContextBar{
+ margin-bottom:2px!important;
+}
+.app-main>main>#payExpenseDue.panel.active{
+ padding-top:0!important;
+ padding-bottom:14px!important;
+}
+#payExpenseDue>.section-head.outstanding-list-heading{
+ margin-top:0!important;
+ margin-bottom:5px!important;
+}
