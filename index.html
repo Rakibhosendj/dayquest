@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261123-all-reports-only-export-v1">
+<link rel="stylesheet" href="style.css?v=20261123-income-sales-separate-pages-v1">
 <title>DayQuest</title>
 </head>
 <body>
@@ -117,6 +117,7 @@
    </details>
    <button class="tab side-link" data-menu-item="loans" data-tab="loans" type="button"><span class="side-link-mark">07</span><span>Loans</span></button>
    <button class="tab side-link" data-menu-item="income" data-tab="income" type="button"><span class="side-link-mark">08</span><span>Income</span></button>
+   <button class="tab side-link" data-menu-item="sales" data-tab="sales" type="button"><span class="side-link-mark">09</span><span>Sales</span></button>
    <button class="tab side-link" data-menu-item="meals" data-tab="meals" type="button"><span class="side-link-mark">08</span><span>Meals</span></button>
    <button class="tab side-link" data-menu-item="quests" data-tab="quests" type="button"><span class="side-link-mark">09</span><span>Daily Quest</span></button>
    <details class="side-group" data-menu-item="reports" data-side-group="reports">
@@ -126,6 +127,7 @@
      <button type="button" class="side-sub-link report-sub-link" data-report-go="production">Production Report</button>
      <button type="button" class="side-sub-link report-sub-link" data-report-go="cost">Cost Report</button>
      <button type="button" class="side-sub-link report-sub-link" data-report-go="income">Income Report</button>
+     <button type="button" class="side-sub-link report-sub-link" data-report-go="sales">Sales Report</button>
      <button type="button" class="side-sub-link report-sub-link" data-report-go="assets">Assets</button>
      <button type="button" class="side-sub-link report-sub-link" data-report-go="purchase">Purchase Reports</button>
      <button type="button" class="side-sub-link report-sub-link" data-report-go="all">All Reports</button>
@@ -184,6 +186,12 @@
    <button type="button" class="quick-action-card account-total-card" data-overview-account-go="loans"><span class="quick-action-button-title">Total Loans</span><span class="quick-action-button-stats"><span>৳0.00</span></span></button>
   </div>
  </section>
+ <section class="overview-quick-panel overview-sortable-section overview-account-totals" id="overviewSectionIncomeTotals" data-overview-section="incomeTotals">
+ <div class="section-head overview-quick-head"><div><h2 data-overview-drag-handle>Income</h2><small class="overview-quick-hint">This month</small></div></div>
+ <div id="overviewIncomeTotalsList" class="quick-action-list overview-account-total-list">
+ <button type="button" class="quick-action-card account-total-card" data-overview-income-go="income"><span class="quick-action-button-title">Income</span><span class="quick-action-button-stats"><span><strong>৳0.00</strong></span><span>Recorded</span></span></button>
+ <button type="button" class="quick-action-card account-total-card" data-overview-income-go="sales"><span class="quick-action-button-title">Sales</span><span class="quick-action-button-stats"><span><strong>৳0.00</strong></span><span>Sales total</span></span></button>
+ </div></section>
  <section class="overview-quick-panel quick-suppliers-panel overview-sortable-section" id="overviewQuickSuppliersPanel" data-overview-section="quickSuppliers" hidden>
   <div class="section-head overview-quick-head"><div><h2 data-overview-drag-handle><button type="button" class="overview-quick-title" id="overviewQuickSupplierSetupLink">Quick Suppliers</button></h2><span class="muted">Hold title to move · tap a supplier to start a purchase bill</span></div><div class="overview-quick-controls"><button type="button" id="overviewQuickSupplierTapToggle" class="quick-action-tap-toggle is-on" aria-pressed="true">ON</button></div></div>
   <div id="overviewQuickSupplierList" class="quick-action-list"></div>
@@ -427,8 +435,41 @@
  <div class="section-head history-section-head"><div><h3>Loan register</h3><span class="muted" id="loanCount">0 loans</span></div></div>
  <div id="loanList" class="list"></div>
 </section>
-<section id="income" class="panel">
- <div class="section-head income-page-head"><div><h2>Income</h2><span class="muted" id="incomeCount">0 entries</span></div><button type="button" class="mini-add" id="toggleSalesMemoForm">＋ New sales memo</button></div>
+<section id="income" class="panel"><div class="section-head"><div><h2>Income</h2><span class="muted" id="incomeCount">0 entries</span></div></div>
+ <form id="incomeForm" class="form">
+  <span class="muted income-edit-hint" id="incomeEditHint" hidden>Editing saved income</span>
+  <label>Type <span class="select-add"><select id="incomeSource" required></select><button type="button" class="mini-add income-add-type" id="addIncomeHead" aria-label="Add type" title="Add type">＋</button></span></label>
+  <label>Income by (person who earned) <span class="select-add"><select id="incomeBy" required></select><button type="button" class="mini-add" id="addIncomePerson" aria-label="Add person" title="Add person">＋</button></span></label>
+  <label>Amount <input id="incomeAmount" type="number" min="0.01" step="0.01" placeholder="0.00" required></label>
+  <label>Payment type <select id="incomePaymentType"><option>Cash</option><option>Bank</option><option>Due</option></select></label>
+  <div id="incomeDueFields" class="due-fields" hidden>
+   <label>Customer / person who owes you <input id="incomeDuePerson" maxlength="60" placeholder="Enter person or customer name"></label>
+   <label>Collect by date <input id="incomeDueDate" type="date"></label>
+   <p class="hint">This income will stay outstanding until you collect it. You can collect the full amount or collect it in parts later.</p>
+  </div>
+  <label>Date <input id="incomeDate" type="date" required></label>
+  <label>Note <input id="incomeNote" maxlength="100" placeholder="Optional details"></label>
+  <div class="total-preview"><span>Income amount</span><strong id="incomeTotalPreview">৳0.00</strong></div>
+  <button class="primary full" id="incomeSubmitBtn">Save income</button>
+  <button class="secondary full" type="button" id="cancelIncomeEdit" hidden>Cancel edit</button>
+ </form>
+ <div class="section-head"><h3>Collect outstanding due</h3><span class="muted">Record money received later</span></div>
+ <form id="incomeCollectForm" class="form" hidden>
+  <div class="total-preview"><span id="collectIncomeLabel">Due collection</span><strong id="collectDueRemaining">৳0.00</strong></div>
+  <label>Collection amount <input id="collectAmount" type="number" min="0.01" step="0.01" required></label>
+  <div class="form-grid">
+   <label>Collection date <input id="collectDate" type="date" required></label>
+   <label>Received by <select id="collectMethod"><option>Cash</option><option>Bank</option></select></label>
+  </div>
+  <label>Note <input id="collectNote" maxlength="100" placeholder="Optional collection details"></label>
+  <button class="primary full">Save collection</button>
+  <button class="secondary full" type="button" id="cancelCollect">Cancel</button>
+ </form>
+ <div class="toolbar income-toolbar"><label class="date-filter-label">Income type <select id="incomeHeadFilter"></select></label><label class="date-filter-label">Income by <select id="incomePersonFilter"></select></label><label class="date-filter-label">Date <input id="incomeDateFilter" type="date"></label><button class="secondary" id="clearIncomeDate">All dates</button></div>
+ <div id="incomeList" class="list"></div>
+</section>
+<section id="sales" class="panel">
+ <div class="section-head income-page-head"><div><h2>Sales</h2><span class="muted" id="salesPageCount">0 entries</span></div><button type="button" class="mini-add" id="toggleSalesMemoForm">＋ New sales memo</button></div>
  <div id="salesMemoWrap" hidden>
   <div class="section-head form-section-head"><h3 id="salesMemoFormTitle">Create sales memo</h3><span class="muted" id="salesMemoEditHint" hidden>Editing saved sales memo</span></div>
   <form id="salesMemoForm" class="form sales-memo-form">
@@ -463,37 +504,6 @@
  </div>
  <div class="section-head form-section-head"><h3>Sales memo register</h3><span class="muted" id="salesMemoCount">0 memos</span></div>
  <div id="salesMemoList" class="list"></div>
- <form id="incomeForm" class="form">
-  <span class="muted income-edit-hint" id="incomeEditHint" hidden>Editing saved income</span>
-  <label>Type <span class="select-add"><select id="incomeSource" required></select><button type="button" class="mini-add income-add-type" id="addIncomeHead" aria-label="Add type" title="Add type">＋</button></span></label>
-  <label>Income by (person who earned) <span class="select-add"><select id="incomeBy" required></select><button type="button" class="mini-add" id="addIncomePerson" aria-label="Add person" title="Add person">＋</button></span></label>
-  <label>Amount <input id="incomeAmount" type="number" min="0.01" step="0.01" placeholder="0.00" required></label>
-  <label>Payment type <select id="incomePaymentType"><option>Cash</option><option>Bank</option><option>Due</option></select></label>
-  <div id="incomeDueFields" class="due-fields" hidden>
-   <label>Customer / person who owes you <input id="incomeDuePerson" maxlength="60" placeholder="Enter person or customer name"></label>
-   <label>Collect by date <input id="incomeDueDate" type="date"></label>
-   <p class="hint">This income will stay outstanding until you collect it. You can collect the full amount or collect it in parts later.</p>
-  </div>
-  <label>Date <input id="incomeDate" type="date" required></label>
-  <label>Note <input id="incomeNote" maxlength="100" placeholder="Optional details"></label>
-  <div class="total-preview"><span>Income amount</span><strong id="incomeTotalPreview">৳0.00</strong></div>
-  <button class="primary full" id="incomeSubmitBtn">Save income</button>
-  <button class="secondary full" type="button" id="cancelIncomeEdit" hidden>Cancel edit</button>
- </form>
- <div class="section-head"><h3>Collect outstanding due</h3><span class="muted">Record money received later</span></div>
- <form id="incomeCollectForm" class="form" hidden>
-  <div class="total-preview"><span id="collectIncomeLabel">Due collection</span><strong id="collectDueRemaining">৳0.00</strong></div>
-  <label>Collection amount <input id="collectAmount" type="number" min="0.01" step="0.01" required></label>
-  <div class="form-grid">
-   <label>Collection date <input id="collectDate" type="date" required></label>
-   <label>Received by <select id="collectMethod"><option>Cash</option><option>Bank</option></select></label>
-  </div>
-  <label>Note <input id="collectNote" maxlength="100" placeholder="Optional collection details"></label>
-  <button class="primary full">Save collection</button>
-  <button class="secondary full" type="button" id="cancelCollect">Cancel</button>
- </form>
- <div class="toolbar income-toolbar"><label class="date-filter-label">Income type <select id="incomeHeadFilter"></select></label><label class="date-filter-label">Income by <select id="incomePersonFilter"></select></label><label class="date-filter-label">Date <input id="incomeDateFilter" type="date"></label><button class="secondary" id="clearIncomeDate">All dates</button></div>
- <div id="incomeList" class="list"></div>
 </section>
 <section id="quests" class="panel">
  <div class="section-head"><button type="button" id="dailyQuestSetupLink" class="overview-quick-title"><h2>Daily Quest</h2></button><span class="pill" id="questSummary">0 completed</span></div>
@@ -964,6 +974,9 @@
   <p class="hint">The Cost Report PDF and Excel export show itemized costs with paid amount, due amount and inventory stock as of the selected To date.</p>
  </section>
 
+ <section class="report-pane" data-report-pane="sales" hidden>
+ <div class="cards"><article class="stat"><span class="muted">Sales total</span><strong id="reportSalesTotal">৳0.00</strong><small>Sales memos in selected date range</small></article><article class="stat"><span class="muted">Sales received</span><strong id="reportSalesCollected">৳0.00</strong><small>Payments received in selected date range</small></article><article class="stat"><span class="muted">Sales due</span><strong id="reportSalesDue">৳0.00</strong><small>Outstanding at To date</small></article></div>
+ <div class="section-head"><h2>Sales memo details</h2></div><div id="salesReportList" class="list"></div></section>
  <section class="report-pane" data-report-pane="income" hidden>
   <div class="cards"><article class="stat"><span class="muted">Income entries</span><strong id="reportIncomeTotal">৳0.00</strong><small>by entry date</small></article><article class="stat"><span class="muted">Money collected</span><strong id="reportIncomeCollected">৳0.00</strong><small>by collection date</small></article></div>
   <div class="section-head"><h2>Income by person</h2></div><label class="report-filter-label">Show person <select id="reportIncomePersonFilter"></select></label><div id="incomePersonBreakdown" class="list"></div>
@@ -1054,5 +1067,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261123-all-reports-only-export-v1"></script>
+<script src="app.js?v=20261123-income-sales-separate-pages-v1"></script>
 </body></html>
