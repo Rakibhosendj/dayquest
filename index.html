@@ -943,22 +943,19 @@
  </section>
 
  <section class="report-pane" data-report-pane="creditors" hidden>
-  <article class="stat report-total-stat"><span class="muted">Total Creditors</span><strong id="iOweTotal">৳0.00</strong><small id="creditorAsOfLabel"></small></article>
-  <div class="section-head"><h2>Supplier creditors</h2><span class="pill">Supplier balances</span></div>
+  <article class="stat report-total-stat report-total-inline"><span class="muted">Total Creditors</span><small id="creditorAsOfLabel"></small><strong id="iOweTotal">৳0.00</strong></article>
   <h3 class="recent-balance-heading">Recent Creditors</h3>
   <div id="supplierCreditorReport" class="list"></div>
-  <span id="iOweExpenseTotal" hidden></span><div id="iOweList" hidden></div>
+  <div id="iOweList" class="list"></div>
+  <span id="iOweExpenseTotal" hidden></span>
   <p class="hint" id="unassignedDueHint" hidden></p>
  </section>
 
  <section class="report-pane" data-report-pane="debitors" hidden>
-  <article class="stat report-total-stat"><span class="muted">Total Debtors</span><strong id="owedToMeTotal">৳0.00</strong><small id="debitorAsOfLabel"></small></article>
-  <article class="stat report-total-stat"><span class="muted">Total receivable expenses</span><strong id="owedToMeExpenseTotal">৳0.00</strong><small>Outstanding as of the To date</small></article>
+  <article class="stat report-total-stat report-total-inline"><span class="muted">Total Debtors</span><small id="debitorAsOfLabel"></small><strong id="owedToMeTotal">৳0.00</strong></article>
   <h3 class="recent-balance-heading">Recent Debtors</h3>
   <div id="owedToMeList" class="list"></div>
-  <div class="section-head"><h2>Income due to collect</h2></div>
-  <article class="stat report-total-stat"><span class="muted">Total income due</span><strong id="incomeDueTotal">৳0.00</strong><small>Outstanding as of the To date</small></article>
-  <div id="incomeDueList" class="list"></div>
+  <span id="owedToMeExpenseTotal" hidden></span><span id="incomeDueTotal" hidden></span><div id="incomeDueList" hidden></div>
  </section>
 
  <section class="report-pane" data-report-pane="cost" hidden>
