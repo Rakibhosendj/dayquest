@@ -2300,15 +2300,15 @@ function openStartingBalanceAction(kind,id){
  settlingOpeningBalance={kind,id};setTab('payExpenseDue');const action=kind==='creditor'?'Repay':'Collect';
  const remaining=Math.max(0,Number(item.amount||0)-(item.settlements||[]).reduce((t,s)=>t+Number(s.amount||0),0));
  $('expenseDueActionLabel').textContent=action+': '+item.party+' · Starting balance';$('expenseDueRemaining').textContent='Remaining: '+money(remaining);
- $('expenseDueActionAmount').max=remaining.toFixed(2);$('expenseDueActionAmount').value=remaining.toFixed(2);$('expenseDueActionDate').value=today();$('expenseDueCashAmount').value=remaining.toFixed(2);$('expenseDueBankAmount').value='0';updateExpenseDuePaymentTotal('cash');$('expenseDueActionNote').value='';$('expenseDueActionSubmit').textContent=action;$('expenseDueActionForm').hidden=false;$('expenseDueActionForm').scrollIntoView({behavior:'smooth',block:'center'});
+ $('expenseDueActionAmount').max=remaining.toFixed(2);$('expenseDueCashAmount').value='0.00';$('expenseDueBankAmount').value='0.00';$('expenseDueActionDate').value=today();updateExpenseDuePaymentTotal();$('expenseDueActionNote').value='';$('expenseDueActionSubmit').textContent=action;$('expenseDueActionForm').hidden=false;$('expenseDueActionForm').scrollIntoView({behavior:'smooth',block:'center'});
 }
 function openExpenseDueAction(id){settlingOpeningBalance=null;
  const x=db.expenses.find(item=>item.id===id);if(!x||expenseOutstanding(x)<=0)return;
  setTab('payExpenseDue');
  settlingExpenseId=id;const action=x.dueDirection==='i_owe'?'Pay due':'Collect due',remaining=expenseOutstanding(x);
  $('expenseDueActionLabel').textContent=`${action}: ${x.duePerson||'Unknown person'} · ${x.name||x.category||'Expense'}`;
- $('expenseDueActionAmount').max=remaining.toFixed(2);$('expenseDueActionAmount').value=remaining.toFixed(2);
- $('expenseDueActionDate').value=today();$('expenseDueCashAmount').value=remaining.toFixed(2);$('expenseDueBankAmount').value='0';updateExpenseDuePaymentTotal('cash');$('expenseDueActionNote').value='';$('expenseDueActionSubmit').textContent=action;
+ $('expenseDueActionAmount').max=remaining.toFixed(2);$('expenseDueCashAmount').value='0.00';$('expenseDueBankAmount').value='0.00';
+ $('expenseDueActionDate').value=today();updateExpenseDuePaymentTotal();$('expenseDueActionNote').value='';$('expenseDueActionSubmit').textContent=action;
  $('expenseDueActionForm').hidden=false;$('expenseDueActionForm').scrollIntoView({behavior:'smooth',block:'center'});
 }
 function renderExpenseDueList(){
@@ -2321,24 +2321,14 @@ function renderExpenseDueList(){
  }).join(''):empty('No outstanding expense dues.');
  list.querySelectorAll('[data-settle-expense]').forEach(button=>button.onclick=()=>openExpenseDueAction(button.dataset.settleExpense));
 }
-function updateExpenseDuePaymentTotal(changed='cash'){
+function updateExpenseDuePaymentTotal(){
  const due=Math.max(0,Number($('expenseDueActionAmount').max||0));
- let total=Math.max(0,Number($('expenseDueActionAmount').value||0));
- let cash=Math.max(0,Number($('expenseDueCashAmount').value||0));
- let bank=Math.max(0,Number($('expenseDueBankAmount').value||0));
- if(changed==='cash'||changed==='bank'){
-  // Cash and Bank are both directly editable; update only the Total from their sum.
-  total=cash+bank;
-  $('expenseDueActionAmount').value=total>0?total.toFixed(2):'';
- }else{
-  total=Math.min(total,due);
-  $('expenseDueActionAmount').value=total>0?total.toFixed(2):'';
-  if(changed==='total'){bank=Math.min(bank,total);cash=total-bank;}
- }
- $('expenseDueCashAmount').value=cash.toFixed(2);
- $('expenseDueBankAmount').value=bank.toFixed(2);
- const paid=cash+bank;
- $('expenseDueRemaining').textContent='Remaining: '+money(Math.max(0,due-paid));
+ const cash=Math.max(0,Number($('expenseDueCashAmount').value||0));
+ const bank=Math.max(0,Number($('expenseDueBankAmount').value||0));
+ const total=cash+bank;
+ // Leave Cash and Bank untouched while the user types. Only Total and Remaining recalculate.
+ $('expenseDueActionAmount').value=total.toFixed(2);
+ $('expenseDueRemaining').textContent='Remaining: '+money(Math.max(0,due-total));
 }
 function expenseDuePaymentSplits(){
  return [
@@ -2346,14 +2336,15 @@ function expenseDuePaymentSplits(){
   {method:'Bank',amount:Math.max(0,Number($('expenseDueBankAmount').value||0))}
  ].filter(x=>x.amount>0);
 }
-$('expenseDueActionAmount').addEventListener('input',()=>updateExpenseDuePaymentTotal('total'));
-$('expenseDueCashAmount').addEventListener('input',()=>updateExpenseDuePaymentTotal('cash'));
-$('expenseDueBankAmount').addEventListener('input',()=>updateExpenseDuePaymentTotal('bank'));
+$('expenseDueCashAmount').addEventListener('input',updateExpenseDuePaymentTotal);
+$('expenseDueBankAmount').addEventListener('input',updateExpenseDuePaymentTotal);
 function closeExpenseDueAction(){settlingExpenseId=null;settlingOpeningBalance=null;$('expenseDueActionForm').reset();$('expenseDueActionDate').value=today();$('expenseDueActionForm').hidden=true}
 $('cancelExpenseDueAction').onclick=closeExpenseDueAction;
 $('expenseDueActionForm').onsubmit=e=>{
  e.preventDefault();
- if(settlingOpeningBalance){const {kind,id}=settlingOpeningBalance,key=kind==='creditor'?'openingCreditors':'openingDebtors',item=(db.profile?.[key]||[]).find(x=>x.id===id);if(!item)return closeExpenseDueAction();const amount=Number($('expenseDueActionAmount').value),remaining=Math.max(0,Number(item.amount||0)-(item.settlements||[]).reduce((t,s)=>t+Number(s.amount||0),0));if(!(amount>0)||!Number.isFinite(amount)||amount>remaining+0.000001){alert('Enter an amount greater than 0 and no more than '+money(remaining)+'.');return}const splits=expenseDuePaymentSplits();if(!splits.length||Math.abs(splits.reduce((t,x)=>t+x.amount,0)-amount)>0.009){alert('Enter a Cash amount, Bank amount, or both. The combined amount must be greater than 0 and no more than the remaining balance.');return}if(kind==='creditor'){for(const part of splits){const balanceError=paymentBalanceError(part.method,part.amount);if(balanceError){alert(balanceError);return}}}item.settlements=Array.isArray(item.settlements)?item.settlements:[];splits.forEach(part=>item.settlements.push({id:crypto.randomUUID(),amount:part.amount,date:$('expenseDueActionDate').value,method:part.method,note:$('expenseDueActionNote').value.trim()}));settlingOpeningBalance=null;closeExpenseDueAction();save();return;}
+ const enteredTotal=Number($('expenseDueActionAmount').value||0);
+ if(!(enteredTotal>0)){alert('Enter Cash or Bank Amount.');return}
+ if(settlingOpeningBalance){const {kind,id}=settlingOpeningBalance,key=kind==='creditor'?'openingCreditors':'openingDebtors',item=(db.profile?.[key]||[]).find(x=>x.id===id);if(!item)return closeExpenseDueAction();const amount=Number($('expenseDueActionAmount').value),remaining=Math.max(0,Number(item.amount||0)-(item.settlements||[]).reduce((t,s)=>t+Number(s.amount||0),0));if(!(amount>0)||!Number.isFinite(amount)||amount>remaining+0.000001){alert('Enter an amount greater than 0 and no more than '+money(remaining)+'.');return}const splits=expenseDuePaymentSplits();if(!splits.length||Math.abs(splits.reduce((t,x)=>t+x.amount,0)-amount)>0.009){alert('Enter a Cash amount, Bank amount, or both. The combined amount must be greater than 0 and no more than the remaining balance.');return}if(kind==='creditor'){for(const part of splits){const balanceError=paymentBalanceError(part.method,part.amount);if(balanceError){alert(balanceError);return}}}item.settlements=Array.isArray(item.settlements)?item.settlements:[];splits.forEach(part=>item.settlements.push({id:crypto.randomUUID(),amount:part.amount,date:$('expenseDueActionDate').value,method:part.method,note:$('expenseDueActionNote').value.trim()}));const repaidParty=kind==='creditor'?item.party:'';settlingOpeningBalance=null;pendingSaveAction=null;closeExpenseDueAction();save();if(repaidParty)alert('Repay Successful\\nTo: '+repaidParty+'\\nAmount: '+money(amount));return;}
  const x=db.expenses.find(item=>item.id===settlingExpenseId);if(!x)return closeExpenseDueAction();
  const amount=Number($('expenseDueActionAmount').value),remaining=expenseOutstanding(x);
  if(!(amount>0)||!Number.isFinite(amount)||amount>remaining+0.000001){alert(`Enter an amount greater than 0 and no more than ${money(remaining)}.`);return}
