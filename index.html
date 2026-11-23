@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261123-report-dropdown-date-range-v1">
+<link rel="stylesheet" href="style.css?v=20261123-outstanding-layout-v1">
 <title>DayQuest</title>
 </head>
 <body>
@@ -382,15 +382,21 @@
 </section>
 <section id="payExpenseDue" class="panel">
 
- <div class="section-head"><h2>Outstanding expense dues</h2><span class="muted">Select a due to pay or collect</span></div>
+ <div class="section-head outstanding-list-heading"><h2>Expenses Dues</h2><span class="muted">Select To Payment</span></div>
  <div id="expenseDueList" class="list"></div>
- <div class="section-head"><h2>Pay or collect an expense due</h2><span class="muted">Record due settlements</span></div>
  <form id="expenseDueActionForm" class="form" hidden>
   <div class="total-preview"><span id="expenseDueActionLabel">Due settlement</span><strong id="expenseDueRemaining">৳0.00</strong></div>
-  <label>Amount <input id="expenseDueActionAmount" type="number" min="0.01" step="0.01" required></label>
-  <div class="form-grid">
-   <label>Payment date <input id="expenseDueActionDate" type="date" required></label>
-   <label>Method <select id="expenseDueActionMethod"><option>Cash</option><option>Bank</option></select></label>
+  <div class="outstanding-amount-date-row">
+   <label>Amount <input id="expenseDueActionAmount" type="number" min="0.01" step="0.01" required></label>
+   <label>Payment Date <input id="expenseDueActionDate" type="date" required></label>
+  </div>
+  <fieldset class="outstanding-method-choice"><legend>Payment Method</legend>
+   <label><input id="expenseDueCashCheck" type="checkbox" checked> Cash</label>
+   <label><input id="expenseDueBankCheck" type="checkbox"> Bank</label>
+  </fieldset>
+  <div id="expenseDueSplitFields" class="outstanding-split-row" hidden>
+   <label>Cash Amount <input id="expenseDueCashAmount" type="number" min="0" step="0.01" value="0"></label>
+   <label>Bank Amount <input id="expenseDueBankAmount" type="number" min="0" step="0.01" value="0"></label>
   </div>
   <label>Note <input id="expenseDueActionNote" maxlength="100" placeholder="Optional details"></label>
   <button class="primary full" id="expenseDueActionSubmit">Save due settlement</button>
@@ -1065,5 +1071,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261123-report-dropdown-date-range-v1"></script>
+<script src="app.js?v=20261123-outstanding-layout-v1"></script>
 </body></html>
