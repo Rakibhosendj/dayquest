@@ -3972,6 +3972,15 @@ function queueCloudSave(){
  if(!cloudReady||!navigator.onLine){hideCloudStatus();return}
  clearTimeout(cloudSyncTimer);hideCloudStatus();cloudSyncTimer=setTimeout(pushCloudData,900);
 }
+function describeCloudWriteError(error){
+ const code=String(error?.code||'').trim(),message=String(error?.message||error||'Unknown cloud error').replace(/\\s+/g,' ').trim();
+ if(code==='PGRST202'||/dayquest_save_family_data.*(not found|schema cache)|could not find the function/i.test(message))return 'Database setup is incomplete: the DayQuest save function is missing. Run the family-data SQL migration in Supabase.';
+ if(code==='42P01'||/dayquest_family_data.*does not exist|relation .* does not exist/i.test(message))return 'Database setup is incomplete: the family-data table is missing. Run the family-data SQL migration in Supabase.';
+ if(code==='42501'||/permission denied|row-level security/i.test(message))return 'Supabase denied the save. Check the family-data table permissions and RLS policy.';
+ if(code==='P0001'&&/DAYQUEST_VERSION_CONFLICT/i.test(message))return 'Another device updated the family records.';
+ const detail=[code,message].filter(Boolean).join(' · ');
+ return detail.slice(0,220);
+}
 async function pushCloudData(){
  if(!cloudReady||!cloudUser||!navigator.onLine||cloudConflict||cloudSyncBusy)return;
  cloudSyncBusy=true;$('cloudSyncNow').disabled=true;
@@ -3981,7 +3990,7 @@ async function pushCloudData(){
   hideCloudStatus();
  }catch(error){
   if(/DAYQUEST_VERSION_CONFLICT/i.test(String(error.message||error))){cloudConflict=true;cloudReady=false;saveCloudMeta(cloudVersion,true);setCloudStatus('Another device updated the family records. Download this device copy or load the latest cloud data.',{conflict:true})}
-  else{cloudDirty=true;saveCloudMeta(cloudVersion,true);setCloudStatus('Cloud sync failed. Your local changes are saved on this device; tap Sync now when connected.',{offline:!navigator.onLine});console.error('DayQuest cloud save failed',error)}
+  else{cloudDirty=true;saveCloudMeta(cloudVersion,true);setCloudStatus('Cloud sync failed — local records are safe. '+describeCloudWriteError(error),{offline:!navigator.onLine});console.error('DayQuest cloud save failed',error)}
  }finally{cloudSyncBusy=false;$('cloudSyncNow').disabled=false;if(cloudReady&&cloudDirty&&!cloudConflict){clearTimeout(cloudSyncTimer);cloudSyncTimer=setTimeout(pushCloudData,500)}}
 }
 function saveLocalSafetyCopy(){cloudBackupSnapshot=JSON.parse(JSON.stringify(db));return cloudBackupSnapshot}
