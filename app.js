@@ -3224,6 +3224,36 @@ $('balanceTransferSubmit').onclick=()=>{
  db.moneyTransfers.unshift({id:crypto.randomUUID(),from:direction[0],to:direction[1],amount,date,note:$('balanceTransferNote').value.trim(),createdAt:new Date().toISOString()});
  $('balanceTransferAmount').value='';$('balanceTransferNote').value='';save();alert('Balance transferred successfully.');
 };
+function renderOverviewAccountTotals(){
+ const host=$('overviewAccountTotalsList');if(!host)return;
+ const asOf=today(),dueExpenses=db.expenses.filter(x=>x.paymentType==='Due'&&String(x.date||'')<=asOf);
+ const iOwe=dueExpenses.filter(x=>x.dueDirection==='i_owe').reduce((t,x)=>t+expenseOutstandingAt(x,asOf),0);
+ const owedExpenses=dueExpenses.filter(x=>x.dueDirection==='owed_to_me').reduce((t,x)=>t+expenseOutstandingAt(x,asOf),0);
+ const incomeDue=db.incomes.filter(x=>x.paymentType==='Due'&&String(x.date||'')<=asOf).reduce((t,x)=>t+incomeOutstandingAt(x,asOf),0);
+ const supplierNames=[...new Set([...db.suppliers,...db.purchaseBills.map(b=>b.supplier),...db.supplierPayments.map(p=>p.supplier)].filter(Boolean))];
+ const supplierDue=supplierNames.reduce((t,name)=>t+supplierBillBalancesAt(name,asOf).reduce((v,row)=>v+row.remaining,0),0);
+ const openingCreditors=(db.profile?.openingCreditors||[]).filter(x=>!x.date||x.date<=asOf).reduce((t,x)=>t+Math.max(0,Number(x.amount)||0),0);
+ const openingDebtors=(db.profile?.openingDebtors||[]).filter(x=>!x.date||x.date<=asOf).reduce((t,x)=>t+Math.max(0,Number(x.amount)||0),0);
+ const creditors=supplierDue+iOwe+openingCreditors;
+ const debtors=owedExpenses+incomeDue+openingDebtors;
+ const loans=loanMoneySummary(),totalLoans=loans.given+loans.taken;
+ host.innerHTML=`
+  <button type="button" class="quick-action-card account-total-card" data-overview-account-go="debitors" aria-label="Open Debtors. Outstanding ${esc(money(debtors))}.">
+   <span class="quick-action-button-title">Total Debtors</span><span class="quick-action-button-stats"><span><strong>${money(debtors)}</strong></span><span>To collect</span></span>
+  </button>
+  <button type="button" class="quick-action-card account-total-card" data-overview-account-go="creditors" aria-label="Open Creditors. Outstanding ${esc(money(creditors))}.">
+   <span class="quick-action-button-title">Total Creditors</span><span class="quick-action-button-stats"><span><strong>${money(creditors)}</strong></span><span>To pay</span></span>
+  </button>
+  <button type="button" class="quick-action-card account-total-card" data-overview-account-go="loans" aria-label="Open Loans. Total outstanding ${esc(money(totalLoans))}.">
+   <span class="quick-action-button-title">Total Loans</span><span class="quick-action-button-stats"><span><strong>${money(totalLoans)}</strong></span><span>Collect ${money(loans.given)} · Repay ${money(loans.taken)}</span></span>
+  </button>`;
+ host.querySelectorAll('[data-overview-account-go]').forEach(button=>button.onclick=()=>{
+  const destination=button.dataset.overviewAccountGo;
+  if(destination==='loans')setTab('loans');
+  else{setTab('reports');activateReportSection(destination)}
+ });
+}
+
 function render(){
  applySideMenuOrder();applyOverviewSectionOrder();
  let d=today(),questDate=questLocalDate(),exToday=db.expenses.filter(x=>x.date===d),billsToday=db.purchaseBills.filter(x=>x.date===d),qToday=dayQuestsForNow(questDate),done=qToday.filter(q=>completed(q,q._occurrenceDate||questDate)).length;
@@ -3231,6 +3261,7 @@ function render(){
  let ws=startWeek(d),ms=d.slice(0,7);$('weekTotal').textContent=money(sum(db.expenses.filter(x=>x.date>=ws&&x.date<=d))+db.purchaseBills.filter(b=>b.date>=ws&&b.date<=d).reduce((t,b)=>t+billTotal(b),0));$('monthTotal').textContent=money(sum(db.expenses.filter(x=>x.date.startsWith(ms)))+db.purchaseBills.filter(b=>b.date.startsWith(ms)).reduce((t,b)=>t+billTotal(b),0));
  $('todayIncome').textContent=money(db.incomes.reduce((t,x)=>t+incomeReceivedOn(x,d),0));$('monthIncome').textContent=money(incomeReceivedBetween(ms+'-01',d));showBalances();renderBalanceTransfers();
  renderRecentExpenses();
+  renderOverviewAccountTotals();
   $('todayQuests').innerHTML=questHTML(qToday.slice(0,4),false);
  $('expenseCount').textContent=`${db.expenses.length} expenses · ${db.purchaseBills.length} bills`;renderLoans();
  let filtered=db.expenses.filter(x=>( $('expenseFilter').value==='all'||x.category===$('expenseFilter').value)&&(`${x.note} ${x.category}`).toLowerCase().includes($('expenseSearch').value.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date));
