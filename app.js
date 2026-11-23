@@ -2770,15 +2770,27 @@ function activateReportSection(key){
  if(target&&$('reports')?.classList.contains('active'))target.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-const reportNavigation=$('sideNav');
-if(reportNavigation)reportNavigation.addEventListener('click',event=>{
- const button=event.target.closest('[data-report-go]');
- if(!button||!reportNavigation.contains(button))return;
+// Capture report navigation before the sidebar's hold-to-reorder handlers.
+document.addEventListener('click',event=>{
+ const target=event.target;
+ const button=target?.closest?.('#sideNav [data-report-go]');
+ if(!button)return;
  event.preventDefault();
  event.stopPropagation();
- setTab('reports');
- activateReportSection(button.dataset.reportGo);
-});
+ event.stopImmediatePropagation();
+ const reportKey=button.dataset.reportGo;
+ try{
+  if(document.querySelector('.panel.active')?.id!=='reports')setTab('reports');
+  renderReport();
+  activateReportSection(reportKey);
+ }catch(error){
+  console.error('Reports submenu navigation failed:',error);
+  document.querySelectorAll('.panel').forEach(panel=>panel.classList.toggle('active',panel.id==='reports'));
+  activateReportSection(reportKey);
+  updateBackButton();
+ }
+ if(window.innerWidth<760)closeSidebar();
+},true);
 function setColorDropdown(prefix,color){
  const select=$(prefix+'Select'),input=$(prefix+'Input'),value=$(prefix+'Value'),swatch=$(prefix+'Swatch');
  const normalized=String(color||'').toLowerCase();
