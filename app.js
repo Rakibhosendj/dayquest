@@ -2628,14 +2628,18 @@ function reportCreditorRows(from,to){
  db.purchaseBills.filter(b=>String(b.date||'')<=to).forEach(b=>{
   const settlement=settlements.get(String(b.id))||{paid:0,discount:0,remaining:billCredit(b)};
   if(!(String(b.date||'')>=from&&String(b.date||'')<=to))return;
-  rows.push([fmt(b.date),b.supplier||'Unassigned Supplier','Purchase bill',b.billNo||'',money(billTotal(b)),money(Math.max(0,Number(b.cashPaid||0))+Math.max(0,Number(b.bankPaid||0))+Number(settlement.paid||0)),money(settlement.discount||0),money(settlement.remaining||0)]);
+  rows.push([fmt(b.date),b.supplier||'Unassigned Supplier','Purchase',b.billNo||'',money(billTotal(b)),money(Math.max(0,Number(b.cashPaid||0))+Math.max(0,Number(b.bankPaid||0))+Number(settlement.paid||0)),money(settlement.discount||0),money(settlement.remaining||0)]);
  });
  db.expenses.filter(x=>x.paymentType==='Due'&&x.dueDirection==='i_owe'&&String(x.date||'')<=to).forEach(x=>{
   const due=expenseOutstandingAt(x,to);if(!(String(x.date||'')>=from&&String(x.date||'')<=to))return;
   const settled=expenseSettlements(x).filter(s=>!s.date||String(s.date)<=to).reduce((t,s)=>t+Number(s.amount||0),0);
   rows.push([fmt(x.date),x.duePerson||'Unknown creditor','Expense due',x.name||x.category||x.note||'',money(x.amount),money(settled),'—',money(due)]);
  });
- return rows;
+ (db.profile?.openingCreditors||[]).filter(x=>(String(x.date||'')>=from&&String(x.date||'')<=to)||((x.settlements||[]).some(s=>String(s.date||'')>=from&&String(s.date||'')<=to))).forEach(x=>{
+  const settled=(x.settlements||[]).filter(s=>!s.date||String(s.date)<=to).reduce((t,s)=>t+Number(s.amount||0),0),due=Math.max(0,Number(x.amount||0)-settled);
+  rows.push([fmt(x.date||from),x.party||'Unknown creditor','Starting','Starting balance',money(x.amount),money(settled),'—',money(due)]);
+ });
+ return rows.sort((a,b)=>String(a[0]).localeCompare(String(b[0])));
 }
 function reportDebtorRows(from,to){
  const rows=[];
@@ -2649,7 +2653,11 @@ function reportDebtorRows(from,to){
   const received=incomeCollections(x).filter(c=>!c.date||String(c.date)<=to).reduce((t,c)=>t+Number(c.amount||0),0);
   rows.push([fmt(x.date),x.duePerson||'Unknown customer','Income due',x.source||'Income',money(x.amount),money(received),money(due)]);
  });
- return rows;
+ (db.profile?.openingDebtors||[]).filter(x=>(String(x.date||'')>=from&&String(x.date||'')<=to)||((x.settlements||[]).some(s=>String(s.date||'')>=from&&String(s.date||'')<=to))).forEach(x=>{
+  const received=(x.settlements||[]).filter(s=>!s.date||String(s.date)<=to).reduce((t,s)=>t+Number(s.amount||0),0),due=Math.max(0,Number(x.amount||0)-received);
+  rows.push([fmt(x.date||from),x.party||'Unknown debtor','Starting','Starting balance',money(x.amount),money(received),money(due)]);
+ });
+ return rows.sort((a,b)=>String(a[0]).localeCompare(String(b[0])));
 }
 function reportIncomeRows(from,to){
  return db.incomes.filter(x=>!x.salesMemo&&String(x.date||'')>=from&&String(x.date||'')<=to).slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).map(x=>{
