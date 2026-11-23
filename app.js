@@ -2300,15 +2300,15 @@ function openStartingBalanceAction(kind,id){
  settlingOpeningBalance={kind,id};setTab('payExpenseDue');const action=kind==='creditor'?'Repay':'Collect';
  const remaining=Math.max(0,Number(item.amount||0)-(item.settlements||[]).reduce((t,s)=>t+Number(s.amount||0),0));
  $('expenseDueActionLabel').textContent=action+': '+item.party+' · Starting balance';$('expenseDueRemaining').textContent='Remaining: '+money(remaining);
- $('expenseDueActionAmount').value=remaining.toFixed(2);$('expenseDueActionAmount').max=remaining.toFixed(2);$('expenseDueActionDate').value=today();$('expenseDueCashAmount').value=remaining.toFixed(2);$('expenseDueBankAmount').value='0';updateExpenseDuePaymentTotal();$('expenseDueActionNote').value='';$('expenseDueActionSubmit').textContent=action;$('expenseDueActionForm').hidden=false;$('expenseDueActionForm').scrollIntoView({behavior:'smooth',block:'center'});
+ $('expenseDueActionAmount').max=remaining.toFixed(2);$('expenseDueActionAmount').value=remaining.toFixed(2);$('expenseDueActionDate').value=today();$('expenseDueCashAmount').value=remaining.toFixed(2);$('expenseDueBankAmount').value='0';updateExpenseDuePaymentTotal('cash');$('expenseDueActionNote').value='';$('expenseDueActionSubmit').textContent=action;$('expenseDueActionForm').hidden=false;$('expenseDueActionForm').scrollIntoView({behavior:'smooth',block:'center'});
 }
 function openExpenseDueAction(id){settlingOpeningBalance=null;
  const x=db.expenses.find(item=>item.id===id);if(!x||expenseOutstanding(x)<=0)return;
  setTab('payExpenseDue');
- settlingExpenseId=id;const action=x.dueDirection==='i_owe'?'Pay due':'Collect due';
+ settlingExpenseId=id;const action=x.dueDirection==='i_owe'?'Pay due':'Collect due',remaining=expenseOutstanding(x);
  $('expenseDueActionLabel').textContent=`${action}: ${x.duePerson||'Unknown person'} · ${x.name||x.category||'Expense'}`;
- $('expenseDueRemaining').textContent=`Remaining: ${money(expenseOutstanding(x))}`;$('expenseDueActionAmount').value=expenseOutstanding(x).toFixed(2);$('expenseDueActionAmount').max=expenseOutstanding(x).toFixed(2);
- $('expenseDueActionDate').value=today();$('expenseDueCashAmount').value=remaining.toFixed(2);$('expenseDueBankAmount').value='0';updateExpenseDuePaymentTotal();$('expenseDueActionNote').value='';$('expenseDueActionSubmit').textContent=action;
+ $('expenseDueActionAmount').max=remaining.toFixed(2);$('expenseDueActionAmount').value=remaining.toFixed(2);
+ $('expenseDueActionDate').value=today();$('expenseDueCashAmount').value=remaining.toFixed(2);$('expenseDueBankAmount').value='0';updateExpenseDuePaymentTotal('cash');$('expenseDueActionNote').value='';$('expenseDueActionSubmit').textContent=action;
  $('expenseDueActionForm').hidden=false;$('expenseDueActionForm').scrollIntoView({behavior:'smooth',block:'center'});
 }
 function renderExpenseDueList(){
@@ -2321,13 +2321,28 @@ function renderExpenseDueList(){
  }).join(''):empty('No outstanding expense dues.');
  list.querySelectorAll('[data-settle-expense]').forEach(button=>button.onclick=()=>openExpenseDueAction(button.dataset.settleExpense));
 }
-function updateExpenseDuePaymentTotal(){
- const cash=Math.max(0,Number($('expenseDueCashAmount').value||0));
- const bank=Math.max(0,Number($('expenseDueBankAmount').value||0));
- const total=cash+bank;
- $('expenseDueActionAmount').value=total>0?total.toFixed(2):'';
- const originalDue=Number($('expenseDueActionAmount').max||0);
- $('expenseDueRemaining').textContent='Remaining: '+money(Math.max(0,originalDue-total));
+function updateExpenseDuePaymentTotal(changed='cash'){
+ const due=Math.max(0,Number($('expenseDueActionAmount').max||0));
+ let total=Math.max(0,Number($('expenseDueActionAmount').value||0));
+ let cash=Math.max(0,Number($('expenseDueCashAmount').value||0));
+ let bank=Math.max(0,Number($('expenseDueBankAmount').value||0));
+ // Keep Total as the payment target and make the other amount the exact remainder.
+ total=Math.min(total,due);
+ if(changed==='total'){
+  $('expenseDueActionAmount').value=total>0?total.toFixed(2):'';
+  bank=Math.min(bank,total);
+  cash=total-bank;
+ }else if(changed==='bank'){
+  bank=Math.min(bank,total);
+  cash=total-bank;
+ }else{
+  cash=Math.min(cash,total);
+  bank=total-cash;
+ }
+ $('expenseDueCashAmount').value=cash.toFixed(2);
+ $('expenseDueBankAmount').value=bank.toFixed(2);
+ const paid=cash+bank;
+ $('expenseDueRemaining').textContent='Remaining: '+money(Math.max(0,due-paid));
 }
 function expenseDuePaymentSplits(){
  return [
@@ -2335,8 +2350,9 @@ function expenseDuePaymentSplits(){
   {method:'Bank',amount:Math.max(0,Number($('expenseDueBankAmount').value||0))}
  ].filter(x=>x.amount>0);
 }
-$('expenseDueCashAmount').addEventListener('input',updateExpenseDuePaymentTotal);
-$('expenseDueBankAmount').addEventListener('input',updateExpenseDuePaymentTotal);
+$('expenseDueActionAmount').addEventListener('input',()=>updateExpenseDuePaymentTotal('total'));
+$('expenseDueCashAmount').addEventListener('input',()=>updateExpenseDuePaymentTotal('cash'));
+$('expenseDueBankAmount').addEventListener('input',()=>updateExpenseDuePaymentTotal('bank'));
 function closeExpenseDueAction(){settlingExpenseId=null;settlingOpeningBalance=null;$('expenseDueActionForm').reset();$('expenseDueActionDate').value=today();$('expenseDueActionForm').hidden=true}
 $('cancelExpenseDueAction').onclick=closeExpenseDueAction;
 $('expenseDueActionForm').onsubmit=e=>{
