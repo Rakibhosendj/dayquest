@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261123-remove-overview-repo-v1">
+<link rel="stylesheet" href="style.css?v=20261123-meals-header-cleanup-v1">
 <title>DayQuest</title>
 </head>
 <body>
@@ -231,7 +231,6 @@
  <div id="supplierEntryList" class="list supplier-entry-list"></div>
 </section>
 <section id="meals" class="panel">
- <div class="section-head"><div><h2>Meals</h2><span class="muted">Set daily meals and manage each member by date</span></div><button type="button" class="secondary" id="mealsBackOverview">Back to Overview</button></div>
  <section class="settings-card meal-settings-card"><div class="meal-inline-row"><strong>Day Meal</strong><label class="meal-count-field"><input id="mealDefaultCount" type="number" min="0" step="1" value="3" aria-label="Day meal count"></label><button type="button" class="primary" id="mealDefaultSave">Save</button></div></section>
  <section class="settings-card meal-settings-card"><div class="meal-date-count-grid"><strong>Date Meal</strong><label><input id="mealDateEntry" type="date" aria-label="Date for meal count"></label><label class="meal-count-field"><span>M</span><input id="mealDateCount" type="number" min="0" step="1" value="3" aria-label="Meals for selected date"></label><button type="button" class="primary" id="mealDateSave">Save</button></div></section>
  <section class="settings-card meal-settings-card"><div class="section-head meal-member-control-head"><h3>Member Meal</h3><label class="meal-date-select">Date <input id="mealControlDate" type="date"></label></div><div id="mealMemberControls" class="meal-member-list"></div></section>
@@ -1063,5 +1062,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261123-remove-overview-repo-v1"></script>
+<script src="app.js?v=20261123-meals-header-cleanup-v1"></script>
 </body></html>
