@@ -1,5 +1,6 @@
 const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slice(0,10);
 const appPageHistory=[];
+let outstandingReturnReport='';
 let adminCloudUnlocked=false;
 const ADMIN_PASSWORD_ITERATIONS=310000;
 const SIDE_MENU_DEFAULT_ORDER=['home','expenses','inventory','budget','production','supplierAccounts','accounts','outstanding','loans','income','sales','meals','quests','reports','profile','settings'];
@@ -400,7 +401,7 @@ function updatePageBalanceTitle(tab){
  const titles={home:'Overview',purchaseBills:'Purchase',inventory:'Inventory',budget:'Budget',budgetViewPage:'Budget',production:'Production',supplierAccounts:'Supplier Accounts',supplierEntry:'Supplier Entry',payExpenseDue:'Outstanding',loans:'Loans',income:'Income',meals:'Meals',quests:'Daily Quest',questSetup:'Daily Quest',profile:'Profile',memberProfilePage:selectedMemberProfileName||'Member Profile',settings:'Settings',costChartPage:'Cost Chart',quickExpenses:'Quick Expenses',expenseEntries:'Expenses'};
  let title=titles[tab]||String(tab||'DayQuest').replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase());
  if(tab==='reports'){const selected=document.querySelector('[data-report-go].active')?.dataset.reportGo||'members';title=selected==='all'?'All Reports':(REPORT_TITLES[selected]||'Reports')}
- const pageIcon=$('pageContextIcon');if(pageIcon){const showIcon=tab==='reports'&&['creditors','debitors'].includes(document.querySelector('[data-report-go].active')?.dataset.reportGo||'');pageIcon.hidden=!showIcon;}
+ const pageIcon=$('pageContextIcon');if(pageIcon){const showIcon=(tab==='reports'&&['creditors','debitors'].includes(document.querySelector('[data-report-go].active')?.dataset.reportGo||''))||tab==='payExpenseDue';pageIcon.hidden=!showIcon;}
  const element=$('pageContextTitle');if(element)element.textContent=title;showBalances();
 }
 const startWeek=d=>{let x=dateObj(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return x.toISOString().slice(0,10)};
@@ -692,6 +693,9 @@ function updateBackButton(){
  button.disabled=!canGoBack;
 }
 function goBackToPreviousPage(){
+ if(document.querySelector('.panel.active')?.id==='payExpenseDue'&&['creditors','debitors'].includes(outstandingReturnReport)){
+  const target=outstandingReturnReport;outstandingReturnReport='';setTab('reports',{skipHistory:true});activateReportSection(target);return;
+ }
  let previous='';
  while(appPageHistory.length&&!previous){
   const candidate=appPageHistory.pop();
@@ -703,6 +707,7 @@ function goBackToPreviousPage(){
 }
 function setTab(t,options={}){
  const currentPage=document.querySelector('.panel.active')?.id;
+ if(t==='payExpenseDue'&&currentPage==='reports')outstandingReturnReport=document.querySelector('[data-report-go].active')?.dataset.reportGo||'';
  if(!options.skipHistory&&currentPage&&currentPage!==t){
   appPageHistory.push(currentPage);
   if(appPageHistory.length>40)appPageHistory.shift();
@@ -2295,7 +2300,7 @@ function openStartingBalanceAction(kind,id){
  settlingOpeningBalance={kind,id};setTab('payExpenseDue');const action=kind==='creditor'?'Repay':'Collect';
  const remaining=Math.max(0,Number(item.amount||0)-(item.settlements||[]).reduce((t,s)=>t+Number(s.amount||0),0));
  $('expenseDueActionLabel').textContent=action+': '+item.party+' · Starting balance';$('expenseDueRemaining').textContent='Remaining: '+money(remaining);
- $('expenseDueActionAmount').value=remaining.toFixed(2);$('expenseDueActionAmount').max=remaining.toFixed(2);$('expenseDueActionDate').value=today();$('expenseDueActionMethod').value='Cash';$('expenseDueActionNote').value='';$('expenseDueActionSubmit').textContent=action;$('expenseDueActionForm').hidden=false;$('expenseDueActionForm').scrollIntoView({behavior:'smooth',block:'center'});
+ $('expenseDueActionAmount').value=remaining.toFixed(2);$('expenseDueActionAmount').max=remaining.toFixed(2);$('expenseDueActionDate').value=today();$('expenseDueCashCheck').checked=true;$('expenseDueBankCheck').checked=false;updateExpenseDueMethodFields();$('expenseDueActionNote').value='';$('expenseDueActionSubmit').textContent=action;$('expenseDueActionForm').hidden=false;$('expenseDueActionForm').scrollIntoView({behavior:'smooth',block:'center'});
 }
 function openExpenseDueAction(id){settlingOpeningBalance=null;
  const x=db.expenses.find(item=>item.id===id);if(!x||expenseOutstanding(x)<=0)return;
@@ -2303,7 +2308,7 @@ function openExpenseDueAction(id){settlingOpeningBalance=null;
  settlingExpenseId=id;const action=x.dueDirection==='i_owe'?'Pay due':'Collect due';
  $('expenseDueActionLabel').textContent=`${action}: ${x.duePerson||'Unknown person'} · ${x.name||x.category||'Expense'}`;
  $('expenseDueRemaining').textContent=`Remaining: ${money(expenseOutstanding(x))}`;$('expenseDueActionAmount').value=expenseOutstanding(x).toFixed(2);$('expenseDueActionAmount').max=expenseOutstanding(x).toFixed(2);
- $('expenseDueActionDate').value=today();$('expenseDueActionMethod').value='Cash';$('expenseDueActionNote').value='';$('expenseDueActionSubmit').textContent=action;
+ $('expenseDueActionDate').value=today();$('expenseDueCashCheck').checked=true;$('expenseDueBankCheck').checked=false;updateExpenseDueMethodFields();$('expenseDueActionNote').value='';$('expenseDueActionSubmit').textContent=action;
  $('expenseDueActionForm').hidden=false;$('expenseDueActionForm').scrollIntoView({behavior:'smooth',block:'center'});
 }
 function renderExpenseDueList(){
@@ -2316,17 +2321,35 @@ function renderExpenseDueList(){
  }).join(''):empty('No outstanding expense dues.');
  list.querySelectorAll('[data-settle-expense]').forEach(button=>button.onclick=()=>openExpenseDueAction(button.dataset.settleExpense));
 }
+function updateExpenseDueMethodFields(){
+ const both=$('expenseDueCashCheck').checked&&$('expenseDueBankCheck').checked;
+ $('expenseDueSplitFields').hidden=!both;
+ if(both){const total=Number($('expenseDueActionAmount').value||0);$('expenseDueCashAmount').value=(total/2).toFixed(2);$('expenseDueBankAmount').value=(total-total/2).toFixed(2)}
+}
+function expenseDuePaymentSplits(total){
+ const cash=$('expenseDueCashCheck').checked,bank=$('expenseDueBankCheck').checked;
+ if(cash&&bank)return [{method:'Cash',amount:Number($('expenseDueCashAmount').value||0)},{method:'Bank',amount:Number($('expenseDueBankAmount').value||0)}].filter(x=>x.amount>0);
+ if(cash)return [{method:'Cash',amount:total}];if(bank)return [{method:'Bank',amount:total}];return [];
+}
+$('expenseDueCashCheck').addEventListener('change',updateExpenseDueMethodFields);
+$('expenseDueBankCheck').addEventListener('change',updateExpenseDueMethodFields);
+$('expenseDueActionAmount').addEventListener('input',()=>{
+ if($('expenseDueCashCheck').checked&&$('expenseDueBankCheck').checked){const total=Number($('expenseDueActionAmount').value||0),cash=Number($('expenseDueCashAmount').value||0);$('expenseDueBankAmount').value=Math.max(0,total-cash).toFixed(2)}
+ const total=Number($('expenseDueActionAmount').max||0),paid=Number($('expenseDueActionAmount').value||0);
+ $('expenseDueRemaining').textContent='Remaining: '+money(Math.max(0,total-paid));
+});
+$('expenseDueCashAmount').addEventListener('input',()=>{const total=Number($('expenseDueActionAmount').value||0);$('expenseDueBankAmount').value=Math.max(0,total-Number($('expenseDueCashAmount').value||0)).toFixed(2)});
 function closeExpenseDueAction(){settlingExpenseId=null;settlingOpeningBalance=null;$('expenseDueActionForm').reset();$('expenseDueActionDate').value=today();$('expenseDueActionForm').hidden=true}
 $('cancelExpenseDueAction').onclick=closeExpenseDueAction;
 $('expenseDueActionForm').onsubmit=e=>{
  e.preventDefault();
- if(settlingOpeningBalance){const {kind,id}=settlingOpeningBalance,key=kind==='creditor'?'openingCreditors':'openingDebtors',item=(db.profile?.[key]||[]).find(x=>x.id===id);if(!item)return closeExpenseDueAction();const amount=Number($('expenseDueActionAmount').value),remaining=Math.max(0,Number(item.amount||0)-(item.settlements||[]).reduce((t,s)=>t+Number(s.amount||0),0));if(!(amount>0)||!Number.isFinite(amount)||amount>remaining+0.000001){alert('Enter an amount greater than 0 and no more than '+money(remaining)+'.');return}const method=$('expenseDueActionMethod').value==='Bank'?'Bank':'Cash';if(kind==='creditor'){const balanceError=paymentBalanceError(method,amount);if(balanceError){alert(balanceError);return}}item.settlements=Array.isArray(item.settlements)?item.settlements:[];item.settlements.push({id:crypto.randomUUID(),amount,date:$('expenseDueActionDate').value,method,note:$('expenseDueActionNote').value.trim()});settlingOpeningBalance=null;closeExpenseDueAction();save();return;}
+ if(settlingOpeningBalance){const {kind,id}=settlingOpeningBalance,key=kind==='creditor'?'openingCreditors':'openingDebtors',item=(db.profile?.[key]||[]).find(x=>x.id===id);if(!item)return closeExpenseDueAction();const amount=Number($('expenseDueActionAmount').value),remaining=Math.max(0,Number(item.amount||0)-(item.settlements||[]).reduce((t,s)=>t+Number(s.amount||0),0));if(!(amount>0)||!Number.isFinite(amount)||amount>remaining+0.000001){alert('Enter an amount greater than 0 and no more than '+money(remaining)+'.');return}const splits=expenseDuePaymentSplits(amount);if(!splits.length||Math.abs(splits.reduce((t,x)=>t+x.amount,0)-amount)>0.009){alert('Select Cash or Bank. If both are selected, enter Cash and Bank amounts that add up to the Amount.');return}if(kind==='creditor'){for(const part of splits){const balanceError=paymentBalanceError(part.method,part.amount);if(balanceError){alert(balanceError);return}}}item.settlements=Array.isArray(item.settlements)?item.settlements:[];splits.forEach(part=>item.settlements.push({id:crypto.randomUUID(),amount:part.amount,date:$('expenseDueActionDate').value,method:part.method,note:$('expenseDueActionNote').value.trim()}));settlingOpeningBalance=null;closeExpenseDueAction();save();return;}
  const x=db.expenses.find(item=>item.id===settlingExpenseId);if(!x)return closeExpenseDueAction();
  const amount=Number($('expenseDueActionAmount').value),remaining=expenseOutstanding(x);
  if(!(amount>0)||!Number.isFinite(amount)||amount>remaining+0.000001){alert(`Enter an amount greater than 0 and no more than ${money(remaining)}.`);return}
- const method=$('expenseDueActionMethod').value==='Bank'?'Bank':'Cash';
- if(x.dueDirection==='i_owe'){const balanceError=paymentBalanceError(method,amount);if(balanceError){alert(balanceError);return}}
- x.settlements=expenseSettlements(x);x.settlements.push({id:crypto.randomUUID(),amount,date:$('expenseDueActionDate').value,method,note:$('expenseDueActionNote').value.trim()});
+ const splits=expenseDuePaymentSplits(amount);if(!splits.length||Math.abs(splits.reduce((t,x)=>t+x.amount,0)-amount)>0.009){alert('Select Cash or Bank. If both are selected, enter Cash and Bank amounts that add up to the Amount.');return}
+ if(x.dueDirection==='i_owe'){for(const part of splits){const balanceError=paymentBalanceError(part.method,part.amount);if(balanceError){alert(balanceError);return}}}
+ x.settlements=expenseSettlements(x);splits.forEach(part=>x.settlements.push({id:crypto.randomUUID(),amount:part.amount,date:$('expenseDueActionDate').value,method:part.method,note:$('expenseDueActionNote').value.trim()}));
  closeExpenseDueAction();save();
 };
 
