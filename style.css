@@ -2546,3 +2546,60 @@ body{color:var(--dq-font-color,#263b5c)}
 .recent-balance-row>span small{font-size:10px;color:#8993a2;font-weight:600;white-space:nowrap}
 .recent-balance-row>small{font-size:10px;color:#8993a2;white-space:nowrap}
 .recent-balance-row>strong{font-size:12px;white-space:nowrap}
+
+/* Final page context bar: icon + title together on the left; Back on the right. */
+.app-main>main>#pageContextBar.page-context-header{
+ display:flex!important;
+ flex-direction:row!important;
+ flex-wrap:nowrap!important;
+ align-items:center!important;
+ justify-content:space-between!important;
+ gap:10px!important;
+ width:100%!important;
+ min-width:0!important;
+}
+#pageContextBar .page-context-brand{
+ display:flex!important;
+ flex-direction:row!important;
+ align-items:center!important;
+ justify-content:flex-start!important;
+ gap:7px!important;
+ flex:1 1 auto!important;
+ min-width:0!important;
+ order:0!important;
+}
+#pageContextBar .page-context-brand #pageContextIcon{
+ display:block;
+ width:1em!important;
+ height:1em!important;
+ min-width:1em!important;
+ min-height:1em!important;
+ flex:0 0 1em!important;
+ object-fit:contain!important;
+ margin:0!important;
+}
+#pageContextBar .page-context-brand #pageContextIcon[hidden]{display:none!important}
+#pageContextBar .page-context-brand #pageContextTitle{
+ display:block!important;
+ position:static!important;
+ order:0!important;
+ flex:0 1 auto!important;
+ min-width:0!important;
+ margin:0!important;
+ padding:0!important;
+ white-space:nowrap!important;
+ line-height:1.15!important;
+}
+.app-main>main>#pageContextBar>#backButton.page-context-back{
+ display:inline-flex!important;
+ order:1!important;
+ position:static!important;
+ float:none!important;
+ flex:0 0 auto!important;
+ grid-column:auto!important;
+ grid-row:auto!important;
+ justify-self:auto!important;
+ align-self:center!important;
+ margin:0 0 0 auto!important;
+ white-space:nowrap!important;
+}
