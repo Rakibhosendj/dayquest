@@ -4786,3 +4786,31 @@ const reportToday=today();$('productReportFromDate').value=reportToday.slice(0,7
  const observer=new MutationObserver(hideIntro);
  if(document.body)observer.observe(document.body,{childList:true,subtree:true,characterData:true});
 })();
+
+
+/* DayQuest fix: restore saved opening loans and make Overview account tiles navigate explicitly. */
+// Opening loans are stored in the profile and mirrored into the loan register.
+// Rebuild that derived register on every launch so saved starting balances are included.
+if(typeof syncOpeningLoansToRegister==='function'){
+ syncOpeningLoansToRegister(db.profile?.openingLoans||[]);
+ render();
+}
+// Capture account-tile clicks before any other delegated handlers and route by account type.
+document.addEventListener('click',event=>{
+ const button=event.target?.closest?.('#overviewAccountTotalsList [data-overview-account-go]');
+ if(!button)return;
+ const destination=button.dataset.overviewAccountGo;
+ if(!['debitors','creditors','loans'].includes(destination))return;
+ event.preventDefault();
+ event.stopPropagation();
+ event.stopImmediatePropagation();
+ if(destination==='loans'){
+  setTab('loans');
+  renderLoans();
+ }else{
+  setTab('reports');
+  renderReport();
+  activateReportSection(destination);
+ }
+ updateBackButton();
+},true);
