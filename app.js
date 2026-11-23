@@ -3262,8 +3262,8 @@ function renderOverviewAccountTotals(){
  const incomeDue=db.incomes.filter(x=>x.paymentType==='Due'&&String(x.date||'')<=asOf).reduce((t,x)=>t+incomeOutstandingAt(x,asOf),0);
  const supplierNames=[...new Set([...db.suppliers,...db.purchaseBills.map(b=>b.supplier),...db.supplierPayments.map(p=>p.supplier)].filter(Boolean))];
  const supplierDue=supplierNames.reduce((t,name)=>t+supplierBillBalancesAt(name,asOf).reduce((v,row)=>v+row.remaining,0),0);
- const openingCreditors=(db.profile?.openingCreditors||[]).filter(x=>!x.date||x.date<=asOf).reduce((t,x)=>t+Math.max(0,Number(x.amount)||0),0);
- const openingDebtors=(db.profile?.openingDebtors||[]).filter(x=>!x.date||x.date<=asOf).reduce((t,x)=>t+Math.max(0,Number(x.amount)||0),0);
+ const openingCreditors=(db.profile?.openingCreditors||[]).filter(x=>!x.date||x.date<=asOf).reduce((t,x)=>t+Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||s.date<=asOf).reduce((v,s)=>v+Number(s.amount||0),0)),0);
+ const openingDebtors=(db.profile?.openingDebtors||[]).filter(x=>!x.date||x.date<=asOf).reduce((t,x)=>t+Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||s.date<=asOf).reduce((v,s)=>v+Number(s.amount||0),0)),0);
  const creditors=supplierDue+iOwe+openingCreditors;
  const debtors=owedExpenses+incomeDue+openingDebtors;
  const loans=loanMoneySummary(),totalLoans=loans.given+loans.taken;
@@ -3675,8 +3675,8 @@ function renderDueReport(from,to){
  const openingDebtors=Array.isArray(db.profile?.openingDebtors)?db.profile.openingDebtors:[];
  const openingCreditorsAsOf=openingCreditors.filter(x=>!x.date||x.date<=asOf);
  const openingDebtorsAsOf=openingDebtors.filter(x=>!x.date||x.date<=asOf);
- const openingCreditorTotal=openingCreditorsAsOf.reduce((t,x)=>t+Math.max(0,Number(x.amount)||0),0);
- const openingDebtorTotal=openingDebtorsAsOf.reduce((t,x)=>t+Math.max(0,Number(x.amount)||0),0);
+ const openingCreditorTotal=openingCreditorsAsOf.reduce((t,x)=>t+Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||s.date<=asOf).reduce((v,s)=>v+Number(s.amount||0),0)),0);
+ const openingDebtorTotal=openingDebtorsAsOf.reduce((t,x)=>t+Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||s.date<=asOf).reduce((v,s)=>v+Number(s.amount||0),0)),0);
  const expenseOweTotal=iOwe.reduce((t,x)=>t+expenseOutstandingAt(x,asOf),0);
  const owedExpenseTotal=owedExpenses.reduce((t,x)=>t+expenseOutstandingAt(x,asOf),0);
  const incomeDueAmount=incomeDue.reduce((t,x)=>t+incomeOutstandingAt(x,asOf),0);
