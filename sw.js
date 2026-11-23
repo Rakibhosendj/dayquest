@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v209-creditor-debtor-total-inline-v1';
+const CACHE = 'dayquest-cache-v210-creditor-debtor-total-inline-v2';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261123-creditor-debtor-total-inline-v1',
-  './app.js?v=20261123-creditor-debtor-total-inline-v1',
+  './style.css?v=20261123-creditor-debtor-total-inline-v2',
+  './app.js?v=20261123-creditor-debtor-total-inline-v2',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
   './icons/icon-512.svg',
