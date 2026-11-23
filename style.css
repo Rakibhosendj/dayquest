@@ -2614,3 +2614,30 @@ body{color:var(--dq-font-color,#263b5c)}
 .report-total-inline>strong{grid-column:3!important;grid-row:1!important;font-size:14px!important;white-space:nowrap!important}
 [data-report-pane="creditors"] #iOweList,[data-report-pane="debitors"] #owedToMeList{display:block!important}
 @media(max-width:390px){.report-total-inline{column-gap:6px!important;padding:10px 8px!important}.report-total-inline>.muted{font-size:11px!important}.report-total-inline>small{font-size:9px!important}.report-total-inline>strong{font-size:12px!important}}
+
+/* Explicit horizontal content row for creditor / debtor total cards. */
+.report-total-inline{display:block!important;width:100%!important;min-width:0!important}
+.report-total-inline .report-total-inline-row{
+ display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;
+ align-items:center!important;justify-content:space-between!important;
+ gap:5px!important;width:100%!important;min-width:0!important;
+}
+.report-total-inline .report-total-inline-row>.muted{
+ display:block!important;flex:1 1 auto!important;min-width:0!important;
+ font-size:11px!important;line-height:1.15!important;font-weight:750!important;
+ white-space:nowrap!important;overflow:visible!important;
+}
+.report-total-inline .report-total-inline-row>small{
+ display:block!important;flex:0 0 auto!important;margin:0!important;
+ font-size:9px!important;line-height:1.15!important;color:#8792a2!important;
+ white-space:nowrap!important;
+}
+.report-total-inline .report-total-inline-row>strong{
+ display:block!important;flex:0 0 auto!important;margin:0!important;
+ font-size:12px!important;line-height:1.15!important;white-space:nowrap!important;
+}
+@media(min-width:600px){
+ .report-total-inline .report-total-inline-row>.muted{font-size:13px!important}
+ .report-total-inline .report-total-inline-row>small{font-size:10px!important}
+ .report-total-inline .report-total-inline-row>strong{font-size:14px!important}
+}
