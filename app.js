@@ -2326,18 +2326,14 @@ function updateExpenseDuePaymentTotal(changed='cash'){
  let total=Math.max(0,Number($('expenseDueActionAmount').value||0));
  let cash=Math.max(0,Number($('expenseDueCashAmount').value||0));
  let bank=Math.max(0,Number($('expenseDueBankAmount').value||0));
- // Keep Total as the payment target and make the other amount the exact remainder.
- total=Math.min(total,due);
- if(changed==='total'){
+ if(changed==='cash'||changed==='bank'){
+  // Cash and Bank are both directly editable; update only the Total from their sum.
+  total=cash+bank;
   $('expenseDueActionAmount').value=total>0?total.toFixed(2):'';
-  bank=Math.min(bank,total);
-  cash=total-bank;
- }else if(changed==='bank'){
-  bank=Math.min(bank,total);
-  cash=total-bank;
  }else{
-  cash=Math.min(cash,total);
-  bank=total-cash;
+  total=Math.min(total,due);
+  $('expenseDueActionAmount').value=total>0?total.toFixed(2):'';
+  if(changed==='total'){bank=Math.min(bank,total);cash=total-bank;}
  }
  $('expenseDueCashAmount').value=cash.toFixed(2);
  $('expenseDueBankAmount').value=bank.toFixed(2);
