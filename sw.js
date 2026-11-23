@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v190-account-summary-collect-label-v2';
+const CACHE = 'dayquest-cache-v191-account-summary-quick-size-v1';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261123-account-summary-collect-label-v2',
-  './app.js?v=20261123-account-summary-collect-label-v2',
+  './style.css?v=20261123-account-summary-quick-size-v1',
+  './app.js?v=20261123-account-summary-quick-size-v1',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
   './icons/icon-512.svg',
