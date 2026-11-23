@@ -2,7 +2,7 @@ const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slic
 const appPageHistory=[];
 let adminCloudUnlocked=false;
 const ADMIN_PASSWORD_ITERATIONS=310000;
-const SIDE_MENU_DEFAULT_ORDER=['home','expenses','inventory','budget','production','supplierAccounts','accounts','outstanding','loans','income','meals','quests','reports','profile','settings'];
+const SIDE_MENU_DEFAULT_ORDER=['home','expenses','inventory','budget','production','supplierAccounts','accounts','outstanding','loans','income','sales','meals','quests','reports','profile','settings'];
 function normalizeSideMenuOrder(value){
  const valid=new Set(SIDE_MENU_DEFAULT_ORDER);
  const picked=Array.isArray(value)?value.filter(key=>valid.has(key)):[];
@@ -2522,7 +2522,7 @@ $('productReportToDate').onchange=renderReport;
 $('memberProductFilter').onchange=renderReport;
 $('costGroupBy').onchange=renderReport;
 
-const REPORT_TITLES={purchase:'Purchase Reports',assets:'Assets',members:'Members Report',production:'Production Report',creditors:'Creditors',debitors:'Debtors',cost:'Cost Report',income:'Income Report'};
+const REPORT_TITLES={purchase:'Purchase Reports',assets:'Assets',members:'Members Report',production:'Production Report',creditors:'Creditors',debitors:'Debtors',cost:'Cost Report',income:'Income Report',sales:'Sales Report'};
 let reportPresentationReady=false;
 function prepareReportPresentation(){
  if(reportPresentationReady)return;reportPresentationReady=true;
@@ -2620,14 +2620,16 @@ function reportDebtorRows(from,to){
  return rows;
 }
 function reportIncomeRows(from,to){
- return db.incomes.filter(x=>String(x.date||'')>=from&&String(x.date||'')<=to).slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).map(x=>{
+ return db.incomes.filter(x=>!x.salesMemo&&String(x.date||'')>=from&&String(x.date||'')<=to).slice().sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).map(x=>{
   const received=x.paymentType==='Due'?incomeCollections(x).filter(c=>!c.date||String(c.date)<=to).reduce((t,c)=>t+Number(c.amount||0),0):Number(x.amount||0);
   return [fmt(x.date),'Income entry',x.source||'Other',x.description||x.note||'—',x.incomeBy||'Unassigned',x.paymentType||'Cash',money(x.amount),money(received),money(x.paymentType==='Due'?incomeOutstandingAt(x,to):0)];
  });
 }
+function reportSalesRows(from,to){return db.incomes.filter(x=>x.salesMemo&&x.date>=from&&x.date<=to).map(x=>{const m=x.salesMemo,items=m.items||[],p=incomeCollections(x),col=p.filter(c=>!c.date||c.date<=to).reduce((t,c)=>t+Number(c.amount||0),0);return [fmt(x.date),m.memoNo||'—',m.customerName||'—',m.customerPhone||'—',x.incomeBy||'Unassigned',items.map(i=>i.product+' · '+numberText(i.quantity)+' '+(i.unit||'pcs')).join('; '),money(x.amount),money(m.initialPayments?.cash||0),money(m.initialPayments?.bank||0),money(col),money(incomeOutstandingAt(x,to))]})}
+function reportSalesCollectionRows(from,to){const rows=[];db.incomes.filter(x=>x.salesMemo).forEach(x=>incomeCollections(x).filter(c=>c.date>=from&&c.date<=to).forEach(c=>rows.push({date:c.date,row:[fmt(c.date),x.salesMemo.memoNo||'—',x.salesMemo.customerName||'—',x.incomeBy||'Unassigned',money(c.amount),c.method||'Cash']})));return rows.sort((a,b)=>a.date.localeCompare(b.date)).map(x=>x.row)}
 function reportIncomeCollectionRows(from,to){
  const rows=[];
- db.incomes.forEach(x=>incomeCollections(x).filter(c=>String(c.date||'')>=from&&String(c.date||'')<=to).forEach(c=>rows.push({date:String(c.date||''),row:[fmt(c.date),'Collection',x.source||'Other',x.description||x.note||'—',x.incomeBy||'Unassigned',c.method||'Cash',money(c.amount),money(c.amount),money(incomeOutstandingAt(x,to))]})));
+ db.incomes.filter(x=>!x.salesMemo).forEach(x=>incomeCollections(x).filter(c=>String(c.date||'')>=from&&String(c.date||'')<=to).forEach(c=>rows.push({date:String(c.date||''),row:[fmt(c.date),'Collection',x.source||'Other',x.description||x.note||'—',x.incomeBy||'Unassigned',c.method||'Cash',money(c.amount),money(c.amount),money(incomeOutstandingAt(x,to))]})));
  return rows.sort((a,b)=>a.date.localeCompare(b.date)).map(item=>item.row);
 }
 function reportAssetRows(from,to){return reportPurchaseRows(from,to).filter((row)=>String(row[3]||'').toLocaleLowerCase()==='assets')}
@@ -2654,6 +2656,10 @@ function reportTableSections(keys,from,to){
    sections.push({title:'Income Report · Income Entries',headers,rows:reportIncomeRows(from,to)});
    sections.push({title:'Income Report · Collections Received',headers,rows:reportIncomeCollectionRows(from,to)});
   }
+  else if(key==='sales'){
+   sections.push({title:'Sales Report · Sales Memos',headers:['Date','Memo No.','Customer','Phone','Prepared By','Products','Sales Total','Cash Received','Bank Received','Total Collected','Due Amount'],rows:reportSalesRows(from,to)});
+   sections.push({title:'Sales Report · Collections',headers:['Collection Date','Memo No.','Customer','Received By','Collection Amount','Method'],rows:reportSalesCollectionRows(from,to)});
+  }
  });
  return sections;
 }
@@ -2677,7 +2683,7 @@ function exportReport(key,format){
  popup.document.open();popup.document.write(reportDocumentHtml(keys));popup.document.close();popup.focus();setTimeout(()=>{try{popup.print()}catch{}},350);
 }
 function activateReportSection(key){
- const known=['members','production','cost','income','creditors','debitors','assets','purchase'];
+ const known=['members','production','cost','income','sales','creditors','debitors','assets','purchase'];
  const selected=key==='all'?'all':(known.includes(key)?key:'members');prepareReportPresentation();
  const globalTools=document.querySelector('.report-global-tools');if(globalTools)globalTools.hidden=selected!=='all';
  document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.toggle('active',item.dataset.reportGo===selected));
@@ -3254,6 +3260,7 @@ function renderOverviewAccountTotals(){
  });
 }
 
+function renderOverviewIncomeTotals(){const host=$('overviewIncomeTotalsList');if(!host)return;const m=today().slice(0,7),inc=db.incomes.filter(x=>!x.salesMemo&&String(x.date||'').startsWith(m)),sal=db.incomes.filter(x=>x.salesMemo&&String(x.date||'').startsWith(m));host.innerHTML=`<button type="button" class="quick-action-card account-total-card" data-overview-income-go="income"><span class="quick-action-button-title">Income</span><span class="quick-action-button-stats"><span><strong>${money(sum(inc))}</strong></span><span>Recorded</span></span></button><button type="button" class="quick-action-card account-total-card" data-overview-income-go="sales"><span class="quick-action-button-title">Sales</span><span class="quick-action-button-stats"><span><strong>${money(sum(sal))}</strong></span><span>Sales total</span></span></button>`;host.querySelectorAll('[data-overview-income-go]').forEach(b=>b.onclick=()=>setTab(b.dataset.overviewIncomeGo))}
 function render(){
  applySideMenuOrder();applyOverviewSectionOrder();
  let d=today(),questDate=questLocalDate(),exToday=db.expenses.filter(x=>x.date===d),billsToday=db.purchaseBills.filter(x=>x.date===d),qToday=dayQuestsForNow(questDate),done=qToday.filter(q=>completed(q,q._occurrenceDate||questDate)).length;
@@ -3261,12 +3268,12 @@ function render(){
  let ws=startWeek(d),ms=d.slice(0,7);$('weekTotal').textContent=money(sum(db.expenses.filter(x=>x.date>=ws&&x.date<=d))+db.purchaseBills.filter(b=>b.date>=ws&&b.date<=d).reduce((t,b)=>t+billTotal(b),0));$('monthTotal').textContent=money(sum(db.expenses.filter(x=>x.date.startsWith(ms)))+db.purchaseBills.filter(b=>b.date.startsWith(ms)).reduce((t,b)=>t+billTotal(b),0));
  $('todayIncome').textContent=money(db.incomes.reduce((t,x)=>t+incomeReceivedOn(x,d),0));$('monthIncome').textContent=money(incomeReceivedBetween(ms+'-01',d));showBalances();renderBalanceTransfers();
  renderRecentExpenses();
-  renderOverviewAccountTotals();
+  renderOverviewAccountTotals();renderOverviewIncomeTotals();
   $('todayQuests').innerHTML=questHTML(qToday.slice(0,4),false);
  $('expenseCount').textContent=`${db.expenses.length} expenses · ${db.purchaseBills.length} bills`;renderLoans();
  let filtered=db.expenses.filter(x=>( $('expenseFilter').value==='all'||x.category===$('expenseFilter').value)&&(`${x.note} ${x.category}`).toLowerCase().includes($('expenseSearch').value.toLowerCase())).sort((a,b)=>b.date.localeCompare(a.date));
  $('expenseList').innerHTML=expenseHTML(filtered,true);$('questList').innerHTML=questTileHTML(dayQuestsForNow(questDate));if($('questSetupList'))$('questSetupList').innerHTML=questHTML(dayQuests(questDate),true);renderQuickActions();renderQuickSuppliers();renderQuickActionManager();renderSupplierAccounts();renderInventory();renderProductionList();renderExpenseDueList();renderGuestReport();
- $('questSummary').textContent=`${done}/${qToday.length} completed`;$('incomeCount').textContent=`${db.incomes.length} entries`;
+ $('questSummary').textContent=`${done}/${qToday.length} completed`;$('incomeCount').textContent=`${db.incomes.filter(x=>!x.salesMemo).length} entries`;if($('salesPageCount'))$('salesPageCount').textContent=`${db.incomes.filter(x=>x.salesMemo).length} memos`;
  const incomeFilter=$('incomeDateFilter').value,incomeHead=$('incomeHeadFilter').value,incomePerson=$('incomePersonFilter').value;const incomes=[...db.incomes].filter(x=>!x.salesMemo&&(!incomeFilter||x.date===incomeFilter)&&(incomeHead==='all'||(x.source||'Other')===incomeHead)&&(incomePerson==='all'||(x.incomeBy||'Unassigned')===incomePerson)).sort((a,b)=>b.date.localeCompare(a.date));$('incomeList').innerHTML=incomeHTML(incomes,true);renderSalesMemoList();
 }
 function renderRecentExpenses(){
@@ -3553,12 +3560,12 @@ function renderReport(){
  const from=$('productReportFromDate')?.value||'',to=$('productReportToDate')?.value||'';
  renderMemberReportGuestAssignments();
  const hint=$('reportDateHint');
- const reportOutputs=['productTypePurchaseReport','productPurchaseReport','supplierCreditorReport','iOweList','owedToMeList','incomeDueList','categoryBreakdown','memberCostBreakdown','memberProductConsumption','guestReport','incomePersonBreakdown','incomeHeadBreakdown','productionReportList','assetPurchaseReportList'];
+ const reportOutputs=['productTypePurchaseReport','productPurchaseReport','supplierCreditorReport','iOweList','owedToMeList','incomeDueList','categoryBreakdown','memberCostBreakdown','memberProductConsumption','guestReport','incomePersonBreakdown','incomeHeadBreakdown','salesReportList','productionReportList','assetPurchaseReportList'];
  if(!from||!to||from>to){
   const message=!from||!to?'Choose both a From date and a To date to view reports.':'Invalid date range: the From date must be on or before the To date.';
   if(hint){hint.textContent=message;hint.classList.add('date-range-error')}
   reportOutputs.forEach(id=>{const node=$(id);if(node)node.innerHTML=empty(message)});
-  ['reportTotal','reportIncomeTotal','reportIncomeCollected','familyCostTotal','familyCostPerMember','memberDirectCostTotal','unassignedCostTotal','iOweExpenseTotal','owedToMeExpenseTotal','incomeDueTotal','productionReportCost','assetPurchaseTotal'].forEach(id=>{if($(id))$(id).textContent=money(0)});
+  ['reportTotal','reportIncomeTotal','reportIncomeCollected','reportSalesTotal','reportSalesCollected','reportSalesDue','familyCostTotal','familyCostPerMember','memberDirectCostTotal','unassignedCostTotal','iOweExpenseTotal','owedToMeExpenseTotal','incomeDueTotal','productionReportCost','assetPurchaseTotal'].forEach(id=>{if($(id))$(id).textContent=money(0)});
   ['productionReportBatchCount','productionReportQuantity','assetPurchaseLines','assetPurchaseBills'].forEach(id=>{if($(id))$(id).textContent='0'});
   if($('reportRange'))$('reportRange').textContent=message;
   if($('reportBars'))$('reportBars').innerHTML='';
@@ -3578,15 +3585,18 @@ function renderReport(){
  renderGuestReport(from,to);
  renderProductionReport(from,to);
  renderAssetsReport(from,to);
- const selectedIncomePerson=$('reportIncomePersonFilter').value;
- const incomeInScope=db.incomes.filter(x=>selectedIncomePerson==='all'||(x.incomeBy||'Unassigned')===selectedIncomePerson);
+ const salesInRange=db.incomes.filter(x=>x.salesMemo&&x.date>=from&&x.date<=to),salesTotal=sum(salesInRange),salesCollected=salesInRange.reduce((t,x)=>t+incomeCollections(x).filter(c=>c.date>=from&&c.date<=to).reduce((v,c)=>v+Number(c.amount||0),0),0),salesDue=db.incomes.filter(x=>x.salesMemo&&x.date<=to).reduce((t,x)=>t+incomeOutstandingAt(x,to),0);
+if($('reportSalesTotal'))$('reportSalesTotal').textContent=money(salesTotal);if($('reportSalesCollected'))$('reportSalesCollected').textContent=money(salesCollected);if($('reportSalesDue'))$('reportSalesDue').textContent=money(salesDue);
+if($('salesReportList'))$('salesReportList').innerHTML=salesInRange.length?salesInRange.map(x=>`<div class="income-report-row"><div><strong>${esc(x.salesMemo.memoNo||'Sales memo')} · ${esc(x.salesMemo.customerName||'Customer')}</strong><small>${fmt(x.date)} · ${(x.salesMemo.items||[]).length} product lines</small></div><strong>${money(x.amount)}<small> ${money(incomeOutstandingAt(x,to))} due</small></strong></div>`).join(''):empty('No sales memos in the selected date range.');
+const selectedIncomePerson=$('reportIncomePersonFilter').value;
+ const incomeInScope=db.incomes.filter(x=>!x.salesMemo&&(selectedIncomePerson==='all'||(x.incomeBy||'Unassigned')===selectedIncomePerson));
  const incomeEntriesInPeriod=incomeInScope.filter(x=>x.date>=from&&x.date<=to);
  const receivedForPeriod=entries=>entries.reduce((total,x)=>total+(x.paymentType==='Due'?incomeCollections(x).filter(c=>c.date>=from&&c.date<=to).reduce((t,c)=>t+Number(c.amount||0),0):(x.date>=from&&x.date<=to?Number(x.amount||0):0)),0);
  const receivedInPeriod=receivedForPeriod(incomeInScope);
  $('reportIncomeTotal').textContent=money(sum(incomeEntriesInPeriod));$('reportIncomeCollected').textContent=money(receivedInPeriod);
  const peopleToShow=selectedIncomePerson==='all'?db.incomePeople:[selectedIncomePerson];
  $('incomePersonBreakdown').innerHTML=peopleToShow.map(person=>{
-  const personEntries=db.incomes.filter(x=>(x.incomeBy||'Unassigned')===person),recorded=sum(personEntries.filter(x=>x.date>=from&&x.date<=to));
+  const personEntries=db.incomes.filter(x=>!x.salesMemo&&(x.incomeBy||'Unassigned')===person),recorded=sum(personEntries.filter(x=>x.date>=from&&x.date<=to));
   const received=receivedForPeriod(personEntries);
   if(!recorded&&!received)return '';
   return `<div class="income-report-row"><div><strong>${esc(person)}</strong><small>Recorded: ${money(recorded)}</small></div><strong>${money(received)}<small> received</small></strong></div>`;
