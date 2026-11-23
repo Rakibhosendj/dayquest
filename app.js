@@ -3239,7 +3239,7 @@ function renderOverviewAccountTotals(){
  const loans=loanMoneySummary(),totalLoans=loans.given+loans.taken;
  host.innerHTML=`
   <button type="button" class="quick-action-card account-total-card" data-overview-account-go="debitors" aria-label="Open Debtors. Outstanding ${esc(money(debtors))}.">
-   <span class="quick-action-button-title">Total Debtors</span><span class="quick-action-button-stats"><span><strong>${money(debtors)}</strong></span><span>To collect</span></span>
+   <span class="quick-action-button-title">Total Debtors</span><span class="quick-action-button-stats"><span><strong>${money(debtors)}</strong></span><span>Collect</span></span>
   </button>
   <button type="button" class="quick-action-card account-total-card" data-overview-account-go="creditors" aria-label="Open Creditors. Outstanding ${esc(money(creditors))}.">
    <span class="quick-action-button-title">Total Creditors</span><span class="quick-action-button-stats"><span><strong>${money(creditors)}</strong></span><span>To pay</span></span>
