@@ -2699,5 +2699,6 @@ body{color:var(--dq-font-color,#263b5c)}
 }
 
 /* Compact the party name in recent creditor/debtor starting balance rows. */
-.recent-balance-row>span{font-size:11px!important;line-height:1.2!important;font-weight:650!important}
-.recent-balance-row>span small{font-size:9px!important}
+.recent-balance-row>span{font-size:10px!important;line-height:1.15!important;font-weight:600!important}
+.recent-balance-row>span small{font-size:8px!important}
+.recent-balance-row>strong{font-size:10px!important;line-height:1.15!important;font-weight:650!important}
