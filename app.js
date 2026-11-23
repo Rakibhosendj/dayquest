@@ -803,7 +803,21 @@ function calcTotal(){let v=(Number($('quantity').value)||0)*(Number($('rate').va
 $('quantity').oninput=calcTotal;$('rate').oninput=calcTotal;
 function updateExpenseDueFields(){let show=$('paymentType').value==='Due',owed=$('dueDirection').value==='owed_to_me';$('dueFields').hidden=!show;$('duePerson').required=show;$('expenseDueDate').disabled=!show;$('duePaidFromField').hidden=!(show&&owed)}
 $('paymentType').onchange=updateExpenseDueFields;$('dueDirection').onchange=updateExpenseDueFields;
-$('incomePaymentType').onchange=()=>{let show=$('incomePaymentType').value==='Due';$('incomeDueFields').hidden=!show;$('incomeDuePerson').required=show;$('incomeDueDate').disabled=!show};
+function syncIncomePaymentChecks(){
+ const selected=$('incomePaymentType').value||'Cash';
+ document.querySelectorAll('[data-income-payment]').forEach(input=>{input.checked=input.dataset.incomePayment===selected});
+}
+function updateIncomePaymentType(value){
+ $('incomePaymentType').value=value;
+ syncIncomePaymentChecks();
+ const show=value==='Due';
+ $('incomeDueFields').hidden=!show;$('incomeDuePerson').required=show;$('incomeDueDate').disabled=!show;
+}
+document.querySelectorAll('[data-income-payment]').forEach(input=>input.addEventListener('change',()=>{
+ if(input.checked)updateIncomePaymentType(input.dataset.incomePayment);
+ else syncIncomePaymentChecks();
+}));
+$('incomePaymentType').onchange=()=>updateIncomePaymentType($('incomePaymentType').value);
 $('incomeAmount').oninput=()=>{$('incomeTotalPreview').textContent=money(Number($('incomeAmount').value)||0)};
 $('incomeDate').value=today();$('collectDate').value=today();$('expenseDueActionDate').value=today();
 $('addExpenseName').onclick=()=>{let n=prompt('Add an expense name:');if(n&&n.trim()){n=n.trim();if(!db.expenseNames.includes(n))db.expenseNames.push(n);fillChoices();$('expenseName').value=n;localSaveOnly()}};
@@ -2473,7 +2487,7 @@ function printSalesMemo(id){
 function resetIncomeForm(){
  editingIncomeId=null;$('incomeForm').reset();$('incomeDate').value=today();$('incomeDueDate').value='';$('incomeDueDate').disabled=true;if($('incomeSource').options.length)$('incomeSource').selectedIndex=0;
  const preferred=db.profile.name&&db.incomePeople.includes(db.profile.name)?db.profile.name:(db.incomePeople[0]||'Unassigned');$('incomeBy').value=preferred;
- $('incomeDueFields').hidden=true;$('incomeDuePerson').required=false;
+ $('incomeDueFields').hidden=true;$('incomeDuePerson').required=false;syncIncomePaymentChecks();
  $('incomeSubmitBtn').textContent='Save income';$('cancelIncomeEdit').hidden=true;$('incomeEditHint').hidden=true;$('incomeTotalPreview').textContent=money(0);
 }
 function editIncome(id){
@@ -2481,7 +2495,7 @@ function editIncome(id){
  editingIncomeId=id;ensureOption($('incomeSource'),x.source||'Other');$('incomeSource').value=x.source||'Other';
  const earner=x.incomeBy||'Unassigned';ensureOption($('incomeBy'),earner);$('incomeBy').value=earner;
  $('incomeAmount').value=Number(x.amount||0);$('incomePaymentType').value=x.paymentType||'Cash';
- $('incomeDuePerson').value=x.duePerson||'';$('incomeDueDate').value=x.dueDate||'';$('incomeDueFields').hidden=$('incomePaymentType').value!=='Due';$('incomeDuePerson').required=$('incomePaymentType').value==='Due';$('incomeDueDate').disabled=$('incomePaymentType').value!=='Due';
+ $('incomeDuePerson').value=x.duePerson||'';$('incomeDueDate').value=x.dueDate||'';updateIncomePaymentType($('incomePaymentType').value);
  $('incomeDate').value=x.date||today();$('incomeNote').value=x.note||'';$('incomeTotalPreview').textContent=money(x.amount||0);
  $('incomeSubmitBtn').textContent='Update income';$('cancelIncomeEdit').hidden=false;$('incomeEditHint').hidden=false;
  $('incomeForm').scrollIntoView({behavior:'smooth',block:'start'});
