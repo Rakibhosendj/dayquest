@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v194-cloud-sync-fix-v1';
+const CACHE = 'dayquest-cache-v195-remove-overview-repo-v1';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261123-cloud-sync-fix-v1',
-  './app.js?v=20261123-cloud-sync-fix-v1',
+  './style.css?v=20261123-remove-overview-repo-v1',
+  './app.js?v=20261123-remove-overview-repo-v1',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
   './icons/icon-512.svg',
