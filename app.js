@@ -2528,12 +2528,11 @@ function prepareReportPresentation(){
  if(reportPresentationReady)return;reportPresentationReady=true;
  document.querySelectorAll('[data-report-pane]').forEach(pane=>{
   const key=pane.dataset.reportPane,title=REPORT_TITLES[key]||'Report';
-  const toolbar=document.createElement('div');toolbar.className='report-tools';toolbar.innerHTML=`<div><button type="button" class="secondary report-export-btn" data-report-export="${key}" data-export-format="pdf">Print / PDF</button><button type="button" class="secondary report-export-btn" data-report-export="${key}" data-export-format="excel">Excel</button></div>`;
   const detail=document.createElement('details');detail.className='report-detail-disclosure';
   const summary=document.createElement('summary');summary.className='report-detail-summary';summary.innerHTML=`<span>${title}</span><span class="report-summary-metrics" data-report-summary="${key}">Summary</span><span class="report-summary-arrow" aria-hidden="true">▾</span>`;
   const content=document.createElement('div');content.className='report-detail-body';
   while(pane.firstChild)content.appendChild(pane.firstChild);
-  detail.append(summary,content);pane.append(toolbar,detail);
+  detail.append(summary,content);pane.append(detail);
  });
  document.querySelectorAll('[data-report-export]').forEach(button=>button.addEventListener('click',()=>exportReport(button.dataset.reportExport,button.dataset.exportFormat)));
 }
@@ -2680,6 +2679,7 @@ function exportReport(key,format){
 function activateReportSection(key){
  const known=['members','production','cost','income','creditors','debitors','assets','purchase'];
  const selected=key==='all'?'all':(known.includes(key)?key:'members');prepareReportPresentation();
+ const globalTools=document.querySelector('.report-global-tools');if(globalTools)globalTools.hidden=selected!=='all';
  document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.toggle('active',item.dataset.reportGo===selected));
  document.querySelectorAll('[data-report-pane]').forEach(pane=>{
   const visible=selected==='all'||pane.dataset.reportPane===selected;pane.hidden=!visible;pane.classList.toggle('report-pane-all',selected==='all');pane.classList.toggle('report-pane-single',selected!=='all');
