@@ -2716,3 +2716,7 @@ body{color:var(--dq-font-color,#263b5c)}
 #payExpenseDue .outstanding-split-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 #payExpenseDue .outstanding-split-row[hidden]{display:none!important}
 @media(max-width:420px){#payExpenseDue .outstanding-amount-date-row{gap:6px}#payExpenseDue .outstanding-amount-date-row input{padding:8px 6px;font-size:11px}}
+
+/* Cash and Bank amount fields are always available; total is calculated from both. */
+#payExpenseDue .outstanding-split-row{display:grid!important;grid-template-columns:1fr 1fr;gap:9px}
+#payExpenseDue #expenseDueActionAmount[readonly]{background:#f5f7fa;color:#536176;font-weight:750}
