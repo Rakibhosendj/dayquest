@@ -2558,7 +2558,15 @@ function prepareReportPresentation(){
   while(pane.firstChild)content.appendChild(pane.firstChild);
   detail.append(summary,content);pane.append(detail);
  });
- document.querySelectorAll('[data-report-export]').forEach(button=>button.addEventListener('click',()=>exportReport(button.dataset.reportExport,button.dataset.exportFormat)));
+ const exportSelect=$('reportExportFormat');
+ if(exportSelect)exportSelect.addEventListener('change',()=>{
+  const format=exportSelect.value;if(!format)return;
+  const selected=document.querySelector('[data-report-go].active')?.dataset.reportGo||'members';
+  const from=$('productReportFromDate')?.value||'',to=$('productReportToDate')?.value||'';
+  if(selected==='all'){alert('Choose an individual report from the Reports menu before exporting.');exportSelect.value='';return}
+  if(!from||!to||from>to){alert('Select a valid From and To date range before exporting.');exportSelect.value='';return}
+  exportReport(selected,format);exportSelect.value='';
+ });
 }
 function reportMetricText(id){const node=$(id);return node?node.textContent.trim():''}
 function reportSummaryMetrics(key){
@@ -2619,11 +2627,11 @@ function reportCreditorRows(from,to){
  const rows=[],settlements=supplierBillSettlementByBill(to);
  db.purchaseBills.filter(b=>String(b.date||'')<=to).forEach(b=>{
   const settlement=settlements.get(String(b.id))||{paid:0,discount:0,remaining:billCredit(b)};
-  if(!(String(b.date||'')>=from&&String(b.date||'')<=to)&&Number(settlement.remaining||0)<=0.000001)return;
+  if(!(String(b.date||'')>=from&&String(b.date||'')<=to))return;
   rows.push([fmt(b.date),b.supplier||'Unassigned Supplier','Purchase bill',b.billNo||'',money(billTotal(b)),money(Math.max(0,Number(b.cashPaid||0))+Math.max(0,Number(b.bankPaid||0))+Number(settlement.paid||0)),money(settlement.discount||0),money(settlement.remaining||0)]);
  });
  db.expenses.filter(x=>x.paymentType==='Due'&&x.dueDirection==='i_owe'&&String(x.date||'')<=to).forEach(x=>{
-  const due=expenseOutstandingAt(x,to);if(!(String(x.date||'')>=from&&String(x.date||'')<=to)&&due<=0.000001)return;
+  const due=expenseOutstandingAt(x,to);if(!(String(x.date||'')>=from&&String(x.date||'')<=to))return;
   const settled=expenseSettlements(x).filter(s=>!s.date||String(s.date)<=to).reduce((t,s)=>t+Number(s.amount||0),0);
   rows.push([fmt(x.date),x.duePerson||'Unknown creditor','Expense due',x.name||x.category||x.note||'',money(x.amount),money(settled),'—',money(due)]);
  });
@@ -2632,12 +2640,12 @@ function reportCreditorRows(from,to){
 function reportDebtorRows(from,to){
  const rows=[];
  db.expenses.filter(x=>x.paymentType==='Due'&&x.dueDirection==='owed_to_me'&&String(x.date||'')<=to).forEach(x=>{
-  const due=expenseOutstandingAt(x,to);if(!(String(x.date||'')>=from&&String(x.date||'')<=to)&&due<=0.000001)return;
+  const due=expenseOutstandingAt(x,to);if(!(String(x.date||'')>=from&&String(x.date||'')<=to))return;
   const received=expenseSettlements(x).filter(s=>!s.date||String(s.date)<=to).reduce((t,s)=>t+Number(s.amount||0),0);
   rows.push([fmt(x.date),x.duePerson||'Unknown debtor','Receivable expense',x.name||x.category||x.note||'',money(x.amount),money(received),money(due)]);
  });
  db.incomes.filter(x=>x.paymentType==='Due'&&String(x.date||'')<=to).forEach(x=>{
-  const due=incomeOutstandingAt(x,to);if(!(String(x.date||'')>=from&&String(x.date||'')<=to)&&due<=0.000001)return;
+  const due=incomeOutstandingAt(x,to);if(!(String(x.date||'')>=from&&String(x.date||'')<=to))return;
   const received=incomeCollections(x).filter(c=>!c.date||String(c.date)<=to).reduce((t,c)=>t+Number(c.amount||0),0);
   rows.push([fmt(x.date),x.duePerson||'Unknown customer','Income due',x.source||'Income',money(x.amount),money(received),money(due)]);
  });
@@ -2709,7 +2717,7 @@ function exportReport(key,format){
 function activateReportSection(key){
  const known=['members','production','cost','income','sales','creditors','debitors','assets','purchase'];
  const selected=key==='all'?'all':(known.includes(key)?key:'members');prepareReportPresentation();
- const globalTools=document.querySelector('.report-global-tools');if(globalTools)globalTools.hidden=selected!=='all';
+
  document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.toggle('active',item.dataset.reportGo===selected));
  document.querySelectorAll('[data-report-pane]').forEach(pane=>{
   const visible=selected==='all'||pane.dataset.reportPane===selected;pane.hidden=!visible;pane.classList.toggle('report-pane-all',selected==='all');pane.classList.toggle('report-pane-single',selected!=='all');
@@ -3656,25 +3664,27 @@ function supplierBillBalancesAt(supplier,asOf){
 }
 function renderDueReport(from,to){
  const asOf=to;
- const due=db.expenses.filter(x=>x.paymentType==='Due'&&String(x.date||'')<=asOf);
+ const inRange=(date)=>String(date||'')>=from&&String(date||'')<=to;
+ const due=db.expenses.filter(x=>x.paymentType==='Due'&&String(x.date||'')<=asOf&&(inRange(x.date)||expenseSettlements(x).some(s=>inRange(s.date))));
  const iOwe=due.filter(x=>x.dueDirection==='i_owe'&&expenseOutstandingAt(x,asOf)>0),owedExpenses=due.filter(x=>x.dueDirection==='owed_to_me'&&expenseOutstandingAt(x,asOf)>0);
- const incomeDue=db.incomes.filter(x=>x.paymentType==='Due'&&String(x.date||'')<=asOf&&incomeOutstandingAt(x,asOf)>0),legacy=due.filter(x=>!['i_owe','owed_to_me'].includes(x.dueDirection));
+ const incomeDue=db.incomes.filter(x=>x.paymentType==='Due'&&String(x.date||'')<=asOf&&(inRange(x.date)||incomeCollections(x).some(c=>inRange(c.date)))&&incomeOutstandingAt(x,asOf)>0),legacy=due.filter(x=>!['i_owe','owed_to_me'].includes(x.dueDirection));
  const supplierNames=[...new Set([...db.suppliers,...db.purchaseBills.map(b=>b.supplier),...db.supplierPayments.map(p=>p.supplier)].filter(Boolean))].sort((a,b)=>a.localeCompare(b));
  const supplierRows=supplierNames.map(name=>{
   const allocations=supplierBillBalancesAt(name,asOf),balance=allocations.reduce((t,row)=>t+row.remaining,0);
   const periodBills=db.purchaseBills.filter(b=>b.supplier===name&&b.date>=from&&b.date<=to);
   const periodPayments=db.supplierPayments.filter(p=>p.supplier===name&&p.date>=from&&p.date<=to).reduce((t,p)=>t+Number(p.amount||0)+Number(p.discount||0),0);
   const periodCredit=periodBills.reduce((t,b)=>t+billCredit(b),0);
-  if(balance<=0.000001&&!periodBills.length&&!periodPayments)return '';
-  return `<button class="supplier-creditor-report-row creditor-one-line" type="button" data-creditor="${esc(name)}"><span class="supplier-creditor-main"><strong>${esc(name)}</strong><small>${allocations.length} bills · Credit ${money(periodCredit)} · Payments / discounts ${money(periodPayments)}</small></span><span class="creditor-row-date">${fmt(asOf)}</span><span class="supplier-creditor-balance"><strong>${money(balance)}</strong></span></button>`;
+  if(!periodBills.length&&!periodPayments)return '';
+  return `<button class="supplier-creditor-report-row creditor-one-line" type="button" data-creditor="${esc(name)}"><span class="supplier-creditor-main"><strong>${esc(name)}</strong><small>${periodBills.length} bills · Credit ${money(periodCredit)} · Payments / discounts ${money(periodPayments)}</small></span><span class="creditor-row-date">${fmt(asOf)}</span><span class="supplier-creditor-balance"><strong>${money(balance)}</strong></span></button>`;
  }).filter(Boolean).join('');
  $('supplierCreditorReport').innerHTML=supplierRows||empty(`No supplier credits or payments to show by ${fmt(asOf)}.`);
  $('supplierCreditorReport').querySelectorAll('[data-creditor]').forEach(btn=>btn.onclick=()=>{setTab('supplierAccounts');openSupplierAccount(btn.dataset.creditor);if(supplierOutstanding(btn.dataset.creditor)>0.000001)$('paySupplierBtn').click()});
- const supplierTotal=supplierNames.reduce((t,name)=>t+supplierBillBalancesAt(name,asOf).reduce((v,row)=>v+row.remaining,0),0);
+ const suppliersInRange=supplierNames.filter(name=>db.purchaseBills.some(b=>b.supplier===name&&inRange(b.date))||db.supplierPayments.some(p=>p.supplier===name&&inRange(p.date)));
+ const supplierTotal=suppliersInRange.reduce((t,name)=>t+supplierBillBalancesAt(name,asOf).reduce((v,row)=>v+row.remaining,0),0);
  const openingCreditors=Array.isArray(db.profile?.openingCreditors)?db.profile.openingCreditors:[];
  const openingDebtors=Array.isArray(db.profile?.openingDebtors)?db.profile.openingDebtors:[];
- const openingCreditorsAsOf=openingCreditors.filter(x=>!x.date||x.date<=asOf);
- const openingDebtorsAsOf=openingDebtors.filter(x=>!x.date||x.date<=asOf);
+ const openingCreditorsAsOf=openingCreditors.filter(x=>(!x.date||x.date<=asOf)&&(inRange(x.date)|| (x.settlements||[]).some(s=>inRange(s.date))));
+ const openingDebtorsAsOf=openingDebtors.filter(x=>(!x.date||x.date<=asOf)&&(inRange(x.date)|| (x.settlements||[]).some(s=>inRange(s.date))));
  const openingCreditorTotal=openingCreditorsAsOf.reduce((t,x)=>t+Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||s.date<=asOf).reduce((v,s)=>v+Number(s.amount||0),0)),0);
  const openingDebtorTotal=openingDebtorsAsOf.reduce((t,x)=>t+Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||s.date<=asOf).reduce((v,s)=>v+Number(s.amount||0),0)),0);
  const expenseOweTotal=iOwe.reduce((t,x)=>t+expenseOutstandingAt(x,asOf),0);
