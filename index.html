@@ -168,7 +168,7 @@
 <main>
 <div id="pageContextBar" class="page-context-header" aria-live="polite">
  <button id="backButton" class="page-context-back" type="button" aria-label="Back to previous page" title="Back to previous page" hidden><span aria-hidden="true">←</span><span>Back</span></button>
- <h2 id="pageContextTitle">Overview</h2>
+ <img id="pageContextIcon" class="page-context-icon" src="icons/icon-192.png?v=20261121-coin-check" alt="" hidden><h2 id="pageContextTitle">Overview</h2>
 </div>
 <section id="home" class="panel active">
  <section class="hero overview-summary" hidden>
@@ -877,10 +877,10 @@
  </section>
 </section>
 <section id="reports" class="panel">
- <div class="section-head reports-page-heading"><div class="reports-brand-title"><img class="reports-page-logo" src="icons/icon-192.png?v=20261121-coin-check" alt="DayQuest"><h2>Reports</h2></div><div class="report-global-tools" hidden><span class="pill">Date-range reports</span><button type="button" class="secondary report-export-btn" data-report-export="all" data-export-format="pdf">Print / PDF all</button><button type="button" class="secondary report-export-btn" data-report-export="all" data-export-format="excel">Excel all</button></div></div>
+ <div class="report-global-tools" hidden><button type="button" class="secondary report-export-btn" data-report-export="all" data-export-format="pdf">Print / PDF all</button><button type="button" class="secondary report-export-btn" data-report-export="all" data-export-format="excel">Excel all</button></div>
  <div class="report-date-range report-global-date-range" aria-label="Report date range">
-  <label>From <input id="productReportFromDate" type="date" aria-label="From" required></label>
-  <label>To <input id="productReportToDate" type="date" aria-label="To" required></label>
+  <label class="report-date-box"><span class="report-date-placeholder">From</span><input id="productReportFromDate" type="date" aria-label="From" required></label>
+  <label class="report-date-box"><span class="report-date-placeholder">To</span><input id="productReportToDate" type="date" aria-label="To" required></label>
  </div>
  
 
@@ -943,18 +943,14 @@
  </section>
 
  <section class="report-pane" data-report-pane="creditors" hidden>
-  <article class="stat report-total-stat"><span class="muted">Total creditors · supplier + expense dues</span><strong id="iOweTotal">৳0.00</strong><small id="creditorAsOfLabel">Outstanding as of the To date</small></article>
+  <article class="stat report-total-stat"><span class="muted">Total Creditors</span><strong id="iOweTotal">৳0.00</strong><small id="creditorAsOfLabel"></small></article>
   <div class="section-head"><h2>Supplier creditors</h2><span class="pill">Supplier balances</span></div>
   <div id="supplierCreditorReport" class="list"></div>
-  <div class="section-head"><h2>Other creditors · Expenses I owe</h2></div>
-  <article class="stat report-total-stat"><span class="muted">Total expense dues to pay</span><strong id="iOweExpenseTotal">৳0.00</strong><small>Outstanding as of the To date</small></article>
-  <div id="iOweList" class="list"></div>
   <p class="hint" id="unassignedDueHint" hidden></p>
  </section>
 
  <section class="report-pane" data-report-pane="debitors" hidden>
-  <div class="section-head"><span class="pill" id="debitorAsOfLabel">Balance at To date</span></div>
-  <article class="stat report-total-stat"><span class="muted">Total debtors · receivable expenses + income due</span><strong id="owedToMeTotal">৳0.00</strong><small>Outstanding as of the To date</small></article>
+  <article class="stat report-total-stat"><span class="muted">Total Debtors</span><strong id="owedToMeTotal">৳0.00</strong><small id="debitorAsOfLabel"></small></article>
   <article class="stat report-total-stat"><span class="muted">Total receivable expenses</span><strong id="owedToMeExpenseTotal">৳0.00</strong><small>Outstanding as of the To date</small></article>
   <div id="owedToMeList" class="list"></div>
   <div class="section-head"><h2>Income due to collect</h2></div>
