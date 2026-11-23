@@ -2570,7 +2570,6 @@ const REPORT_TITLES={purchase:'Purchase Reports',assets:'Assets',members:'Member
 let reportPresentationReady=false;
 function prepareReportPresentation(){
  if(reportPresentationReady)return;reportPresentationReady=true;
- const costGroupControl=document.querySelector('.report-cost-group-control');if(costGroupControl)costGroupControl.hidden=selected!=='cost';
  document.querySelectorAll('[data-report-pane]').forEach(pane=>{
   const key=pane.dataset.reportPane,title=REPORT_TITLES[key]||'Report';
   const detail=document.createElement('details');detail.className='report-detail-disclosure';
@@ -2587,6 +2586,7 @@ function prepareReportPresentation(){
   if(selected==='all'){alert('Choose an individual report from the Reports menu before exporting.');exportSelect.value='';return}
   if(!from||!to||from>to){alert('Select a valid From and To date range before continuing.');exportSelect.value='';return}
   if(format==='chart'&&selected==='cost'){
+   renderReport();
    if($('costChartPageTotal'))$('costChartPageTotal').textContent=$('reportTotal').textContent;
    if($('costChartPageRange'))$('costChartPageRange').textContent=$('reportRange').textContent;
    setTab('costChartPage');
@@ -2752,6 +2752,7 @@ function exportReport(key,format){
 function activateReportSection(key){
  const known=['members','production','cost','income','sales','creditors','debitors','assets','purchase'];
  const selected=key==='all'?'all':(known.includes(key)?key:'members');prepareReportPresentation();
+ const costGroupControl=document.querySelector('.report-cost-group-control');if(costGroupControl)costGroupControl.hidden=selected!=='cost';
 
  document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.toggle('active',item.dataset.reportGo===selected));
  document.querySelectorAll('[data-report-pane]').forEach(pane=>{
