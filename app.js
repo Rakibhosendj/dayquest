@@ -511,6 +511,7 @@ function setupSideMenuReordering(){
  // Mouse/pen: press and hold, then drag.
  nav.addEventListener('pointerdown',event=>{
   if(event.pointerType==='touch'||event.button!==0)return;
+  if(event.target.closest('.side-submenu'))return;
   const item=event.target.closest('[data-menu-item]');
   if(!item||item.parentElement!==nav)return;
   begin(item,event.clientX,event.clientY,event.pointerId,'pointer');
@@ -524,6 +525,7 @@ function setupSideMenuReordering(){
  // Touch: use a non-passive move listener so a held item can be dragged instead of scrolling.
  nav.addEventListener('touchstart',event=>{
   if(event.touches.length!==1)return;
+  if(event.target.closest('.side-submenu'))return;
   const touch=event.touches[0],item=event.target.closest('[data-menu-item]');
   if(!item||item.parentElement!==nav)return;
   begin(item,touch.clientX,touch.clientY,touch.identifier,'touch');
@@ -2768,9 +2770,15 @@ function activateReportSection(key){
  if(target&&$('reports')?.classList.contains('active'))target.scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-document.querySelectorAll('[data-report-go]').forEach(button=>button.addEventListener('click',()=>{
- setTab('reports');activateReportSection(button.dataset.reportGo);
-}));
+const reportNavigation=$('sideNav');
+if(reportNavigation)reportNavigation.addEventListener('click',event=>{
+ const button=event.target.closest('[data-report-go]');
+ if(!button||!reportNavigation.contains(button))return;
+ event.preventDefault();
+ event.stopPropagation();
+ setTab('reports');
+ activateReportSection(button.dataset.reportGo);
+});
 function setColorDropdown(prefix,color){
  const select=$(prefix+'Select'),input=$(prefix+'Input'),value=$(prefix+'Value'),swatch=$(prefix+'Swatch');
  const normalized=String(color||'').toLowerCase();
