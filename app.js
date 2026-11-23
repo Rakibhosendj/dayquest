@@ -379,9 +379,10 @@ function calculateBalances(){
   (loan.settlements||[]).forEach(item=>add(item.method||'Cash',given?Number(item.amount||0):-Number(item.amount||0)));
  });
  (db.moneyTransfers||[]).forEach(transfer=>{
-  const amount=Math.max(0,Number(transfer.amount)||0);
-  if(transfer.from==='Cash'&&transfer.to==='Bank'){cash-=amount;bank+=amount}
-  else if(transfer.from==='Bank'&&transfer.to==='Cash'){bank-=amount;cash+=amount}
+  const amount=Math.max(0,Number(transfer.amount)||0),cost=Math.max(0,Number(transfer.cost)||0);
+  // Transfer cost is paid by the source account; the destination receives the transfer amount only.
+  if(transfer.from==='Cash'&&transfer.to==='Bank'){cash-=amount+cost;bank+=amount}
+  else if(transfer.from==='Bank'&&transfer.to==='Cash'){bank-=amount+cost;cash+=amount}
  });
  return {cash,bank,total:cash+bank};
 }
@@ -3275,7 +3276,7 @@ function empty(msg){return `<div class="empty">${msg}</div>`}
 function renderBalanceTransfers(){
  const list=$('balanceTransferList');if(!list)return;
  const transfers=(db.moneyTransfers||[]).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
- list.innerHTML=transfers.length?transfers.map(item=>`<article class="balance-transfer-row"><div class="item-main"><strong>${esc(item.from)} → ${esc(item.to)}</strong><small>${fmt(item.date)}${item.note?' · '+esc(item.note):''}</small></div><strong class="balance-transfer-amount">${money(item.amount)}</strong><button type="button" class="delete" data-delete-balance-transfer="${esc(item.id)}" aria-label="Delete transfer">×</button></article>`).join(''):empty('No balance transfers recorded yet.');
+ list.innerHTML=transfers.length?transfers.map(item=>`<article class="balance-transfer-row"><div class="item-main"><strong>${esc(item.from)} → ${esc(item.to)}</strong><small>${fmt(item.date)}${Number(item.cost||0)>0?' · Cost '+money(item.cost):''}${item.note?' · '+esc(item.note):''}</small></div><strong class="balance-transfer-amount">${money(item.amount)}</strong><button type="button" class="delete" data-delete-balance-transfer="${esc(item.id)}" aria-label="Delete transfer">×</button></article>`).join(''):empty('No balance transfers recorded yet.');
  list.querySelectorAll('[data-delete-balance-transfer]').forEach(button=>button.onclick=()=>{
   const transfer=db.moneyTransfers.find(item=>item.id===button.dataset.deleteBalanceTransfer);if(!transfer)return;
   if(!confirm('Delete this balance transfer? Cash and Bank balances will be recalculated.'))return;
@@ -3284,15 +3285,16 @@ function renderBalanceTransfers(){
 }
 $('balanceTransferDate').value=today();
 $('balanceTransferSubmit').onclick=()=>{
- const direction=$('balanceTransferDirection').value.split('-'),amount=Number($('balanceTransferAmount').value),date=$('balanceTransferDate').value;
+ const direction=$('balanceTransferDirection').value.split('-'),amount=Number($('balanceTransferAmount').value),cost=Number($('balanceTransferCost').value||0),date=$('balanceTransferDate').value;
  if(direction.length!==2||!['Cash','Bank'].includes(direction[0])||!['Cash','Bank'].includes(direction[1])||direction[0]===direction[1]){alert('Choose Cash to Bank or Bank to Cash.');return}
  if(!(amount>0)||!Number.isFinite(amount)){alert('Enter a transfer amount greater than zero.');$('balanceTransferAmount').focus();return}
+ if(!Number.isFinite(cost)||cost<0){alert('Enter a valid transfer cost of zero or more.');$('balanceTransferCost').focus();return}
  if(!date){alert('Choose the transfer date.');$('balanceTransferDate').focus();return}
- const balanceError=paymentBalanceError(direction[0],amount);
+ const balanceError=paymentBalanceError(direction[0],amount+cost);
  if(balanceError){alert(balanceError);return}
  db.moneyTransfers=db.moneyTransfers||[];
- db.moneyTransfers.unshift({id:crypto.randomUUID(),from:direction[0],to:direction[1],amount,date,note:$('balanceTransferNote').value.trim(),createdAt:new Date().toISOString()});
- $('balanceTransferAmount').value='';$('balanceTransferNote').value='';save();alert('Balance transferred successfully.');
+ db.moneyTransfers.unshift({id:crypto.randomUUID(),from:direction[0],to:direction[1],amount,cost,date,note:$('balanceTransferNote').value.trim(),createdAt:new Date().toISOString()});
+ $('balanceTransferAmount').value='';$('balanceTransferCost').value='0.00';$('balanceTransferNote').value='';save();alert('Balance transferred successfully.');
 };
 function renderOverviewAccountTotals(){
  const host=$('overviewAccountTotalsList');if(!host)return;
