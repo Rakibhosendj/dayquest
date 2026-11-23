@@ -2720,3 +2720,11 @@ body{color:var(--dq-font-color,#263b5c)}
 /* Cash and Bank amount fields are always available; total is calculated from both. */
 #payExpenseDue .outstanding-split-row{display:grid!important;grid-template-columns:1fr 1fr;gap:9px}
 #payExpenseDue #expenseDueActionAmount[readonly]{background:#f5f7fa;color:#536176;font-weight:750}
+
+/* Outstanding payment inputs in Cash, Bank, Total, Payment Date order. */
+#payExpenseDue .outstanding-payment-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;align-items:end;width:100%}
+#payExpenseDue .outstanding-payment-grid>label{display:grid;grid-template-rows:auto auto;gap:5px;min-width:0;font-size:11px;font-weight:750}
+#payExpenseDue .outstanding-payment-grid input{box-sizing:border-box;width:100%;min-width:0}
+#payExpenseDue #expenseDueCashAmount,#payExpenseDue #expenseDueBankAmount{background:#fff!important;cursor:text!important;pointer-events:auto!important}
+#payExpenseDue #expenseDueActionAmount[readonly]{background:#f5f7fa!important;color:#536176!important;font-weight:750!important}
+@media(max-width:650px){#payExpenseDue .outstanding-payment-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}}
