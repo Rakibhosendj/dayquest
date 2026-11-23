@@ -2511,3 +2511,26 @@ body{color:var(--dq-font-color,#263b5c)}
 .income-payment-choice label{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#263b5c;white-space:nowrap}
 .income-payment-choice input{width:15px;height:15px;margin:0;accent-color:#263b5c}
 @media(max-width:520px){.income-amount-payment-row{grid-template-columns:1fr}.income-payment-choice{justify-content:flex-start;gap:18px}}
+
+/* Creditors and Debtors report page refinements */
+.page-context-icon{width:24px;height:24px;object-fit:contain;flex:0 0 24px;margin-right:7px;vertical-align:middle}
+#pageContextBar{display:flex;align-items:center;gap:8px}
+#pageContextBar h2{font-size:inherit;margin:0}
+.report-global-tools{display:flex;justify-content:flex-end;gap:8px;margin:4px 0 8px}
+.report-date-box{position:relative;display:block;min-width:0}
+.report-date-box .report-date-placeholder{position:absolute;z-index:1;left:12px;top:50%;transform:translateY(-50%);font-size:12px;color:#8993a2;pointer-events:none}
+.report-date-box input{position:relative;background:transparent}
+.report-date-box:has(input:focus) .report-date-placeholder,.report-date-box:has(input:not([value=""])) .report-date-placeholder{display:none}
+#reports .report-date-range label{font-size:0}
+#reports .report-date-range input{font-size:13px}
+#reports .report-date-range input:focus{background:#fff}
+.creditor-one-line{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:10px}
+.creditor-one-line>span:first-child{min-width:0}
+.creditor-one-line>span:first-child strong{display:block;overflow-wrap:anywhere}
+.creditor-one-line>span:first-child small{display:block;font-size:9px;color:#8792a2;margin-top:3px;line-height:1.35}
+.creditor-one-line>small,.creditor-row-date{font-size:10px;color:#8792a2;white-space:nowrap}
+.creditor-one-line>strong,.creditor-one-line .supplier-creditor-balance strong{font-size:12px;white-space:nowrap}
+.supplier-creditor-report-row.creditor-one-line{display:grid;grid-template-columns:minmax(0,1fr) auto auto}
+.supplier-creditor-report-row.creditor-one-line .supplier-creditor-main{display:block}
+.supplier-creditor-report-row.creditor-one-line .supplier-creditor-balance{display:block;text-align:right}
+@media(max-width:420px){.creditor-one-line{gap:6px}.creditor-one-line>small,.creditor-row-date{font-size:9px}.page-context-icon{width:21px;height:21px;flex-basis:21px}}
