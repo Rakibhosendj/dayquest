@@ -2787,3 +2787,9 @@ body{color:var(--dq-font-color,#263b5c)}
 .report-pane[data-report-pane="cost"] #reportRange{display:none}
 .report-pane[data-report-pane="cost"] .cost-report-date-caption{padding:7px 10px}
 .report-pane[data-report-pane="cost"] .cost-report-date-caption strong{font-size:11px}
+
+/* Cost grouping sits inline with the shared date range and Reports menu. */
+#reports .report-filter-toolbar .report-cost-group-control{display:block;flex:0 0 112px;width:112px;min-width:0}
+#reports .report-filter-toolbar .report-cost-group-control[hidden]{display:none!important}
+#reports .report-filter-toolbar .report-cost-group-control select{display:block;box-sizing:border-box;width:100%;min-width:0;height:36px;padding:6px 5px;border:1px solid #dfe5ed;border-radius:8px;background:#fff;color:#263b5c;font:inherit;font-size:10px;font-weight:750}
+@media(max-width:420px){#reports .report-filter-toolbar .report-cost-group-control{flex-basis:88px;width:88px}}
