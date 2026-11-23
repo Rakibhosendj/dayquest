@@ -2741,3 +2741,17 @@ body{color:var(--dq-font-color,#263b5c)}
  margin-top:0!important;
  margin-bottom:5px!important;
 }
+
+/* Apply the compact Outstanding-page top spacing consistently across every page. */
+.app-main>main>#pageContextBar.page-context-header{
+ margin-bottom:2px!important;
+}
+.app-main>main>.panel.active{
+ padding-top:0!important;
+}
+.app-main>main>.panel.active>:first-child{
+ margin-block-start:0!important;
+}
+.app-main>main>.panel.active>:first-child[hidden]+:not([hidden]){
+ margin-block-start:0!important;
+}
