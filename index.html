@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261123-starting-balances-five-sections-v1">
+<link rel="stylesheet" href="style.css?v=20261123-overview-account-totals-v1">
 <title>DayQuest</title>
 </head>
 <body>
@@ -175,6 +175,14 @@
  <section class="overview-quick-panel overview-sortable-section" id="overviewSectionQuickExpenses" data-overview-section="quickExpenses">
   <div class="section-head overview-quick-head"><div><h2 data-overview-drag-handle><button type="button" class="overview-quick-title" id="overviewQuickSetupLink">Quick Expenses</button></h2><small class="overview-quick-hint">Tap 1 · Record 1 · Hold title to move</small></div><div class="overview-quick-controls"><button type="button" id="overviewQuickActionTapToggle" class="quick-action-tap-toggle is-on" aria-pressed="true">ON</button><button type="button" id="overviewQuickActionModeToggle" class="quick-action-mode-toggle add-mode" aria-pressed="false">＋ Add</button></div></div>
   <div id="overviewQuickActionList" class="quick-action-list"></div>
+ </section>
+ <section class="overview-quick-panel overview-sortable-section overview-account-totals" id="overviewSectionAccountTotals" data-overview-section="accountTotals">
+  <div class="section-head overview-quick-head"><div><h2 data-overview-drag-handle>Accounts Summary</h2><small class="overview-quick-hint">Current outstanding balances</small></div></div>
+  <div id="overviewAccountTotalsList" class="quick-action-list overview-account-total-list">
+   <button type="button" class="quick-action-card account-total-card" data-overview-account-go="debitors"><span class="quick-action-button-title">Total Debtors</span><span class="quick-action-button-stats"><span>৳0.00</span></span></button>
+   <button type="button" class="quick-action-card account-total-card" data-overview-account-go="creditors"><span class="quick-action-button-title">Total Creditors</span><span class="quick-action-button-stats"><span>৳0.00</span></span></button>
+   <button type="button" class="quick-action-card account-total-card" data-overview-account-go="loans"><span class="quick-action-button-title">Total Loans</span><span class="quick-action-button-stats"><span>৳0.00</span></span></button>
+  </div>
  </section>
  <section class="overview-quick-panel quick-suppliers-panel overview-sortable-section" id="overviewQuickSuppliersPanel" data-overview-section="quickSuppliers" hidden>
   <div class="section-head overview-quick-head"><div><h2 data-overview-drag-handle><button type="button" class="overview-quick-title" id="overviewQuickSupplierSetupLink">Quick Suppliers</button></h2><span class="muted">Hold title to move · tap a supplier to start a purchase bill</span></div><div class="overview-quick-controls"><button type="button" id="overviewQuickSupplierTapToggle" class="quick-action-tap-toggle is-on" aria-pressed="true">ON</button></div></div>
@@ -1046,5 +1054,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261123-starting-balances-five-sections-v1"></script>
+<script src="app.js?v=20261123-overview-account-totals-v1"></script>
 </body></html>
