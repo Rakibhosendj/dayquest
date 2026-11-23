@@ -3739,7 +3739,7 @@ function renderDueReport(from,to){
  const openingCreditors=Array.isArray(db.profile?.openingCreditors)?db.profile.openingCreditors:[];
  const openingDebtors=Array.isArray(db.profile?.openingDebtors)?db.profile.openingDebtors:[];
  const openingRemaining=x=>Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||String(s.date)<=asOf).reduce((t,s)=>t+Number(s.amount||0),0));
- const openingCreditorsAsOf=openingCreditors.filter(x=>(!x.date||x.date<=asOf)&&openingRemaining(x)>0.000001);
+ const openingCreditorsAsOf=openingCreditors.filter(x=>openingRemaining(x)>0.000001);
  const openingDebtorsAsOf=openingDebtors.filter(x=>(!x.date||x.date<=asOf)&&(inRange(x.date)|| (x.settlements||[]).some(s=>inRange(s.date))));
  const openingCreditorTotal=openingCreditorsAsOf.reduce((t,x)=>t+Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||s.date<=asOf).reduce((v,s)=>v+Number(s.amount||0),0)),0);
  const openingDebtorTotal=openingDebtorsAsOf.reduce((t,x)=>t+Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||s.date<=asOf).reduce((v,s)=>v+Number(s.amount||0),0)),0);
@@ -3749,7 +3749,7 @@ function renderDueReport(from,to){
  $('iOweTotal').textContent=money(supplierTotal+expenseOweTotal+openingCreditorTotal);$('iOweExpenseTotal').textContent=money(expenseOweTotal+openingCreditorTotal);
  $('owedToMeTotal').textContent=money(owedExpenseTotal+incomeDueAmount+openingDebtorTotal);$('owedToMeExpenseTotal').textContent=money(owedExpenseTotal+openingDebtorTotal);$('incomeDueTotal').textContent=money(incomeDueAmount);
  $('creditorAsOfLabel').textContent=fmt(asOf);$('debitorAsOfLabel').textContent=fmt(asOf);
- const openingRows=(items,kind)=>items.filter(x=>openingRemaining(x)>0.000001).map(x=>`<button type="button" class="breakrow creditor-one-line recent-balance-row" data-opening-balance="${kind}" data-opening-id="${esc(x.id)}"><span>${esc(x.party)} <small>Starting</small></span><small>${fmt(x.date||today())}</small><strong>${money(openingRemaining(x))}</strong></button>`).join('');
+ const openingRows=(items,kind)=>items.filter(x=>openingRemaining(x)>0.000001).map(x=>`<button type="button" class="breakrow creditor-one-line recent-balance-row" data-opening-balance="${kind}" data-opening-id="${esc(x.id)}"><span>${esc(x.party||x.name||'Unknown creditor')} <small>Starting</small></span><small>${fmt(x.date||today())}</small><strong>${money(openingRemaining(x))}</strong></button>`).join('');
  const expenseRows=items=>items.map(x=>`<button type="button" class="breakrow creditor-one-line recent-balance-row" data-due-expense="${esc(x.id)}"><span>${esc(x.duePerson||'Unknown person')} <small>${esc(x.name||x.category||'Expense')}</small></span><small>${fmt(x.date||asOf)}</small><strong>${money(expenseOutstandingAt(x,asOf))}</strong></button>`).join('');
  const grouped=(expenseItems,openingItems=[],kind='creditor')=>{const rows=[...openingItems.filter(x=>openingRemaining(x)>0.000001).map(x=>({date:x.date||'',html:openingRows([x],kind)})),...expenseItems.map(x=>({date:x.date||'',html:expenseRows([x])}))].sort((a,b)=>String(b.date).localeCompare(String(a.date)));return rows.map(x=>x.html).join('')||empty('No balances recorded by this date.')};
  $('iOweList').innerHTML=grouped(iOwe,[],'creditor');
