@@ -3436,7 +3436,7 @@ function renderFamilyCostReport(items,bills=[],rangeStart='',rangeEnd=''){
  const allocatedMembers=new Set(sharedRows.flatMap(x=>x.costMembers.map(n=>n.toLocaleLowerCase())));
  const averageSharedShare=allocatedMembers.size?sharedRows.reduce((t,x)=>t+x.amount,0)/allocatedMembers.size:0;
  $('familyCostTotal').textContent=money(familyTotal);
- $('familyCostMemberCount').textContent=`Shared across ${allocatedMembers.size} selected ${allocatedMembers.size===1?'person':'people'}`;
+ $('familyCostMemberCount').textContent=`Members Shared: ${allocatedMembers.size}`;
  $('familyCostPerMember').textContent=allocatedMembers.size?money(averageSharedShare):'—';
  $('memberDirectCostTotal').textContent=money(directTotal);
  $('unassignedCostTotal').textContent=money(unassignedTotal);
@@ -3445,13 +3445,9 @@ function renderFamilyCostReport(items,bills=[],rangeStart='',rangeEnd=''){
   const direct=directByMember.get(name)||0,share=sharedByMember.get(name)||0,total=direct+share;
   const guestStay=guestsInRange.find(g=>g.members.some(n=>n.toLocaleLowerCase()===name.toLocaleLowerCase()));
   const guestLabel=guestStay?`Guest · ${fmt(guestStay.entryDate)} – ${guestStay.outDate?fmt(guestStay.outDate):'Not left yet'}`:'';
-  return `<div class="member-cost-row"><div><strong>${esc(name)}</strong><small>${guestLabel?esc(guestLabel)+' · ':''}Personal: ${money(direct)} · Shared: ${money(share)}</small></div><strong>${money(total)}</strong></div>`;
+  return `<div class="member-cost-row" title="${esc(guestLabel)}"><strong class="member-cost-name">${esc(name)}</strong><span class="member-cost-personal">Personal: ${money(direct)}</span><span class="member-cost-shared">Shared: ${money(share)}</span><strong class="member-cost-total">${money(total)}</strong></div>`;
  }).join('')||empty('Add family members in Profile to see the member-wise cost breakdown.');
  renderMemberProductConsumptionReport(rangeStart,rangeEnd,people);
- const notes=[];
- if(!people.length&&familyTotal>0)notes.push('Add people before allocating shared costs.');
- if(unassignedTotal>0)notes.push(`${money(unassignedTotal)} is not included in member totals. Assign expenses or inventory products to one or more people.`);
- $('familyCostNote').textContent=notes.join(' ')||'Expenses and landed purchase costs are divided equally among their selected people. Production materials are already included at purchase; only production electricity and transit overhead are added again, allocated to the people assigned to the consumed materials.';
 }
 function renderMemberProductConsumptionReport(rangeStart,rangeEnd,reportPeople=[]){
  const select=$('memberProductFilter'),list=$('memberProductConsumption');
