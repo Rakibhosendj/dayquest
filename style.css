@@ -2492,3 +2492,11 @@ body{color:var(--dq-font-color,#263b5c)}
  #overviewSectionAccountTotals .account-total-card .quick-action-button-stats>span:last-child{font-size:9px}
  #overviewSectionAccountTotals .account-total-card:last-child{grid-column:auto}
 }
+
+#overviewSectionIncomeTotals .overview-account-total-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,220px));gap:12px}
+#overviewSectionIncomeTotals .account-total-card{width:220px;height:140px;min-height:140px;max-height:140px;padding:14px 12px;gap:8px;border-radius:18px}
+#overviewSectionIncomeTotals .account-total-card .quick-action-button-title{font-size:16px;line-height:1.15}
+#overviewSectionIncomeTotals .account-total-card .quick-action-button-stats{display:flex;flex-direction:column;align-items:center;gap:5px;width:100%;text-align:center}
+#overviewSectionIncomeTotals .account-total-card .quick-action-button-stats>span{display:block;white-space:nowrap;font-size:11px;line-height:1.15}
+#overviewSectionIncomeTotals .account-total-card .quick-action-button-stats>span:first-child{font-size:clamp(15px,2vw,20px);font-weight:850}
+@media(max-width:620px){#overviewSectionIncomeTotals .overview-account-total-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#overviewSectionIncomeTotals .account-total-card{width:100%;height:112px;min-height:112px;max-height:112px;padding:9px 6px;gap:6px}#overviewSectionIncomeTotals .account-total-card .quick-action-button-title{font-size:12px}#overviewSectionIncomeTotals .account-total-card .quick-action-button-stats{gap:4px}#overviewSectionIncomeTotals .account-total-card .quick-action-button-stats>span{font-size:9px}#overviewSectionIncomeTotals .account-total-card .quick-action-button-stats>span:first-child{font-size:15px}}
