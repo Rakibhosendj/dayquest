@@ -756,12 +756,7 @@ $('menuToggle').onclick=()=>{
  $('sidebar').classList.toggle('open',open);$('sidebarBackdrop').hidden=!open;syncMenuToggle();
 };
 $('sidebarBackdrop').onclick=closeSidebar;
-$('showCostChartBtn').onclick=()=>{
- renderReport();
- if($('costChartPageTotal'))$('costChartPageTotal').textContent=$('reportTotal').textContent;
- if($('costChartPageRange'))$('costChartPageRange').textContent=$('reportRange').textContent;
- setTab('costChartPage');
-};
+
 $('costChartBack').onclick=()=>{setTab('reports');activateReportSection('cost')};
 window.addEventListener('resize',()=>{closeSidebar();syncMenuToggle()});
 syncMenuToggle();
@@ -2575,6 +2570,7 @@ const REPORT_TITLES={purchase:'Purchase Reports',assets:'Assets',members:'Member
 let reportPresentationReady=false;
 function prepareReportPresentation(){
  if(reportPresentationReady)return;reportPresentationReady=true;
+ const costGroupControl=document.querySelector('.report-cost-group-control');if(costGroupControl)costGroupControl.hidden=selected!=='cost';
  document.querySelectorAll('[data-report-pane]').forEach(pane=>{
   const key=pane.dataset.reportPane,title=REPORT_TITLES[key]||'Report';
   const detail=document.createElement('details');detail.className='report-detail-disclosure';
@@ -2589,8 +2585,14 @@ function prepareReportPresentation(){
   const selected=document.querySelector('[data-report-go].active')?.dataset.reportGo||'members';
   const from=$('productReportFromDate')?.value||'',to=$('productReportToDate')?.value||'';
   if(selected==='all'){alert('Choose an individual report from the Reports menu before exporting.');exportSelect.value='';return}
-  if(!from||!to||from>to){alert('Select a valid From and To date range before exporting.');exportSelect.value='';return}
-  exportReport(selected,format);exportSelect.value='';
+  if(!from||!to||from>to){alert('Select a valid From and To date range before continuing.');exportSelect.value='';return}
+  if(format==='chart'&&selected==='cost'){
+   if($('costChartPageTotal'))$('costChartPageTotal').textContent=$('reportTotal').textContent;
+   if($('costChartPageRange'))$('costChartPageRange').textContent=$('reportRange').textContent;
+   setTab('costChartPage');
+  }else if(format==='chart'){alert('Show Chart is available for the Cost report.');}
+  else exportReport(selected,format);
+  exportSelect.value='';
  });
 }
 function reportMetricText(id){const node=$(id);return node?node.textContent.trim():''}
