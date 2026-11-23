@@ -2697,3 +2697,7 @@ body{color:var(--dq-font-color,#263b5c)}
  #reports .report-filter-toolbar .report-export-control{flex-basis:112px!important;width:112px!important}
  #reports .report-filter-toolbar .report-date-box .report-date-placeholder{font-size:12px!important}
 }
+
+/* Compact the party name in recent creditor/debtor starting balance rows. */
+.recent-balance-row>span{font-size:11px!important;line-height:1.2!important;font-weight:650!important}
+.recent-balance-row>span small{font-size:9px!important}
