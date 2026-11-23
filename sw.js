@@ -1,4 +1,4 @@
-const CACHE = 'dayquest-cache-v227-cost-chart-in-reports-toolbar-v1';
+const CACHE = 'dayquest-cache-v228-fix-report-selection-runtime-v1';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
