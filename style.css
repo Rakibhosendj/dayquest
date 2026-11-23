@@ -2777,3 +2777,13 @@ body{color:var(--dq-font-color,#263b5c)}
 #memberCostBreakdown .member-cost-personal,#memberCostBreakdown .member-cost-shared{font-size:10px;color:#68768a;white-space:nowrap}
 #memberCostBreakdown .member-cost-total{font-size:11px;color:#172033;white-space:nowrap;text-align:right}
 .costing-summary .stat small{display:block!important}
+
+/* Compact Cost Report total and date caption. */
+.report-pane[data-report-pane="cost"] .report-card{padding:10px 12px;margin-top:8px}
+.report-pane[data-report-pane="cost"] .report-card .eyebrow{display:none}
+.report-pane[data-report-pane="cost"] .report-total{display:inline-block;font-size:16px;line-height:1.2;margin:0;font-weight:750}
+.report-pane[data-report-pane="cost"] .report-card:before{content:"Total Cost";display:inline-block;font-size:12px;font-weight:650;color:#566176;margin-right:auto}
+.report-pane[data-report-pane="cost"] .report-card{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.report-pane[data-report-pane="cost"] #reportRange{display:none}
+.report-pane[data-report-pane="cost"] .cost-report-date-caption{padding:7px 10px}
+.report-pane[data-report-pane="cost"] .cost-report-date-caption strong{font-size:11px}
