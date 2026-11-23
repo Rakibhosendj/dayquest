@@ -2755,3 +2755,9 @@ body{color:var(--dq-font-color,#263b5c)}
 .app-main>main>.panel.active>:first-child[hidden]+:not([hidden]){
  margin-block-start:0!important;
 }
+
+/* Balance Transfer: direction, transfer amount and unlabelled cost amount in one row. */
+.balance-transfer-entry-grid{display:grid!important;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) minmax(105px,.75fr)!important;gap:9px!important;align-items:end!important}
+.balance-transfer-entry-grid>label{min-width:0}
+.balance-transfer-entry-grid>#balanceTransferCost{box-sizing:border-box;width:100%;min-width:0}
+@media(max-width:520px){.balance-transfer-entry-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:7px!important}.balance-transfer-entry-grid>#balanceTransferDirection{grid-column:1/-1}}
