@@ -2500,3 +2500,6 @@ body{color:var(--dq-font-color,#263b5c)}
 #overviewSectionIncomeTotals .account-total-card .quick-action-button-stats>span{display:block;white-space:nowrap;font-size:11px;line-height:1.15}
 #overviewSectionIncomeTotals .account-total-card .quick-action-button-stats>span:first-child{font-size:clamp(15px,2vw,20px);font-weight:850}
 @media(max-width:620px){#overviewSectionIncomeTotals .overview-account-total-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}#overviewSectionIncomeTotals .account-total-card{width:100%;height:112px;min-height:112px;max-height:112px;padding:9px 6px;gap:6px}#overviewSectionIncomeTotals .account-total-card .quick-action-button-title{font-size:12px}#overviewSectionIncomeTotals .account-total-card .quick-action-button-stats{gap:4px}#overviewSectionIncomeTotals .account-total-card .quick-action-button-stats>span{font-size:9px}#overviewSectionIncomeTotals .account-total-card .quick-action-button-stats>span:first-child{font-size:15px}}
+
+/* Income form layout cleanup: hide edit notice without leaving an empty grid cell. */
+#incomeEditHint{display:none!important}
