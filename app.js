@@ -541,7 +541,7 @@ function setupSideMenuReordering(){
   if(nav.classList.contains('side-menu-reordering'))event.preventDefault();
  });
 }
-const OVERVIEW_SECTION_KEYS=['quickExpenses','quickSuppliers','todayActivity','quickActions','recentExpenses','githubLink','todayQuests'];
+const OVERVIEW_SECTION_KEYS=['quickExpenses','quickSuppliers','todayActivity','quickActions','recentExpenses','todayQuests'];
 function normalizeOverviewSectionOrder(order){
  const requested=Array.isArray(order)?order.map(String):[];
  const normalized=requested.filter((key,index)=>OVERVIEW_SECTION_KEYS.includes(key)&&requested.indexOf(key)===index);
