@@ -46,7 +46,11 @@ db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business'
 db.incomes.forEach(x=>{if(x.source&&!db.incomeHeads.includes(x.source))db.incomeHeads.push(x.source)});
 db.profile=db.profile&&typeof db.profile==='object'?db.profile:{name:'',phone:'',address:'',openingCash:0,openingBank:0};
 db.profile.address=String(db.profile.address||'');
-db.profile.openingLoans=Array.isArray(db.profile.openingLoans)?db.profile.openingLoans.filter(item=>item&&String(item.party||'').trim()&&Number(item.amount)>0).map(item=>({id:String(item.id||crypto.randomUUID()),party:String(item.party||'').trim(),type:item.type==='taken'?'taken':'given',amount:Math.max(0,Number(item.amount)||0)})):[];
+['openingCashEntries','openingBankEntries'].forEach(key=>{db.profile[key]=Array.isArray(db.profile[key])?db.profile[key].filter(x=>x&&Number(x.amount)>0).map(x=>({id:String(x.id||crypto.randomUUID()),amount:Math.max(0,Number(x.amount)||0),member:String(x.member||''),date:String(x.date||today())})):[]});
+if(!db.profile.openingCashEntries.length&&Number(db.profile.openingCash)>0)db.profile.openingCashEntries=[{id:crypto.randomUUID(),amount:Number(db.profile.openingCash),member:'',date:today()}];
+if(!db.profile.openingBankEntries.length&&Number(db.profile.openingBank)>0)db.profile.openingBankEntries=[{id:crypto.randomUUID(),amount:Number(db.profile.openingBank),member:'',date:today()}];
+db.profile.openingCash=0;db.profile.openingBank=0;
+db.profile.openingLoans=Array.isArray(db.profile.openingLoans)?db.profile.openingLoans.filter(item=>item&&String(item.party||'').trim()&&Number(item.amount)>0).map(item=>({id:String(item.id||crypto.randomUUID()),party:String(item.party||'').trim(),type:item.type==='taken'?'taken':'given',amount:Math.max(0,Number(item.amount)||0),member:String(item.member||''),date:String(item.date||today())})):[];
 ['openingDebtors','openingCreditors'].forEach(key=>{db.profile[key]=Array.isArray(db.profile[key])?db.profile[key].filter(item=>item&&String(item.party||'').trim()&&Number(item.amount)>0).map(item=>({id:String(item.id||crypto.randomUUID()),party:String(item.party||'').trim(),amount:Math.max(0,Number(item.amount)||0),date:String(item.date||today())})):[]});
 db.profile.phone=String(db.profile.phone||'');db.profile.phone2=String(db.profile.phone2||'');
 db.profile.familyName=String(db.profile.familyName||'');
@@ -355,7 +359,7 @@ function purchaseBillLineCosts(bill){
 }
 function purchaseLineCost(bill,line){const index=(bill.lines||[]).indexOf(line);return purchaseBillLineCosts(bill).get(line.id||String(index))??purchaseLineBaseAmount(line)}
 function calculateBalances(){
- let cash=Number(db.profile?.openingCash||0),bank=Number(db.profile?.openingBank||0);
+ let cash=Number(db.profile?.openingCash||0)+(db.profile?.openingCashEntries||[]).reduce((t,x)=>t+Math.max(0,Number(x.amount)||0),0),bank=Number(db.profile?.openingBank||0)+(db.profile?.openingBankEntries||[]).reduce((t,x)=>t+Math.max(0,Number(x.amount)||0),0);
  const add=(method,amount)=>{if(method==='Bank')bank+=amount;else if(method==='Cash')cash+=amount};
  db.incomes.forEach(x=>{if(x.paymentType==='Due')incomeCollections(x).forEach(c=>add(c.method||'Cash',Number(c.amount||0)));else add(x.paymentType||'Cash',Number(x.amount||0))});
  db.expenses.forEach(x=>{
@@ -2962,7 +2966,7 @@ function loadProfileForm(){
  $('profileName').value=db.profile.name||'';$('profilePhone').value=db.profile.phone||'';$('profilePhone2').value=db.profile.phone2||'';
  ['Country','Division','District','SubDistrict','Village','Road','Religion','Gender','BirthDate'].forEach(field=>{const key=field[0].toLowerCase()+field.slice(1);$('profile'+field).value=db.profile[key]||''});
  $('profileAddress').value=composeMemberAddress(db.profile)||db.profile.address||'';$('familyName').value=db.profile.familyName||'';
- $('openingCash').value=Number(db.profile.openingCash||0);$('openingBank').value=Number(db.profile.openingBank||0);renderOpeningLoanRows();renderOpeningAccountBalanceRows('Debtor');renderOpeningAccountBalanceRows('Creditor');
+ renderStartingBalanceSections();
  updateAppBrand();updateProfilePhotoPreview();renderFamilyMembers();renderMealPersonDates();
 }
 initializeAddressCascades();
@@ -3023,60 +3027,72 @@ $('addFamilyMember').onclick=()=>{
  input.value='';renderFamilyMembers();renderMealPersonDates();fillChoices();save();
 };
 $('profileForm').onsubmit=e=>{
- e.preventDefault();const openingCash=Number($('openingCash').value),openingBank=Number($('openingBank').value),openingLoans=readOpeningLoanRows();
- if(!Number.isFinite(openingCash)||openingCash<0||!Number.isFinite(openingBank)||openingBank<0){alert('Opening balances must be zero or greater.');return}
+ e.preventDefault();const starting=readStartingBalanceSections();
  const name=$('profileName').value.trim(),details={country:$('profileCountry').value.trim(),division:$('profileDivision').value.trim(),district:$('profileDistrict').value.trim(),subDistrict:$('profileSubDistrict').value.trim(),village:$('profileVillage').value.trim(),road:$('profileRoad').value.trim(),religion:$('profileReligion').value.trim(),gender:$('profileGender').value,birthDate:$('profileBirthDate').value};
- db.profile={...db.profile,...details,name,phone:$('profilePhone').value.trim(),phone2:$('profilePhone2').value.trim(),address:composeMemberAddress(details),familyName:$('familyName').value.trim(),openingCash,openingBank};
- db.profile.openingLoans=openingLoans;syncOpeningLoansToRegister(openingLoans);
+ db.profile={...db.profile,...details,name,phone:$('profilePhone').value.trim(),phone2:$('profilePhone2').value.trim(),address:composeMemberAddress(details),familyName:$('familyName').value.trim(),openingCash:starting.cash.reduce((t,x)=>t+x.amount,0),openingBank:starting.bank.reduce((t,x)=>t+x.amount,0),openingCashEntries:starting.cash,openingBankEntries:starting.bank,openingLoans:starting.loans,openingCreditors:starting.creditors,openingDebtors:starting.debtors};
+ starting.creditors.forEach(item=>{if(!db.suppliers.some(n=>n.toLocaleLowerCase()===item.party.toLocaleLowerCase()))db.suppliers.push(item.party);db.supplierDetails[item.party]=db.supplierDetails[item.party]||{ownerName:'',address:''}});
+ syncOpeningLoansToRegister(starting.loans);
  if(name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===name.toLocaleLowerCase()))db.familyMembers.unshift(name);
  if(name&&!db.incomePeople.includes(name))db.incomePeople.unshift(name);
  if(name){const p=ensureMemberProfile(name);Object.assign(p,{phone:db.profile.phone,phone2:db.profile.phone2,...details})}
- fillChoices();renderFamilyMembers();updateProfilePhotoPreview();save();alert('Family profile and starting balances saved.');
+ fillChoices();renderMasterLists();renderSupplierEntryList();renderSupplierAccounts();renderReport();renderFamilyMembers();updateProfilePhotoPreview();save();alert('Family profile and starting balances saved.');
 };
 
 
-function renderOpeningLoanRows(){
- const host=$('openingLoanRows');if(!host)return;
- const rows=Array.isArray(db.profile?.openingLoans)?db.profile.openingLoans:[];
- host.innerHTML=rows.map((item,index)=>`<div class="opening-loan-row" data-opening-loan-row><label>Loan name <input type="text" data-opening-loan-party maxlength="100" value="${esc(item.party||'')}" placeholder="Person / bank name"></label><label>Loan type <select data-opening-loan-type><option value="given" ${item.type!=='taken'?'selected':''}>To collect</option><option value="taken" ${item.type==='taken'?'selected':''}>To repay</option></select></label><label>Amount <input type="number" data-opening-loan-amount min="0.01" step="0.01" value="${Number(item.amount||0)||''}" placeholder="0.00"></label><button type="button" class="delete" data-opening-loan-remove aria-label="Remove opening loan">Remove</button><input type="hidden" data-opening-loan-id value="${esc(item.id||crypto.randomUUID())}"></div>`).join('');
- host.querySelectorAll('[data-opening-loan-remove]').forEach(button=>button.onclick=()=>{button.closest('[data-opening-loan-row]')?.remove()});
+function startingMemberOptions(selected=''){
+ return '<option value="">Member</option>'+assignablePeople().map(name=>`<option value="${esc(name)}" ${name===selected?'selected':''}>${esc(name)}</option>`).join('');
 }
-function readOpeningLoanRows(){
- return [...($('openingLoanRows')?.querySelectorAll('[data-opening-loan-row]')||[])].map(row=>({id:row.querySelector('[data-opening-loan-id]')?.value||crypto.randomUUID(),party:row.querySelector('[data-opening-loan-party]')?.value.trim()||'',type:row.querySelector('[data-opening-loan-type]')?.value==='taken'?'taken':'given',amount:Number(row.querySelector('[data-opening-loan-amount]')?.value||0)})).filter(item=>item.party&&Number.isFinite(item.amount)&&item.amount>0);
-}
-function renderOpeningAccountBalanceRows(kind){
+function renderStartingRows(kind){
  const host=$('opening'+kind+'Rows');if(!host)return;
- const rows=Array.isArray(db.profile?.['opening'+kind+'s'])?db.profile['opening'+kind+'s']:[];
- host.innerHTML=rows.map(item=>`<div class="opening-loan-row" data-opening-${kind.toLowerCase()}-row><label>${kind==='Creditor'?'Supplier name':'Debtor name'} <input type="text" data-opening-account-party maxlength="100" value="${esc(item.party||'')}" placeholder="${kind==='Creditor'?'Supplier name':'Person name'}"></label><label>Date <input type="date" data-opening-account-date value="${esc(item.date||today())}"></label><label>Amount <input type="number" data-opening-account-amount min="0.01" step="0.01" value="${Number(item.amount||0)||''}" placeholder="0.00"></label><button type="button" class="delete" data-opening-account-remove>Remove</button><input type="hidden" data-opening-account-id value="${esc(item.id||crypto.randomUUID())}"></div>`).join('');
- host.querySelectorAll('[data-opening-account-remove]').forEach(button=>button.onclick=()=>button.closest('[data-opening-'+kind.toLowerCase()+'-row]')?.remove());
+ const key={Cash:'openingCashEntries',Bank:'openingBankEntries',Loan:'openingLoans',Creditor:'openingCreditors',Debtor:'openingDebtors'}[kind];
+ const rows=Array.isArray(db.profile?.[key])?db.profile[key]:[];
+ host.innerHTML=rows.map(item=>startingRowMarkup(kind,item)).join('');
 }
-function readOpeningAccountBalanceRows(kind){
+function startingRowMarkup(kind,item={}){
+ const id=esc(item.id||crypto.randomUUID()),amount=Number(item.amount||0)||'',date=esc(item.date||today());
+ const amountInput=`<input type="number" data-starting-amount min="0.01" step="0.01" inputmode="decimal" value="${amount}" placeholder="Amount" aria-label="Amount">`;
+ const dateInput=`<input type="date" data-starting-date value="${date}" aria-label="Date">`;
+ let fields='';
+ if(kind==='Cash'||kind==='Bank')fields=amountInput+`<select data-starting-member aria-label="Member">${startingMemberOptions(item.member||'')}</select>`+dateInput;
+ if(kind==='Loan')fields=amountInput+`<input type="text" data-starting-party maxlength="100" value="${esc(item.party||'')}" placeholder="Loan giver name" aria-label="Loan giver name"><select data-starting-member aria-label="Member">${startingMemberOptions(item.member||'')}</select><select data-starting-type aria-label="Loan type"><option value="given" ${item.type!=='taken'?'selected':''}>To collect</option><option value="taken" ${item.type==='taken'?'selected':''}>To repay</option></select>`+dateInput;
+ if(kind==='Creditor')fields=amountInput+`<input type="text" data-starting-party maxlength="100" value="${esc(item.party||'')}" placeholder="Supplier name" aria-label="Supplier name">`+dateInput;
+ if(kind==='Debtor')fields=amountInput+`<input type="text" data-starting-party maxlength="100" value="${esc(item.party||'')}" placeholder="Customer name" aria-label="Customer name">`+dateInput;
+ return `<div class="opening-balance-row" data-starting-row data-kind="${kind}">${fields}<button type="button" class="delete" data-starting-remove aria-label="Remove ${kind} entry">×</button><input type="hidden" data-starting-id value="${id}"></div>`;
+}
+function readStartingRows(kind){
+ const host=$('opening'+kind+'Rows');return [...(host?.querySelectorAll('[data-starting-row]')||[])].map(row=>({
+  id:row.querySelector('[data-starting-id]')?.value||crypto.randomUUID(),
+  amount:Number(row.querySelector('[data-starting-amount]')?.value||0),
+  party:row.querySelector('[data-starting-party]')?.value.trim()||'',
+  member:row.querySelector('[data-starting-member]')?.value||'',
+  type:row.querySelector('[data-starting-type]')?.value==='taken'?'taken':'given',
+  date:row.querySelector('[data-starting-date]')?.value||today()
+ })).filter(item=>Number.isFinite(item.amount)&&item.amount>0&&item.date&&((kind==='Cash'||kind==='Bank')||item.party));
+}
+function addStartingRow(kind){
+ const host=$('opening'+kind+'Rows');if(!host)return;
+ const item={id:crypto.randomUUID(),amount:'',party:'',member:'',type:'given',date:today()};
+ const wrap=document.createElement('div');wrap.innerHTML=startingRowMarkup(kind,item);host.appendChild(wrap.firstElementChild);
+ const row=host.lastElementChild;row.querySelector('[data-starting-remove]').onclick=()=>row.remove();
+ row.querySelector('[data-starting-amount]')?.focus();
+}
+['Cash','Bank','Loan','Creditor','Debtor'].forEach(kind=>{
  const host=$('opening'+kind+'Rows');
- return [...(host?.querySelectorAll('[data-opening-account-party]')||[])].map(input=>{const row=input.closest('[data-opening-'+kind.toLowerCase()+'-row]');return{id:row?.querySelector('[data-opening-account-id]')?.value||crypto.randomUUID(),party:input.value.trim(),date:row?.querySelector('[data-opening-account-date]')?.value||today(),amount:Number(row?.querySelector('[data-opening-account-amount]')?.value||0)}}).filter(item=>item.party&&item.date&&Number.isFinite(item.amount)&&item.amount>0);
-}
-['Debtor','Creditor'].forEach(kind=>{
- $('addOpening'+kind)?.addEventListener('click',()=>{
-  const host=$('opening'+kind+'Rows');if(!host)return;
-  const wrap=document.createElement('div');wrap.innerHTML=`<div class="opening-loan-row" data-opening-${kind.toLowerCase()}-row><label>${kind==='Creditor'?'Supplier name':'Debtor name'} <input type="text" data-opening-account-party maxlength="100" placeholder="${kind==='Creditor'?'Supplier name':'Person name'}"></label><label>Date <input type="date" data-opening-account-date value="${today()}"></label><label>Amount <input type="number" data-opening-account-amount min="0.01" step="0.01" placeholder="0.00"></label><button type="button" class="delete" data-opening-account-remove>Remove</button><input type="hidden" data-opening-account-id value="${crypto.randomUUID()}"></div>`;
-  host.appendChild(wrap.firstElementChild);const row=host.lastElementChild;row.querySelector('[data-opening-account-remove]').onclick=()=>row.remove();row.querySelector('[data-opening-account-party]').focus();
- });
+ host?.addEventListener('click',event=>{if(event.target.closest('[data-starting-remove]'))event.target.closest('[data-starting-row]')?.remove()});
+ $('addOpening'+kind)?.addEventListener('click',()=>addStartingRow(kind));
 });
-function saveOpeningAccountBalanceRows(kind){
- const items=readOpeningAccountBalanceRows(kind);
- if(kind==='Creditor'){
-  items.forEach(item=>{if(!db.suppliers.some(name=>name.toLocaleLowerCase()===item.party.toLocaleLowerCase()))db.suppliers.push(item.party);db.supplierDetails[item.party]=db.supplierDetails[item.party]||{ownerName:'',address:''}});
- }
- db.profile['opening'+kind+'s']=items;
- fillChoices();renderMasterLists();renderSupplierEntryList();renderSupplierAccounts();renderReport();save();
- alert('Starting '+(kind==='Creditor'?'creditors':'debtors')+' balance saved.');
+function renderStartingBalanceSections(){
+ ['Cash','Bank','Loan','Creditor','Debtor'].forEach(renderStartingRows);
 }
-$('saveOpeningDebtors')?.addEventListener('click',()=>saveOpeningAccountBalanceRows('Debtor'));
-$('saveOpeningCreditors')?.addEventListener('click',()=>saveOpeningAccountBalanceRows('Creditor'));
+function readStartingBalanceSections(){
+ const cash=readStartingRows('Cash'),bank=readStartingRows('Bank'),loans=readStartingRows('Loan'),creditors=readStartingRows('Creditor'),debtors=readStartingRows('Debtor');
+ return {cash,bank,loans,creditors,debtors};
+}
 function syncOpeningLoansToRegister(items){
  const old=new Map(db.loans.filter(loan=>loan.openingBalance).map(loan=>[loan.id,loan]));
  const next=items.map(item=>{
   const previous=old.get(item.id);
-  return {...previous,id:item.id,type:item.type,party:item.party,amount:item.amount,method:previous?.method||'Cash',date:previous?.date||today(),dueDate:previous?.dueDate||'',note:previous?.note||'Opening loan balance',settlements:previous?.settlements||[],openingBalance:true};
+  return {...previous,id:item.id,type:item.type,party:item.party,amount:item.amount,member:item.member||'',method:previous?.method||'Cash',date:item.date||previous?.date||today(),dueDate:previous?.dueDate||'',note:previous?.note||'Opening loan balance',settlements:previous?.settlements||[],openingBalance:true};
  });
  const ids=new Set(next.map(item=>item.id));
  db.loans=[...db.loans.filter(loan=>!loan.openingBalance||ids.has(loan.id)).filter(loan=>!loan.openingBalance),...next];
@@ -3502,7 +3518,7 @@ function renderMemberReportGuestAssignments(){
  }).join(''):empty('No guest members added yet.');
 }
 function renderReport(){
- renderOpeningAccountBalanceRows('Debtor');renderOpeningAccountBalanceRows('Creditor');
+ 
  const from=$('productReportFromDate')?.value||'',to=$('productReportToDate')?.value||'';
  renderMemberReportGuestAssignments();
  const hint=$('reportDateHint');
