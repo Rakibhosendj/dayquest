@@ -1290,7 +1290,7 @@ purchaseSupplierDialogForm.onsubmit=event=>{
  fillChoices();renderMasterLists();$('purchaseSupplier').value=name;localSaveOnly();
  purchaseSupplierDialog.close();
 };
-$('purchaseBillForm').onsubmit=e=>{
+$('purchaseBillForm').onsubmit=async e=>{
  e.preventDefault();if(editingPurchaseBillId&&db.settings.allowPurchaseBillEdits===false){if($('purchaseEditHint')){$('purchaseEditHint').textContent='Editing is disabled. Enable “Allow editing saved purchase bills” in Settings, then reopen this bill.';$('purchaseEditHint').hidden=false}return}const old=editingPurchaseBillId?db.purchaseBills.find(b=>b.id===editingPurchaseBillId):null;const supplierInput=$('purchaseSupplier').value.trim(),date=$('purchaseDate').value,cashPaid=Number($('purchaseCashPaid').value||0),bankPaid=Number($('purchaseBankPaid').value||0),subtotal=currentPurchaseSubtotal(),transitCost=Math.max(0,Number($('purchaseTransitCost').value||0)),transitPaidFrom=$('purchaseTransitPaidFrom').value==='Bank'?'Bank':'Cash',discount=Math.max(0,Number($('purchaseDiscount').value||0)),total=currentPurchaseTotal(),unpaid=Math.max(0,total-cashPaid-bankPaid);
  const supplier=supplierInput||(unpaid>0?'Unassigned supplier':'');
  const lines=purchaseLines.map(l=>({id:l.lineId||crypto.randomUUID(),product:String(l.product||'').trim(),category:String(l.category||db.purchaseCategories[0]||'Staples').trim(),productType:String(l.productType||'Other').trim()||'Other',spec:String(l.spec||'').trim(),quantity:Number(l.quantity),unit:String(l.unit||'pcs'),rate:Number(l.rate),amount:purchaseLineAmount(l),costType:['family','member','unassigned','members'].includes(l.costType)?l.costType:'unassigned',costMember:String(l.costMember||'').trim(),costMembers:Array.isArray(l.costMembers)?uniquePeople(l.costMembers):[]}));
@@ -1337,7 +1337,7 @@ $('purchaseBillForm').onsubmit=e=>{
  }
  else db.purchaseBills.unshift({id:crypto.randomUUID(),...values});
  if(supplier&&!db.suppliers.includes(supplier))db.suppliers.push(supplier);lines.forEach(l=>{if(!db.productNames.includes(l.product))db.productNames.push(l.product);if(!db.purchaseCategories.includes(l.category))db.purchaseCategories.push(l.category);if(!db.productTypes.some(type=>type.toLocaleLowerCase()===l.productType.toLocaleLowerCase()))db.productTypes.push(l.productType);if(!db.units.includes(l.unit))db.units.push(l.unit)});
- const wasEditing=!!editingPurchaseBillId;resetPurchaseForm();save();alert(wasEditing?'Purchase bill updated successfully.':'Purchase bill saved successfully.');
+ const wasEditing=!!editingPurchaseBillId;resetPurchaseForm();pendingSaveAction=null;save();await showDayQuestSuccess(wasEditing?'Purchase bill updated successfully.':'Purchase bill saved successfully.');
 };
 function inventoryMemberChecks(line){
  const selected=new Set(assignedMembers(line).map(n=>n.toLocaleLowerCase()));
@@ -2309,7 +2309,6 @@ const openQuickExpenseSetup=()=>{
 };
 $('overviewQuickSetupLink').onclick=openQuickExpenseSetup;
 $('quickExpensesTitleSetupLink').onclick=openQuickExpenseSetup;
-$('quickExpensesBackOverview').onclick=()=>{setTab('home');$('home')?.scrollIntoView({behavior:'instant',block:'start'});};
 $('quickActionModeToggle').onclick=toggleQuickActionMode;
 $('overviewQuickActionModeToggle').onclick=toggleQuickActionMode;
 $('overviewQuickActionTapToggle').onclick=()=>{
@@ -3241,7 +3240,7 @@ $('addFamilyMember').onclick=()=>{
  db.familyMembers.push(name);if(!db.incomePeople.includes(name))db.incomePeople.push(name);ensureMemberProfile(name);
  input.value='';renderFamilyMembers();renderMealPersonDates();fillChoices();save();
 };
-$('profileForm').onsubmit=e=>{
+$('profileForm').onsubmit=async e=>{
  e.preventDefault();
  if(!['Cash','Bank','Loan','Creditor','Debtor'].every(validateStartingBalanceRows))return;
  const starting=readStartingBalanceSections();
@@ -3252,7 +3251,7 @@ $('profileForm').onsubmit=e=>{
  if(name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===name.toLocaleLowerCase()))db.familyMembers.unshift(name);
  if(name&&!db.incomePeople.includes(name))db.incomePeople.unshift(name);
  if(name){const p=ensureMemberProfile(name);Object.assign(p,{phone:db.profile.phone,phone2:db.profile.phone2,...details})}
- fillChoices();renderMasterLists();renderSupplierEntryList();renderSupplierAccounts();renderFamilyMembers();renderMealPersonDates();renderGuestMemberControls();updateProfilePhotoPreview();pendingSaveAction=null;save();alert('Updated Successfully');
+ fillChoices();renderMasterLists();renderSupplierEntryList();renderSupplierAccounts();renderFamilyMembers();renderMealPersonDates();renderGuestMemberControls();updateProfilePhotoPreview();pendingSaveAction=null;save();await showDayQuestSuccess('Profile updated successfully.');
 };
 
 
@@ -5016,6 +5015,29 @@ $('disableDayQuestNotifications').onclick=async()=>{
   alert('DayQuest notifications are disabled on this device.');
  }catch(error){console.error('DayQuest push unsubscribe failed',error);alert('DayQuest could not update the notification subscription. Try again while online.')}
 };
+function showDayQuestSuccess(messageText){
+ const dialog=$('dqSuccessDialog'),message=$('dqSuccessText'),button=$('dqSuccessOk');
+ if(!dialog||!message||!button||typeof dialog.showModal!=='function'){
+  window.alert(messageText);
+  return Promise.resolve();
+ }
+ return new Promise(resolve=>{
+  message.textContent=String(messageText||'Saved successfully.');
+  let finished=false;
+  const done=()=>{
+   if(finished)return;
+   finished=true;
+   dialog.close();
+   button.removeEventListener('click',done);
+   dialog.removeEventListener('cancel',onCancel);
+   resolve();
+  };
+  const onCancel=event=>{event.preventDefault();done()};
+  button.addEventListener('click',done);
+  dialog.addEventListener('cancel',onCancel);
+  dialog.showModal();
+ });
+}
 function installDayQuestMessageAlerts(){
  const dialog=$('dqMessageDialog'),title=$('dqMessageTitle'),message=$('dqMessageText'),ok=$('dqMessageOk');
  const nativeAlert=window.alert.bind(window),nativeConfirm=window.confirm.bind(window),nativePrompt=window.prompt.bind(window);
