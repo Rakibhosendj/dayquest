@@ -3819,18 +3819,34 @@ function buildCostReportRows(from,to){
   rows.push({
    date:String(item.date||''),product,quantity:quantity>0?`${numberText(quantity)} ${String(item.unit||'')}`.trim():'—',
    rate:money(Number(item.rate??(quantity>0?amount/quantity:amount))),paidAmount:paid,dueAmount:due,
-   supplier:String(item.duePerson||'—'),inventoryStock:'—',category:String(item.category||'Uncategorised'),type:product,productGroup:product,source:'Expense',discountAllocated:0
+   supplier:String(item.duePerson||'—'),inventoryStock:'—',category:String(item.category||'Uncategorised'),type:String(item.category||'Expense'),productGroup:product,source:'Expense',discountAllocated:0
   });
  });
+ db.productions.filter(p=>String(p.date||'')>=from&&String(p.date||'')<=to).forEach(p=>{
+  const electricity=Math.max(0,Number(p.electricityCost||0)),transit=Math.max(0,Number(p.transitCost||0));
+  const parts=[['Electricity',electricity],['Production transit',transit]].filter(([,v])=>v>0);
+  if(!parts.length&&Number(p.overheadCost||0)>0)parts.push(['Production overhead',Math.max(0,Number(p.overheadCost||0))]);
+  parts.forEach(([label,amount])=>{const qty=Math.max(0,Number(p.quantity||0));rows.push({date:String(p.date||''),product:'Production overhead · '+String(p.product||'Product'),quantity:qty>0?numberText(qty)+' '+String(p.unit||'pcs'):'—',rate:money(qty>0?amount/qty:amount),paidAmount:amount,dueAmount:0,supplier:'—',inventoryStock:'—',category:'Production Overhead',type:label,productGroup:String(p.product||'Production overhead'),source:'Production overhead',productionNo:String(p.productionNo||''),discountAllocated:0})});
+ });
+
  return rows.sort((a,b)=>String(b.date).localeCompare(String(a.date))||a.product.localeCompare(b.product));
 }
+function costReportRowTotal(row){return Math.max(0,Number(row.paidAmount||0))+Math.max(0,Number(row.dueAmount||0))+Math.max(0,Number(row.discountAllocated||0))}
+function costReportTotals(rows){return rows.reduce((t,r)=>{t.paid+=Math.max(0,Number(r.paidAmount||0));t.due+=Math.max(0,Number(r.dueAmount||0));t.discount+=Math.max(0,Number(r.discountAllocated||0));t.total+=costReportRowTotal(r);return t},{paid:0,due:0,discount:0,total:0})}
 function renderCostReport(from,to){
  const rows=buildCostReportRows(from,to),mode=$('costGroupBy')?.value||'category';
- const config={category:{field:'category',title:'Category'},type:{field:'type',title:'Type'},product:{field:'productGroup',title:'Product'}}[mode]||{field:'category',title:'Category'};
- const totals=new Map();rows.forEach(row=>{const label=row[config.field]||'Uncategorised';totals.set(label,(totals.get(label)||0)+row.paidAmount+row.dueAmount+row.discountAllocated)});
- $('costBreakdownTitle').textContent=`Cost by ${config.title}`;
- $('costReportRangeCaption').textContent=`${fmt(from)} – ${fmt(to)}`;
- $('categoryBreakdown').innerHTML=[...totals.entries()].sort((a,b)=>b[1]-a[1]).map(([name,total])=>`<div class="breakrow"><span>${esc(name)}</span><strong>${money(total)}</strong></div>`).join('')||empty('No costs in this date range.');
+ const cfg={category:{field:'category',title:'Category'},type:{field:'type',title:'Type'},product:{field:'productGroup',title:'Product'}}[mode]||{field:'category',title:'Category'};
+ const groups=new Map();rows.forEach(r=>{const k=String(r[cfg.field]||'Uncategorised');if(!groups.has(k))groups.set(k,[]);groups.get(k).push(r)});
+ $('costBreakdownTitle').textContent='Cost by '+cfg.title;$('costReportRangeCaption').textContent=fmt(from)+' – '+fmt(to);
+ $('categoryBreakdown').innerHTML=[...groups.entries()].sort((a,b)=>b[1].reduce((s,r)=>s+costReportRowTotal(r),0)-a[1].reduce((s,r)=>s+costReportRowTotal(r),0)).map(([name,entries])=>{
+  const total=entries.reduce((s,r)=>s+costReportRowTotal(r),0);
+  const details=entries.map(r=>{
+   const summary='<summary><span class="cost-report-item-main"><strong>'+esc(r.product)+'</strong><small>'+esc(fmt(r.date))+' · '+esc(r.source||'Cost entry')+'</small></span><strong class="cost-report-item-total">'+money(costReportRowTotal(r))+'</strong></summary>';
+   const fields=[['Date',fmt(r.date)],['Bill number',r.billNo||r.productionNo||'—'],['Quantity',r.quantity||'—'],['Rate',r.rate||'—'],['Paid amount',money(r.paidAmount)],['Due amount',money(r.dueAmount)],['Discount settled',money(r.discountAllocated)],['Supplier',r.supplier||'—'],['Inventory stock as of To date',r.inventoryStock||'—']];
+   return '<details class="cost-report-item">'+summary+'<div class="cost-report-item-details">'+fields.map(f=>'<span><small>'+esc(f[0])+'</small><strong>'+esc(f[1])+'</strong></span>').join('')+'</div></details>';
+  }).join('');
+  return '<details class="cost-report-group"><summary><span class="cost-report-group-name"><strong>'+esc(name)+'</strong><small>'+entries.length+' '+(entries.length===1?'entry':'entries')+'</small></span><strong class="cost-report-group-total">'+money(total)+'</strong><span class="cost-report-disclosure" aria-hidden="true">⌄</span></summary><div class="cost-report-group-items">'+details+'</div></details>';
+ }).join('')||empty('No costs in this date range.');
 }
 function costReportDocumentHtml(){
  const from=$('productReportFromDate')?.value||'',to=$('productReportToDate')?.value||'',rows=buildCostReportRows(from,to);
@@ -3860,7 +3876,7 @@ function renderReport(){
   const message=!from||!to?'Choose both a From date and a To date to view reports.':'Invalid date range: the From date must be on or before the To date.';
   if(hint){hint.textContent=message;hint.classList.add('date-range-error')}
   reportOutputs.forEach(id=>{const node=$(id);if(node)node.innerHTML=empty(message)});
-  ['reportTotal','reportIncomeTotal','reportIncomeCollected','reportSalesTotal','reportSalesCollected','reportSalesDue','familyCostTotal','familyCostPerMember','memberDirectCostTotal','unassignedCostTotal','iOweExpenseTotal','owedToMeExpenseTotal','incomeDueTotal','productionReportCost','assetPurchaseTotal'].forEach(id=>{if($(id))$(id).textContent=money(0)});
+  ['reportTotal','costReportPaidTotal','costReportDueTotal','costReportDiscountTotal','reportIncomeTotal','reportIncomeCollected','reportSalesTotal','reportSalesCollected','reportSalesDue','familyCostTotal','familyCostPerMember','memberDirectCostTotal','unassignedCostTotal','iOweExpenseTotal','owedToMeExpenseTotal','incomeDueTotal','productionReportCost','assetPurchaseTotal'].forEach(id=>{if($(id))$(id).textContent=money(0)});
   ['productionReportBatchCount','productionReportQuantity','assetPurchaseLines','assetPurchaseBills'].forEach(id=>{if($(id))$(id).textContent='0'});
   if($('reportRange'))$('reportRange').textContent=message;
   if($('reportBars'))$('reportBars').innerHTML='';
@@ -3874,8 +3890,10 @@ function renderReport(){
  while(cursor<=last){days.push(cursor.toISOString().slice(0,10));cursor.setDate(cursor.getDate()+1)}
  const items=db.expenses.filter(x=>String(x.date||'')>=from&&String(x.date||'')<=to);
  const bills=db.purchaseBills.filter(x=>String(x.date||'')>=from&&String(x.date||'')<=to);
- const total=sum(items)+bills.reduce((t,x)=>t+billTotal(x),0);
+ const costRows=buildCostReportRows(from,to),costTotals=costReportTotals(costRows);
+ const total=costTotals.total;
  $('reportLabel').textContent='Total Cost';$('reportTotal').textContent=money(total);$('reportRange').textContent='';
+ $('costReportPaidTotal').textContent=money(costTotals.paid);$('costReportDueTotal').textContent=money(costTotals.due);$('costReportDiscountTotal').textContent=money(costTotals.discount);
  renderFamilyCostReport(items,bills,from,to);
  renderGuestReport(from,to);
  renderProductionReport(from,to);
@@ -3910,7 +3928,7 @@ const selectedIncomePerson=$('reportIncomePersonFilter').value;
  else{
   const seen=new Set();days.forEach(d=>{const key=d.slice(0,7);if(seen.has(key))return;seen.add(key);const [y,m]=key.split('-').map(Number);const monthStart=`${key}-01`;const monthEnd=new Date(y,m,0,12).toISOString().slice(0,10);chartBuckets.push({key,label:dateObj(monthStart).toLocaleDateString(undefined,{month:'short',year:'2-digit'}),from:monthStart<from?from:monthStart,to:monthEnd>to?to:monthEnd})});
  }
- const vals=chartBuckets.map(bucket=>sum(items.filter(x=>x.date>=bucket.from&&x.date<=bucket.to))+bills.filter(x=>x.date>=bucket.from&&x.date<=bucket.to).reduce((t,x)=>t+billTotal(x),0));
+ const vals=chartBuckets.map(bucket=>costRows.filter(row=>row.date>=bucket.from&&row.date<=bucket.to).reduce((sum,row)=>sum+costReportRowTotal(row),0));
  const max=Math.max(...vals,1);
  $('reportBars').innerHTML=vals.map((v,i)=>`<div class="bar-wrap"><div class="bar" title="${esc(chartBuckets[i].label)} · ${money(v)}" style="height:${Math.max(v?3:1,v/max*82)}px"></div><span class="bar-label">${esc(chartBuckets[i].label)}</span></div>`).join('');
  if($('costChartPageTotal'))$('costChartPageTotal').textContent=money(total);
