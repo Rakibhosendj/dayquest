@@ -822,6 +822,7 @@ function setTab(t,options={}){
  if(t==='purchaseBills'){fillChoices();renderPurchaseLines();renderSupplierAccounts();}
  updatePageBalanceTitle(t);
  if(t==='creditors'&&$('pageContextTitle'))$('pageContextTitle').textContent='Creditors';
+ if(t==='debitors'&&$('pageContextTitle'))$('pageContextTitle').textContent='Debtors';
  updateBackButton();
 }
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
