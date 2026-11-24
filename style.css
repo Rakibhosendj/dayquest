@@ -2793,3 +2793,7 @@ body{color:var(--dq-font-color,#263b5c)}
 #reports .report-filter-toolbar .report-cost-group-control[hidden]{display:none!important}
 #reports .report-filter-toolbar .report-cost-group-control select{display:block;box-sizing:border-box;width:100%;min-width:0;height:36px;padding:6px 5px;border:1px solid #dfe5ed;border-radius:8px;background:#fff;color:#263b5c;font:inherit;font-size:10px;font-weight:750}
 @media(max-width:420px){#reports .report-filter-toolbar .report-cost-group-control{flex-basis:88px;width:88px}}
+
+/* Save actions for each independent starting-balance section. */
+.starting-balance-section-head>button.starting-balance-save{width:auto;min-width:68px;height:32px;padding:5px 10px;font-size:12px;line-height:1;white-space:nowrap}
+@media(max-width:520px){.starting-balance-section-head{gap:6px}.starting-balance-section-head>button.starting-balance-save{min-width:58px;padding:5px 7px;font-size:11px}}
