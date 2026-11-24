@@ -4795,6 +4795,7 @@ $('loginPasswordChangeForm').onsubmit=async e=>{
   if(updateError)throw updateError;
   $('loginPasswordChangeForm').reset();
   message.textContent='Login password changed successfully. You can use the new password on your other devices.';
+  await window.alert('Login password updated successfully.');
  }catch(error){
   message.textContent=error.message||'Could not change the login password. Please try again.';
  }finally{
@@ -5082,8 +5083,7 @@ function installDayQuestMessageAlerts(){
  window.dayQuestPrompt=(messageText,defaultValue='')=>{
   const safeText=cleanMessage(messageText),cancel=$('dqMessageCancel'),input=$('dqMessagePromptInput');
   if(!(dialog&&title&&message&&ok&&cancel&&input&&typeof dialog.showModal==='function')){
-   const args=arguments.length>1?[safeText,String(defaultValue??'')]:[safeText];
-   return Promise.resolve(withAppTitle(nativePrompt,args));
+   return Promise.resolve(withAppTitle(nativePrompt,[safeText,String(defaultValue??'')]));
   }
   return new Promise(resolve=>{
    title.textContent='DayQuest';message.textContent=safeText;
@@ -5115,7 +5115,7 @@ installDayQuestMessageAlerts();
 const nativeDayQuestAlert=window.alert;
 window.alert=value=>{
  const action=pendingSaveAction,text=String(value??'');
- if(action?.saved&&/saved|updated|added|created|removed|deleted|recorded|completed|success/i.test(text)){action.noticeShown=true;pendingSaveAction=null}
+ if(action&&/saved|updated|added|created|removed|deleted|recorded|completed|success/i.test(text)){action.noticeShown=true;pendingSaveAction=null}
  return nativeDayQuestAlert(value);
 };
 function trackSaveUpdateButton(button){
