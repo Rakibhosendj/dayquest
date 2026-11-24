@@ -874,9 +874,9 @@ document.querySelectorAll('[data-income-payment]').forEach(input=>input.addEvent
 $('incomePaymentType').onchange=()=>updateIncomePaymentType($('incomePaymentType').value);
 $('incomeAmount').oninput=()=>{$('incomeTotalPreview').textContent=money(Number($('incomeAmount').value)||0)};
 $('incomeDate').value=today();$('collectDate').value=today();$('expenseDueActionDate').value=today();
-$('addExpenseName').onclick=()=>{let n=prompt('Add an expense name:');if(n&&n.trim()){n=n.trim();if(!db.expenseNames.includes(n))db.expenseNames.push(n);fillChoices();$('expenseName').value=n;localSaveOnly()}};
-function addUnitName(select,afterAdd){
- let n=prompt('Add a unit name (e.g. bottle, sack, jar, metre):');if(!n||!n.trim())return;
+$('addExpenseName').onclick=async()=>{let n=await window.dayQuestPrompt('Add an expense name:');if(n&&n.trim()){n=n.trim();if(!db.expenseNames.includes(n))db.expenseNames.push(n);fillChoices();$('expenseName').value=n;localSaveOnly()}};
+async function addUnitName(select,afterAdd){
+ let n=await window.dayQuestPrompt('Add a unit name (e.g. bottle, sack, jar, metre):');if(!n||!n.trim())return;
  n=n.trim();const existing=db.units.find(value=>value.toLocaleLowerCase()===n.toLocaleLowerCase());if(existing)n=existing;else db.units.push(n);
  fillChoices();renderMasterLists();if(typeof afterAdd==='function')afterAdd(n);else if(select){if(select.tagName==='SELECT'){select.innerHTML=db.units.map(value=>`<option value="${esc(value)}">${esc(value)}</option>`).join('');select.value=n}else select.value=n}
  localSaveOnly();
@@ -931,9 +931,9 @@ function renderProductDictionary(){
   entry.english=english;entry.bangla=bangla;entry.meal=!!row.querySelector('[data-dictionary-meal]').checked;db.productDictionary=normalizeProductDictionary(db.productDictionary);
   renderProductDictionary();renderProductNameSuggestions();save();
  });
- list.querySelectorAll('[data-dictionary-delete]').forEach(button=>button.onclick=()=>{
+ list.querySelectorAll('[data-dictionary-delete]').forEach(button=>button.onclick=async()=>{
   const index=Number(button.dataset.dictionaryDelete),entry=db.productDictionary[index];if(!entry)return;
-  if(!confirm(`Remove “${entry.english} / ${entry.bangla}” from the Product Dictionary? Saved purchase records will not be changed.`))return;
+  if(!await window.dayQuestConfirm(`Remove “${entry.english} / ${entry.bangla}” from the Product Dictionary? Saved purchase records will not be changed.`))return;
   db.productDictionary.splice(index,1);renderProductDictionary();renderProductNameSuggestions();save();
  });
 }
@@ -983,9 +983,9 @@ function addNewPurchaseProduct(index){
  dialog.showModal();$('newProductEntryEnglish').focus();
 }
 
-function addProductTypeToPurchaseLine(index){
+async function addProductTypeToPurchaseLine(index){
  const line=purchaseLines[index];if(!line)return;
- const raw=prompt('Enter a product type (for example: Medicine, Grocery, Household):');if(raw===null)return;
+ const raw=await window.dayQuestPrompt('Enter a product type (for example: Medicine, Grocery, Household):');if(raw===null)return;
  const name=raw.trim();if(!name){alert('Enter a product type.');return}
  const existing=db.productTypes.find(item=>item.toLocaleLowerCase()===name.toLocaleLowerCase());
  if(existing){line.productType=existing;alert('That product type already exists, so it has been selected for this line.')}
@@ -1446,10 +1446,10 @@ function renderInventory(){
   const members=[...(row?.querySelectorAll('[data-inventory-members] input:checked')||[])].map(input=>input.value);
   setAssignedMembers(record.ownerItem,members);save();
  });
- list.querySelectorAll('[data-use-inventory]').forEach(button=>button.onclick=()=>{
+ list.querySelectorAll('[data-use-inventory]').forEach(button=>button.onclick=async()=>{
   const row=button.closest('[data-inventory-ref]'),[billId,lineId]=String(row?.dataset.inventoryRef||'').split('::'),record=resolveStockSource(billId,lineId);if(!record)return;
   const used=usedStockQuantity(record),remaining=Math.max(0,record.quantity-used);if(remaining<=0.000001)return;
-  const raw=prompt(`How much ${record.product} stock was used? Available: ${numberText(remaining)} ${record.unit}`);if(raw===null)return;
+  const raw=await window.dayQuestPrompt(`How much ${record.product} stock was used? Available: ${numberText(remaining)} ${record.unit}`);if(raw===null)return;
   const quantity=Number(raw);if(!(quantity>0)||!Number.isFinite(quantity)||quantity>remaining+0.000001){alert(`Enter a quantity greater than 0 and no more than ${numberText(remaining)} ${record.unit}.`);return}
   db.consumptions.push({id:crypto.randomUUID(),billId,lineId,quantity,date:today()});save();
  });
@@ -1566,11 +1566,11 @@ function renderProductionList(){
  });
  list.querySelectorAll('[data-delete-production]').forEach(button=>button.onclick=()=>deleteProduction(button.closest('[data-production-id]')?.dataset.productionId));
 }
-function deleteProduction(id){
+async function deleteProduction(id){
  const batch=db.productions.find(item=>item.id===id);if(!batch)return;
  const outputRef=`production:${id}`;
  if(db.consumptions.some(c=>c.billId===outputRef&&c.lineId==='output')){alert('This produced stock has been used or sold. The batch cannot be deleted because that would break inventory history.');return}
- if(!confirm(`Delete production ${batch.productionNo||''}? Ingredient quantities will be returned to inventory.`))return;
+ if(!await window.dayQuestConfirm(`Delete production ${batch.productionNo||''}? Ingredient quantities will be returned to inventory.`))return;
  db.consumptions=db.consumptions.filter(c=>c.productionId!==id);db.productions=db.productions.filter(item=>item.id!==id);save();
 }
 $('productionDate').addEventListener('change',()=>{$('productionNo').value=nextProductionNo($('productionDate').value);renderProductionInputs()});
@@ -1882,7 +1882,7 @@ function editPurchaseBill(id){
  purchaseLines.forEach(l=>{if(!db.units.includes(l.unit))db.units.push(l.unit)});if($('purchaseEditHint')){$('purchaseEditHint').hidden=false;const hasUsedLines=db.consumptions.some(c=>c.billId===id);$('purchaseEditHint').textContent=hasUsedLines?'You are updating a bill already linked to inventory use, production or sales. Keep the used line in place; quantity changes proportionally update linked stock movements, unit/price corrections recalculate downstream production costs, supplier balances and reports.':'You are updating a saved bill. Inventory, supplier balances, production costs and all reports recalculate when you save.';}renderPurchaseLines();$('purchaseBillSubmit').textContent='Update recent bill';$('cancelPurchaseEdit').hidden=false;$('purchaseBillForm').scrollIntoView({behavior:'smooth',block:'start'});
 }
 $('cancelPurchaseEdit').onclick=resetPurchaseForm;
-function deletePurchaseBill(id){const b=db.purchaseBills.find(x=>x.id===id);if(!b)return;if(db.supplierPayments.some(p=>p.supplier===b.supplier)){alert('This supplier has payment history. Keep the bill to preserve the supplier ledger.');return}if(db.consumptions.some(c=>c.billId===id)){alert('This bill has stock usage records. It cannot be deleted because that would break the inventory history.');return}if(confirm('Delete this purchase bill?')){db.purchaseBills=db.purchaseBills.filter(x=>x.id!==id);save()}}
+async function deletePurchaseBill(id){const b=db.purchaseBills.find(x=>x.id===id);if(!b)return;if(db.supplierPayments.some(p=>p.supplier===b.supplier)){alert('This supplier has payment history. Keep the bill to preserve the supplier ledger.');return}if(db.consumptions.some(c=>c.billId===id)){alert('This bill has stock usage records. It cannot be deleted because that would break the inventory history.');return}if(await window.dayQuestConfirm('Delete this purchase bill?')){db.purchaseBills=db.purchaseBills.filter(x=>x.id!==id);save()}}
 
 function resetExpenseForm(){
  editingExpenseId=null;$('expenseForm').reset();$('expenseDate').value=today();$('expenseDueDate').value='';$('expenseDueDate').disabled=true;$('quantity').value=1;
@@ -2071,9 +2071,9 @@ function renderQuickSuppliers(){
  list.querySelectorAll('[data-quick-supplier]').forEach(button=>button.onclick=()=>{if(db.settings?.overviewQuickSuppliersEnabled===false)return;openQuickSupplierPurchase(button.dataset.quickSupplier)});
  list.querySelectorAll('[data-supplier-demo]').forEach(button=>button.onclick=()=>{setTab('supplierEntry');$('supplierEntryForm').scrollIntoView({behavior:'smooth',block:'start'});$('supplierEntryCompany')?.focus()});
 }
-function openQuickSupplierPurchase(name){
+async function openQuickSupplierPurchase(name){
  const supplier=String(name||'').trim();if(!supplier||!db.suppliers.includes(supplier))return;
- if(editingPurchaseBillId&&!confirm('Discard the current purchase bill edit and start a new bill?'))return;
+ if(editingPurchaseBillId&&!await window.dayQuestConfirm('Discard the current purchase bill edit and start a new bill?'))return;
  setTab('purchaseBills');
  resetPurchaseForm();
  $('purchaseSupplier').value=supplier;
@@ -2338,10 +2338,10 @@ const handleQuickActionTileClick=e=>{
 $('quickActionList').onclick=handleQuickActionTileClick;
 $('overviewQuickActionList').onclick=handleQuickActionTileClick;
 bindQuickButtonHaptics($('quickActionList'));bindQuickButtonHaptics($('overviewQuickActionList'));bindQuickButtonHaptics($('overviewQuickSupplierList'));bindQuickButtonHaptics($('questList'));
-$('quickActionManagerList').onclick=e=>{
+$('quickActionManagerList').onclick=async e=>{
  const button=e.target.closest('button');if(!button)return;
  if(button.dataset.quickEdit){editQuickAction(button.dataset.quickEdit);return}
- if(button.dataset.quickDelete){const id=button.dataset.quickDelete,action=db.quickActions.find(x=>x.id===id);if(!action)return;if(confirm(`Delete the quick button “${action.name}”? Existing recorded transactions will remain in Expenses and Income.`)){db.quickActions=db.quickActions.filter(x=>x.id!==id);if(editingQuickActionId===id)resetQuickActionForm();save()}}
+ if(button.dataset.quickDelete){const id=button.dataset.quickDelete,action=db.quickActions.find(x=>x.id===id);if(!action)return;if(await window.dayQuestConfirm(`Delete the quick button “${action.name}”? Existing recorded transactions will remain in Expenses and Income.`)){db.quickActions=db.quickActions.filter(x=>x.id!==id);if(editingQuickActionId===id)resetQuickActionForm();save()}}
 };
 function prepareCreditorRepaymentPage(title,remaining,action='Repay'){
  setTab('payExpenseDue');
@@ -3011,9 +3011,9 @@ function renderMasterLists(){
   list.querySelectorAll('[data-master-delete]').forEach(button=>button.onclick=()=>deleteMasterValue(kind,Number(button.dataset.index)));
  });
 }
-function renameMasterValue(kind,index){
+async function renameMasterValue(kind,index){
  const cfg=SETTINGS_MASTER_CONFIG[kind],arr=db[cfg.array]||[],old=arr[index];if(!old)return;
- const raw=prompt(`Rename ${cfg.title}:`,old);if(raw===null)return;const next=raw.trim();if(!next){alert('Name cannot be empty.');return}
+ const raw=await window.dayQuestPrompt(`Rename ${cfg.title}:`,old);if(raw===null)return;const next=raw.trim();if(!next){alert('Name cannot be empty.');return}
  if(arr.some((value,i)=>i!==index&&String(value).toLocaleLowerCase()===next.toLocaleLowerCase())){alert(`That ${cfg.title} already exists.`);return}
  if(kind==='supplier'){
   db.purchaseBills.forEach(b=>{if(b.supplier===old)b.supplier=next});db.supplierPayments.forEach(p=>{if(p.supplier===old)p.supplier=next});db.quickSuppliers=db.quickSuppliers.map(value=>value===old?next:value);if(db.supplierDetails[old]){db.supplierDetails[next]=db.supplierDetails[old];delete db.supplierDetails[old]}
@@ -3035,7 +3035,7 @@ function renameMasterValue(kind,index){
  }
  arr[index]=next;fillChoices();renderMasterLists();renderPurchaseCategorySettings();save();
 }
-function deleteMasterValue(kind,index){
+async function deleteMasterValue(kind,index){
  const cfg=SETTINGS_MASTER_CONFIG[kind],arr=db[cfg.array]||[],name=arr[index];if(!name)return;
  let used=false;
  if(kind==='supplier')used=db.purchaseBills.some(b=>b.supplier===name)||db.supplierPayments.some(p=>p.supplier===name);
@@ -3043,7 +3043,7 @@ function deleteMasterValue(kind,index){
  if(kind==='productType')used=db.purchaseBills.some(b=>(b.lines||[]).some(line=>line.productType===name))||db.productions.some(p=>p.productType===name)||db.incomes.some(item=>(item.salesMemo?.items||[]).some(line=>line.productType===name));
  if(kind==='unit')used=db.purchaseBills.some(b=>(b.lines||[]).some(line=>line.unit===name))||db.productions.some(p=>p.unit===name||(p.inputs||[]).some(input=>input.unit===name))||db.consumptions.some(c=>c.unit===name)||db.incomes.some(item=>(item.salesMemo?.items||[]).some(line=>line.unit===name));
  if(used){alert(`This ${cfg.title} is used in saved transactions or inventory. Rename it instead; deletion is blocked to preserve history.`);return}
- if(confirm(`Delete ${cfg.title} “${name}”?`)){arr.splice(index,1);if(kind==='supplier'){db.quickSuppliers=db.quickSuppliers.filter(value=>value!==name);delete db.supplierDetails[name]}if(kind==='productType'&&!arr.length)arr.push('Other');if(kind==='unit'){if(!arr.length)arr.push('pcs');if(db.settings.unitAliases)delete db.settings.unitAliases[name]}fillChoices();renderMasterLists();save()}
+ if(await window.dayQuestConfirm(`Delete ${cfg.title} “${name}”?`)){arr.splice(index,1);if(kind==='supplier'){db.quickSuppliers=db.quickSuppliers.filter(value=>value!==name);delete db.supplierDetails[name]}if(kind==='productType'&&!arr.length)arr.push('Other');if(kind==='unit'){if(!arr.length)arr.push('pcs');if(db.settings.unitAliases)delete db.settings.unitAliases[name]}fillChoices();renderMasterLists();save()}
 }
 Object.entries(SETTINGS_MASTER_CONFIG).forEach(([kind,cfg])=>{
  const form=$(cfg.form);if(!form)return;form.onsubmit=e=>{e.preventDefault();const field=$(cfg.input),name=field.value.trim();if(!name)return;const arr=db[cfg.array];if(arr.some(value=>String(value).toLocaleLowerCase()===name.toLocaleLowerCase())){alert(`That ${cfg.title} already exists.`);return}arr.push(name);field.value='';fillChoices();renderMasterLists();save()};
@@ -3052,16 +3052,16 @@ Object.entries(SETTINGS_MASTER_CONFIG).forEach(([kind,cfg])=>{
 function renderPurchaseCategorySettings(){
  const list=$('purchaseCategoryList');if(!list)return;
  list.innerHTML=db.purchaseCategories.map((name,index)=>`<div class="category-setting-row"><span><strong>${esc(name)}</strong><small>Used on purchase bills and reports</small></span><div><button type="button" class="edit-btn" data-rename-category="${index}">Rename</button><button type="button" class="delete" data-delete-category="${index}" aria-label="Delete ${esc(name)}">×</button></div></div>`).join('')||empty('No purchase categories. Add one above.');
- list.querySelectorAll('[data-rename-category]').forEach(button=>button.onclick=()=>{
+ list.querySelectorAll('[data-rename-category]').forEach(button=>button.onclick=async()=>{
   const index=Number(button.dataset.renameCategory),old=db.purchaseCategories[index];if(!old)return;
-  const raw=prompt('Rename purchase category:',old);if(raw===null)return;const next=raw.trim();if(!next){alert('Category name cannot be empty.');return}
+  const raw=await window.dayQuestPrompt('Rename purchase category:',old);if(raw===null)return;const next=raw.trim();if(!next){alert('Category name cannot be empty.');return}
   if(db.purchaseCategories.some((name,i)=>i!==index&&name.toLowerCase()===next.toLowerCase())){alert('That purchase category already exists.');return}
   db.purchaseBills.forEach(b=>{if((b.category||'Uncategorised')===old)b.category=next;(b.lines||[]).forEach(line=>{if((line.category||b.category||'Uncategorised')===old)line.category=next})});db.purchaseCategories[index]=next;fillChoices();renderPurchaseCategorySettings();save();
  });
- list.querySelectorAll('[data-delete-category]').forEach(button=>button.onclick=()=>{
+ list.querySelectorAll('[data-delete-category]').forEach(button=>button.onclick=async()=>{
   const index=Number(button.dataset.deleteCategory),name=db.purchaseCategories[index];if(!name)return;if(db.purchaseCategories.length===1){alert('Keep at least one purchase category.');return}
   if(db.purchaseBills.some(b=>(b.lines||[]).some(line=>(line.category||b.category||'Uncategorised')===name)||(!b.lines?.length&&(b.category||'Uncategorised')===name))){alert('This category is used by saved purchase lines. Rename it instead, or move those lines to another category before deleting.');return}
-  if(confirm(`Delete the purchase category “${name}”?`)){db.purchaseCategories.splice(index,1);fillChoices();renderPurchaseCategorySettings();save()}
+  if(await window.dayQuestConfirm(`Delete the purchase category “${name}”?`)){db.purchaseCategories.splice(index,1);fillChoices();renderPurchaseCategorySettings();save()}
  });
 }
 $('requireSupplierForDuePurchase').checked=db.settings.requireSupplierForDuePurchase!==false;
@@ -3169,10 +3169,10 @@ function renderFamilyMembers(){
   row.addEventListener('contextmenu',event=>{event.preventDefault();cancel();openMemberIndividualPage(row.dataset.familyMemberName)});
   row.addEventListener('keydown',event=>{if(event.target===row&&['Enter',' '].includes(event.key)){event.preventDefault();openMemberIndividualPage(row.dataset.familyMemberName)}});
  });
- list.querySelectorAll('[data-remove-family-member]').forEach(button=>button.onclick=()=>{
+ list.querySelectorAll('[data-remove-family-member]').forEach(button=>button.onclick=async()=>{
   const index=Number(button.dataset.removeFamilyMember),name=db.familyMembers[index];if(!name)return;
   if(memberProfileKey(name)===memberProfileKey(db.profile.name)){alert('The account holder is the first family member and cannot be removed.');return}
-  if(!confirm(`Remove ${name} from the family member list? Past income records will keep this person's name.`))return;
+  if(!await window.dayQuestConfirm(`Remove ${name} from the family member list? Past income records will keep this person's name.`))return;
   db.familyMembers.splice(index,1);delete db.memberProfiles[memberProfileKey(name)];renderFamilyMembers();fillChoices();save();
  });
 }
@@ -3477,16 +3477,16 @@ function toggleQuest(id,rangeIndex,d){
  state[next]=true;db.checks[d]??={};const raw=db.checks[d][id],ranges=raw&&typeof raw==='object'&&!Array.isArray(raw)&&raw.ranges?raw.ranges:{};
  ranges[rangeIndex]=state;db.checks[d][id]={ranges};save()
 }
-function delExpense(id){if(confirm('Delete this expense?')){if(editingExpenseId===id)resetExpenseForm();if(settlingExpenseId===id)closeExpenseDueAction();db.expenses=db.expenses.filter(x=>x.id!==id);save()}}
-function delQuest(id){if(confirm('Delete this quest?')){db.quests=db.quests.filter(x=>x.id!==id);Object.values(db.checks).forEach(v=>delete v[id]);save()}}
+async function delExpense(id){if(await window.dayQuestConfirm('Delete this expense?')){if(editingExpenseId===id)resetExpenseForm();if(settlingExpenseId===id)closeExpenseDueAction();db.expenses=db.expenses.filter(x=>x.id!==id);save()}}
+async function delQuest(id){if(await window.dayQuestConfirm('Delete this quest?')){db.quests=db.quests.filter(x=>x.id!==id);Object.values(db.checks).forEach(v=>delete v[id]);save()}}
 function empty(msg){return `<div class="empty">${msg}</div>`}
 function renderBalanceTransfers(){
  const list=$('balanceTransferList');if(!list)return;
  const transfers=(db.moneyTransfers||[]).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
  list.innerHTML=transfers.length?transfers.map(item=>`<article class="balance-transfer-row"><div class="item-main"><strong>${esc(item.from)} → ${esc(item.to)}</strong><small>${fmt(item.date)}${Number(item.cost||0)>0?' · Cost '+money(item.cost):''}${item.note?' · '+esc(item.note):''}</small></div><strong class="balance-transfer-amount">${money(item.amount)}</strong><button type="button" class="delete" data-delete-balance-transfer="${esc(item.id)}" aria-label="Delete transfer">×</button></article>`).join(''):empty('No balance transfers recorded yet.');
- list.querySelectorAll('[data-delete-balance-transfer]').forEach(button=>button.onclick=()=>{
+ list.querySelectorAll('[data-delete-balance-transfer]').forEach(button=>button.onclick=async()=>{
   const transfer=db.moneyTransfers.find(item=>item.id===button.dataset.deleteBalanceTransfer);if(!transfer)return;
-  if(!confirm('Delete this balance transfer? Cash and Bank balances will be recalculated.'))return;
+  if(!await window.dayQuestConfirm('Delete this balance transfer? Cash and Bank balances will be recalculated.'))return;
   db.moneyTransfers=db.moneyTransfers.filter(item=>item.id!==transfer.id);save();
  });
 }
@@ -4100,7 +4100,7 @@ $('creditorPageShow')?.addEventListener('click',()=>{
 
 activateReportSection('members');purchaseLines=[defaultPurchaseLine()];renderPurchaseLines();fillChoices();renderQuickMemberOptions([]);fillQuickActionOptions();updateQuickActionTypeFields();$('purchaseDate').value=today();updatePurchaseBillNo();productionInputs=[defaultProductionInput()];fillProductionOptions();resetProductionForm();applyThemeColor(db.settings.themeColor,false);applySideMenuColor(db.settings.sideMenuColor||'#111d30',false);applyTopBarColor(db.settings.topBarColor||'#101827',false);renderPurchaseCategorySettings();renderMasterLists();
 $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`dayquest-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href)};
-$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.loans))x.loans=[];if(!Array.isArray(x.quickActions))x.quickActions=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.productTypes))x.productTypes=['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];if(!Array.isArray(x.purchaseCategories))x.purchaseCategories=['Assets','Staples','Fixed Ex.'];if(!x.settings||typeof x.settings!=='object')x.settings={themeColor:'#263b5c'};if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.productions))x.productions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};if(!Array.isArray(x.familyMembers))x.familyMembers=[];if(!Array.isArray(x.guestPeople))x.guestPeople=[];if(!Array.isArray(x.guests))x.guests=[];if(confirm('Replace current data with this backup?')){db=x;db.sideMenuOrder=normalizeSideMenuOrder(db.sideMenuOrder);db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};db.productDictionary=normalizeProductDictionary(db.productDictionary);db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(item=>{item.costMember=String(item.costMember||'').trim()});db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
+$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.loans))x.loans=[];if(!Array.isArray(x.quickActions))x.quickActions=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.productTypes))x.productTypes=['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];if(!Array.isArray(x.purchaseCategories))x.purchaseCategories=['Assets','Staples','Fixed Ex.'];if(!x.settings||typeof x.settings!=='object')x.settings={themeColor:'#263b5c'};if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.productions))x.productions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};if(!Array.isArray(x.familyMembers))x.familyMembers=[];if(!Array.isArray(x.guestPeople))x.guestPeople=[];if(!Array.isArray(x.guests))x.guests=[];if(await window.dayQuestConfirm('Replace current data with this backup?')){db=x;db.sideMenuOrder=normalizeSideMenuOrder(db.sideMenuOrder);db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};db.productDictionary=normalizeProductDictionary(db.productDictionary);db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(item=>{item.costMember=String(item.costMember||'').trim()});db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
 db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};
 db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers.filter(name=>db.suppliers.includes(name)))]:[];db.productNames=Array.isArray(db.productNames)?db.productNames:[];
 db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.productTypes=Array.isArray(db.productTypes)&&db.productTypes.length?db.productTypes:['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];db.productTypes=[...new Map(db.productTypes.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];db.productions=Array.isArray(db.productions)?db.productions.filter(p=>p&&p.id&&p.product&&Number(p.quantity)>0):[];normalizePurchaseInventory();db.purchaseCategories=Array.isArray(db.purchaseCategories)&&db.purchaseCategories.length?db.purchaseCategories:['Assets','Staples','Fixed Ex.'];db.settings=db.settings&&typeof db.settings==='object'?db.settings:{themeColor:'#263b5c'};if(typeof db.settings.requireSupplierForDuePurchase!=='boolean')db.settings.requireSupplierForDuePurchase=true;if(typeof db.settings.allowPurchaseBillEdits!=='boolean')db.settings.allowPurchaseBillEdits=true;if(typeof db.settings.bankCreditOption!=='boolean')db.settings.bankCreditOption=false;db.expenseNames=Array.isArray(db.expenseNames)?db.expenseNames:['Groceries','Meal','Transport','Fuel','Rent','Electricity','Internet','Medicine','Shopping','Other'];db.units=Array.isArray(db.units)?db.units:['pcs','kg','g','litre','ml','hour','day','packet','box','trip','month'];db.purchaseBills.forEach(b=>{if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);(b.lines||[]).forEach(l=>{if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product)})});db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});db.incomeHeads=Array.isArray(db.incomeHeads)?db.incomeHeads:['Salary','Business','Sales','Freelance','Rent','Gift','Other'];normalizePurchaseBillNumbers();db.profile=db.profile||{name:'',phone:'',phone2:'',familyName:'',photoData:'',openingCash:0,openingBank:0};db.profile.familyName=String(db.profile.familyName||'');db.profile.phone=String(db.profile.phone||'');db.profile.phone2=String(db.profile.phone2||'');db.profile.photoData=typeof db.profile.photoData==='string'&&db.profile.photoData.startsWith('data:image/')?db.profile.photoData:'';['country','division','district','subDistrict','village','road','religion','gender','birthDate'].forEach(field=>db.profile[field]=String(db.profile[field]||''));db.familyMembers=Array.isArray(db.familyMembers)?db.familyMembers.map(n=>String(n||'').trim()).filter(Boolean):[];db.memberProfiles=db.memberProfiles&&typeof db.memberProfiles==='object'&&!Array.isArray(db.memberProfiles)?db.memberProfiles:{};db.familyMembers=[...new Map(db.familyMembers.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestPeople=Array.isArray(db.guestPeople)?db.guestPeople.map(n=>String(n||'').trim()).filter(Boolean):[];db.guestPeople=[...new Map(db.guestPeople.map(n=>[n.toLocaleLowerCase(),n])).values()];db.guestRelations=db.guestRelations&&typeof db.guestRelations==='object'&&!Array.isArray(db.guestRelations)?db.guestRelations:{};db.guests=Array.isArray(db.guests)?db.guests.filter(g=>g&&Array.isArray(g.members)&&g.members.length&&/^\d{4}-\d{2}-\d{2}$/.test(String(g.entryDate||''))):[];db.guests.forEach(g=>{g.id=g.id||crypto.randomUUID();g.members=uniquePeople(g.members);g.outDate=String(g.outDate||'');if(g.outDate&&g.outDate<g.entryDate)g.outDate='';g.purpose=String(g.purpose||'');g.members.forEach(n=>{if(!assignablePeople().some(x=>x.toLocaleLowerCase()===String(n).toLocaleLowerCase()))db.guestPeople.push(String(n).trim())})});db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);normalizeMemberAssignments();db.familyMembers.forEach(name=>{if(!db.incomePeople.includes(name))db.incomePeople.push(name)});db.incomes.forEach(item=>{item.incomeBy=String(item.incomeBy||'Unassigned').trim()||'Unassigned';if(!db.incomePeople.includes(item.incomeBy))db.incomePeople.push(item.incomeBy)});if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');fillChoices();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);applySideMenuColor(db.settings.sideMenuColor||'#111d30',false);applyTopBarColor(db.settings.topBarColor||'#101827',false);applyQuickButtonColor(db.settings.quickButtonColor||'#ee7d2f',false);applyBackgroundColor(db.settings.backgroundColor||'#f3f5f9',false);applyFontColor(db.settings.fontColor||'#263b5c',false);renderPurchaseCategorySettings();renderMasterLists();save();alert('Backup restored.')}}catch{alert('That backup file is not valid.')}e.target.value=''};
@@ -4712,16 +4712,18 @@ $('cloudConfigForm').onsubmit=async e=>{
   const parsed=new URL(url);
   if(parsed.protocol!=='https:'&&parsed.hostname!=='localhost')throw new Error('Use your HTTPS Supabase project URL.');
   if(isForbiddenSupabaseKey(key))throw new Error('Use the public publishable key or legacy anon key only. Secret and service-role keys are blocked for safety.');
-  if(!confirm('Save a cloud connection override for this browser? This will sign out and reload DayQuest.'))return;
+  if(!await window.dayQuestConfirm('Save a cloud connection override for this browser? This will sign out and reload DayQuest.'))return;
   localStorage.setItem(CLOUD_CONFIG_KEY,JSON.stringify({url,key,override:true}));
   try{await supabaseClient?.auth.signOut()}catch(error){console.warn('Could not sign out before applying the new cloud connection.',error)}
+  await window.alert('Cloud connection saved successfully. DayQuest will reload to apply the new settings.');
   location.reload();
  }catch(error){$('adminCloudConfigMessage').textContent=error.message||'Enter a valid Supabase project URL and public key.'}
 };
 $('useSharedCloudConfig').onclick=async()=>{
- if(!confirm('Remove this browser’s cloud override and use the shared cloud-config.js settings? DayQuest will sign out and reload.'))return;
+ if(!await window.dayQuestConfirm('Remove this browser’s cloud override and use the shared cloud-config.js settings? DayQuest will sign out and reload.'))return;
  localStorage.removeItem(CLOUD_CONFIG_KEY);
  try{await supabaseClient?.auth.signOut()}catch(error){console.warn('Could not sign out before restoring shared cloud settings.',error)}
+ await window.alert('Shared cloud settings restored successfully. DayQuest will reload now.');
  location.reload();
 };
 $('authSignupForm').onsubmit=async e=>{
@@ -4895,7 +4897,7 @@ $('clearAllExpensesIncomeBtn').onclick=async()=>{
 };
 function requestDeleteAccountPassword(){
  const dialog=$('deleteAccountPasswordDialog'),input=$('deleteAccountPassword'),confirmButton=$('deleteAccountPasswordConfirm'),cancelButton=$('deleteAccountPasswordCancel');
- if(!dialog||typeof dialog.showModal!=='function')return Promise.resolve(window.prompt('DayQuest: Enter your current Family Account password to confirm permanent deletion:'));
+ if(!dialog||typeof dialog.showModal!=='function')return window.dayQuestPrompt('Enter your current Family Account password to confirm permanent deletion:');
  input.value='';
  return new Promise(resolve=>{
   let finished=false;
