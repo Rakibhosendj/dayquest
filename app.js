@@ -702,7 +702,9 @@ function updateBackButton(){
 }
 function goBackToPreviousPage(){
  if(document.querySelector('.panel.active')?.id==='payExpenseDue'&&['creditors','debitors'].includes(outstandingReturnReport)){
-  const target=outstandingReturnReport;outstandingReturnReport='';setTab('reports',{skipHistory:true});activateReportSection(target);return;
+  const target=outstandingReturnReport;outstandingReturnReport='';
+  if(target==='creditors'){setTab('creditors',{skipHistory:true});return}
+  setTab('reports',{skipHistory:true});activateReportSection(target);return;
  }
  let previous='';
  while(appPageHistory.length&&!previous){
@@ -731,6 +733,7 @@ window.addEventListener('popstate',event=>{
 function setTab(t,options={}){
  const currentPage=document.querySelector('.panel.active')?.id;
  if(t==='payExpenseDue'&&currentPage==='reports')outstandingReturnReport=document.querySelector('[data-report-go].active')?.dataset.reportGo||'';
+ if(t==='payExpenseDue'&&currentPage==='creditors')outstandingReturnReport='creditors';
  if(!options.skipHistory&&currentPage&&currentPage!==t){
   appPageHistory.push(currentPage);
   if(appPageHistory.length>40)appPageHistory.shift();
@@ -749,7 +752,7 @@ function setTab(t,options={}){
  const accountReportActive=['creditors','debitors'].includes(activeReportSection);
  const activeGroup=t==='reports'
   ? document.querySelector(accountReportActive?'[data-side-group="accounts"]':'[data-side-group="reports"]')
-  : activeTab?.closest('.side-group');
+  : (t==='creditors'?document.querySelector('[data-side-group="accounts"]'):activeTab?.closest('.side-group'));
  // Keep every unused menu group collapsed. Only the group containing the current
  // submenu selection (or a selected top-level item) may remain expanded.
  document.querySelectorAll('.side-group').forEach(group=>{
@@ -781,10 +784,12 @@ function setTab(t,options={}){
  }
  if(t==='production'){fillProductionOptions();renderProductionList();renderProductionInputs()}
  if(t==='supplierAccounts')renderSupplierAccounts();
+ if(t==='creditors'){renderCreditorsPage();document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.toggle('active',item.dataset.reportGo==='creditors'));const accounts=document.querySelector('[data-side-group="accounts"]');if(accounts){accounts.open=true;accounts.classList.add('has-active')}}
  if(t==='supplierEntry'){renderSupplierEntryList();resetSupplierEntryForm()}
  if(t==='meals'){if(!$('mealControlDate').value)$('mealControlDate').value=today();if(!$('mealFromDate').value)$('mealFromDate').value=today();if(!$('mealToDate').value)$('mealToDate').value=today();renderMeals()}
  if(t==='purchaseBills'){fillChoices();renderPurchaseLines();renderSupplierAccounts();}
  updatePageBalanceTitle(t);
+ if(t==='creditors'&&$('pageContextTitle'))$('pageContextTitle').textContent='Creditors';
  updateBackButton();
 }
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
@@ -3976,6 +3981,34 @@ function renderDueReport(from,to){
  $('creditorHistoryList').innerHTML=creditorHistory.map(item=>item.html).join('')||empty('No creditor history recorded up to '+fmt(asOf)+'.');
 }
 
+
+function renderCreditorsPage(){
+ const fromInput=$('creditorPageFromDate'),toInput=$('creditorPageToDate');
+ if(!fromInput||!toInput)return;
+ if(!fromInput.value)fromInput.value=$('productReportFromDate')?.value||today().slice(0,8)+'01';
+ if(!toInput.value)toInput.value=$('productReportToDate')?.value||today();
+ const from=fromInput.value,to=toInput.value;
+ if($('productReportFromDate'))$('productReportFromDate').value=from;
+ if($('productReportToDate'))$('productReportToDate').value=to;
+ // Use the same date-filtered source calculations as the Reports view, then
+ // present the three creditor registers on this dedicated page.
+ renderReport();
+ const recent=$('creditorPageRecentList'),starting=$('creditorPageStartingList'),historyList=$('creditorPageHistoryList');
+ const supplierMarkup=$('supplierCreditorReport')?.innerHTML||'';
+ const dueRows=[...($('iOweList')?.querySelectorAll('[data-due-expense]')||[])].map(row=>row.outerHTML).join('');
+ if(recent)recent.innerHTML=supplierMarkup+dueRows;
+ if(starting)starting.innerHTML=$('startingCreditorList')?.innerHTML||empty('No starting creditor accounts in the selected date range.');
+ if(historyList)historyList.innerHTML=$('creditorHistoryList')?.innerHTML||empty('No creditor history in the selected date range.');
+ recent?.querySelectorAll('[data-creditor]').forEach(button=>button.onclick=()=>openSupplierRepayAction(button.dataset.creditor));
+ recent?.querySelectorAll('[data-due-expense]').forEach(button=>button.onclick=()=>openExpenseDueAction(button.dataset.dueExpense));
+ starting?.querySelectorAll('[data-opening-balance="creditor"]').forEach(button=>button.onclick=()=>openStartingBalanceAction('creditor',button.dataset.openingId));
+}
+$('creditorPageShow')?.addEventListener('click',()=>{
+ const from=$('creditorPageFromDate')?.value||'',to=$('creditorPageToDate')?.value||'';
+ if(!from||!to||from>to){alert('Choose a valid From and To date.');return}
+ renderCreditorsPage();
+});
+
 activateReportSection('members');purchaseLines=[defaultPurchaseLine()];renderPurchaseLines();fillChoices();renderQuickMemberOptions([]);fillQuickActionOptions();updateQuickActionTypeFields();$('purchaseDate').value=today();updatePurchaseBillNo();productionInputs=[defaultProductionInput()];fillProductionOptions();resetProductionForm();applyThemeColor(db.settings.themeColor,false);applySideMenuColor(db.settings.sideMenuColor||'#111d30',false);applyTopBarColor(db.settings.topBarColor||'#101827',false);renderPurchaseCategorySettings();renderMasterLists();
 $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`dayquest-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href)};
 $('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.loans))x.loans=[];if(!Array.isArray(x.quickActions))x.quickActions=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.productTypes))x.productTypes=['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];if(!Array.isArray(x.purchaseCategories))x.purchaseCategories=['Assets','Staples','Fixed Ex.'];if(!x.settings||typeof x.settings!=='object')x.settings={themeColor:'#263b5c'};if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.productions))x.productions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};if(!Array.isArray(x.familyMembers))x.familyMembers=[];if(!Array.isArray(x.guestPeople))x.guestPeople=[];if(!Array.isArray(x.guests))x.guests=[];if(confirm('Replace current data with this backup?')){db=x;db.sideMenuOrder=normalizeSideMenuOrder(db.sideMenuOrder);db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};db.productDictionary=normalizeProductDictionary(db.productDictionary);db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(item=>{item.costMember=String(item.costMember||'').trim()});db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
@@ -5028,6 +5061,13 @@ function openAccountReportPage(destination,{addBrowserHistory=true,skipHistory=f
    const currentState=history.state&&typeof history.state==='object'?history.state:{};
    history.pushState({...currentState,dayquestAccountReport:destination},'',window.location.href);
   }catch(error){console.warn('Could not add account navigation history entry:',error)}
+ }
+ if(destination==='creditors'){
+  setTab('creditors',{skipHistory:skipHistory||currentPage==='creditors'});
+  document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.toggle('active',item.dataset.reportGo==='creditors'));
+  const accounts=document.querySelector('[data-side-group="accounts"]');if(accounts){accounts.open=true;accounts.classList.add('has-active')}
+  if($('pageContextTitle'))$('pageContextTitle').textContent='Creditors';
+  updateBackButton();return;
  }
  setTab('reports',{reportSection:destination,skipHistory:skipHistory||currentPage==='reports'});
  // Force the final visible page, pane, title and menu state from this one destination.
