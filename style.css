@@ -2818,3 +2818,11 @@ body{color:var(--dq-font-color,#263b5c)}
 .creditor-history-amount>span{font-size:9px;color:var(--muted,#8792a2);font-weight:700}
 .creditor-history-amount>strong{font-size:12px;white-space:nowrap}
 #creditorHistoryList{gap:7px}
+
+/* Creditor account lists intentionally show names only, never balances. */
+#reports #supplierCreditorReport .supplier-creditor-report-row.creditor-one-line,
+#reports #startingCreditorList .creditor-one-line{grid-template-columns:minmax(0,1fr);align-items:center}
+#reports #supplierCreditorReport .supplier-creditor-main,
+#reports #startingCreditorList .creditor-one-line>span:first-child{min-width:0;text-align:left}
+#reports #supplierCreditorReport .supplier-creditor-balance,
+#reports #startingCreditorList .creditor-one-line>strong{display:none}
