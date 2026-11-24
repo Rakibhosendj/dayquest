@@ -397,12 +397,17 @@ function paymentBalanceError(method,amount,addBack=0){
  const balances=calculateBalances(),available=Math.max(0,Number(balances[account.toLowerCase()]||0)+Math.max(0,Number(addBack)||0));
  return value>available+0.000001?`Insufficient ${account} balance. Available balance: ${money(available)}.`:'';
 }
+let activeReportSectionKey='members';
 function updatePageBalanceTitle(tab){
  const titles={home:'Overview',purchaseBills:'Purchase',inventory:'Inventory',budget:'Budget',budgetViewPage:'Budget',production:'Production',supplierAccounts:'Supplier Accounts',supplierEntry:'Supplier Entry',payExpenseDue:'Outstanding',loans:'Loans',income:'Income',meals:'Meals',quests:'Daily Quest',questSetup:'Daily Quest',profile:'Profile',memberProfilePage:selectedMemberProfileName||'Member Profile',settings:'Settings',costChartPage:'Cost Chart',quickExpenses:'Quick Expenses',expenseEntries:'Expenses'};
  let title=titles[tab]||String(tab||'DayQuest').replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase());
- if(tab==='reports'){const selected=document.querySelector('[data-report-go].active')?.dataset.reportGo||'members';title=selected==='all'?'All Reports':(REPORT_TITLES[selected]||'Reports')}
+ if(tab==='reports'){
+  const selected=activeReportSectionKey||document.querySelector('[data-report-go].active')?.dataset.reportGo||document.querySelector('[data-report-pane]:not([hidden])')?.dataset.reportPane||'members';
+  title=selected==='all'?'All Reports':(REPORT_TITLES[selected]||'Reports');
+ }
  const pageIcon=$('pageContextIcon');if(pageIcon)pageIcon.hidden=false;
- const element=$('pageContextTitle');if(element)element.textContent=title;showBalances();
+ const element=$('pageContextTitle');if(element)element.textContent=title;
+ showBalances();
 }
 const startWeek=d=>{let x=dateObj(d);x.setDate(x.getDate()-((x.getDay()+6)%7));return x.toISOString().slice(0,10)};
 function questLocalDate(date=new Date()){
@@ -2791,7 +2796,9 @@ function exportReport(key,format){
 }
 function activateReportSection(key){
  const known=['members','production','cost','income','sales','creditors','debitors','assets','purchase'];
- const selected=key==='all'?'all':(known.includes(key)?key:'members');prepareReportPresentation();
+ const selected=key==='all'?'all':(known.includes(key)?key:'members');
+ activeReportSectionKey=selected;
+ prepareReportPresentation();
  const costGroupControl=document.querySelector('.report-cost-group-control');if(costGroupControl)costGroupControl.hidden=selected!=='cost';
 
  document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.toggle('active',item.dataset.reportGo===selected));
@@ -3163,7 +3170,9 @@ $('addFamilyMember').onclick=()=>{
  input.value='';renderFamilyMembers();renderMealPersonDates();fillChoices();save();
 };
 $('profileForm').onsubmit=e=>{
- e.preventDefault();const starting=readStartingBalanceSections();
+ e.preventDefault();
+ if(!['Cash','Bank','Loan','Creditor','Debtor'].every(validateStartingBalanceRows))return;
+ const starting=readStartingBalanceSections();
  const name=$('profileName').value.trim(),details={country:$('profileCountry').value.trim(),division:$('profileDivision').value.trim(),district:$('profileDistrict').value.trim(),subDistrict:$('profileSubDistrict').value.trim(),village:$('profileVillage').value.trim(),road:$('profileRoad').value.trim(),religion:$('profileReligion').value.trim(),gender:$('profileGender').value,birthDate:$('profileBirthDate').value};
  db.profile={...db.profile,...details,name,phone:$('profilePhone').value.trim(),phone2:$('profilePhone2').value.trim(),address:composeMemberAddress(details),familyName:$('familyName').value.trim(),openingCash:0,openingBank:0,openingCashEntries:starting.cash,openingBankEntries:starting.bank,openingLoans:starting.loans,openingCreditors:starting.creditors,openingDebtors:starting.debtors};
  starting.creditors.forEach(item=>{if(!db.suppliers.some(n=>n.toLocaleLowerCase()===item.party.toLocaleLowerCase()))db.suppliers.push(item.party);db.supplierDetails[item.party]=db.supplierDetails[item.party]||{ownerName:'',address:''}});
@@ -3171,7 +3180,7 @@ $('profileForm').onsubmit=e=>{
  if(name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===name.toLocaleLowerCase()))db.familyMembers.unshift(name);
  if(name&&!db.incomePeople.includes(name))db.incomePeople.unshift(name);
  if(name){const p=ensureMemberProfile(name);Object.assign(p,{phone:db.profile.phone,phone2:db.profile.phone2,...details})}
- fillChoices();renderMasterLists();renderSupplierEntryList();renderSupplierAccounts();renderReport();renderFamilyMembers();updateProfilePhotoPreview();save();alert('Family profile and starting balances saved.');
+ fillChoices();renderMasterLists();renderSupplierEntryList();renderSupplierAccounts();renderReport();renderFamilyMembers();updateProfilePhotoPreview();pendingSaveAction=null;save();alert('Profile updated successfully.');
 };
 
 
@@ -3224,6 +3233,61 @@ function readStartingBalanceSections(){
  const cash=readStartingRows('Cash'),bank=readStartingRows('Bank'),loans=readStartingRows('Loan'),creditors=readStartingRows('Creditor'),debtors=readStartingRows('Debtor');
  return {cash,bank,loans,creditors,debtors};
 }
+function validateStartingBalanceRows(kind){
+ const host=$('opening'+kind+'Rows');
+ const rows=[...(host?.querySelectorAll('[data-starting-row]')||[])];
+ for(const row of rows){
+  const amount=row.querySelector('[data-starting-amount]');
+  const party=row.querySelector('[data-starting-party]');
+  const date=row.querySelector('[data-starting-date]');
+  if(!amount||!(Number(amount.value)>0)||!Number.isFinite(Number(amount.value))){
+   alert('Enter an amount greater than zero in every '+kind+' starting-balance row.');
+   amount?.focus();return false;
+  }
+  if(date&&!date.value){
+   alert('Choose a date for every '+kind+' starting-balance row.');
+   date.focus();return false;
+  }
+  if(party&&!party.value.trim()){
+   alert('Enter a name in every '+kind+' starting-balance row.');
+   party.focus();return false;
+  }
+ }
+ return true;
+}
+function saveStartingBalanceSection(kind){
+ const config={
+  Cash:{key:'openingCashEntries',label:'Cash'},
+  Bank:{key:'openingBankEntries',label:'Bank'},
+  Loan:{key:'openingLoans',label:'Loans'},
+  Creditor:{key:'openingCreditors',label:'Creditors'},
+  Debtor:{key:'openingDebtors',label:'Debtors'}
+ }[kind];
+ if(!config)return;
+ if(!validateStartingBalanceRows(kind))return;
+ const rows=readStartingRows(kind);
+ db.profile=db.profile||{};
+ db.profile[config.key]=rows;
+ if(kind==='Cash')db.profile.openingCash=0;
+ if(kind==='Bank')db.profile.openingBank=0;
+ if(kind==='Loan')syncOpeningLoansToRegister(rows);
+ if(kind==='Creditor'){
+  db.suppliers=Array.isArray(db.suppliers)?db.suppliers:[];
+  db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'?db.supplierDetails:{};
+  rows.forEach(item=>{
+   if(!db.suppliers.some(name=>name.toLocaleLowerCase()===item.party.toLocaleLowerCase()))db.suppliers.push(item.party);
+   db.supplierDetails[item.party]=db.supplierDetails[item.party]||{ownerName:'',address:''};
+  });
+ }
+ pendingSaveAction=null;
+ if(kind==='Creditor'){fillChoices();renderMasterLists();renderSupplierEntryList();renderSupplierAccounts()}
+ if(kind==='Debtor')renderReport();
+ save();
+ alert('Starting '+config.label+' saved successfully.');
+}
+document.querySelectorAll('[data-save-starting]').forEach(button=>{
+ button.addEventListener('click',()=>saveStartingBalanceSection(button.dataset.saveStarting));
+});
 function syncOpeningLoansToRegister(items){
  const old=new Map(db.loans.filter(loan=>loan.openingBalance).map(loan=>[loan.id,loan]));
  const next=items.map(item=>{
@@ -3233,11 +3297,7 @@ function syncOpeningLoansToRegister(items){
  const ids=new Set(next.map(item=>item.id));
  db.loans=[...db.loans.filter(loan=>!loan.openingBalance||ids.has(loan.id)).filter(loan=>!loan.openingBalance),...next];
 }
-$('addOpeningLoan')?.addEventListener('click',()=>{
- db.profile=db.profile||{};db.profile.openingLoans=readOpeningLoanRows();
- db.profile.openingLoans.push({id:crypto.randomUUID(),party:'',type:'given',amount:0});
- const host=$('openingLoanRows');if(host){const row=db.profile.openingLoans[db.profile.openingLoans.length-1];const wrap=document.createElement('div');wrap.innerHTML=`<div class="opening-loan-row" data-opening-loan-row><label>Loan name <input type="text" data-opening-loan-party maxlength="100" placeholder="Person / bank name"></label><label>Loan type <select data-opening-loan-type><option value="given">To collect</option><option value="taken">To repay</option></select></label><label>Amount <input type="number" data-opening-loan-amount min="0.01" step="0.01" placeholder="0.00"></label><button type="button" class="delete" data-opening-loan-remove>Remove</button><input type="hidden" data-opening-loan-id value="${esc(row.id)}"></div>`;host.appendChild(wrap.firstElementChild);host.lastElementChild.querySelector('[data-opening-loan-remove]').onclick=()=>host.lastElementChild.remove();host.lastElementChild.querySelector('[data-opening-loan-party]').focus()}
-});
+
 
 function renderGuestMemberControls(){fillGuestMemberOptions(selectedGuestMembers());renderExpenseMemberOptions(selectedExpenseMembers())}
 $('addGuestName').onclick=()=>{
