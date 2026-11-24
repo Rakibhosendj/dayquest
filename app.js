@@ -708,6 +708,22 @@ function goBackToPreviousPage(){
  else if(document.querySelector('.panel.active')?.id!=='home')setTab('home',{skipHistory:true});
  else updateBackButton();
 }
+// Handle browser Back/Forward for Overview account-card navigation.
+window.addEventListener('popstate',event=>{
+ const destination=event.state?.dayquestOverviewAccount;
+ if(['creditors','debitors'].includes(destination)){
+  setTab('reports',{skipHistory:true});
+  activateReportSection(destination);
+  return;
+ }
+ const currentSection=document.querySelector('[data-report-go].active')?.dataset.reportGo;
+ if(document.querySelector('.panel.active')?.id==='reports'&&['creditors','debitors'].includes(currentSection)){
+  // Remove the in-app history entry created when the Overview card opened Reports.
+  if(appPageHistory[appPageHistory.length-1]==='home')appPageHistory.pop();
+  setTab('home',{skipHistory:true});
+ }
+});
+
 function setTab(t,options={}){
  const currentPage=document.querySelector('.panel.active')?.id;
  if(t==='payExpenseDue'&&currentPage==='reports')outstandingReturnReport=document.querySelector('[data-report-go].active')?.dataset.reportGo||'';
@@ -2761,7 +2777,11 @@ function activateReportSection(key){
   const visible=selected==='all'||pane.dataset.reportPane===selected;pane.hidden=!visible;pane.classList.toggle('report-pane-all',selected==='all');pane.classList.toggle('report-pane-single',selected!=='all');
   const detail=pane.querySelector('.report-detail-disclosure');if(detail){detail.open=selected!=='all';}
  });
- const group=document.querySelector('[data-side-group="reports"]');if(group){group.open=true;group.classList.add('has-active')}
+ const accountPage=['creditors','debitors'].includes(selected);
+ const accountGroup=document.querySelector('[data-side-group="accounts"]');
+ if(accountGroup){accountGroup.open=accountPage;accountGroup.classList.toggle('has-active',accountPage)}
+ const group=document.querySelector('[data-side-group="reports"]');
+ if(group){group.open=true;group.classList.toggle('has-active',!accountPage)}
  updateReportSummaryMetrics();
  updatePageBalanceTitle('reports');
  const target=selected==='all'?document.querySelector('[data-report-pane="purchase"]'):document.querySelector(`[data-report-pane="${selected}"]`);
@@ -4803,6 +4823,13 @@ document.addEventListener('click',event=>{
  event.preventDefault();
  event.stopPropagation();
  event.stopImmediatePropagation();
+ if(['creditors','debitors'].includes(destination)){
+  // Add a real browser history entry so Back returns to Overview on desktop and mobile.
+  try{
+   const currentState=history.state&&typeof history.state==='object'?history.state:{};
+   history.pushState({...currentState,dayquestOverviewAccount:destination},'',window.location.href);
+  }catch(error){console.warn('Could not add account navigation history entry:',error)}
+ }
  if(destination==='loans'){
   setTab('loans');
   renderLoans();
