@@ -2666,6 +2666,7 @@ $('incomePersonFilter').onchange=render;
 $('reportIncomePersonFilter').onchange=renderReport;
 $('productReportFromDate').onchange=renderReport;
 $('productReportToDate').onchange=renderReport;
+$('showDueAccounts').onclick=()=>{renderReport();const active=document.querySelector('#reports .report-pane:not([hidden])')?.dataset.reportPane||'';if(!['creditors','debitors'].includes(active)){const selected=document.querySelector('#reports [data-report-pane="creditors"],#reports [data-report-pane="debitors"]');if(selected){const key=selected.dataset.reportPane;document.querySelectorAll('#reports .report-pane').forEach(p=>p.hidden=p!==selected);}}};
 $('memberProductFilter').onchange=renderReport;
 $('costGroupBy').onchange=renderReport;
 
