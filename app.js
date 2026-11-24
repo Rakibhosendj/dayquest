@@ -742,6 +742,8 @@ function setTab(t,options={}){
  const tabs=[...document.querySelectorAll('.tab')];
  tabs.forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===t));
+ // Refresh recent records and page lists whenever a page is opened, including after cloud/profile/settings changes.
+ render();
  const activeTab=tabs.find(b=>b.dataset.tab===(t==='budgetViewPage'?'budget':t));
  const requestedReportSection=options.reportSection;
  const activeReportSection=t==='reports'
@@ -909,7 +911,7 @@ $('addIncomePersonForm').onsubmit=e=>{
  if(existing)name=existing;else db.incomePeople.push(name);
  fillChoices();$('incomeBy').value=name;localSaveOnly();dialog?.close();
 };
-function localSaveOnly(){localStorage.setItem('dayquest_v1',JSON.stringify(db));queueCloudSave();showBalances();notifySaveButtonSuccess()}
+function localSaveOnly(){localStorage.setItem('dayquest_v1',JSON.stringify(db));queueCloudSave();updateAppBrand();render();renderReport();notifySaveButtonSuccess()}
 
 function renderProductDictionary(){
  db.productDictionary.sort((x,y)=>x.english.localeCompare(y.english,undefined,{sensitivity:'base'}));
@@ -3249,7 +3251,7 @@ $('profileForm').onsubmit=e=>{
  if(name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===name.toLocaleLowerCase()))db.familyMembers.unshift(name);
  if(name&&!db.incomePeople.includes(name))db.incomePeople.unshift(name);
  if(name){const p=ensureMemberProfile(name);Object.assign(p,{phone:db.profile.phone,phone2:db.profile.phone2,...details})}
- fillChoices();renderMasterLists();renderSupplierEntryList();renderSupplierAccounts();renderReport();renderFamilyMembers();updateProfilePhotoPreview();pendingSaveAction=null;save();alert('Profile updated successfully.');
+ fillChoices();renderMasterLists();renderSupplierEntryList();renderSupplierAccounts();renderFamilyMembers();renderMealPersonDates();renderGuestMemberControls();updateProfilePhotoPreview();pendingSaveAction=null;save();alert('Updated Successfully');
 };
 
 
