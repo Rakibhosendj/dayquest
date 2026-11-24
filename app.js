@@ -4833,7 +4833,12 @@ function openOverviewAccountPage(destination,{addBrowserHistory=true}={}){
    history.pushState({...currentState,dayquestOverviewAccount:destination},'',window.location.href);
   }catch(error){console.warn('Could not add account navigation history entry:',error)}
  }
+ // Open the Reports panel, then explicitly select the requested account pane.
+ // Re-apply after setTab so a default Members Report selection cannot remain active.
  setTab('reports',{reportSection:destination});
+ renderReport();
+ activateReportSection(destination);
+ updatePageBalanceTitle('reports');
  updateBackButton();
 }
 document.addEventListener('click',event=>{
