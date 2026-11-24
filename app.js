@@ -4778,6 +4778,7 @@ $('disableDayQuestNotifications').onclick=async()=>{
 };
 function installDayQuestMessageAlerts(){
  const dialog=$('dqMessageDialog'),title=$('dqMessageTitle'),message=$('dqMessageText'),ok=$('dqMessageOk');
+ const messageLink=dialog?.querySelector('.dq-message-github-link');
  const nativeAlert=window.alert.bind(window),nativeConfirm=window.confirm.bind(window),nativePrompt=window.prompt.bind(window);
  const cleanMessage=value=>String(value??'')
   .replace(/\[[^\]]*\]\((?:https?:\/\/|www\.)[^)]+\)/gi,'')
@@ -4794,6 +4795,8 @@ function installDayQuestMessageAlerts(){
   let queue=Promise.resolve();
   window.alert=value=>{
    const safeText=cleanMessage(value);
+   const noLinkNotice=/^(?:Profile updated successfully\.|Starting (?:Cash|Bank|Loans|Creditors|Debtors) saved successfully\.)$/i.test(safeText);
+   if(messageLink){messageLink.hidden=noLinkNotice;messageLink.style.display=noLinkNotice?'none':''}
    queue=queue.then(()=>new Promise(resolve=>{
     title.textContent='DayQuest';
     message.textContent=safeText;
@@ -4913,6 +4916,8 @@ function openOverviewAccountPage(destination,{addBrowserHistory=true}={}){
  setTab('reports',{reportSection:destination});
  activateReportSection(destination);
  updatePageBalanceTitle('reports');
+ const pageTitle=$('pageContextTitle');
+ if(pageTitle)pageTitle.textContent=destination==='creditors'?'Creditors':'Debtors';
  updateBackButton();
 }
 document.addEventListener('click',event=>{
