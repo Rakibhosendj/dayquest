@@ -2829,31 +2829,39 @@ body{color:var(--dq-font-color,#263b5c)}
 #reports #supplierCreditorReport .creditor-row-balance,
 #reports #startingCreditorList .creditor-one-line>strong{display:block!important}
 
-/* Dedicated Accounts > Creditors page. Keep supplier names and balances visible. */
-#creditors .creditors-page-toolbar{display:flex;align-items:center;gap:8px;width:100%;margin:6px 0 14px}
-#creditors .creditors-page-toolbar .report-global-date-range{display:flex;flex:1 1 auto;min-width:0;gap:7px;margin:0}
-#creditors .creditors-page-toolbar .report-global-date-range>label{display:block;flex:1 1 0;min-width:0}
-#creditors .creditors-page-toolbar input{box-sizing:border-box;width:100%;min-width:0;height:38px;padding:7px 6px;font-size:11px}
-#creditors .creditors-page-toolbar button{flex:0 0 58px;min-width:58px;height:38px;padding:7px 8px;margin:0;font-size:12px}
-#creditors .recent-balance-heading{margin:14px 0 7px;font-size:13px;font-weight:800}
-#creditors #creditorPageRecentList .supplier-creditor-report-row,
-#creditors #creditorPageStartingList .creditor-one-line{
- display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important;
- gap:10px!important;width:100%;box-sizing:border-box;text-align:left
-}
-#creditors #creditorPageRecentList .supplier-creditor-main,
-#creditors #creditorPageStartingList .creditor-one-line>span:first-child{min-width:0;text-align:left}
-#creditors #creditorPageRecentList .supplier-creditor-main strong,
-#creditors #creditorPageStartingList .creditor-one-line>span:first-child strong{display:block;font-size:12px;overflow-wrap:anywhere}
-#creditors #creditorPageRecentList .creditor-row-balance,
-#creditors #creditorPageStartingList .creditor-one-line>strong{display:block!important;justify-self:end;text-align:right;font-size:12px;white-space:nowrap}
-#creditors #creditorPageRecentList [data-due-expense]{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px}
-#creditors #creditorPageHistoryList{display:grid;gap:7px}
+/* Dedicated Creditors page: date controls, compact account rows and readable history. */
+#creditors .creditor-page-toolbar{display:flex;align-items:end;gap:8px;width:100%;margin:4px 0 7px}
+#creditors .creditor-page-date-range{display:grid;grid-template-columns:1fr 1fr;gap:7px;flex:1 1 auto;min-width:0}
+#creditors .creditor-page-date-range label{display:grid;gap:4px;min-width:0;color:var(--muted,#687386);font-size:10px;font-weight:750}
+#creditors .creditor-page-date-range input{box-sizing:border-box;width:100%;min-width:0;height:38px;padding:6px 7px;font:inherit;font-size:11px;border:1px solid var(--line,#dce2ea);border-radius:9px;background:var(--card,#fff);color:var(--text,#172033)}
+#creditors .creditor-page-toolbar>button{flex:0 0 58px;min-width:58px;height:38px;padding:6px 8px;margin:0;font-size:12px}
+#creditors .creditor-page-date-note{margin:5px 2px 12px;color:var(--muted,#7c8799);font-size:10px;line-height:1.45}
+#creditors .creditor-page-section{margin:0 0 16px;min-width:0}
+#creditors .creditor-page-section-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 10px;margin:11px 0 6px}
+#creditors .creditor-page-section-head h3{margin:0;color:var(--text,#263b5c);font-size:13px;font-weight:850}
+#creditors .creditor-page-section-head>span{color:var(--muted,#8792a2);font-size:9px}
+#creditors .creditor-page-list{display:grid;gap:6px;min-width:0}
+#creditors .creditor-page-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;min-width:0;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line,#e5eaf1);border-radius:10px;background:var(--card,#fff);color:var(--text,#172033);text-align:left;cursor:pointer}
+#creditors .creditor-page-row:active{background:rgba(38,59,92,.06)}
+#creditors .creditor-page-row-main{display:grid;gap:3px;min-width:0}
+#creditors .creditor-page-row-main>strong{font-size:12px;line-height:1.25;overflow-wrap:anywhere}
+#creditors .creditor-page-row-main>small{font-size:9px;line-height:1.25;color:var(--muted,#8792a2);overflow-wrap:anywhere}
+#creditors .creditor-page-row-amount{justify-self:end;white-space:nowrap;font-size:12px;line-height:1.2;font-weight:800}
+#creditors .creditor-history-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 11px;border:1px solid var(--line,#e6eaf0);border-radius:10px;background:var(--card,#fff);min-width:0}
+#creditors .creditor-history-main{display:grid;gap:3px;min-width:0}
+#creditors .creditor-history-main>strong{font-size:11px;overflow-wrap:anywhere}
+#creditors .creditor-history-main>small{font-size:9px;color:var(--muted,#8792a2);line-height:1.35;overflow-wrap:anywhere}
+#creditors .creditor-history-amount{display:grid;gap:3px;justify-items:end;text-align:right;flex:0 0 auto}
+#creditors .creditor-history-amount>span{font-size:9px;color:var(--muted,#8792a2);font-weight:700}
+#creditors .creditor-history-amount>strong{font-size:11px;white-space:nowrap}
 @media(max-width:380px){
- #creditors .creditors-page-toolbar{gap:5px}
- #creditors .creditors-page-toolbar .report-global-date-range{gap:4px}
- #creditors .creditors-page-toolbar input{font-size:10px;padding:6px 3px}
- #creditors .creditors-page-toolbar button{flex-basis:50px;min-width:50px;font-size:11px}
+ #creditors .creditor-page-toolbar{gap:5px}
+ #creditors .creditor-page-date-range{gap:4px}
+ #creditors .creditor-page-date-range input{font-size:10px;padding:5px 4px}
+ #creditors .creditor-page-toolbar>button{flex-basis:50px;min-width:50px;font-size:11px}
+ #creditors .creditor-page-row{gap:7px;padding:9px 8px}
+ #creditors .creditor-page-row-main>strong{font-size:11px}
+ #creditors .creditor-page-row-amount{font-size:11px}
 }
 
 /* Keep each page's recent list visible after navigation and refresh. */
