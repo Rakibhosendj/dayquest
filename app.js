@@ -3995,7 +3995,7 @@ function renderCreditorsPage(){
   const year=Number(value.slice(0,4)),month=Number(value.slice(5,7)),day=Number(value.slice(8,10));
   return year>=1000&&month>=1&&month<=12&&day>=1&&day<=new Date(year,month,0).getDate();
  };
- if(!validDate(from)||!validDate(to)||from>to){{
+ if(!validDate(from)||!validDate(to)||from>to){
   const message=empty('Choose a valid From and To date. The From date must be on or before the To date.');
   recent.innerHTML=message;starting.innerHTML=message;historyList.innerHTML=message;return;
  }
