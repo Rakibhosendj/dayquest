@@ -577,11 +577,11 @@
    </div>
   </details>
   <details class="profile-foldout"><summary>Family Members</summary><div class="profile-foldout-content"><div class="family-member-add"><input id="newFamilyMember" maxlength="80" placeholder="Enter family member name" aria-label="New family member"><button class="secondary" id="addFamilyMember" type="button">＋ Add member</button></div><div id="familyMemberList" class="list family-member-list"></div></div></details>
-  <details class="profile-foldout starting-balance-section"><summary>Cash</summary><div class="profile-foldout-content"><div class="starting-balance-section-head"><span class="muted">Starting Cash</span><button type="button" class="secondary" id="addOpeningCash" aria-label="Add cash balance">＋</button></div><div id="openingCashRows" class="opening-loan-rows"></div></div></details>
-  <details class="profile-foldout starting-balance-section"><summary>Bank</summary><div class="profile-foldout-content"><div class="starting-balance-section-head"><span class="muted">Starting Bank</span><button type="button" class="secondary" id="addOpeningBank" aria-label="Add bank balance">＋</button></div><div id="openingBankRows" class="opening-loan-rows"></div></div></details>
-  <details class="profile-foldout starting-balance-section"><summary>Loans</summary><div class="profile-foldout-content"><div class="starting-balance-section-head"><span class="muted">Starting Loans</span><button type="button" class="secondary" id="addOpeningLoan" aria-label="Add loan">＋</button></div><div id="openingLoanRows" class="opening-loan-rows"></div></div></details>
-  <details class="profile-foldout starting-balance-section"><summary>Creditors Accounts</summary><div class="profile-foldout-content"><div class="starting-balance-section-head"><span class="muted">Starting Creditors</span><button type="button" class="secondary" id="addOpeningCreditor" aria-label="Add creditor account">＋</button></div><div id="openingCreditorRows" class="opening-loan-rows"></div></div></details>
-  <details class="profile-foldout starting-balance-section"><summary>Debtors Accounts</summary><div class="profile-foldout-content"><div class="starting-balance-section-head"><span class="muted">Starting Debtors</span><button type="button" class="secondary" id="addOpeningDebtor" aria-label="Add debtor account">＋</button></div><div id="openingDebtorRows" class="opening-loan-rows"></div></div></details>
+  <details class="profile-foldout starting-balance-section"><summary>Cash</summary><div class="profile-foldout-content"><div class="starting-balance-section-head"><span class="muted">Starting Cash</span><button type="button" class="secondary" id="addOpeningCash" aria-label="Add cash balance">＋</button><button type="button" class="primary compact starting-balance-save" data-save-starting="Cash">Save</button></div><div id="openingCashRows" class="opening-loan-rows"></div></div></details>
+  <details class="profile-foldout starting-balance-section"><summary>Bank</summary><div class="profile-foldout-content"><div class="starting-balance-section-head"><span class="muted">Starting Bank</span><button type="button" class="secondary" id="addOpeningBank" aria-label="Add bank balance">＋</button><button type="button" class="primary compact starting-balance-save" data-save-starting="Bank">Save</button></div><div id="openingBankRows" class="opening-loan-rows"></div></div></details>
+  <details class="profile-foldout starting-balance-section"><summary>Loans</summary><div class="profile-foldout-content"><div class="starting-balance-section-head"><span class="muted">Starting Loans</span><button type="button" class="secondary" id="addOpeningLoan" aria-label="Add loan">＋</button><button type="button" class="primary compact starting-balance-save" data-save-starting="Loan">Save</button></div><div id="openingLoanRows" class="opening-loan-rows"></div></div></details>
+  <details class="profile-foldout starting-balance-section"><summary>Creditors Accounts</summary><div class="profile-foldout-content"><div class="starting-balance-section-head"><span class="muted">Starting Creditors</span><button type="button" class="secondary" id="addOpeningCreditor" aria-label="Add creditor account">＋</button><button type="button" class="primary compact starting-balance-save" data-save-starting="Creditor">Save</button></div><div id="openingCreditorRows" class="opening-loan-rows"></div></div></details>
+  <details class="profile-foldout starting-balance-section"><summary>Debtors Accounts</summary><div class="profile-foldout-content"><div class="starting-balance-section-head"><span class="muted">Starting Debtors</span><button type="button" class="secondary" id="addOpeningDebtor" aria-label="Add debtor account">＋</button><button type="button" class="primary compact starting-balance-save" data-save-starting="Debtor">Save</button></div><div id="openingDebtorRows" class="opening-loan-rows"></div></div></details>
   <details class="profile-foldout">
    <summary>Balance Transfer</summary>
    <div class="profile-foldout-content balance-transfer-content">
@@ -599,7 +599,7 @@
     <div id="balanceTransferList" class="list"></div>
    </div>
   </details>
-  <button class="primary full">Save profile</button>
+  <button class="primary full" type="submit">Update Profile</button>
   <button class="delete-profile-btn" id="deleteProfileBtn" type="button">Delete Profile</button>
   <button class="clear-transactions-btn" id="clearAllExpensesIncomeBtn" type="button">Clear All Expenses &amp; Income</button>
  </form>
@@ -1062,5 +1062,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261124-account-menu-starting-balances-v3"></script>
+<script src="app.js?v=20261124-report-title-starting-save-v4"></script>
 </body></html>
