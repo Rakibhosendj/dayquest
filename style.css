@@ -2839,6 +2839,9 @@ body{color:var(--dq-font-color,#263b5c)}
 #creditors .creditor-page-section{margin:0 0 16px;min-width:0}
 #creditors .creditor-page-section-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 10px;margin:11px 0 6px}
 #creditors .creditor-page-section-head h3{margin:0;color:var(--text,#263b5c);font-size:13px;font-weight:850}
+.debtor-page-total-head{padding:10px 12px;margin:4px 0 7px;border:1px solid var(--line,#e5eaf1);border-radius:10px;background:var(--card,#fff)}
+.debtor-page-total-head h3{font-size:14px}
+.debtor-page-total-head>strong{font-size:17px;font-weight:900;color:var(--text,#172033);white-space:nowrap}
 #creditors .creditor-page-section-head>span{color:var(--muted,#8792a2);font-size:9px}
 #creditors .creditor-page-list{display:grid;gap:6px;min-width:0}
 #creditors .creditor-page-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;min-width:0;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line,#e5eaf1);border-radius:10px;background:var(--card,#fff);color:var(--text,#172033);text-align:left;cursor:pointer}
