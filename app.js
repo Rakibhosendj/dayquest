@@ -3898,7 +3898,7 @@ function renderDueReport(from,to){
   if(!hasBills&&!hasPayments)return '';
   const balance=supplierBillBalancesAt(name,asOf).reduce((total,row)=>total+row.remaining,0);
   const safeBalance=Math.max(0,balance);
-  return `<button class="supplier-creditor-report-row creditor-one-line" type="button" data-creditor="${esc(name)}" ${safeBalance<=0.000001?'disabled':''} aria-label="${safeBalance>0.000001?'Repay':'Settled'} ${esc(name)}. Balance ${esc(money(safeBalance))}."><span class="supplier-creditor-main"><strong>${esc(name)}</strong></span><span class="supplier-creditor-balance"><strong>${money(safeBalance)}</strong></span></button>`;
+  return `<button class="supplier-creditor-report-row creditor-one-line" type="button" data-creditor="${esc(name)}" ${safeBalance<=0.000001?'disabled':''} aria-label="${safeBalance>0.000001?'Repay':'Settled'} ${esc(name)}"><span class="supplier-creditor-main"><strong>${esc(name)}</strong></span></button>`;
  }).filter(Boolean).join('');
  $('supplierCreditorReport').innerHTML=supplierRows||empty(`No recent creditor balances as of ${fmt(asOf)}.`);
  $('supplierCreditorReport').querySelectorAll('[data-creditor]').forEach(btn=>btn.onclick=()=>openSupplierRepayAction(btn.dataset.creditor));
@@ -3919,7 +3919,7 @@ function renderDueReport(from,to){
  $('creditorAsOfLabel').textContent=fmt(asOf);$('debitorAsOfLabel').textContent=fmt(asOf);
  const openingRows=(items,kind)=>items.filter(x=>!x.date||String(x.date)<=asOf).map(x=>{
   const remaining=openingRemaining(x),canSettle=remaining>0.000001;
-  return `<button type="button" class="breakrow creditor-one-line recent-balance-row" data-opening-balance="${kind}" data-opening-id="${esc(x.id)}" ${canSettle?'':'disabled'} aria-label="${canSettle?(kind==='creditor'?'Repay':'Collect'):'Settled'} ${esc(x.party||x.name||'Unknown account')}. Balance ${esc(money(remaining))}."><span><strong>${esc(x.party||x.name||'Unknown creditor')}</strong></span><strong>${money(remaining)}</strong></button>`;
+  return `<button type="button" class="breakrow creditor-one-line recent-balance-row" data-opening-balance="${kind}" data-opening-id="${esc(x.id)}" ${canSettle?'':'disabled'} aria-label="${canSettle?(kind==='creditor'?'Repay':'Collect'):'Settled'} ${esc(x.party||x.name||'Unknown account')}"><span><strong>${esc(x.party||x.name||'Unknown creditor')}</strong></span></button>`;
  }).join('');
  const expenseRows=items=>items.map(x=>`<button type="button" class="breakrow creditor-one-line recent-balance-row" data-due-expense="${esc(x.id)}"><span>${esc(x.duePerson||'Unknown person')} <small>${esc(x.name||x.category||'Expense')}</small></span><small>${fmt(x.date||asOf)}</small><strong>${money(expenseOutstandingAt(x,asOf))}</strong></button>`).join('');
  const grouped=(expenseItems,openingItems=[],kind='creditor')=>{const rows=[...openingItems.filter(x=>openingRemaining(x)>0.000001).map(x=>({date:x.date||'',html:openingRows([x],kind)})),...expenseItems.map(x=>({date:x.date||'',html:expenseRows([x])}))].sort((a,b)=>String(b.date).localeCompare(String(a.date)));return rows.map(x=>x.html).join('')||empty('No balances recorded by this date.')};
