@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261124-dedicated-debtors-v27">
+<link rel="stylesheet" href="style.css?v=20261124-cost-report-refresh-v28">
 <title>DayQuest</title>
 </head>
 <body>
@@ -922,11 +922,11 @@
 </section>
 <section id="reports" class="panel">
  <div class="report-filter-toolbar">
-  <div class="report-cost-group-control" hidden><label class="sr-only" for="costGroupBy">Cost by</label><select id="costGroupBy" aria-label="Cost by"><option value="category">Category</option><option value="type">Type</option><option value="product">Product</option></select></div>
   <div class="report-date-range report-global-date-range" aria-label="Report date range">
    <label class="report-date-box"><span class="report-date-placeholder">From</span><input id="productReportFromDate" type="date" aria-label="From" required></label>
    <label class="report-date-box"><span class="report-date-placeholder">To</span><input id="productReportToDate" type="date" aria-label="To" required></label>
   </div>
+  <div class="report-cost-group-control" hidden><label class="sr-only" for="costGroupBy">Group costs by</label><select id="costGroupBy" aria-label="Group costs by"><option value="category">Category</option><option value="type">Type</option><option value="product">Product</option></select></div>
   <button type="button" class="secondary report-show-accounts" id="showDueAccounts" hidden>Show</button>
   <div class="report-export-control"><select id="reportExportFormat" aria-label="Reports"><option value="">Reports</option><option value="pdf">PDF</option><option value="print">Print</option><option value="excel">Excel</option><option value="chart">Show Chart</option></select></div>
  </div>
@@ -1010,9 +1010,10 @@
 
  <section class="report-pane" data-report-pane="cost" hidden>
   
-  <article class="report-card"><div class="eyebrow" id="reportLabel">SELECTED DATE RANGE</div><strong class="report-total" id="reportTotal">৳0.00</strong><div class="muted" id="reportRange"></div></article>
-
-  <div class="section-head"><h2 id="costBreakdownTitle">Cost by Category</h2><span class="pill">Summary</span></div>
+  <article class="report-card cost-report-total-card"><div class="eyebrow" id="reportLabel">SELECTED DATE RANGE</div><strong class="report-total" id="reportTotal">৳0.00</strong><div class="muted" id="reportRange"></div></article>
+  <div class="cost-report-summary-metrics"><article><span>Paid amount</span><strong id="costReportPaidTotal">৳0.00</strong></article><article><span>Due amount</span><strong id="costReportDueTotal">৳0.00</strong></article><article><span>Discount settled</span><strong id="costReportDiscountTotal">৳0.00</strong></article></div>
+  <div class="section-head"><h2 id="costBreakdownTitle">Cost by Category</h2><span class="pill">Tap a group to expand</span></div>
+  <p id="costReportRangeCaption" class="cost-report-range-caption"></p>
   <div id="categoryBreakdown" class="list"></div>
   
  </section>
@@ -1115,5 +1116,5 @@
 <dialog id="dqMessageDialog" class="dq-message-dialog" aria-labelledby="dqMessageTitle"><div class="dq-message-card"><div class="dq-message-brand"><img src="icons/icon-192.png?v=20261121-coin-check" alt="DayQuest app icon"><h2 id="dqMessageTitle">DayQuest</h2></div><p id="dqMessageText"></p><input id="dqMessagePromptInput" class="dq-message-prompt-input" type="text" maxlength="200" autocomplete="off" aria-label="Enter a value" hidden><div class="dq-message-actions"><button id="dqMessageCancel" class="secondary" type="button" hidden>Cancel</button><button id="dqMessageOk" class="primary" type="button">OK</button></div></div></dialog>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261124-dedicated-debtors-v27"></script>
+<script src="app.js?v=20261124-cost-report-refresh-v28"></script>
 </body></html>
