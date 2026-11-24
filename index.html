@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261124-save-confirmation-v13">
+<link rel="stylesheet" href="style.css?v=20261124-creditors-dedicated-v14">
 <title>DayQuest</title>
 </head>
 <body>
@@ -350,6 +350,21 @@
  </form>
 
 
+</section>
+<section id="creditors" class="panel">
+ <div class="creditors-page-toolbar">
+  <div class="report-date-range report-global-date-range" aria-label="Creditor date range">
+   <label class="report-date-box"><span class="report-date-placeholder">From</span><input id="creditorPageFromDate" type="date" aria-label="From date"></label>
+   <label class="report-date-box"><span class="report-date-placeholder">To</span><input id="creditorPageToDate" type="date" aria-label="To date"></label>
+  </div>
+  <button type="button" class="secondary" id="creditorPageShow">Show</button>
+ </div>
+ <h3 class="recent-balance-heading">Recent Creditors</h3>
+ <div id="creditorPageRecentList" class="list"></div>
+ <h3 class="recent-balance-heading">Starting Creditors</h3>
+ <div id="creditorPageStartingList" class="list"></div>
+ <h3 class="recent-balance-heading">Creditor History</h3>
+ <div id="creditorPageHistoryList" class="list"></div>
 </section>
 <section id="expenseEntries" class="panel">
  <div class="section-head"><h2>Expense entries</h2><span class="muted" id="expenseCount">0 entries</span></div>
@@ -1064,5 +1079,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261124-save-confirmation-v13"></script>
+<script src="app.js?v=20261124-creditors-dedicated-v14"></script>
 </body></html>
