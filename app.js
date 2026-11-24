@@ -3939,7 +3939,7 @@ function renderDueReport(from,to){
  const openingDebtors=Array.isArray(db.profile?.openingDebtors)?db.profile.openingDebtors:[];
  const openingRemaining=x=>Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||String(s.date)<=asOf).reduce((t,s)=>t+Number(s.amount||0),0));
  const openingCreditorsAsOf=openingCreditors.filter(x=>!x.date||String(x.date)<=asOf);
- const openingDebtorsAsOf=openingDebtors.filter(x=>(!x.date||x.date<=asOf)&&(inRange(x.date)|| (x.settlements||[]).some(s=>inRange(s.date))));
+ const openingDebtorsAsOf=openingDebtors.filter(x=>!x.date||String(x.date)<=asOf);
  const openingCreditorTotal=openingCreditorsAsOf.reduce((t,x)=>t+Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||s.date<=asOf).reduce((v,s)=>v+Number(s.amount||0),0)),0);
  const openingDebtorTotal=openingDebtorsAsOf.reduce((t,x)=>t+Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||s.date<=asOf).reduce((v,s)=>v+Number(s.amount||0),0)),0);
  const expenseOweTotal=iOwe.reduce((t,x)=>t+expenseOutstandingAt(x,asOf),0);
