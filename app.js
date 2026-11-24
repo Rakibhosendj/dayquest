@@ -712,8 +712,7 @@ function goBackToPreviousPage(){
 window.addEventListener('popstate',event=>{
  const destination=event.state?.dayquestOverviewAccount;
  if(['creditors','debitors'].includes(destination)){
-  setTab('reports',{skipHistory:true});
-  activateReportSection(destination);
+  setTab('reports',{skipHistory:true,reportSection:destination});
   return;
  }
  const currentSection=document.querySelector('[data-report-go].active')?.dataset.reportGo;
@@ -740,7 +739,15 @@ function setTab(t,options={}){
  if(t!=='reports')document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.remove('active'));
  if(activeGroup)activeGroup.open=true;
  closeSidebar();
- if(t==='reports'){renderReport();if(!document.querySelector('[data-report-go].active'))activateReportSection('members')}
+ if(t==='reports'){
+  renderReport();
+  const requestedReportSection=options.reportSection;
+  if(['creditors','debitors','members','production','cost','income','sales','assets','purchase','all'].includes(requestedReportSection)){
+   activateReportSection(requestedReportSection);
+  }else if(!document.querySelector('[data-report-go].active')){
+   activateReportSection('members');
+  }
+ }
  if(t==='settings'){renderPurchaseCategorySettings();renderMasterLists();renderProductDictionary();renderMealPersonDates();renderNotificationSettings();$('quickButtonColorInput').value=db.settings.quickButtonColor||'#ee7d2f';$('quickButtonColorValue').textContent=(db.settings.quickButtonColor||'#ee7d2f').toUpperCase();if($('quickButtonVibration'))$('quickButtonVibration').checked=db.settings.quickButtonVibration!==false;if($('overviewSortingEnabled'))$('overviewSortingEnabled').checked=db.settings.overviewSortingEnabled!==false;$('requireSupplierForDuePurchase').checked=db.settings.requireSupplierForDuePurchase!==false;$('allowPurchaseBillEdits').checked=db.settings.allowPurchaseBillEdits!==false;$('bankCreditOption').checked=db.settings.bankCreditOption===true;fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickMemberOptions(quickSelectedMembers());updateQuickActionTypeFields();renderQuickActionManager();}
  if(t==='payExpenseDue')renderExpenseDueList();
  if(t==='loans'){if(!$('loanDate').value)$('loanDate').value=today();renderLoans();}
@@ -3363,9 +3370,7 @@ function renderOverviewAccountTotals(){
    <span class="quick-action-button-title">Total Loans</span><span class="quick-action-button-stats"><span><strong>${money(totalLoans)}</strong></span><span>Collect ${money(loans.given)} · Repay ${money(loans.taken)}</span></span>
   </button>`;
  host.querySelectorAll('[data-overview-account-go]').forEach(button=>button.onclick=()=>{
-  const destination=button.dataset.overviewAccountGo;
-  if(destination==='loans')setTab('loans');
-  else{setTab('reports');activateReportSection(destination)}
+  openOverviewAccountPage(button.dataset.overviewAccountGo);
  });
 }
 
@@ -4814,7 +4819,23 @@ if(typeof syncOpeningLoansToRegister==='function'){
  syncOpeningLoansToRegister(db.profile?.openingLoans||[]);
  render();
 }
-// Capture account-tile clicks before any other delegated handlers and route by account type.
+// Route Overview account-summary cards through one shared desktop/mobile navigation function.
+function openOverviewAccountPage(destination,{addBrowserHistory=true}={}){
+ if(destination==='loans'){
+  setTab('loans');
+  updateBackButton();
+  return;
+ }
+ if(!['creditors','debitors'].includes(destination))return;
+ if(addBrowserHistory){
+  try{
+   const currentState=history.state&&typeof history.state==='object'?history.state:{};
+   history.pushState({...currentState,dayquestOverviewAccount:destination},'',window.location.href);
+  }catch(error){console.warn('Could not add account navigation history entry:',error)}
+ }
+ setTab('reports',{reportSection:destination});
+ updateBackButton();
+}
 document.addEventListener('click',event=>{
  const button=event.target?.closest?.('#overviewAccountTotalsList [data-overview-account-go]');
  if(!button)return;
@@ -4823,20 +4844,5 @@ document.addEventListener('click',event=>{
  event.preventDefault();
  event.stopPropagation();
  event.stopImmediatePropagation();
- if(['creditors','debitors'].includes(destination)){
-  // Add a real browser history entry so Back returns to Overview on desktop and mobile.
-  try{
-   const currentState=history.state&&typeof history.state==='object'?history.state:{};
-   history.pushState({...currentState,dayquestOverviewAccount:destination},'',window.location.href);
-  }catch(error){console.warn('Could not add account navigation history entry:',error)}
- }
- if(destination==='loans'){
-  setTab('loans');
-  renderLoans();
- }else{
-  setTab('reports');
-  renderReport();
-  activateReportSection(destination);
- }
- updateBackButton();
+ openOverviewAccountPage(destination);
 },true);
