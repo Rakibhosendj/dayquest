@@ -3893,9 +3893,12 @@ function renderDueReport(from,to){
  const incomeDue=db.incomes.filter(x=>x.paymentType==='Due'&&String(x.date||'')<=asOf&&incomeOutstandingAt(x,asOf)>0),legacy=due.filter(x=>!['i_owe','owed_to_me'].includes(x.dueDirection));
  const supplierNames=[...new Set([...db.suppliers,...db.purchaseBills.map(b=>b.supplier),...db.supplierPayments.map(p=>p.supplier)].filter(Boolean))].sort((a,b)=>a.localeCompare(b));
  const supplierRows=supplierNames.map(name=>{
+  const hasBills=db.purchaseBills.some(bill=>bill.supplier===name&&String(bill.date||'')<=asOf);
+  const hasPayments=db.supplierPayments.some(payment=>payment.supplier===name&&String(payment.date||'')<=asOf);
+  if(!hasBills&&!hasPayments)return '';
   const balance=supplierBillBalancesAt(name,asOf).reduce((total,row)=>total+row.remaining,0);
-  if(balance<=0.000001)return '';
-  return `<button class="supplier-creditor-report-row creditor-one-line" type="button" data-creditor="${esc(name)}" aria-label="Repay ${esc(name)}. Outstanding ${esc(money(balance))}."><span class="supplier-creditor-main"><strong>${esc(name)}</strong></span><span class="supplier-creditor-balance"><strong>${money(balance)}</strong></span></button>`;
+  const safeBalance=Math.max(0,balance);
+  return `<button class="supplier-creditor-report-row creditor-one-line" type="button" data-creditor="${esc(name)}" ${safeBalance<=0.000001?'disabled':''} aria-label="${safeBalance>0.000001?'Repay':'Settled'} ${esc(name)}. Balance ${esc(money(safeBalance))}."><span class="supplier-creditor-main"><strong>${esc(name)}</strong></span><span class="supplier-creditor-balance"><strong>${money(safeBalance)}</strong></span></button>`;
  }).filter(Boolean).join('');
  $('supplierCreditorReport').innerHTML=supplierRows||empty(`No recent creditor balances as of ${fmt(asOf)}.`);
  $('supplierCreditorReport').querySelectorAll('[data-creditor]').forEach(btn=>btn.onclick=()=>openSupplierRepayAction(btn.dataset.creditor));
@@ -3904,7 +3907,7 @@ function renderDueReport(from,to){
  const openingCreditors=Array.isArray(db.profile?.openingCreditors)?db.profile.openingCreditors:[];
  const openingDebtors=Array.isArray(db.profile?.openingDebtors)?db.profile.openingDebtors:[];
  const openingRemaining=x=>Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||String(s.date)<=asOf).reduce((t,s)=>t+Number(s.amount||0),0));
- const openingCreditorsAsOf=openingCreditors.filter(x=>(!x.date||String(x.date)<=asOf)&&openingRemaining(x)>0.000001);
+ const openingCreditorsAsOf=openingCreditors.filter(x=>!x.date||String(x.date)<=asOf);
  const openingDebtorsAsOf=openingDebtors.filter(x=>(!x.date||x.date<=asOf)&&(inRange(x.date)|| (x.settlements||[]).some(s=>inRange(s.date))));
  const openingCreditorTotal=openingCreditorsAsOf.reduce((t,x)=>t+Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||s.date<=asOf).reduce((v,s)=>v+Number(s.amount||0),0)),0);
  const openingDebtorTotal=openingDebtorsAsOf.reduce((t,x)=>t+Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||s.date<=asOf).reduce((v,s)=>v+Number(s.amount||0),0)),0);
@@ -3914,11 +3917,14 @@ function renderDueReport(from,to){
  $('iOweTotal').textContent=money(supplierTotal+expenseOweTotal+openingCreditorTotal);$('iOweExpenseTotal').textContent=money(expenseOweTotal+openingCreditorTotal);
  $('owedToMeTotal').textContent=money(owedExpenseTotal+incomeDueAmount+openingDebtorTotal);$('owedToMeExpenseTotal').textContent=money(owedExpenseTotal+openingDebtorTotal);$('incomeDueTotal').textContent=money(incomeDueAmount);
  $('creditorAsOfLabel').textContent=fmt(asOf);$('debitorAsOfLabel').textContent=fmt(asOf);
- const openingRows=(items,kind)=>items.filter(x=>(!x.date||String(x.date)<=asOf)&&openingRemaining(x)>0.000001).map(x=>`<button type="button" class="breakrow creditor-one-line recent-balance-row" data-opening-balance="${kind}" data-opening-id="${esc(x.id)}" aria-label="Repay ${esc(x.party||x.name||'Unknown creditor')}. Outstanding ${esc(money(openingRemaining(x)))}."><span><strong>${esc(x.party||x.name||'Unknown creditor')}</strong></span><strong>${money(openingRemaining(x))}</strong></button>`).join('');
+ const openingRows=(items,kind)=>items.filter(x=>!x.date||String(x.date)<=asOf).map(x=>{
+  const remaining=openingRemaining(x),canSettle=remaining>0.000001;
+  return `<button type="button" class="breakrow creditor-one-line recent-balance-row" data-opening-balance="${kind}" data-opening-id="${esc(x.id)}" ${canSettle?'':'disabled'} aria-label="${canSettle?(kind==='creditor'?'Repay':'Collect'):'Settled'} ${esc(x.party||x.name||'Unknown account')}. Balance ${esc(money(remaining))}."><span><strong>${esc(x.party||x.name||'Unknown creditor')}</strong></span><strong>${money(remaining)}</strong></button>`;
+ }).join('');
  const expenseRows=items=>items.map(x=>`<button type="button" class="breakrow creditor-one-line recent-balance-row" data-due-expense="${esc(x.id)}"><span>${esc(x.duePerson||'Unknown person')} <small>${esc(x.name||x.category||'Expense')}</small></span><small>${fmt(x.date||asOf)}</small><strong>${money(expenseOutstandingAt(x,asOf))}</strong></button>`).join('');
  const grouped=(expenseItems,openingItems=[],kind='creditor')=>{const rows=[...openingItems.filter(x=>openingRemaining(x)>0.000001).map(x=>({date:x.date||'',html:openingRows([x],kind)})),...expenseItems.map(x=>({date:x.date||'',html:expenseRows([x])}))].sort((a,b)=>String(b.date).localeCompare(String(a.date)));return rows.map(x=>x.html).join('')||empty('No balances recorded by this date.')};
  $('iOweList').innerHTML=grouped(iOwe,[],'creditor');
- $('startingCreditorList').innerHTML=openingCreditorsAsOf.length?openingCreditorsAsOf.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(x=>openingRows([x],'creditor')).join(''):empty('No starting creditor balances as of '+fmt(asOf)+'.');
+ $('startingCreditorList').innerHTML=openingCreditorsAsOf.length?openingCreditorsAsOf.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(x=>openingRows([x],'creditor')).join(''):empty('No starting creditor accounts as of '+fmt(asOf)+'.');
  const debtorRows=[...incomeDue.map(x=>({date:x.date,html:`<button type="button" class="breakrow creditor-one-line recent-balance-row" data-due-income="${esc(x.id)}"><span>${esc(x.duePerson||'Unknown person')} <small>${esc(x.source||'Income')}</small></span><small>${fmt(x.date||asOf)}</small><strong>${money(incomeOutstandingAt(x,asOf))}</strong></button>`})),...owedExpenses.map(x=>({date:x.date,html:`<button type="button" class="breakrow creditor-one-line recent-balance-row" data-due-expense="${esc(x.id)}"><span>${esc(x.duePerson||'Unknown person')} <small>${esc(x.name||x.category||'Expense')}</small></span><small>${fmt(x.date||asOf)}</small><strong>${money(expenseOutstandingAt(x,asOf))}</strong></button>`})),...openingDebtorsAsOf.filter(x=>openingRemaining(x)>0.000001).map(x=>({date:x.date,html:openingRows([x],'debtor')}))].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
  $('owedToMeList').innerHTML=debtorRows.map(x=>x.html).join('')||empty('No balances recorded by this date.');$('incomeDueList').innerHTML='';
  $('startingCreditorList').querySelectorAll('[data-opening-balance]').forEach(btn=>btn.onclick=()=>openStartingBalanceAction('creditor',btn.dataset.openingId));
@@ -3934,7 +3940,7 @@ function renderDueReport(from,to){
  const addCreditorHistory=(date,name,activity,method,amount,kind='credit',detail='')=>{
   const when=String(date||'');
   const value=Number(amount||0);
-  if(!when||when<from||when>to||!Number.isFinite(value)||value<=0.000001)return;
+  if(!when||when>to||!Number.isFinite(value)||value<=0.000001)return;
   creditorHistory.push({
    date:when,
    html:`<article class="creditor-history-row" data-history-kind="${kind}">
@@ -3964,7 +3970,7 @@ function renderDueReport(from,to){
   });
  });
  creditorHistory.sort((left,right)=>right.date.localeCompare(left.date));
- $('creditorHistoryList').innerHTML=creditorHistory.map(item=>item.html).join('')||empty('No creditor history in the selected date range.');
+ $('creditorHistoryList').innerHTML=creditorHistory.map(item=>item.html).join('')||empty('No creditor history recorded up to '+fmt(asOf)+'.');
 }
 
 activateReportSection('members');purchaseLines=[defaultPurchaseLine()];renderPurchaseLines();fillChoices();renderQuickMemberOptions([]);fillQuickActionOptions();updateQuickActionTypeFields();$('purchaseDate').value=today();updatePurchaseBillNo();productionInputs=[defaultProductionInput()];fillProductionOptions();resetProductionForm();applyThemeColor(db.settings.themeColor,false);applySideMenuColor(db.settings.sideMenuColor||'#111d30',false);applyTopBarColor(db.settings.topBarColor||'#101827',false);renderPurchaseCategorySettings();renderMasterLists();
