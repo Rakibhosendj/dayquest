@@ -3815,7 +3815,7 @@ function renderReport(){
  const from=$('productReportFromDate')?.value||'',to=$('productReportToDate')?.value||'';
  renderMemberReportGuestAssignments();
  const hint=$('reportDateHint');
- const reportOutputs=['productTypePurchaseReport','productPurchaseReport','supplierCreditorReport','iOweList','startingCreditorList','owedToMeList','incomeDueList','categoryBreakdown','memberCostBreakdown','memberProductConsumption','guestReport','incomePersonBreakdown','incomeHeadBreakdown','salesReportList','productionReportList','assetPurchaseReportList'];
+ const reportOutputs=['productTypePurchaseReport','productPurchaseReport','supplierCreditorReport','iOweList','startingCreditorList','creditorHistoryList','owedToMeList','incomeDueList','categoryBreakdown','memberCostBreakdown','memberProductConsumption','guestReport','incomePersonBreakdown','incomeHeadBreakdown','salesReportList','productionReportList','assetPurchaseReportList'];
  if(!from||!to||from>to){
   const message=!from||!to?'Choose both a From date and a To date to view reports.':'Invalid date range: the From date must be on or before the To date.';
   if(hint){hint.textContent=message;hint.classList.add('date-range-error')}
@@ -3926,6 +3926,45 @@ function renderDueReport(from,to){
  document.querySelectorAll('#iOweList [data-due-expense],#owedToMeList [data-due-expense]').forEach(btn=>btn.onclick=()=>openExpenseDueAction(btn.dataset.dueExpense));
  $('owedToMeList').querySelectorAll('[data-due-income]').forEach(btn=>btn.onclick=()=>openCollectIncome(btn.dataset.dueIncome));
  $('unassignedDueHint').hidden=!legacy.length;$('unassignedDueHint').textContent=legacy.length?`${legacy.length} older Due ${legacy.length===1?'entry is':'entries are'} not assigned to either side. These older records are preserved and excluded from creditor and debtor totals.`:'';
+
+ // Build a dated creditor activity ledger from all creditor sources.
+ // Purchase credits and starting balances increase the payable balance;
+ // supplier payments, expense settlements and starting-balance repayments reduce it.
+ const creditorHistory=[];
+ const addCreditorHistory=(date,name,activity,method,amount,kind='credit',detail='')=>{
+  const when=String(date||'');
+  const value=Number(amount||0);
+  if(!when||when<from||when>to||!Number.isFinite(value)||value<=0.000001)return;
+  creditorHistory.push({
+   date:when,
+   html:`<article class="creditor-history-row" data-history-kind="${kind}">
+    <div class="creditor-history-main"><strong>${esc(name||'Unknown creditor')}</strong><small>${fmt(when)} · ${esc(activity)}${detail?' · '+esc(detail):''}</small></div>
+    <div class="creditor-history-amount"><span>${esc(method||'')}</span><strong>${money(value)}</strong></div>
+   </article>`
+  });
+ };
+ db.purchaseBills.forEach(bill=>{
+  const credit=Math.max(0,billCredit(bill));
+  if(credit>0)addCreditorHistory(bill.date,bill.supplier,'Purchase credit','Credit',credit,'credit',bill.billNo?'Bill #'+bill.billNo:'');
+ });
+ db.supplierPayments.forEach(payment=>{
+  addCreditorHistory(payment.date,payment.supplier,'Repayment',payment.method||'Cash',payment.amount,'payment',payment.note||'');
+  addCreditorHistory(payment.date,payment.supplier,'Discount','Discount',payment.discount,'discount',payment.note||'');
+ });
+ openingCreditors.forEach(item=>{
+  addCreditorHistory(item.date||asOf,item.party||item.name,'Starting balance','Opening',item.amount,'credit');
+  (item.settlements||[]).forEach(settlement=>{
+   addCreditorHistory(settlement.date||item.date||asOf,item.party||item.name,'Repayment',settlement.method||'Cash',settlement.amount,'payment',settlement.note||'');
+  });
+ });
+ db.expenses.filter(item=>item.paymentType==='Due'&&item.dueDirection==='i_owe').forEach(item=>{
+  addCreditorHistory(item.date,item.duePerson||'Unknown creditor','Expense due','Due',item.amount,'credit',item.name||item.category||'');
+  expenseSettlements(item).forEach(settlement=>{
+   addCreditorHistory(settlement.date||item.date,item.duePerson||'Unknown creditor','Repayment',settlement.method||'Cash',settlement.amount,'payment',settlement.note||item.name||'');
+  });
+ });
+ creditorHistory.sort((left,right)=>right.date.localeCompare(left.date));
+ $('creditorHistoryList').innerHTML=creditorHistory.map(item=>item.html).join('')||empty('No creditor history in the selected date range.');
 }
 
 activateReportSection('members');purchaseLines=[defaultPurchaseLine()];renderPurchaseLines();fillChoices();renderQuickMemberOptions([]);fillQuickActionOptions();updateQuickActionTypeFields();$('purchaseDate').value=today();updatePurchaseBillNo();productionInputs=[defaultProductionInput()];fillProductionOptions();resetProductionForm();applyThemeColor(db.settings.themeColor,false);applySideMenuColor(db.settings.sideMenuColor||'#111d30',false);applyTopBarColor(db.settings.topBarColor||'#101827',false);renderPurchaseCategorySettings();renderMasterLists();
