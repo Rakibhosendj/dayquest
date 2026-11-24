@@ -2875,3 +2875,59 @@ body{color:var(--dq-font-color,#263b5c)}
 .dq-message-card h3{font-size:1rem;margin:0 0 12px;color:#263b5c}
 .dq-message-prompt-input{display:block;width:100%;box-sizing:border-box;min-height:44px;margin:0 0 16px;padding:10px 12px;border:1px solid #dfe5ed;border-radius:10px;background:#fbfcfe;color:#172033;font:inherit;font-size:16px}
 .dq-message-prompt-input[hidden]{display:none!important}
+
+
+/* Cost Report: mobile-first toolbar and expandable itemized costs. */
+#reports .report-filter-toolbar{display:flex;flex-flow:row nowrap;align-items:center;gap:8px;width:100%;min-width:0}
+#reports .report-filter-toolbar .report-global-date-range{display:flex;flex:1 1 auto;flex-flow:row nowrap;gap:8px;min-width:0;width:auto;max-width:none;margin:0}
+#reports .report-filter-toolbar .report-global-date-range>label{display:flex;flex:1 1 0;flex-direction:column;min-width:0;gap:4px}
+#reports .report-filter-toolbar .report-global-date-range input{box-sizing:border-box;width:100%;min-width:0;height:40px;padding:7px 6px;font-size:12px}
+#reports .report-filter-toolbar .report-cost-group-control,#reports .report-filter-toolbar .report-export-control{display:block;flex:0 0 112px;width:112px;min-width:0;margin:0}
+#reports .report-filter-toolbar .report-cost-group-control[hidden],#reports .report-filter-toolbar .report-show-accounts[hidden]{display:none!important}
+#reports .report-filter-toolbar .report-cost-group-control select,#reports .report-filter-toolbar .report-export-control select{display:block;box-sizing:border-box;width:100%;min-width:0;height:40px;padding:7px 8px;border:1px solid #dfe5ed;border-radius:9px;background:#fff;color:#263b5c;font:inherit;font-size:12px;font-weight:700}
+#reports .report-filter-toolbar .report-show-accounts{flex:0 0 58px;width:58px;height:40px;margin:0;padding:6px;font-size:12px}
+.report-pane[data-report-pane="cost"] .cost-report-total-card{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;margin:8px 0;border:1px solid var(--line,#e5eaf1);border-radius:12px;background:var(--card,#fff)}
+.report-pane[data-report-pane="cost"] .cost-report-total-card:before{content:"Total Cost";font-size:12px;font-weight:750;color:var(--muted,#687386)}
+.report-pane[data-report-pane="cost"] .cost-report-total-card .eyebrow{display:none}
+.report-pane[data-report-pane="cost"] .cost-report-total-card .report-total{font-size:19px;line-height:1.2;margin:0;font-weight:850}
+.report-pane[data-report-pane="cost"] .cost-report-total-card #reportRange{display:none}
+.cost-report-summary-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:0 0 12px}
+.cost-report-summary-metrics article{display:grid;gap:5px;min-width:0;padding:9px 10px;border:1px solid var(--line,#e5eaf1);border-radius:10px;background:var(--card,#fff)}
+.cost-report-summary-metrics article span{font-size:10px;color:var(--muted,#687386);font-weight:650}
+.cost-report-summary-metrics article strong{font-size:12px;line-height:1.25;overflow-wrap:anywhere}
+.cost-report-range-caption{margin:0 0 8px;color:var(--muted,#8792a2);font-size:10px}
+#categoryBreakdown{display:grid;gap:7px;min-width:0}
+.cost-report-group,.cost-report-item{min-width:0;border:1px solid var(--line,#e5eaf1);border-radius:11px;background:var(--card,#fff);overflow:hidden}
+.cost-report-group>summary,.cost-report-item>summary{display:flex;align-items:center;gap:10px;min-width:0;padding:11px 12px;cursor:pointer;list-style:none}
+.cost-report-group>summary::-webkit-details-marker,.cost-report-item>summary::-webkit-details-marker{display:none}
+.cost-report-group-name,.cost-report-item-main{display:grid;gap:3px;flex:1 1 auto;min-width:0}
+.cost-report-group-name strong,.cost-report-item-main strong{font-size:12px;line-height:1.3;overflow-wrap:anywhere}
+.cost-report-group-name small,.cost-report-item-main small{font-size:10px;color:var(--muted,#8792a2);line-height:1.3}
+.cost-report-group-total,.cost-report-item-total{flex:0 0 auto;font-size:12px;white-space:nowrap}
+.cost-report-disclosure{flex:0 0 auto;color:var(--muted,#8792a2);font-size:15px;transition:transform .15s ease}
+.cost-report-group[open]>summary .cost-report-disclosure{transform:rotate(180deg)}
+.cost-report-group-items{display:grid;gap:6px;padding:0 8px 8px}
+.cost-report-item{border-color:var(--line,#e9edf2);background:var(--surface,#fafbfd)}
+.cost-report-item>summary{padding:9px 10px}
+.cost-report-item-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0 10px 10px}
+.cost-report-item-details>span{display:grid;gap:3px;min-width:0}
+.cost-report-item-details small{font-size:9px;color:var(--muted,#8792a2)}
+.cost-report-item-details strong{font-size:10px;line-height:1.3;overflow-wrap:anywhere}
+@media(max-width:620px){
+ #reports .report-filter-toolbar{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px!important}
+ #reports .report-filter-toolbar .report-global-date-range{grid-column:1/-1;width:100%;gap:7px}
+ #reports .report-filter-toolbar .report-global-date-range input{height:38px;padding:6px 5px;font-size:11px}
+ #reports .report-filter-toolbar .report-cost-group-control,#reports .report-filter-toolbar .report-export-control{width:100%;min-width:0;flex-basis:auto}
+ #reports .report-filter-toolbar .report-cost-group-control select,#reports .report-filter-toolbar .report-export-control select{height:38px;padding:6px 7px;font-size:11px}
+ #reports .report-filter-toolbar .report-cost-group-control{grid-column:1}
+ #reports .report-filter-toolbar .report-export-control{grid-column:2}
+ #reports .report-filter-toolbar .report-show-accounts{grid-column:1;width:100%;height:36px}
+ .cost-report-summary-metrics{gap:5px}
+ .cost-report-summary-metrics article{padding:8px 7px}
+ .cost-report-summary-metrics article span{font-size:9px}
+ .cost-report-summary-metrics article strong{font-size:11px}
+ .cost-report-group>summary{padding:10px}
+ .cost-report-group-name strong{font-size:11px}
+ .cost-report-group-total{font-size:11px}
+}
+@media(max-width:360px){.cost-report-item-details{grid-template-columns:minmax(0,1fr)}.cost-report-summary-metrics article strong{font-size:10px}}
