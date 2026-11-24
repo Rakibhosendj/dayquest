@@ -238,7 +238,7 @@ function successMessageForAction(action){
 }
 function notifySaveButtonSuccess(){
  const action=pendingSaveAction;
- if(!action||action.saved||Date.now()-action.time>60000)return;
+ if(!action||action.saved||Date.now()-action.time>30000)return;
  action.saved=true;
  queueMicrotask(()=>{
   if(pendingSaveAction!==action||action.noticeShown)return;
@@ -3515,7 +3515,7 @@ $('balanceTransferSubmit').onclick=()=>{
  if(balanceError){alert(balanceError);return}
  db.moneyTransfers=db.moneyTransfers||[];
  db.moneyTransfers.unshift({id:crypto.randomUUID(),from:direction[0],to:direction[1],amount,cost,date,note:$('balanceTransferNote').value.trim(),createdAt:new Date().toISOString()});
- $('balanceTransferAmount').value='';$('balanceTransferCost').value='0.00';$('balanceTransferNote').value='';save();alert('Balance transferred successfully.');
+ $('balanceTransferAmount').value='';$('balanceTransferCost').value='0.00';$('balanceTransferNote').value='';pendingSaveAction=null;save();alert('Balance transferred successfully.');
 };
 function renderOverviewAccountTotals(){
  const host=$('overviewAccountTotalsList');if(!host)return;
@@ -5170,14 +5170,10 @@ function trackSaveUpdateButton(control){
  if(pendingSaveAction&&Date.now()-pendingSaveAction.time<180&&pendingSaveAction.label===label)return;
  const action={label,time:Date.now(),saved:false,noticeShown:false};
  pendingSaveAction=action;
- setTimeout(()=>{if(pendingSaveAction===action&&Date.now()-action.time>60000)pendingSaveAction=null},61000);
+ setTimeout(()=>{if(pendingSaveAction===action&&Date.now()-action.time>30000)pendingSaveAction=null},31000);
 }
 document.addEventListener('click',event=>trackSaveUpdateButton(event.target.closest('button,input[type="submit"],input[type="button"]')),true);
 document.addEventListener('submit',event=>trackSaveUpdateButton(event.submitter||document.activeElement),true);
-document.addEventListener('change',event=>{
- const control=event.target.closest('input,select,textarea');
- if(control&&!control.matches('[type="hidden"]'))trackSaveUpdateButton(control);
-},true);
 updatePageBalanceTitle('home');
 setupDQDateDisplays();
 const reportToday=today();$('productReportFromDate').value=reportToday.slice(0,7)+'-01';$('productReportToDate').value=reportToday;fillChoices();loadProfileForm();calcTotal();$('dueFields').hidden=true;$('duePaidFromField').hidden=true;$('incomeDueFields').hidden=true;$('salesMemoWrap').hidden=true;resetSalesMemoForm();$('expenseDueActionForm').hidden=true;$('incomeCollectForm').hidden=true;$('incomeTotalPreview').textContent=money(0);render();initAuth();
