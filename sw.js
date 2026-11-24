@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v249-creditor-page-reform-v17';
+const CACHE = 'dayquest-cache-v250-creditor-page-reform-v18';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261124-creditor-page-reform-v17',
-  './app.js?v=20261124-creditor-page-reform-v17',
+  './style.css?v=20261124-creditor-page-reform-v18',
+  './app.js?v=20261124-creditor-page-reform-v18',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
   './icons/icon-512.svg',
