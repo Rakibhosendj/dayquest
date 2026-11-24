@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v245-save-confirmation-v13';
+const CACHE = 'dayquest-cache-v246-creditors-dedicated-v14';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261124-save-confirmation-v13',
-  './app.js?v=20261124-save-confirmation-v13',
+  './style.css?v=20261124-creditors-dedicated-v14',
+  './app.js?v=20261124-creditors-dedicated-v14',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
   './icons/icon-512.svg',
