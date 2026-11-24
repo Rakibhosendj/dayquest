@@ -3,7 +3,7 @@ const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261124-starting-balance-actions-v2',
+  './style.css?v=20261124-creditor-accounts-v3',
   './app.js?v=20261124-creditor-account-repay-v7',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
