@@ -2678,6 +2678,7 @@ body{color:var(--dq-font-color,#263b5c)}
 #reports .report-filter-toolbar .report-date-box .report-date-placeholder{
  left:7px!important;font-size:10px!important;
 }
+#reports .report-filter-toolbar .report-show-accounts[hidden]{display:none!important}
 #reports .report-filter-toolbar .report-show-accounts{display:block!important;flex:0 0 52px!important;width:52px!important;min-width:0!important;height:36px!important;padding:6px 5px!important;margin:0!important;border-radius:8px!important;font-size:11px!important;font-weight:750!important;white-space:nowrap!important}
 #reports .report-filter-toolbar .report-export-control{
  display:block!important;flex:0 0 88px!important;width:88px!important;
