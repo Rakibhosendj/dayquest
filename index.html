@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261124-full-app-audit-v20">
+<link rel="stylesheet" href="style.css?v=20261124-profile-purchase-success-v21">
 <title>DayQuest</title>
 </head>
 <body>
@@ -275,7 +275,7 @@
 
 </section>
 <section id="quickExpenses" class="panel">
- <div class="section-head quick-expenses-head"><div><h2><button type="button" class="overview-quick-title" id="quickExpensesTitleSetupLink">Quick Expenses</button></h2><span class="muted">Tap a tile to add or subtract one transaction</span></div><div class="quick-expenses-head-actions"><button type="button" class="secondary" id="quickExpensesBackOverview">← Back to Overview</button><button type="button" id="quickActionModeToggle" class="quick-action-mode-toggle add-mode" aria-pressed="false">＋ Add</button></div></div>
+ <div class="section-head quick-expenses-head"><div><h2><button type="button" class="overview-quick-title" id="quickExpensesTitleSetupLink">Quick Expenses</button></h2><span class="muted">Tap a tile to add or subtract one transaction</span></div><div class="quick-expenses-head-actions"><button type="button" id="quickActionModeToggle" class="quick-action-mode-toggle add-mode" aria-pressed="false">＋ Add</button></div></div>
  <p class="hint quick-action-intro">Add mode increases the count and cost. Minus mode removes one of today's entries. T = total count · Day = today's count · TC = total cost · DC = today's cost.</p>
  <div class="section-head"><h3>Your quick buttons</h3><span class="muted" id="quickActionCount">0 buttons</span></div>
  <div id="quickActionList" class="quick-action-list"></div>
@@ -1083,11 +1083,12 @@
   <div class="dq-message-actions"><button class="secondary" id="cancelIncomeHead" type="button">Cancel</button><button class="primary" type="submit">Save type</button></div>
  </form>
 </dialog>
+<dialog id="dqSuccessDialog" class="dq-message-dialog dq-success-dialog" aria-labelledby="dqSuccessTitle"><div class="dq-message-card"><div class="dq-message-brand"><img src="icons/icon-192.png?v=20261121-coin-check" alt="DayQuest app icon"><h2 id="dqSuccessTitle">DayQuest</h2></div><p id="dqSuccessText" role="status" aria-live="polite"></p><div class="dq-message-actions"><button id="dqSuccessOk" class="primary" type="button">OK</button></div></div></dialog>
 <dialog id="dqMessageDialog" class="dq-message-dialog" aria-labelledby="dqMessageTitle"><div class="dq-message-card"><div class="dq-message-brand"><img src="icons/icon-192.png?v=20261121-coin-check" alt="DayQuest app icon"><h2 id="dqMessageTitle">DayQuest</h2></div><p id="dqMessageText"></p><input id="dqMessagePromptInput" class="dq-message-prompt-input" type="text" maxlength="200" autocomplete="off" aria-label="Enter a value" hidden><div class="dq-message-actions"><button id="dqMessageCancel" class="secondary" type="button" hidden>Cancel</button><button id="dqMessageOk" class="primary" type="button">OK</button></div></div></dialog>
 </div>
 </div>
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261124-full-app-audit-v20"></script>
+<script src="app.js?v=20261124-profile-purchase-success-v21"></script>
 </body></html>
