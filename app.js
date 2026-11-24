@@ -2336,12 +2336,38 @@ $('quickActionManagerList').onclick=e=>{
  if(button.dataset.quickEdit){editQuickAction(button.dataset.quickEdit);return}
  if(button.dataset.quickDelete){const id=button.dataset.quickDelete,action=db.quickActions.find(x=>x.id===id);if(!action)return;if(confirm(`Delete the quick button “${action.name}”? Existing recorded transactions will remain in Expenses and Income.`)){db.quickActions=db.quickActions.filter(x=>x.id!==id);if(editingQuickActionId===id)resetQuickActionForm();save()}}
 };
+function prepareCreditorRepaymentPage(title,remaining,action='Repay'){
+ setTab('payExpenseDue');
+ const heading=$('payExpenseDue')?.querySelector('.outstanding-list-heading');
+ if(heading){heading.hidden=true;const headingText=heading.querySelector('h2');if(headingText)headingText.textContent=action}
+ $('expenseDueList').hidden=true;
+ $('expenseDueActionLabel').textContent=title;
+ $('expenseDueRemaining').textContent='Remaining: '+money(remaining);
+ $('expenseDueActionAmount').max=Math.max(0,remaining).toFixed(2);
+ $('expenseDueCashAmount').value='0.00';
+ $('expenseDueBankAmount').value='0.00';
+ $('expenseDueActionDate').value=today();
+ updateExpenseDuePaymentTotal();
+ $('expenseDueActionNote').value='';
+ $('expenseDueActionSubmit').textContent=action;
+ $('expenseDueActionForm').hidden=false;
+ $('expenseDueActionForm').scrollIntoView({behavior:'smooth',block:'center'});
+ const pageTitle=$('pageContextTitle');if(pageTitle)pageTitle.textContent=action;
+}
+function openSupplierRepayAction(name){
+ const supplier=String(name||'').trim(),remaining=supplierOutstanding(supplier);
+ if(!supplier||remaining<=0.000001)return;
+ settlingExpenseId=null;
+ settlingOpeningBalance={kind:'supplier',supplier};
+ prepareCreditorRepaymentPage('Repay: '+supplier+' · Recent creditor',remaining,'Repay');
+}
 function openStartingBalanceAction(kind,id){
  const key=kind==='creditor'?'openingCreditors':'openingDebtors';const item=(db.profile?.[key]||[]).find(x=>x.id===id);if(!item)return;
- settlingOpeningBalance={kind,id};setTab('payExpenseDue');const action=kind==='creditor'?'Repay':'Collect';
+ settlingOpeningBalance={kind,id};
+ settlingExpenseId=null;
+ const action=kind==='creditor'?'Repay':'Collect';
  const remaining=Math.max(0,Number(item.amount||0)-(item.settlements||[]).reduce((t,s)=>t+Number(s.amount||0),0));
- $('expenseDueActionLabel').textContent=action+': '+item.party+' · Starting balance';$('expenseDueRemaining').textContent='Remaining: '+money(remaining);
- $('expenseDueActionAmount').max=remaining.toFixed(2);$('expenseDueCashAmount').value='0.00';$('expenseDueBankAmount').value='0.00';$('expenseDueActionDate').value=today();updateExpenseDuePaymentTotal();$('expenseDueActionNote').value='';$('expenseDueActionSubmit').textContent=action;$('expenseDueActionForm').hidden=false;$('expenseDueActionForm').scrollIntoView({behavior:'smooth',block:'center'});
+ prepareCreditorRepaymentPage(action+': '+item.party+' · Starting balance',remaining,action);
 }
 function openExpenseDueAction(id){settlingOpeningBalance=null;
  const x=db.expenses.find(item=>item.id===id);if(!x||expenseOutstanding(x)<=0)return;
@@ -2379,13 +2405,45 @@ function expenseDuePaymentSplits(){
 }
 $('expenseDueCashAmount').addEventListener('input',updateExpenseDuePaymentTotal);
 $('expenseDueBankAmount').addEventListener('input',updateExpenseDuePaymentTotal);
-function closeExpenseDueAction(){settlingExpenseId=null;settlingOpeningBalance=null;$('expenseDueActionForm').reset();$('expenseDueActionDate').value=today();$('expenseDueActionForm').hidden=true}
+function closeExpenseDueAction(){
+ settlingExpenseId=null;settlingOpeningBalance=null;
+ $('expenseDueActionForm').reset();$('expenseDueActionDate').value=today();
+ $('expenseDueActionForm').hidden=true;
+ $('expenseDueList').hidden=false;
+ const heading=$('payExpenseDue')?.querySelector('.outstanding-list-heading');if(heading)heading.hidden=false;
+ if(document.querySelector('.panel.active')?.id==='payExpenseDue')updatePageBalanceTitle('payExpenseDue');
+}
 $('cancelExpenseDueAction').onclick=closeExpenseDueAction;
 $('expenseDueActionForm').onsubmit=e=>{
  e.preventDefault();
  const enteredTotal=Number($('expenseDueActionAmount').value||0);
  if(!(enteredTotal>0)){alert('Enter Cash or Bank Amount.');return}
- if(settlingOpeningBalance){const {kind,id}=settlingOpeningBalance,key=kind==='creditor'?'openingCreditors':'openingDebtors',item=(db.profile?.[key]||[]).find(x=>x.id===id);if(!item)return closeExpenseDueAction();const amount=Number($('expenseDueActionAmount').value),remaining=Math.max(0,Number(item.amount||0)-(item.settlements||[]).reduce((t,s)=>t+Number(s.amount||0),0));if(!(amount>0)||!Number.isFinite(amount)||amount>remaining+0.000001){alert('Enter an amount greater than 0 and no more than '+money(remaining)+'.');return}const splits=expenseDuePaymentSplits();if(!splits.length||Math.abs(splits.reduce((t,x)=>t+x.amount,0)-amount)>0.009){alert('Enter a Cash amount, Bank amount, or both. The combined amount must be greater than 0 and no more than the remaining balance.');return}if(kind==='creditor'){for(const part of splits){const balanceError=paymentBalanceError(part.method,part.amount);if(balanceError){alert(balanceError);return}}}item.settlements=Array.isArray(item.settlements)?item.settlements:[];splits.forEach(part=>item.settlements.push({id:crypto.randomUUID(),amount:part.amount,date:$('expenseDueActionDate').value,method:part.method,note:$('expenseDueActionNote').value.trim()}));const repaidParty=kind==='creditor'?item.party:'';settlingOpeningBalance=null;pendingSaveAction=null;closeExpenseDueAction();save();if(repaidParty)alert('Repay Successful\\nTo: '+repaidParty+'\\nAmount: '+money(amount));return;}
+ if(settlingOpeningBalance){
+  const state=settlingOpeningBalance,amount=Number($('expenseDueActionAmount').value),splits=expenseDuePaymentSplits(),date=$('expenseDueActionDate').value,note=$('expenseDueActionNote').value.trim();
+  if(!splits.length||Math.abs(splits.reduce((total,part)=>total+part.amount,0)-amount)>0.009){alert('Enter a Cash amount, Bank amount, or both. The combined amount must be greater than 0.');return}
+  if(state.kind==='supplier'){
+   const supplier=String(state.supplier||''),remaining=supplierOutstanding(supplier);
+   if(!supplier||!(amount>0)||!Number.isFinite(amount)||amount>remaining+0.000001){alert('Enter an amount greater than 0 and no more than '+money(remaining)+'.');return}
+   for(const part of splits){const balanceError=paymentBalanceError(part.method,part.amount);if(balanceError){alert(balanceError);return}}
+   db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];
+   splits.forEach(part=>db.supplierPayments.push({id:crypto.randomUUID(),supplier,amount:part.amount,discount:0,date,method:part.method,note}));
+   settlingOpeningBalance=null;pendingSaveAction=null;closeExpenseDueAction();save();
+   alert('Repay Successful\\nTo: '+supplier+'\\nAmount: '+money(amount));
+   openAccountReportPage('creditors',{addBrowserHistory:false,skipHistory:true});
+   return;
+  }
+  const {kind,id}=state,key=kind==='creditor'?'openingCreditors':'openingDebtors',item=(db.profile?.[key]||[]).find(x=>x.id===id);
+  if(!item)return closeExpenseDueAction();
+  const remaining=Math.max(0,Number(item.amount||0)-(item.settlements||[]).reduce((total,settlement)=>total+Number(settlement.amount||0),0));
+  if(!(amount>0)||!Number.isFinite(amount)||amount>remaining+0.000001){alert('Enter an amount greater than 0 and no more than '+money(remaining)+'.');return}
+  if(kind==='creditor'){for(const part of splits){const balanceError=paymentBalanceError(part.method,part.amount);if(balanceError){alert(balanceError);return}}}
+  item.settlements=Array.isArray(item.settlements)?item.settlements:[];
+  splits.forEach(part=>item.settlements.push({id:crypto.randomUUID(),amount:part.amount,date,method:part.method,note}));
+  const repaidParty=kind==='creditor'?item.party:'';
+  settlingOpeningBalance=null;pendingSaveAction=null;closeExpenseDueAction();save();
+  if(repaidParty){alert('Repay Successful\\nTo: '+repaidParty+'\\nAmount: '+money(amount));openAccountReportPage('creditors',{addBrowserHistory:false,skipHistory:true})}
+  return;
+ }
  const x=db.expenses.find(item=>item.id===settlingExpenseId);if(!x)return closeExpenseDueAction();
  const amount=Number($('expenseDueActionAmount').value),remaining=expenseOutstanding(x);
  if(!(amount>0)||!Number.isFinite(amount)||amount>remaining+0.000001){alert(`Enter an amount greater than 0 and no more than ${money(remaining)}.`);return}
@@ -3835,21 +3893,18 @@ function renderDueReport(from,to){
  const incomeDue=db.incomes.filter(x=>x.paymentType==='Due'&&String(x.date||'')<=asOf&&incomeOutstandingAt(x,asOf)>0),legacy=due.filter(x=>!['i_owe','owed_to_me'].includes(x.dueDirection));
  const supplierNames=[...new Set([...db.suppliers,...db.purchaseBills.map(b=>b.supplier),...db.supplierPayments.map(p=>p.supplier)].filter(Boolean))].sort((a,b)=>a.localeCompare(b));
  const supplierRows=supplierNames.map(name=>{
-  const allocations=supplierBillBalancesAt(name,asOf),balance=allocations.reduce((t,row)=>t+row.remaining,0);
-  const periodBills=db.purchaseBills.filter(b=>b.supplier===name&&b.date>=from&&b.date<=to);
-  const periodPayments=db.supplierPayments.filter(p=>p.supplier===name&&p.date>=from&&p.date<=to).reduce((t,p)=>t+Number(p.amount||0)+Number(p.discount||0),0);
-  const periodCredit=periodBills.reduce((t,b)=>t+billCredit(b),0);
-  if(balance<=0.000001&&!periodBills.length&&!periodPayments)return '';
-  return `<button class="supplier-creditor-report-row creditor-one-line" type="button" data-creditor="${esc(name)}"><span class="supplier-creditor-main"><strong>${esc(name)}</strong><small>${periodBills.length} bills · Credit ${money(periodCredit)} · Payments / discounts ${money(periodPayments)}</small></span><span class="creditor-row-date">${fmt(asOf)}</span><span class="supplier-creditor-balance"><strong>${money(balance)}</strong></span></button>`;
+  const balance=supplierBillBalancesAt(name,asOf).reduce((total,row)=>total+row.remaining,0);
+  if(balance<=0.000001)return '';
+  return `<button class="supplier-creditor-report-row creditor-one-line" type="button" data-creditor="${esc(name)}" aria-label="Repay ${esc(name)}. Outstanding ${esc(money(balance))}."><span class="supplier-creditor-main"><strong>${esc(name)}</strong></span><span class="supplier-creditor-balance"><strong>${money(balance)}</strong></span></button>`;
  }).filter(Boolean).join('');
- $('supplierCreditorReport').innerHTML=supplierRows||empty(`No supplier credits or payments to show by ${fmt(asOf)}.`);
- $('supplierCreditorReport').querySelectorAll('[data-creditor]').forEach(btn=>btn.onclick=()=>{setTab('supplierAccounts');openSupplierAccount(btn.dataset.creditor);if(supplierOutstanding(btn.dataset.creditor)>0.000001)$('paySupplierBtn').click()});
+ $('supplierCreditorReport').innerHTML=supplierRows||empty(`No recent creditor balances as of ${fmt(asOf)}.`);
+ $('supplierCreditorReport').querySelectorAll('[data-creditor]').forEach(btn=>btn.onclick=()=>openSupplierRepayAction(btn.dataset.creditor));
  const suppliersInRange=supplierNames.filter(name=>supplierBillBalancesAt(name,asOf).some(row=>row.remaining>0.000001)||db.purchaseBills.some(b=>b.supplier===name&&inRange(b.date))||db.supplierPayments.some(p=>p.supplier===name&&inRange(p.date)));
  const supplierTotal=suppliersInRange.reduce((t,name)=>t+supplierBillBalancesAt(name,asOf).reduce((v,row)=>v+row.remaining,0),0);
  const openingCreditors=Array.isArray(db.profile?.openingCreditors)?db.profile.openingCreditors:[];
  const openingDebtors=Array.isArray(db.profile?.openingDebtors)?db.profile.openingDebtors:[];
  const openingRemaining=x=>Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||String(s.date)<=asOf).reduce((t,s)=>t+Number(s.amount||0),0));
- const openingCreditorsAsOf=openingCreditors.filter(x=>openingRemaining(x)>0.000001);
+ const openingCreditorsAsOf=openingCreditors.filter(x=>(!x.date||String(x.date)<=asOf)&&openingRemaining(x)>0.000001);
  const openingDebtorsAsOf=openingDebtors.filter(x=>(!x.date||x.date<=asOf)&&(inRange(x.date)|| (x.settlements||[]).some(s=>inRange(s.date))));
  const openingCreditorTotal=openingCreditorsAsOf.reduce((t,x)=>t+Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||s.date<=asOf).reduce((v,s)=>v+Number(s.amount||0),0)),0);
  const openingDebtorTotal=openingDebtorsAsOf.reduce((t,x)=>t+Math.max(0,Number(x.amount||0)-(x.settlements||[]).filter(s=>!s.date||s.date<=asOf).reduce((v,s)=>v+Number(s.amount||0),0)),0);
@@ -3859,7 +3914,7 @@ function renderDueReport(from,to){
  $('iOweTotal').textContent=money(supplierTotal+expenseOweTotal+openingCreditorTotal);$('iOweExpenseTotal').textContent=money(expenseOweTotal+openingCreditorTotal);
  $('owedToMeTotal').textContent=money(owedExpenseTotal+incomeDueAmount+openingDebtorTotal);$('owedToMeExpenseTotal').textContent=money(owedExpenseTotal+openingDebtorTotal);$('incomeDueTotal').textContent=money(incomeDueAmount);
  $('creditorAsOfLabel').textContent=fmt(asOf);$('debitorAsOfLabel').textContent=fmt(asOf);
- const openingRows=(items,kind)=>items.filter(x=>openingRemaining(x)>0.000001).map(x=>`<button type="button" class="breakrow creditor-one-line recent-balance-row" data-opening-balance="${kind}" data-opening-id="${esc(x.id)}"><span>${esc(x.party||x.name||'Unknown creditor')} <small>Starting</small></span><small>${fmt(x.date||today())}</small><strong>${money(openingRemaining(x))}</strong></button>`).join('');
+ const openingRows=(items,kind)=>items.filter(x=>(!x.date||String(x.date)<=asOf)&&openingRemaining(x)>0.000001).map(x=>`<button type="button" class="breakrow creditor-one-line recent-balance-row" data-opening-balance="${kind}" data-opening-id="${esc(x.id)}" aria-label="Repay ${esc(x.party||x.name||'Unknown creditor')}. Outstanding ${esc(money(openingRemaining(x)))}."><span><strong>${esc(x.party||x.name||'Unknown creditor')}</strong></span><strong>${money(openingRemaining(x))}</strong></button>`).join('');
  const expenseRows=items=>items.map(x=>`<button type="button" class="breakrow creditor-one-line recent-balance-row" data-due-expense="${esc(x.id)}"><span>${esc(x.duePerson||'Unknown person')} <small>${esc(x.name||x.category||'Expense')}</small></span><small>${fmt(x.date||asOf)}</small><strong>${money(expenseOutstandingAt(x,asOf))}</strong></button>`).join('');
  const grouped=(expenseItems,openingItems=[],kind='creditor')=>{const rows=[...openingItems.filter(x=>openingRemaining(x)>0.000001).map(x=>({date:x.date||'',html:openingRows([x],kind)})),...expenseItems.map(x=>({date:x.date||'',html:expenseRows([x])}))].sort((a,b)=>String(b.date).localeCompare(String(a.date)));return rows.map(x=>x.html).join('')||empty('No balances recorded by this date.')};
  $('iOweList').innerHTML=grouped(iOwe,[],'creditor');
