@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v254-save-feedback-v22';
+const CACHE = 'dayquest-cache-v255-save-feedback-v23';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261124-save-feedback-v22',
-  './app.js?v=20261124-save-feedback-v22',
+  './style.css?v=20261124-save-feedback-v23',
+  './app.js?v=20261124-save-feedback-v23',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
   './icons/icon-512.svg',
