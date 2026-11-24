@@ -2808,3 +2808,13 @@ body{color:var(--dq-font-color,#263b5c)}
 #reports #supplierCreditorReport .supplier-creditor-balance,
 #reports #startingCreditorList .creditor-one-line>strong{justify-self:end;text-align:right;font-size:12px;white-space:nowrap}
 #reports #supplierCreditorReport .supplier-creditor-main small{display:none}
+
+/* Creditor transaction history in the Accounts > Creditors report. */
+.creditor-history-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--line,#e6eaf0);border-radius:11px;background:var(--card,#fff);min-width:0}
+.creditor-history-main{display:grid;gap:4px;min-width:0}
+.creditor-history-main>strong{font-size:12px;overflow-wrap:anywhere}
+.creditor-history-main>small{font-size:10px;color:var(--muted,#8792a2);line-height:1.35;overflow-wrap:anywhere}
+.creditor-history-amount{display:grid;gap:3px;justify-items:end;text-align:right;flex:0 0 auto}
+.creditor-history-amount>span{font-size:9px;color:var(--muted,#8792a2);font-weight:700}
+.creditor-history-amount>strong{font-size:12px;white-space:nowrap}
+#creditorHistoryList{gap:7px}
