@@ -734,10 +734,25 @@ function setTab(t,options={}){
  const tabs=[...document.querySelectorAll('.tab')];
  tabs.forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===t));
- const activeTab=tabs.find(b=>b.dataset.tab===(t==='budgetViewPage'?'budget':t)),activeGroup=activeTab?.closest('.side-group')||(t==='reports'?document.querySelector('[data-side-group="reports"]'):null);
- document.querySelectorAll('.side-group').forEach(group=>group.classList.toggle('has-active',group===activeGroup));
+ const activeTab=tabs.find(b=>b.dataset.tab===(t==='budgetViewPage'?'budget':t));
+ const requestedReportSection=options.reportSection;
+ const activeReportSection=t==='reports'
+  ? (['creditors','debitors','members','production','cost','income','sales','assets','purchase','all'].includes(requestedReportSection)
+    ? requestedReportSection
+    : (document.querySelector('[data-report-go].active')?.dataset.reportGo||'members'))
+  : '';
+ const accountReportActive=['creditors','debitors'].includes(activeReportSection);
+ const activeGroup=t==='reports'
+  ? document.querySelector(accountReportActive?'[data-side-group="accounts"]':'[data-side-group="reports"]')
+  : activeTab?.closest('.side-group');
+ // Keep every unused menu group collapsed. Only the group containing the current
+ // submenu selection (or a selected top-level item) may remain expanded.
+ document.querySelectorAll('.side-group').forEach(group=>{
+  const active=group===activeGroup;
+  group.open=active;
+  group.classList.toggle('has-active',active);
+ });
  if(t!=='reports')document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.remove('active'));
- if(activeGroup)activeGroup.open=true;
  closeSidebar();
  if(t==='reports'){
   renderReport();
@@ -2788,7 +2803,7 @@ function activateReportSection(key){
  const accountGroup=document.querySelector('[data-side-group="accounts"]');
  if(accountGroup){accountGroup.open=accountPage;accountGroup.classList.toggle('has-active',accountPage)}
  const group=document.querySelector('[data-side-group="reports"]');
- if(group){group.open=true;group.classList.toggle('has-active',!accountPage)}
+ if(group){group.open=!accountPage;group.classList.toggle('has-active',!accountPage)}
  updateReportSummaryMetrics();
  updatePageBalanceTitle('reports');
  const target=selected==='all'?document.querySelector('[data-report-pane="purchase"]'):document.querySelector(`[data-report-pane="${selected}"]`);
@@ -4833,10 +4848,9 @@ function openOverviewAccountPage(destination,{addBrowserHistory=true}={}){
    history.pushState({...currentState,dayquestOverviewAccount:destination},'',window.location.href);
   }catch(error){console.warn('Could not add account navigation history entry:',error)}
  }
- // Open the Reports panel, then explicitly select the requested account pane.
- // Re-apply after setTab so a default Members Report selection cannot remain active.
+ // Open the Reports panel and force the matching account pane/menu selection.
+ // This prevents a stale Members Report selection from surviving account-card clicks.
  setTab('reports',{reportSection:destination});
- renderReport();
  activateReportSection(destination);
  updatePageBalanceTitle('reports');
  updateBackButton();
