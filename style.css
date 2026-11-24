@@ -2822,13 +2822,12 @@ body{color:var(--dq-font-color,#263b5c)}
 .creditor-history-amount>strong{font-size:12px;white-space:nowrap}
 #creditorHistoryList{gap:7px}
 
-/* Creditor account lists intentionally show names only, never balances. */
+/* Recent and starting creditor accounts always show the supplier name and outstanding balance. */
 #reports #supplierCreditorReport .supplier-creditor-report-row.creditor-one-line,
-#reports #startingCreditorList .creditor-one-line{grid-template-columns:minmax(0,1fr);align-items:center}
-#reports #supplierCreditorReport .supplier-creditor-main,
-#reports #startingCreditorList .creditor-one-line>span:first-child{min-width:0;text-align:left}
+#reports #startingCreditorList .creditor-one-line{grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important}
 #reports #supplierCreditorReport .supplier-creditor-balance,
-#reports #startingCreditorList .creditor-one-line>strong{display:none}
+#reports #supplierCreditorReport .creditor-row-balance,
+#reports #startingCreditorList .creditor-one-line>strong{display:block!important}
 
 /* Dedicated Accounts > Creditors page. Keep supplier names and balances visible. */
 #creditors .creditors-page-toolbar{display:flex;align-items:center;gap:8px;width:100%;margin:6px 0 14px}
@@ -2856,3 +2855,8 @@ body{color:var(--dq-font-color,#263b5c)}
  #creditors .creditors-page-toolbar input{font-size:10px;padding:6px 3px}
  #creditors .creditors-page-toolbar button{flex-basis:50px;min-width:50px;font-size:11px}
 }
+
+/* Keep each page's recent list visible after navigation and refresh. */
+.panel.active .list{display:grid}
+.panel.active .list[hidden]{display:none!important}
+#dqMessageDialog .dq-message-github-link{display:none!important}
