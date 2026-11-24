@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261124-full-app-audit-v19">
+<link rel="stylesheet" href="style.css?v=20261124-full-app-audit-v20">
 <title>DayQuest</title>
 </head>
 <body>
@@ -102,26 +102,27 @@
     <summary class="side-link side-group-title"><span class="side-link-mark">02</span><span>Expenses</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
     <div class="side-submenu">
      <button class="tab side-sub-link" data-tab="purchaseBills" type="button">Purchase</button>
+     <button class="tab side-sub-link" data-tab="quickExpenses" type="button">Quick Expenses</button>
     </div>
    </details>
    <button class="tab side-link" data-menu-item="inventory" data-tab="inventory" type="button"><span class="side-link-mark">03</span><span>Inventory</span></button>
    <button class="tab side-link" data-menu-item="budget" data-tab="budget" type="button"><span class="side-link-mark">04</span><span>Budget</span></button>
-   <button class="tab side-link" data-menu-item="production" data-tab="production" type="button"><span class="side-link-mark">04</span><span>Production</span></button>
-   <button class="tab side-link" data-menu-item="supplierAccounts" data-tab="supplierAccounts" type="button"><span class="side-link-mark">05</span><span>Suppliers</span></button>
+   <button class="tab side-link" data-menu-item="production" data-tab="production" type="button"><span class="side-link-mark">05</span><span>Production</span></button>
+   <button class="tab side-link" data-menu-item="supplierAccounts" data-tab="supplierAccounts" type="button"><span class="side-link-mark">06</span><span>Suppliers</span></button>
    <details class="side-group" data-menu-item="accounts" data-side-group="accounts">
-    <summary class="side-link side-group-title"><span class="side-link-mark">06</span><span>Accounts</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
+    <summary class="side-link side-group-title"><span class="side-link-mark">07</span><span>Accounts</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
     <div class="side-submenu">
      <button type="button" class="side-sub-link report-sub-link" data-report-go="creditors">Creditors</button>
      <button type="button" class="side-sub-link report-sub-link" data-report-go="debitors">Debtors</button>
     </div>
    </details>
-   <button class="tab side-link" data-menu-item="loans" data-tab="loans" type="button"><span class="side-link-mark">07</span><span>Loans</span></button>
-   <button class="tab side-link" data-menu-item="income" data-tab="income" type="button"><span class="side-link-mark">08</span><span>Income</span></button>
-   <button class="tab side-link" data-menu-item="sales" data-tab="sales" type="button"><span class="side-link-mark">09</span><span>Sales</span></button>
-   <button class="tab side-link" data-menu-item="meals" data-tab="meals" type="button"><span class="side-link-mark">08</span><span>Meals</span></button>
-   <button class="tab side-link" data-menu-item="quests" data-tab="quests" type="button"><span class="side-link-mark">09</span><span>Daily Quest</span></button>
+   <button class="tab side-link" data-menu-item="loans" data-tab="loans" type="button"><span class="side-link-mark">08</span><span>Loans</span></button>
+   <button class="tab side-link" data-menu-item="income" data-tab="income" type="button"><span class="side-link-mark">09</span><span>Income</span></button>
+   <button class="tab side-link" data-menu-item="sales" data-tab="sales" type="button"><span class="side-link-mark">10</span><span>Sales</span></button>
+   <button class="tab side-link" data-menu-item="meals" data-tab="meals" type="button"><span class="side-link-mark">11</span><span>Meals</span></button>
+   <button class="tab side-link" data-menu-item="quests" data-tab="quests" type="button"><span class="side-link-mark">12</span><span>Daily Quest</span></button>
    <details class="side-group" data-menu-item="reports" data-side-group="reports">
-    <summary class="side-link side-group-title"><span class="side-link-mark">09</span><span>Reports</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
+    <summary class="side-link side-group-title"><span class="side-link-mark">13</span><span>Reports</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
     <div class="side-submenu report-side-submenu">
      <button type="button" class="side-sub-link report-sub-link active" data-report-go="members">Members Report</button>
      <button type="button" class="side-sub-link report-sub-link" data-report-go="production">Production Report</button>
@@ -133,8 +134,8 @@
      <button type="button" class="side-sub-link report-sub-link" data-report-go="all">All Reports</button>
     </div>
    </details>
-   <button class="tab side-link" data-menu-item="profile" data-tab="profile" type="button"><span class="side-link-mark">10</span><span>Profile</span></button>
-   <button class="tab side-link" data-menu-item="settings" data-tab="settings" type="button"><span class="side-link-mark">11</span><span>Settings</span></button>
+   <button class="tab side-link" data-menu-item="profile" data-tab="profile" type="button"><span class="side-link-mark">14</span><span>Profile</span></button>
+   <button class="tab side-link" data-menu-item="settings" data-tab="settings" type="button"><span class="side-link-mark">15</span><span>Settings</span></button>
   </nav>
   <div class="sidebar-bottom">
    <div class="sidebar-account"><span id="userGreeting" class="user-greeting">Signed in</span><button id="logoutBtn" class="ghost" type="button">Log out</button></div>
@@ -1088,5 +1089,5 @@
 </div>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261124-full-app-audit-v19"></script>
+<script src="app.js?v=20261124-full-app-audit-v20"></script>
 </body></html>
