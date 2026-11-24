@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v237-creditors-debtors-routing-v2';
+const CACHE = 'dayquest-cache-v238-account-route-unified-v6';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261124-creditors-debtors-routing-v2',
-  './app.js?v=20261124-creditors-debtors-routing-v2',
+  './style.css?v=20261124-starting-balance-actions-v2',
+  './app.js?v=20261124-account-route-unified-v6',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
   './icons/icon-512.svg',
