@@ -2797,3 +2797,14 @@ body{color:var(--dq-font-color,#263b5c)}
 /* Save actions for each independent starting-balance section. */
 .starting-balance-section-head>button.starting-balance-save{width:auto;min-width:68px;height:32px;padding:5px 10px;font-size:12px;line-height:1;white-space:nowrap}
 @media(max-width:520px){.starting-balance-section-head{gap:6px}.starting-balance-section-head>button.starting-balance-save{min-width:58px;padding:5px 7px;font-size:11px}}
+
+/* Creditor account rows show only account name and outstanding amount. */
+#reports #supplierCreditorReport .supplier-creditor-report-row.creditor-one-line,
+#reports #startingCreditorList .creditor-one-line{grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px}
+#reports #supplierCreditorReport .supplier-creditor-main,
+#reports #startingCreditorList .creditor-one-line>span:first-child{min-width:0;text-align:left}
+#reports #supplierCreditorReport .supplier-creditor-main strong,
+#reports #startingCreditorList .creditor-one-line>span:first-child strong{display:block;font-size:12px;overflow-wrap:anywhere}
+#reports #supplierCreditorReport .supplier-creditor-balance,
+#reports #startingCreditorList .creditor-one-line>strong{justify-self:end;text-align:right;font-size:12px;white-space:nowrap}
+#reports #supplierCreditorReport .supplier-creditor-main small{display:none}
