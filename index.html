@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261124-debtor-route-v24">
+<link rel="stylesheet" href="style.css?v=20261124-dedicated-debtors-v25">
 <title>DayQuest</title>
 </head>
 <body>
@@ -372,6 +372,29 @@
  <section class="creditor-page-section">
   <div class="creditor-page-section-head"><h3>Creditor History</h3><span>Purchases, repayments and discounts</span></div>
   <div id="creditorPageHistoryList" class="list creditor-page-list"></div>
+ </section>
+</section>
+<section id="debitors" class="panel">
+ <div class="creditor-page-toolbar">
+  <div class="creditor-page-date-range">
+   <label><span>From</span><input id="debtorPageFromDate" type="date" aria-label="Debtor history from date"></label>
+   <label><span>To</span><input id="debtorPageToDate" type="date" aria-label="Debtor balance date and history to date"></label>
+  </div>
+  <button type="button" class="secondary" id="debtorPageShow">Show</button>
+ </div>
+ <div class="creditor-page-section-head debtor-page-total-head"><h3>Total Debtors</h3><strong id="debtorPageTotal">৳0.00</strong></div>
+ <p class="creditor-page-date-note" id="debtorPageAsOf">Balances are shown as of the To date. Debtor History shows transactions within the selected date range.</p>
+ <section class="creditor-page-section">
+  <div class="creditor-page-section-head"><h3>Recent Debtors</h3><span>Unpaid customer and receivable balances</span></div>
+  <div id="debtorPageRecentList" class="list creditor-page-list"></div>
+ </section>
+ <section class="creditor-page-section">
+  <div class="creditor-page-section-head"><h3>Starting Debtors</h3><span>Unpaid opening balances</span></div>
+  <div id="debtorPageStartingList" class="list creditor-page-list"></div>
+ </section>
+ <section class="creditor-page-section">
+  <div class="creditor-page-section-head"><h3>Debtor History</h3><span>Receivables, income, collections and opening balances</span></div>
+  <div id="debtorPageHistoryList" class="list creditor-page-list"></div>
  </section>
 </section>
 <section id="expenseEntries" class="panel">
@@ -1092,5 +1115,5 @@
 <dialog id="dqMessageDialog" class="dq-message-dialog" aria-labelledby="dqMessageTitle"><div class="dq-message-card"><div class="dq-message-brand"><img src="icons/icon-192.png?v=20261121-coin-check" alt="DayQuest app icon"><h2 id="dqMessageTitle">DayQuest</h2></div><p id="dqMessageText"></p><input id="dqMessagePromptInput" class="dq-message-prompt-input" type="text" maxlength="200" autocomplete="off" aria-label="Enter a value" hidden><div class="dq-message-actions"><button id="dqMessageCancel" class="secondary" type="button" hidden>Cancel</button><button id="dqMessageOk" class="primary" type="button">OK</button></div></div></dialog>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261124-debtor-route-v24"></script>
+<script src="app.js?v=20261124-dedicated-debtors-v25"></script>
 </body></html>
