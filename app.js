@@ -3205,14 +3205,24 @@ function startingRowMarkup(kind,item={}){
  return `<div class="opening-balance-row" data-starting-row data-kind="${kind}">${fields}<button type="button" class="delete" data-starting-remove aria-label="Remove ${kind} entry">×</button><input type="hidden" data-starting-id value="${id}"></div>`;
 }
 function readStartingRows(kind){
- const host=$('opening'+kind+'Rows');return [...(host?.querySelectorAll('[data-starting-row]')||[])].map(row=>({
-  id:row.querySelector('[data-starting-id]')?.value||crypto.randomUUID(),
-  amount:Number(row.querySelector('[data-starting-amount]')?.value||0),
-  party:row.querySelector('[data-starting-party]')?.value.trim()||'',
-  member:row.querySelector('[data-starting-member]')?.value||'',
-  type:row.querySelector('[data-starting-type]')?.value==='taken'?'taken':'given',
-  date:row.querySelector('[data-starting-date]')?.value||today()
- })).filter(item=>Number.isFinite(item.amount)&&item.amount>0&&item.date&&((kind==='Cash'||kind==='Bank')||item.party));
+ const host=$('opening'+kind+'Rows');
+ const key={Cash:'openingCashEntries',Bank:'openingBankEntries',Loan:'openingLoans',Creditor:'openingCreditors',Debtor:'openingDebtors'}[kind];
+ const previousById=new Map((Array.isArray(db.profile?.[key])?db.profile[key]:[]).map(item=>[String(item.id||''),item]));
+ return [...(host?.querySelectorAll('[data-starting-row]')||[])].map(row=>{
+  const id=row.querySelector('[data-starting-id]')?.value||crypto.randomUUID();
+  const previous=previousById.get(String(id))||{};
+  const item={
+   ...previous,
+   id,
+   amount:Number(row.querySelector('[data-starting-amount]')?.value||0),
+   party:row.querySelector('[data-starting-party]')?.value.trim()||'',
+   member:row.querySelector('[data-starting-member]')?.value||'',
+   type:row.querySelector('[data-starting-type]')?.value==='taken'?'taken':'given',
+   date:row.querySelector('[data-starting-date]')?.value||today()
+  };
+  if(kind==='Creditor'||kind==='Debtor')item.settlements=Array.isArray(previous.settlements)?previous.settlements:[];
+  return item;
+ }).filter(item=>Number.isFinite(item.amount)&&item.amount>0&&item.date&&((kind==='Cash'||kind==='Bank')||item.party));
 }
 function addStartingRow(kind){
  const host=$('opening'+kind+'Rows');if(!host)return;
