@@ -2829,3 +2829,30 @@ body{color:var(--dq-font-color,#263b5c)}
 #reports #startingCreditorList .creditor-one-line>span:first-child{min-width:0;text-align:left}
 #reports #supplierCreditorReport .supplier-creditor-balance,
 #reports #startingCreditorList .creditor-one-line>strong{display:none}
+
+/* Dedicated Accounts > Creditors page. Keep supplier names and balances visible. */
+#creditors .creditors-page-toolbar{display:flex;align-items:center;gap:8px;width:100%;margin:6px 0 14px}
+#creditors .creditors-page-toolbar .report-global-date-range{display:flex;flex:1 1 auto;min-width:0;gap:7px;margin:0}
+#creditors .creditors-page-toolbar .report-global-date-range>label{display:block;flex:1 1 0;min-width:0}
+#creditors .creditors-page-toolbar input{box-sizing:border-box;width:100%;min-width:0;height:38px;padding:7px 6px;font-size:11px}
+#creditors .creditors-page-toolbar button{flex:0 0 58px;min-width:58px;height:38px;padding:7px 8px;margin:0;font-size:12px}
+#creditors .recent-balance-heading{margin:14px 0 7px;font-size:13px;font-weight:800}
+#creditors #creditorPageRecentList .supplier-creditor-report-row,
+#creditors #creditorPageStartingList .creditor-one-line{
+ display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;align-items:center!important;
+ gap:10px!important;width:100%;box-sizing:border-box;text-align:left
+}
+#creditors #creditorPageRecentList .supplier-creditor-main,
+#creditors #creditorPageStartingList .creditor-one-line>span:first-child{min-width:0;text-align:left}
+#creditors #creditorPageRecentList .supplier-creditor-main strong,
+#creditors #creditorPageStartingList .creditor-one-line>span:first-child strong{display:block;font-size:12px;overflow-wrap:anywhere}
+#creditors #creditorPageRecentList .creditor-row-balance,
+#creditors #creditorPageStartingList .creditor-one-line>strong{display:block!important;justify-self:end;text-align:right;font-size:12px;white-space:nowrap}
+#creditors #creditorPageRecentList [data-due-expense]{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px}
+#creditors #creditorPageHistoryList{display:grid;gap:7px}
+@media(max-width:380px){
+ #creditors .creditors-page-toolbar{gap:5px}
+ #creditors .creditors-page-toolbar .report-global-date-range{gap:4px}
+ #creditors .creditors-page-toolbar input{font-size:10px;padding:6px 3px}
+ #creditors .creditors-page-toolbar button{flex-basis:50px;min-width:50px;font-size:11px}
+}
