@@ -246,7 +246,16 @@ function notifySaveButtonSuccess(){
   showDayQuestSuccess(successMessageForAction(action));
  });
 }
-const save=()=>{localStorage.setItem('dayquest_v1',JSON.stringify(db));queueCloudSave();updateAppBrand();render();renderReport();notifySaveButtonSuccess()};
+function refreshDayQuestAfterSave(){
+ const tasks=[
+  ['cloud save queue',()=>queueCloudSave()],
+  ['app branding',()=>updateAppBrand()],
+  ['page refresh',()=>render()],
+  ['report refresh',()=>renderReport()]
+ ];
+ tasks.forEach(([label,run])=>{try{const result=run();if(result&&typeof result.catch==='function')result.catch(error=>console.error('DayQuest '+label+' failed after local save:',error))}catch(error){console.error('DayQuest '+label+' failed after local save:',error)}});
+}
+const save=()=>{localStorage.setItem('dayquest_v1',JSON.stringify(db));refreshDayQuestAfterSave();notifySaveButtonSuccess();return true;};
 const money=n=>'৳'+Number(n||0).toLocaleString('en-BD',{minimumFractionDigits:2,maximumFractionDigits:2});
 const dateObj=s=>new Date(s+'T12:00:00');
 const fmt=s=>{if(!s)return '';const d=dateObj(s);if(Number.isNaN(d.getTime()))return String(s);const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return String(d.getDate()).padStart(2,'0')+'-'+months[d.getMonth()]+'-'+d.getFullYear()};
@@ -926,7 +935,7 @@ $('addIncomePersonForm').onsubmit=e=>{
  if(existing)name=existing;else db.incomePeople.push(name);
  fillChoices();$('incomeBy').value=name;localSaveOnly();dialog?.close();
 };
-function localSaveOnly(){localStorage.setItem('dayquest_v1',JSON.stringify(db));queueCloudSave();updateAppBrand();render();renderReport();notifySaveButtonSuccess()}
+function localSaveOnly(){localStorage.setItem('dayquest_v1',JSON.stringify(db));refreshDayQuestAfterSave();notifySaveButtonSuccess();return true}
 
 function renderProductDictionary(){
  db.productDictionary.sort((x,y)=>x.english.localeCompare(y.english,undefined,{sensitivity:'base'}));
@@ -5030,15 +5039,18 @@ $('disableDayQuestNotifications').onclick=async()=>{
   alert('DayQuest notifications are disabled on this device.');
  }catch(error){console.error('DayQuest push unsubscribe failed',error);alert('DayQuest could not update the notification subscription. Try again while online.')}
 };
-let successDialogQueue=Promise.resolve();
 function showDayQuestSuccess(messageText){
  const dialog=$('dqSuccessDialog'),message=$('dqSuccessText'),button=$('dqSuccessOk');
- if(!dialog||!message||!button||typeof dialog.showModal!=='function'){
-  console.warn('DayQuest success dialog is unavailable:',String(messageText||'Saved successfully.'));
+ if(!dialog||!message||!button){
+  console.error('DayQuest success dialog markup is missing:',String(messageText||'Saved successfully.'));
   return Promise.resolve(false);
  }
- const display=()=>new Promise(resolve=>{
-  message.textContent=String(messageText||'Saved Successfully.');
+ // Keep the shared success dialog outside app panels and overflow/stacking wrappers.
+ if(dialog.parentElement!==document.body)document.body.appendChild(dialog);
+ message.textContent=String(messageText||'Saved Successfully.');
+ // Reuse an already-open dialog instead of leaving later confirmations behind a stuck queue.
+ if(dialog.open){button.focus({preventScroll:true});return Promise.resolve(true)}
+ return new Promise(resolve=>{
   let finished=false;
   const done=()=>{
    if(finished)return;
@@ -5046,16 +5058,25 @@ function showDayQuestSuccess(messageText){
    if(dialog.open)dialog.close();
    button.removeEventListener('click',done);
    dialog.removeEventListener('cancel',onCancel);
+   dialog.classList.remove('dq-success-dialog-fallback');
    resolve(true);
   };
   const onCancel=event=>{event.preventDefault();done()};
   button.addEventListener('click',done);
   dialog.addEventListener('cancel',onCancel);
-  dialog.showModal();
+  try{
+   if(typeof dialog.showModal==='function')dialog.showModal();
+   else if(typeof dialog.show==='function')dialog.show();
+   else throw new Error('This browser does not support the dialog element.');
+  }catch(error){
+   console.error('DayQuest could not open its native success dialog; using visible fallback:',error);
+   dialog.classList.add('dq-success-dialog-fallback');
+   dialog.style.position='fixed';dialog.style.inset='0';dialog.style.margin='auto';dialog.style.zIndex='100000';
+   dialog.style.boxShadow='0 0 0 100vmax #10182788, 0 24px 70px #10182755';
+   try{if(typeof dialog.show==='function')dialog.show();else dialog.setAttribute('open','')}
+   catch{dialog.setAttribute('open','')}
+  }
  });
- const queued=successDialogQueue.then(display,display);
- successDialogQueue=queued.then(()=>undefined,()=>undefined);
- return queued;
 }
 function installDayQuestMessageAlerts(){
  const dialog=$('dqMessageDialog'),title=$('dqMessageTitle'),message=$('dqMessageText'),ok=$('dqMessageOk');
@@ -5156,8 +5177,9 @@ installDayQuestMessageAlerts();
 const nativeDayQuestAlert=window.alert;
 window.alert=value=>{
  const text=String(value??'');
- const isSuccess=/\b(success(?:ful(?:ly)?)?|saved|updated|added|created|removed|deleted|recorded|completed|transferred|enabled|disabled|restored|imported|exported|copied|shared|sent)\b/i.test(text);
- const isFailure=/\b(could not|cannot|can't|failed|failure|error|unable to|invalid|not saved|not updated|not added|not created|not removed|not deleted)\b/i.test(text);
+ const successVerbs='saved|updated|added|created|removed|deleted|recorded|completed|transferred|enabled|disabled|restored|imported|exported|copied|shared|sent';
+ const isSuccess=new RegExp('^(?:\\s*(?:dayquest\\s+)?(?:success(?:fully)?|'+successVerbs+')\\b)|\\b(?:successfully|success)\\b|\\b(?:has|have|was|were|is|are|been)\\s+(?:successfully\\s+)?(?:'+successVerbs+')\\b','i').test(text);
+ const isFailure=/\b(could not|couldn't|cannot|can't|failed|failure|error|unable to|invalid|unavailable|not saved|not updated|not added|not created|not removed|not deleted|no\s+(?:saved|updated|added|created|recorded|completed))\b/i.test(text);
  if(isSuccess&&!isFailure){
   if(pendingSaveAction){pendingSaveAction.noticeShown=true;pendingSaveAction=null}
   return showDayQuestSuccess(text);
@@ -5167,13 +5189,17 @@ window.alert=value=>{
 function trackSaveUpdateButton(control){
  if(!control)return;
  const label=String(control.textContent||control.getAttribute('aria-label')||control.getAttribute('title')||control.id||control.name||control.type||'Action').replace(/\s+/g,' ').trim();
+ // Ignore navigation, filters, modal openers, and line-add buttons; only track real data actions.
+ if(!/\b(save|update|add|create|delete|remove|pay|payment|repay|collect|transfer|record|settle|import|restore|confirm)\b/i.test(label))return;
+ if(/\b(add line|add item|add another|add member|add person|add supplier|add type|add category)\b/i.test(label))return;
  if(pendingSaveAction&&Date.now()-pendingSaveAction.time<180&&pendingSaveAction.label===label)return;
  const action={label,time:Date.now(),saved:false,noticeShown:false};
  pendingSaveAction=action;
- setTimeout(()=>{if(pendingSaveAction===action&&Date.now()-action.time>30000)pendingSaveAction=null},31000);
+ setTimeout(()=>{if(pendingSaveAction===action&&Date.now()-action.time>15000)pendingSaveAction=null},16000);
 }
 document.addEventListener('click',event=>trackSaveUpdateButton(event.target.closest('button,input[type="submit"],input[type="button"]')),true);
 document.addEventListener('submit',event=>trackSaveUpdateButton(event.submitter||document.activeElement),true);
+document.addEventListener('invalid',()=>{if(pendingSaveAction)pendingSaveAction=null},true);
 updatePageBalanceTitle('home');
 setupDQDateDisplays();
 const reportToday=today();$('productReportFromDate').value=reportToday.slice(0,7)+'-01';$('productReportToDate').value=reportToday;fillChoices();loadProfileForm();calcTotal();$('dueFields').hidden=true;$('duePaidFromField').hidden=true;$('incomeDueFields').hidden=true;$('salesMemoWrap').hidden=true;resetSalesMemoForm();$('expenseDueActionForm').hidden=true;$('incomeCollectForm').hidden=true;$('incomeTotalPreview').textContent=money(0);render();initAuth();
