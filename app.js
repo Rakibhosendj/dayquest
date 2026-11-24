@@ -2403,8 +2403,8 @@ function openStartingBalanceAction(kind,id){
  settlingExpenseId=null;
  const action=kind==='creditor'?'Repay':'Collect';
  const remaining=Math.max(0,Number(item.amount||0)-(item.settlements||[]).reduce((t,s)=>t+Math.max(0,Number(s.amount)||0),0));
- if(remaining<=0.000001){alert('This starting creditor has already been fully repaid.');return}
- prepareCreditorRepaymentPage(action+': '+item.party+' · Starting balance',remaining,action);
+ if(remaining<=0.000001){alert(kind==='creditor'?'This starting creditor has already been fully repaid.':'This starting debtor has already been fully collected.');return}
+ prepareCreditorRepaymentPage(action+': '+(item.party||item.name||'Unknown account')+' · Starting balance',remaining,action);
 }
 function openExpenseDueAction(id){settlingOpeningBalance=null;
  const x=db.expenses.find(item=>item.id===id);if(!x||expenseOutstanding(x)<=0)return;
