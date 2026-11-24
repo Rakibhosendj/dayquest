@@ -423,7 +423,7 @@ function paymentBalanceError(method,amount,addBack=0){
 }
 let activeReportSectionKey='members';
 function updatePageBalanceTitle(tab){
- const titles={home:'Overview',purchaseBills:'Purchase',inventory:'Inventory',budget:'Budget',budgetViewPage:'Budget',production:'Production',supplierAccounts:'Supplier Accounts',supplierEntry:'Supplier Entry',payExpenseDue:'Outstanding',loans:'Loans',income:'Income',meals:'Meals',quests:'Daily Quest',questSetup:'Daily Quest',profile:'Profile',memberProfilePage:selectedMemberProfileName||'Member Profile',settings:'Settings',costChartPage:'Cost Chart',quickExpenses:'Quick Expenses',expenseEntries:'Expenses'};
+ const titles={home:'Overview',purchaseBills:'Purchase',inventory:'Inventory',budget:'Budget',budgetViewPage:'Budget',production:'Production',supplierAccounts:'Supplier Accounts',supplierEntry:'Supplier Entry',creditors:'Creditors',debitors:'Debtors',payExpenseDue:'Outstanding',loans:'Loans',income:'Income',meals:'Meals',quests:'Daily Quest',questSetup:'Daily Quest',profile:'Profile',memberProfilePage:selectedMemberProfileName||'Member Profile',settings:'Settings',costChartPage:'Cost Chart',quickExpenses:'Quick Expenses',expenseEntries:'Expenses'};
  let title=titles[tab]||String(tab||'DayQuest').replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase());
  if(tab==='reports'){
   const selected=activeReportSectionKey||document.querySelector('[data-report-go].active')?.dataset.reportGo||document.querySelector('[data-report-pane]:not([hidden])')?.dataset.reportPane||'members';
@@ -727,7 +727,7 @@ function updateBackButton(){
 function goBackToPreviousPage(){
  if(document.querySelector('.panel.active')?.id==='payExpenseDue'&&['creditors','debitors'].includes(outstandingReturnReport)){
   const target=outstandingReturnReport;outstandingReturnReport='';
-  if(target==='creditors'){setTab('creditors',{skipHistory:true});return}
+  if(['creditors','debitors'].includes(target)){setTab(target,{skipHistory:true});return}
   setTab('reports',{skipHistory:true});activateReportSection(target);return;
  }
  let previous='';
@@ -746,9 +746,14 @@ window.addEventListener('popstate',event=>{
   openAccountReportPage(destination,{addBrowserHistory:false,skipHistory:true});
   return;
  }
+ const currentPage=document.querySelector('.panel.active')?.id;
+ if(['creditors','debitors'].includes(currentPage)){
+  if(appPageHistory[appPageHistory.length-1]==='home')appPageHistory.pop();
+  setTab('home',{skipHistory:true});
+  return;
+ }
  const currentSection=document.querySelector('[data-report-go].active')?.dataset.reportGo;
  if(document.querySelector('.panel.active')?.id==='reports'&&['creditors','debitors'].includes(currentSection)){
-  // Remove the in-app history entry created when the Overview card opened Reports.
   if(appPageHistory[appPageHistory.length-1]==='home')appPageHistory.pop();
   setTab('home',{skipHistory:true});
  }
@@ -757,7 +762,7 @@ window.addEventListener('popstate',event=>{
 function setTab(t,options={}){
  const currentPage=document.querySelector('.panel.active')?.id;
  if(t==='payExpenseDue'&&currentPage==='reports')outstandingReturnReport=document.querySelector('[data-report-go].active')?.dataset.reportGo||'';
- if(t==='payExpenseDue'&&currentPage==='creditors')outstandingReturnReport='creditors';
+ if(t==='payExpenseDue'&&['creditors','debitors'].includes(currentPage))outstandingReturnReport=currentPage;
  if(!options.skipHistory&&currentPage&&currentPage!==t){
   appPageHistory.push(currentPage);
   if(appPageHistory.length>40)appPageHistory.shift();
@@ -778,7 +783,7 @@ function setTab(t,options={}){
  const accountReportActive=['creditors','debitors'].includes(activeReportSection);
  const activeGroup=t==='reports'
   ? document.querySelector(accountReportActive?'[data-side-group="accounts"]':'[data-side-group="reports"]')
-  : (t==='creditors'?document.querySelector('[data-side-group="accounts"]'):activeTab?.closest('.side-group'));
+  : (['creditors','debitors'].includes(t)?document.querySelector('[data-side-group="accounts"]'):activeTab?.closest('.side-group'));
  // Keep every unused menu group collapsed. Only the group containing the current
  // submenu selection (or a selected top-level item) may remain expanded.
  document.querySelectorAll('.side-group').forEach(group=>{
@@ -786,7 +791,7 @@ function setTab(t,options={}){
   group.open=active;
   group.classList.toggle('has-active',active);
  });
- if(t!=='reports')document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.remove('active'));
+ if(t!=='reports')document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.toggle('active',['creditors','debitors'].includes(t)&&item.dataset.reportGo===t));
  closeSidebar();
  if(t==='reports'){
   renderReport();
@@ -811,6 +816,7 @@ function setTab(t,options={}){
  if(t==='production'){fillProductionOptions();renderProductionList();renderProductionInputs()}
  if(t==='supplierAccounts')renderSupplierAccounts();
  if(t==='creditors'){renderCreditorsPage();document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.toggle('active',item.dataset.reportGo==='creditors'));const accounts=document.querySelector('[data-side-group="accounts"]');if(accounts){accounts.open=true;accounts.classList.add('has-active')}}
+ if(t==='debitors'){renderDebtorsPage();document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.toggle('active',item.dataset.reportGo==='debitors'));const accounts=document.querySelector('[data-side-group="accounts"]');if(accounts){accounts.open=true;accounts.classList.add('has-active')}}
  if(t==='supplierEntry'){renderSupplierEntryList();resetSupplierEntryForm()}
  if(t==='meals'){if(!$('mealControlDate').value)$('mealControlDate').value=today();if(!$('mealFromDate').value)$('mealFromDate').value=today();if(!$('mealToDate').value)$('mealToDate').value=today();renderMeals()}
  if(t==='purchaseBills'){fillChoices();renderPurchaseLines();renderSupplierAccounts();}
@@ -4121,6 +4127,106 @@ $('creditorPageShow')?.addEventListener('click',()=>{
 });
 
 
+function renderDebtorsPage(){
+ const fromInput=$('debtorPageFromDate'),toInput=$('debtorPageToDate');
+ const totalNode=$('debtorPageTotal'),recent=$('debtorPageRecentList'),starting=$('debtorPageStartingList'),historyList=$('debtorPageHistoryList');
+ if(!fromInput||!toInput||!totalNode||!recent||!starting||!historyList)return;
+ if(!fromInput.value)fromInput.value=today().slice(0,8)+'01';
+ if(!toInput.value)toInput.value=today();
+ const from=String(fromInput.value||''),to=String(toInput.value||'');
+ const validDate=value=>{
+  if(value.length!==10||value[4]!=='-'||value[7]!=='-')return false;
+  const year=Number(value.slice(0,4)),month=Number(value.slice(5,7)),day=Number(value.slice(8,10));
+  return year>=1000&&month>=1&&month<=12&&day>=1&&day<=new Date(year,month,0).getDate();
+ };
+ if(!validDate(from)||!validDate(to)||from>to){
+  const message=empty('Choose a valid From and To date. The From date must be on or before the To date.');
+  totalNode.textContent=money(0);recent.innerHTML=message;starting.innerHTML=message;historyList.innerHTML=message;return;
+ }
+ const asOf=to,inRange=date=>{const value=String(date||'');return !!value&&value>=from&&value<=to};
+ const openingDebtors=Array.isArray(db.profile?.openingDebtors)?db.profile.openingDebtors:[];
+ const remainingOpening=item=>Math.max(0,Number(item.amount||0)-(Array.isArray(item.settlements)?item.settlements:[]).filter(settlement=>!settlement.date||String(settlement.date)<=asOf).reduce((sum,settlement)=>sum+Math.max(0,Number(settlement.amount||0)),0));
+ const expenses=Array.isArray(db.expenses)?db.expenses:[];
+ const incomes=Array.isArray(db.incomes)?db.incomes:[];
+ const owedExpenses=expenses.filter(item=>item.paymentType==='Due'&&item.dueDirection==='owed_to_me'&&String(item.date||'')<=asOf)
+  .map(item=>({item,balance:expenseOutstandingAt(item,asOf)})).filter(row=>row.balance>0.000001)
+  .sort((a,b)=>String(b.item.date||'').localeCompare(String(a.item.date||'')));
+ const incomeDue=incomes.filter(item=>item.paymentType==='Due'&&String(item.date||'')<=asOf)
+  .map(item=>({item,balance:incomeOutstandingAt(item,asOf)})).filter(row=>row.balance>0.000001)
+  .sort((a,b)=>String(b.item.date||'').localeCompare(String(a.item.date||'')));
+ const openingAsOf=openingDebtors.filter(item=>!item.date||String(item.date)<=asOf);
+ const openingTotal=openingAsOf.reduce((sum,item)=>sum+remainingOpening(item),0);
+ const expenseTotal=owedExpenses.reduce((sum,row)=>sum+row.balance,0);
+ const incomeTotal=incomeDue.reduce((sum,row)=>sum+row.balance,0);
+ totalNode.textContent=money(openingTotal+expenseTotal+incomeTotal);
+ if($('debtorPageAsOf'))$('debtorPageAsOf').textContent='As of '+fmt(asOf);
+ const recentRows=[
+  ...incomeDue.map(({item,balance})=>({date:item.date||'',html:`<button type="button" class="creditor-page-row" data-debtor-income="${esc(item.id)}" data-debtor-asof="${esc(asOf)}">
+   <span class="creditor-page-row-main"><strong>${esc(item.duePerson||'Unknown customer')}</strong><small>${item.salesMemo?'Sales due':'Income due'} · ${esc(item.source||item.description||'Income')} · ${fmt(item.date)}</small></span>
+   <strong class="creditor-page-row-amount">${money(balance)}</strong>
+  </button>`})),
+  ...owedExpenses.map(({item,balance})=>({date:item.date||'',html:`<button type="button" class="creditor-page-row" data-debtor-expense="${esc(item.id)}" data-debtor-asof="${esc(asOf)}">
+   <span class="creditor-page-row-main"><strong>${esc(item.duePerson||'Unknown debtor')}</strong><small>Receivable expense · ${esc(item.name||item.category||'Expense')} · ${fmt(item.date)}</small></span>
+   <strong class="creditor-page-row-amount">${money(balance)}</strong>
+  </button>`})),
+ ].sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+ recent.innerHTML=recentRows.map(row=>row.html).join('')||empty('No outstanding debtor or customer balances as of '+fmt(asOf)+'.');
+ const startingRows=openingAsOf.map(item=>({item,balance:remainingOpening(item)})).filter(row=>row.balance>0.000001)
+  .sort((a,b)=>String(b.item.date||'').localeCompare(String(a.item.date||''))||String(a.item.party||'').localeCompare(String(b.item.party||'')))
+  .map(({item,balance})=>`<button type="button" class="creditor-page-row" data-opening-balance="debtor" data-opening-id="${esc(item.id)}" data-debtor-asof="${esc(asOf)}">
+   <span class="creditor-page-row-main"><strong>${esc(item.party||item.name||'Unknown debtor')}</strong><small>Starting balance · ${fmt(item.date||asOf)}</small></span>
+   <strong class="creditor-page-row-amount">${money(balance)}</strong>
+  </button>`);
+ starting.innerHTML=startingRows.join('')||empty('No unpaid starting debtor balances as of '+fmt(asOf)+'.');
+ const history=[];
+ const addHistory=(date,name,activity,method,amount,detail='')=>{
+  const when=String(date||''),value=Number(amount||0);
+  if(!inRange(when)||!Number.isFinite(value)||value<=0.000001)return;
+  history.push({date:when,name:String(name||'Unknown debtor'),activity,method,amount:value,detail});
+ };
+ expenses.filter(item=>item.paymentType==='Due'&&item.dueDirection==='owed_to_me'&&String(item.date||'')<=asOf).forEach(item=>{
+  const name=item.duePerson||'Unknown debtor';
+  addHistory(item.date,name,'Receivable expense','Due',item.amount,item.name||item.category||'');
+  expenseSettlements(item).forEach(settlement=>addHistory(settlement.date||item.date,name,'Collection',settlement.method||'Cash',settlement.amount,settlement.note||item.name||''));
+ });
+ incomes.filter(item=>item.paymentType==='Due'&&String(item.date||'')<=asOf).forEach(item=>{
+  const name=item.duePerson||'Unknown customer';
+  addHistory(item.date,name,item.salesMemo?'Sales due':'Income due','Due',item.amount,item.salesMemo?.memoNo||item.source||'');
+  incomeCollections(item).forEach(collection=>addHistory(collection.date||item.date,name,'Collection',collection.method||'Cash',collection.amount,collection.note||item.source||''));
+ });
+ openingDebtors.forEach(item=>{
+  if(item.date&&String(item.date)>asOf)return;
+  const name=item.party||item.name||'Unknown debtor';
+  addHistory(item.date||asOf,name,'Starting balance','Opening',item.amount,'');
+  (Array.isArray(item.settlements)?item.settlements:[]).forEach(settlement=>{
+   const when=settlement.date||item.date||asOf;if(String(when)>asOf)return;
+   addHistory(when,name,'Collection',settlement.method||'Cash',settlement.amount,settlement.note||'');
+  });
+ });
+ history.sort((a,b)=>b.date.localeCompare(a.date)||a.name.localeCompare(b.name)||a.activity.localeCompare(b.activity));
+ historyList.innerHTML=history.map(row=>`<article class="creditor-history-row">
+  <div class="creditor-history-main"><strong>${esc(row.name)}</strong><small>${fmt(row.date)} · ${esc(row.activity)}${row.detail?' · '+esc(row.detail):''}</small></div>
+  <div class="creditor-history-amount"><span>${esc(row.method||'')}</span><strong>${money(row.amount)}</strong></div>
+ </article>`).join('')||empty('No debtor transactions from '+fmt(from)+' to '+fmt(to)+'.');
+ recent.querySelectorAll('[data-debtor-income]').forEach(button=>button.onclick=()=>{
+  const item=db.incomes.find(row=>row.id===button.dataset.debtorIncome);
+  if(!item||incomeOutstanding(item)<=0.000001){alert('This receivable was outstanding on '+fmt(button.dataset.debtorAsof)+', but has no balance remaining today.');return}
+  openCollectIncome(button.dataset.debtorIncome);
+ });
+ recent.querySelectorAll('[data-debtor-expense]').forEach(button=>button.onclick=()=>{
+  const item=db.expenses.find(row=>row.id===button.dataset.debtorExpense);
+  if(!item||expenseOutstanding(item)<=0.000001){alert('This expense receivable was outstanding on '+fmt(button.dataset.debtorAsof)+', but has no balance remaining today.');return}
+  openExpenseDueAction(button.dataset.debtorExpense);
+ });
+ starting.querySelectorAll('[data-opening-balance="debtor"]').forEach(button=>button.onclick=()=>openStartingBalanceAction('debtor',button.dataset.openingId));
+}
+$('debtorPageShow')?.addEventListener('click',()=>{
+ const from=$('debtorPageFromDate')?.value||'',to=$('debtorPageToDate')?.value||'';
+ if(!from||!to||from>to){alert('Choose a valid From and To date.');return}
+ renderDebtorsPage();
+});
+
+
 activateReportSection('members');purchaseLines=[defaultPurchaseLine()];renderPurchaseLines();fillChoices();renderQuickMemberOptions([]);fillQuickActionOptions();updateQuickActionTypeFields();$('purchaseDate').value=today();updatePurchaseBillNo();productionInputs=[defaultProductionInput()];fillProductionOptions();resetProductionForm();applyThemeColor(db.settings.themeColor,false);applySideMenuColor(db.settings.sideMenuColor||'#111d30',false);applyTopBarColor(db.settings.topBarColor||'#101827',false);renderPurchaseCategorySettings();renderMasterLists();
 $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`dayquest-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href)};
 $('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let x=JSON.parse(await f.text());if(!Array.isArray(x.expenses)||!Array.isArray(x.quests)||typeof x.checks!=='object')throw Error();if(!Array.isArray(x.incomes))x.incomes=[];if(!Array.isArray(x.loans))x.loans=[];if(!Array.isArray(x.quickActions))x.quickActions=[];if(!Array.isArray(x.purchaseBills))x.purchaseBills=[];if(!Array.isArray(x.supplierPayments))x.supplierPayments=[];if(!Array.isArray(x.suppliers))x.suppliers=[];if(!Array.isArray(x.productNames))x.productNames=[];if(!Array.isArray(x.productTypes))x.productTypes=['Food & Grocery','Medicine','Household','Personal Care','Clothing','Education','Utilities','Other'];if(!Array.isArray(x.purchaseCategories))x.purchaseCategories=['Assets','Staples','Fixed Ex.'];if(!x.settings||typeof x.settings!=='object')x.settings={themeColor:'#263b5c'};if(!Array.isArray(x.consumptions))x.consumptions=[];if(!Array.isArray(x.productions))x.productions=[];if(!Array.isArray(x.incomeHeads))x.incomeHeads=['Salary','Business','Sales','Freelance','Rent','Gift','Other'];if(!Array.isArray(x.incomePeople))x.incomePeople=[];if(!x.profile||typeof x.profile!=='object')x.profile={name:'',phone:'',familyName:'',photoData:'',openingCash:0,openingBank:0};if(!Array.isArray(x.familyMembers))x.familyMembers=[];if(!Array.isArray(x.guestPeople))x.guestPeople=[];if(!Array.isArray(x.guests))x.guests=[];if(await window.dayQuestConfirm('Replace current data with this backup?')){db=x;db.sideMenuOrder=normalizeSideMenuOrder(db.sideMenuOrder);db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Array.isArray(db.supplierDetails)?db.supplierDetails:{};db.productDictionary=normalizeProductDictionary(db.productDictionary);db.settings=db.settings&&typeof db.settings==='object'?db.settings:{};if(!/^#[0-9a-f]{6}$/i.test(String(db.settings.quickButtonColor||'')))db.settings.quickButtonColor='#ee7d2f';db.incomes=Array.isArray(db.incomes)?db.incomes:[];db.quickActions=Array.isArray(db.quickActions)?db.quickActions:[];db.expenses=Array.isArray(db.expenses)?db.expenses:[];db.expenses.forEach(item=>{item.costMember=String(item.costMember||'').trim()});db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];db.supplierPayments=Array.isArray(db.supplierPayments)?db.supplierPayments:[];db.suppliers=Array.isArray(db.suppliers)?[...new Set(db.suppliers)]:[];
@@ -5249,11 +5355,11 @@ function openAccountReportPage(destination,{addBrowserHistory=true,skipHistory=f
    history.pushState({...currentState,dayquestAccountReport:destination},'',window.location.href);
   }catch(error){console.warn('Could not add account navigation history entry:',error)}
  }
- if(destination==='creditors'){
-  setTab('creditors',{skipHistory:skipHistory||currentPage==='creditors'});
-  document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.toggle('active',item.dataset.reportGo==='creditors'));
+ if(['creditors','debitors'].includes(destination)){
+  setTab(destination,{skipHistory:skipHistory||currentPage===destination});
+  document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.toggle('active',item.dataset.reportGo===destination));
   const accounts=document.querySelector('[data-side-group="accounts"]');if(accounts){accounts.open=true;accounts.classList.add('has-active')}
-  if($('pageContextTitle'))$('pageContextTitle').textContent='Creditors';
+  if($('pageContextTitle'))$('pageContextTitle').textContent=destination==='creditors'?'Creditors':'Debtors';
   updateBackButton();return;
  }
  setTab('reports',{reportSection:destination,skipHistory:skipHistory||currentPage==='reports'});
