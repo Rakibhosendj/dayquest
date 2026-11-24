@@ -2666,7 +2666,7 @@ $('incomePersonFilter').onchange=render;
 $('reportIncomePersonFilter').onchange=renderReport;
 $('productReportFromDate').onchange=renderReport;
 $('productReportToDate').onchange=renderReport;
-$('showDueAccounts').onclick=()=>{renderReport();const active=document.querySelector('#reports .report-pane:not([hidden])')?.dataset.reportPane||'';if(!['creditors','debitors'].includes(active)){const selected=document.querySelector('#reports [data-report-pane="creditors"],#reports [data-report-pane="debitors"]');if(selected){const key=selected.dataset.reportPane;document.querySelectorAll('#reports .report-pane').forEach(p=>p.hidden=p!==selected);}}};
+$('showDueAccounts').onclick=()=>renderReport();
 $('memberProductFilter').onchange=renderReport;
 $('costGroupBy').onchange=renderReport;
 
@@ -2866,6 +2866,7 @@ function activateReportSection(key){
   const detail=pane.querySelector('.report-detail-disclosure');if(detail){detail.open=selected!=='all';}
  });
  const accountPage=['creditors','debitors'].includes(selected);
+ const showDueButton=$('showDueAccounts');if(showDueButton)showDueButton.hidden=!accountPage;
  const accountGroup=document.querySelector('[data-side-group="accounts"]');
  if(accountGroup){accountGroup.open=accountPage;accountGroup.classList.toggle('has-active',accountPage)}
  const group=document.querySelector('[data-side-group="reports"]');
@@ -5031,6 +5032,7 @@ function openAccountReportPage(destination,{addBrowserHistory=true,skipHistory=f
  setTab('reports',{reportSection:destination,skipHistory:skipHistory||currentPage==='reports'});
  // Force the final visible page, pane, title and menu state from this one destination.
  activeReportSectionKey=destination;
+ const showDueButton=$('showDueAccounts');if(showDueButton)showDueButton.hidden=!['creditors','debitors'].includes(destination);
  document.querySelectorAll('.panel').forEach(panel=>panel.classList.toggle('active',panel.id==='reports'));
  const chosenPane=document.querySelector('[data-report-pane="'+destination+'"]');
  document.querySelectorAll('[data-report-pane]').forEach(pane=>{
