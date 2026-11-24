@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v258-dedicated-debtors-v27';
+const CACHE = 'dayquest-cache-v259-cost-report-refresh-v28';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261124-dedicated-debtors-v27',
-  './app.js?v=20261124-dedicated-debtors-v27',
+  './style.css?v=20261124-cost-report-refresh-v28',
+  './app.js?v=20261124-cost-report-refresh-v28',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
   './icons/icon-512.svg',
