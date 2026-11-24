@@ -715,9 +715,9 @@ function goBackToPreviousPage(){
 }
 // Handle browser Back/Forward for Overview account-card navigation.
 window.addEventListener('popstate',event=>{
- const destination=event.state?.dayquestOverviewAccount;
+ const destination=event.state?.dayquestAccountReport||event.state?.dayquestOverviewAccount;
  if(['creditors','debitors'].includes(destination)){
-  setTab('reports',{skipHistory:true,reportSection:destination});
+  openAccountReportPage(destination,{addBrowserHistory:false,skipHistory:true});
   return;
  }
  const currentSection=document.querySelector('[data-report-go].active')?.dataset.reportGo;
@@ -2827,9 +2827,13 @@ document.addEventListener('click',event=>{
  event.stopImmediatePropagation();
  const reportKey=button.dataset.reportGo;
  try{
-  if(document.querySelector('.panel.active')?.id!=='reports')setTab('reports');
-  renderReport();
-  activateReportSection(reportKey);
+  if(reportKey==='creditors'||reportKey==='debitors'){
+   openAccountReportPage(reportKey);
+  }else{
+   if(document.querySelector('.panel.active')?.id!=='reports')setTab('reports');
+   renderReport();
+   activateReportSection(reportKey);
+  }
  }catch(error){
   console.error('Reports submenu navigation failed:',error);
   document.querySelectorAll('.panel').forEach(panel=>panel.classList.toggle('active',panel.id==='reports'));
@@ -3445,18 +3449,16 @@ function renderOverviewAccountTotals(){
  const debtors=owedExpenses+incomeDue+openingDebtors;
  const loans=loanMoneySummary(),totalLoans=loans.given+loans.taken;
  host.innerHTML=`
-  <button type="button" class="quick-action-card account-total-card" data-overview-account-go="debitors" aria-label="Open Debtors. Outstanding ${esc(money(debtors))}.">
+  <button type="button" class="quick-action-card account-total-card" data-account-summary-route="debitors" aria-label="Open Debtors. Outstanding ${esc(money(debtors))}.">
    <span class="quick-action-button-title">Total Debtors</span><span class="quick-action-button-stats"><span><strong>${money(debtors)}</strong></span><span>Collect</span></span>
   </button>
-  <button type="button" class="quick-action-card account-total-card" data-overview-account-go="creditors" aria-label="Open Creditors. Outstanding ${esc(money(creditors))}.">
+  <button type="button" class="quick-action-card account-total-card" data-account-summary-route="creditors" aria-label="Open Creditors. Outstanding ${esc(money(creditors))}.">
    <span class="quick-action-button-title">Total Creditors</span><span class="quick-action-button-stats"><span><strong>${money(creditors)}</strong></span><span>To pay</span></span>
   </button>
-  <button type="button" class="quick-action-card account-total-card" data-overview-account-go="loans" aria-label="Open Loans. Total outstanding ${esc(money(totalLoans))}.">
+  <button type="button" class="quick-action-card account-total-card" data-account-summary-route="loans" aria-label="Open Loans. Total outstanding ${esc(money(totalLoans))}.">
    <span class="quick-action-button-title">Total Loans</span><span class="quick-action-button-stats"><span><strong>${money(totalLoans)}</strong></span><span>Collect ${money(loans.given)} · Repay ${money(loans.taken)}</span></span>
   </button>`;
- host.querySelectorAll('[data-overview-account-go]').forEach(button=>button.onclick=()=>{
-  openOverviewAccountPage(button.dataset.overviewAccountGo);
- });
+
 }
 
 function renderOverviewIncomeTotals(){const host=$('overviewIncomeTotalsList');if(!host)return;const m=today().slice(0,7),inc=db.incomes.filter(x=>!x.salesMemo&&String(x.date||'').startsWith(m)),sal=db.incomes.filter(x=>x.salesMemo&&String(x.date||'').startsWith(m));host.innerHTML=`<button type="button" class="quick-action-card account-total-card" data-overview-income-go="income"><span class="quick-action-button-title">Income</span><span class="quick-action-button-stats"><span><strong>${money(sum(inc))}</strong></span><span>Recorded</span></span></button><button type="button" class="quick-action-card account-total-card" data-overview-income-go="sales"><span class="quick-action-button-title">Sales</span><span class="quick-action-button-stats"><span><strong>${money(sum(sal))}</strong></span><span>Sales total</span></span></button>`;host.querySelectorAll('[data-overview-income-go]').forEach(b=>b.onclick=()=>setTab(b.dataset.overviewIncomeGo))}
@@ -4907,36 +4909,54 @@ if(typeof syncOpeningLoansToRegister==='function'){
  syncOpeningLoansToRegister(db.profile?.openingLoans||[]);
  render();
 }
-// Route Overview account-summary cards through one shared desktop/mobile navigation function.
-function openOverviewAccountPage(destination,{addBrowserHistory=true}={}){
+// A single explicit route is used for both Accounts Summary cards and the Accounts submenu.
+// The account report pane and its matching submenu are re-applied after normal tab navigation
+// so the Reports panel can never fall back to the default Members Report by accident.
+function openAccountReportPage(destination,{addBrowserHistory=true,skipHistory=false}={}){
  if(destination==='loans'){
-  setTab('loans');
+  setTab('loans',{skipHistory});
   updateBackButton();
   return;
  }
  if(!['creditors','debitors'].includes(destination))return;
+ const currentPage=document.querySelector('.panel.active')?.id||'home';
  if(addBrowserHistory){
   try{
    const currentState=history.state&&typeof history.state==='object'?history.state:{};
-   history.pushState({...currentState,dayquestOverviewAccount:destination},'',window.location.href);
+   history.pushState({...currentState,dayquestAccountReport:destination},'',window.location.href);
   }catch(error){console.warn('Could not add account navigation history entry:',error)}
  }
- // Open the Reports panel and force the matching account pane/menu selection.
- // This prevents a stale Members Report selection from surviving account-card clicks.
- setTab('reports',{reportSection:destination});
- activateReportSection(destination);
- updatePageBalanceTitle('reports');
- const pageTitle=$('pageContextTitle');
- if(pageTitle)pageTitle.textContent=destination==='creditors'?'Creditors':'Debtors';
+ setTab('reports',{reportSection:destination,skipHistory:skipHistory||currentPage==='reports'});
+ // Force the final visible page, pane, title and menu state from this one destination.
+ activeReportSectionKey=destination;
+ document.querySelectorAll('.panel').forEach(panel=>panel.classList.toggle('active',panel.id==='reports'));
+ const chosenPane=document.querySelector('[data-report-pane="'+destination+'"]');
+ document.querySelectorAll('[data-report-pane]').forEach(pane=>{
+  pane.hidden=pane!==chosenPane;
+  pane.classList.toggle('report-pane-all',false);
+  pane.classList.toggle('report-pane-single',pane===chosenPane);
+  const detail=pane.querySelector('.report-detail-disclosure');
+  if(detail)detail.open=pane===chosenPane;
+ });
+ document.querySelectorAll('[data-report-go]').forEach(item=>{
+  item.classList.toggle('active',item.dataset.reportGo===destination);
+ });
+ const accounts=document.querySelector('[data-side-group="accounts"]');
+ const reports=document.querySelector('[data-side-group="reports"]');
+ if(accounts){accounts.open=true;accounts.classList.add('has-active')}
+ if(reports){reports.open=false;reports.classList.remove('has-active')}
+ const heading=$('pageContextTitle');
+ if(heading)heading.textContent=destination==='creditors'?'Creditors':'Debtors';
  updateBackButton();
+ if(window.innerWidth<760)closeSidebar();
 }
 document.addEventListener('click',event=>{
- const button=event.target?.closest?.('#overviewAccountTotalsList [data-overview-account-go]');
- if(!button)return;
- const destination=button.dataset.overviewAccountGo;
- if(!['debitors','creditors','loans'].includes(destination))return;
+ const card=event.target?.closest?.('#overviewAccountTotalsList [data-account-summary-route]');
+ if(!card)return;
+ const destination=card.dataset.accountSummaryRoute;
+ if(!['creditors','debitors','loans'].includes(destination))return;
  event.preventDefault();
  event.stopPropagation();
  event.stopImmediatePropagation();
- openOverviewAccountPage(destination);
+ openAccountReportPage(destination);
 },true);
