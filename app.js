@@ -229,7 +229,7 @@ db.quickActions.forEach(action=>{
 let pendingSaveAction=null;
 function notifySaveButtonSuccess(){
  const action=pendingSaveAction;if(!action||action.saved||Date.now()-action.time>20000)return;
- action.saved=true;queueMicrotask(()=>{if(pendingSaveAction!==action||action.noticeShown)return;action.noticeShown=true;pendingSaveAction=null;window.alert('Saved successfully.')});
+ action.saved=true;queueMicrotask(()=>{if(pendingSaveAction!==action||action.noticeShown)return;action.noticeShown=true;pendingSaveAction=null;window.alert('Saved Successfully')});
 }
 const save=()=>{localStorage.setItem('dayquest_v1',JSON.stringify(db));queueCloudSave();updateAppBrand();render();renderReport();notifySaveButtonSuccess()};
 const money=n=>'৳'+Number(n||0).toLocaleString('en-BD',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -3357,7 +3357,7 @@ function saveStartingBalanceSection(kind){
  if(kind==='Creditor'){fillChoices();renderMasterLists();renderSupplierEntryList();renderSupplierAccounts()}
  if(kind==='Debtor')renderReport();
  save();
- alert('Starting '+config.label+' saved successfully.');
+ alert('Saved Successfully');
 }
 document.querySelectorAll('[data-save-starting]').forEach(button=>{
  button.addEventListener('click',()=>saveStartingBalanceSection(button.dataset.saveStarting));
@@ -4973,7 +4973,7 @@ window.alert=value=>{
 };
 function trackSaveUpdateButton(button){
  if(!button)return;const label=String(button.textContent||button.getAttribute('aria-label')||'').trim();
- if(!/^(save|update)\b/i.test(label))return;
+ if(!/(?:^|\s)(save|update)(?:\s|$)/i.test(label))return;
  if(pendingSaveAction&&Date.now()-pendingSaveAction.time<1000)return;
  pendingSaveAction={label,time:Date.now(),saved:false,noticeShown:false};
  setTimeout(()=>{if(pendingSaveAction&&Date.now()-pendingSaveAction.time>20000)pendingSaveAction=null},21000);
