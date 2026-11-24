@@ -2373,7 +2373,8 @@ function openStartingBalanceAction(kind,id){
  settlingOpeningBalance={kind,id};
  settlingExpenseId=null;
  const action=kind==='creditor'?'Repay':'Collect';
- const remaining=Math.max(0,Number(item.amount||0)-(item.settlements||[]).reduce((t,s)=>t+Number(s.amount||0),0));
+ const remaining=Math.max(0,Number(item.amount||0)-(item.settlements||[]).reduce((t,s)=>t+Math.max(0,Number(s.amount)||0),0));
+ if(remaining<=0.000001){alert('This starting creditor has already been fully repaid.');return}
  prepareCreditorRepaymentPage(action+': '+item.party+' · Starting balance',remaining,action);
 }
 function openExpenseDueAction(id){settlingOpeningBalance=null;
@@ -3902,12 +3903,10 @@ function renderDueReport(from,to){
  const incomeDue=db.incomes.filter(x=>x.paymentType==='Due'&&String(x.date||'')<=asOf&&incomeOutstandingAt(x,asOf)>0),legacy=due.filter(x=>!['i_owe','owed_to_me'].includes(x.dueDirection));
  const supplierNames=[...new Set([...db.suppliers,...db.purchaseBills.map(b=>b.supplier),...db.supplierPayments.map(p=>p.supplier)].filter(Boolean))].sort((a,b)=>a.localeCompare(b));
  const supplierRows=supplierNames.map(name=>{
-  const hasBillsInRange=db.purchaseBills.some(bill=>bill.supplier===name&&inRange(bill.date));
-  const hasPaymentsInRange=db.supplierPayments.some(payment=>payment.supplier===name&&inRange(payment.date));
-  if(!hasBillsInRange&&!hasPaymentsInRange)return '';
-  const balance=supplierBillBalancesAt(name,asOf).reduce((total,row)=>total+row.remaining,0);
+  const balance=supplierBillBalancesAt(name,asOf).reduce((total,row)=>total+Math.max(0,Number(row.remaining)||0),0);
   const safeBalance=Math.max(0,balance);
-  return `<button class="supplier-creditor-report-row creditor-one-line" type="button" data-creditor="${esc(name)}" ${safeBalance<=0.000001?'disabled':''} aria-label="${safeBalance>0.000001?'Repay':'Settled'} ${esc(name)}"><span class="supplier-creditor-main"><strong>${esc(name)}</strong></span><strong class="creditor-row-balance">${money(safeBalance)}</strong></button>`;
+  if(safeBalance<=0.000001)return '';
+  return `<button class="supplier-creditor-report-row creditor-one-line" type="button" data-creditor="${esc(name)}" aria-label="Repay ${esc(name)}"><span class="supplier-creditor-main"><strong>${esc(name)}</strong></span><strong class="creditor-row-balance">${money(safeBalance)}</strong></button>`;
  }).filter(Boolean).join('');
  $('supplierCreditorReport').innerHTML=supplierRows||empty(`No recent creditor balances as of ${fmt(asOf)}.`);
  $('supplierCreditorReport').querySelectorAll('[data-creditor]').forEach(btn=>btn.onclick=()=>openSupplierRepayAction(btn.dataset.creditor));
@@ -3933,8 +3932,8 @@ function renderDueReport(from,to){
  const expenseRows=items=>items.map(x=>`<button type="button" class="breakrow creditor-one-line recent-balance-row" data-due-expense="${esc(x.id)}"><span>${esc(x.duePerson||'Unknown person')} <small>${esc(x.name||x.category||'Expense')}</small></span><small>${fmt(x.date||asOf)}</small><strong>${money(expenseOutstandingAt(x,asOf))}</strong></button>`).join('');
  const grouped=(expenseItems,openingItems=[],kind='creditor')=>{const rows=[...openingItems.filter(x=>openingRemaining(x)>0.000001).map(x=>({date:x.date||'',html:openingRows([x],kind)})),...expenseItems.map(x=>({date:x.date||'',html:expenseRows([x])}))].sort((a,b)=>String(b.date).localeCompare(String(a.date)));return rows.map(x=>x.html).join('')||empty('No balances recorded by this date.')};
  $('iOweList').innerHTML=grouped(iOwe,[],'creditor');
- const startingCreditorsInRange=openingCreditorsAsOf.filter(x=>inRange(x.date)||(x.settlements||[]).some(settlement=>inRange(settlement.date)));
- $('startingCreditorList').innerHTML=startingCreditorsInRange.length?startingCreditorsInRange.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(x=>openingRows([x],'creditor')).join(''):empty('No starting creditor accounts in the selected date range.');
+ const startingCreditorsOutstanding=openingCreditorsAsOf.filter(x=>openingRemaining(x)>0.000001);
+ $('startingCreditorList').innerHTML=startingCreditorsOutstanding.length?startingCreditorsOutstanding.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(x=>openingRows([x],'creditor')).join(''):empty('No unpaid starting creditor balances as of '+fmt(asOf)+'.');
  const debtorRows=[...incomeDue.map(x=>({date:x.date,html:`<button type="button" class="breakrow creditor-one-line recent-balance-row" data-due-income="${esc(x.id)}"><span>${esc(x.duePerson||'Unknown person')} <small>${esc(x.source||'Income')}</small></span><small>${fmt(x.date||asOf)}</small><strong>${money(incomeOutstandingAt(x,asOf))}</strong></button>`})),...owedExpenses.map(x=>({date:x.date,html:`<button type="button" class="breakrow creditor-one-line recent-balance-row" data-due-expense="${esc(x.id)}"><span>${esc(x.duePerson||'Unknown person')} <small>${esc(x.name||x.category||'Expense')}</small></span><small>${fmt(x.date||asOf)}</small><strong>${money(expenseOutstandingAt(x,asOf))}</strong></button>`})),...openingDebtorsAsOf.filter(x=>openingRemaining(x)>0.000001).map(x=>({date:x.date,html:openingRows([x],'debtor')}))].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
  $('owedToMeList').innerHTML=debtorRows.map(x=>x.html).join('')||empty('No balances recorded by this date.');$('incomeDueList').innerHTML='';
  $('startingCreditorList').querySelectorAll('[data-opening-balance]').forEach(btn=>btn.onclick=()=>openStartingBalanceAction('creditor',btn.dataset.openingId));
@@ -3986,30 +3985,113 @@ function renderDueReport(from,to){
 
 function renderCreditorsPage(){
  const fromInput=$('creditorPageFromDate'),toInput=$('creditorPageToDate');
- if(!fromInput||!toInput)return;
- if(!fromInput.value)fromInput.value=$('productReportFromDate')?.value||today().slice(0,8)+'01';
- if(!toInput.value)toInput.value=$('productReportToDate')?.value||today();
- const from=fromInput.value,to=toInput.value;
- if($('productReportFromDate'))$('productReportFromDate').value=from;
- if($('productReportToDate'))$('productReportToDate').value=to;
- // Use the same date-filtered source calculations as the Reports view, then
- // present the three creditor registers on this dedicated page.
- renderReport();
  const recent=$('creditorPageRecentList'),starting=$('creditorPageStartingList'),historyList=$('creditorPageHistoryList');
- const supplierMarkup=$('supplierCreditorReport')?.innerHTML||'';
- const dueRows=[...($('iOweList')?.querySelectorAll('[data-due-expense]')||[])].map(row=>row.outerHTML).join('');
- if(recent)recent.innerHTML=supplierMarkup+dueRows;
- if(starting)starting.innerHTML=$('startingCreditorList')?.innerHTML||empty('No starting creditor accounts in the selected date range.');
- if(historyList)historyList.innerHTML=$('creditorHistoryList')?.innerHTML||empty('No creditor history in the selected date range.');
- recent?.querySelectorAll('[data-creditor]').forEach(button=>button.onclick=()=>openSupplierRepayAction(button.dataset.creditor));
- recent?.querySelectorAll('[data-due-expense]').forEach(button=>button.onclick=()=>openExpenseDueAction(button.dataset.dueExpense));
- starting?.querySelectorAll('[data-opening-balance="creditor"]').forEach(button=>button.onclick=()=>openStartingBalanceAction('creditor',button.dataset.openingId));
+ if(!fromInput||!toInput||!recent||!starting||!historyList)return;
+ if(!fromInput.value)fromInput.value=today().slice(0,8)+'01';
+ if(!toInput.value)toInput.value=today();
+ const from=String(fromInput.value||''),to=String(toInput.value||'');
+ if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(from)||!/^\\d{4}-\\d{2}-\\d{2}$/.test(to)||from>to){
+  const message=empty('Choose a valid From and To date. The From date must be on or before the To date.');
+  recent.innerHTML=message;starting.innerHTML=message;historyList.innerHTML=message;return;
+ }
+ const asOf=to,inRange=date=>{const value=String(date||'');return !!value&&value>=from&&value<=to};
+ const openingCreditors=Array.isArray(db.profile?.openingCreditors)?db.profile.openingCreditors:[];
+ const remainingOpening=item=>Math.max(0,Number(item.amount||0)-(Array.isArray(item.settlements)?item.settlements:[]).filter(settlement=>!settlement.date||String(settlement.date)<=asOf).reduce((total,settlement)=>total+Math.max(0,Number(settlement.amount||0)),0));
+
+ // Outstanding supplier balances are carried forward to the selected To date.
+ const supplierNames=[...new Set([
+  ...(Array.isArray(db.suppliers)?db.suppliers:[]),
+  ...(Array.isArray(db.purchaseBills)?db.purchaseBills.map(bill=>bill.supplier):[]),
+  ...(Array.isArray(db.supplierPayments)?db.supplierPayments.map(payment=>payment.supplier):[])
+ ].map(name=>String(name||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+ const supplierRows=supplierNames.map(name=>{
+  const allocations=supplierBillBalancesAt(name,asOf);
+  const balance=Math.max(0,allocations.reduce((total,row)=>total+Math.max(0,Number(row.remaining)||0),0));
+  if(balance<=0.000001)return '';
+  const openBills=allocations.filter(row=>Number(row.remaining||0)>0.000001).length;
+  return `<button type="button" class="creditor-page-row" data-creditor="${esc(name)}" data-creditor-asof="${esc(asOf)}">
+   <span class="creditor-page-row-main"><strong>${esc(name)}</strong><small>Supplier · ${openBills} unpaid bill${openBills===1?'':'s'}</small></span>
+   <strong class="creditor-page-row-amount">${money(balance)}</strong>
+  </button>`;
+ }).filter(Boolean);
+ // Unpaid expense dues also remain visible until fully settled.
+ const expenseRows=db.expenses.filter(item=>item.paymentType==='Due'&&item.dueDirection==='i_owe'&&String(item.date||'')<=asOf)
+  .map(item=>({item,balance:expenseOutstandingAt(item,asOf)})).filter(row=>row.balance>0.000001)
+  .sort((a,b)=>String(b.item.date||'').localeCompare(String(a.item.date||'')))
+  .map(({item,balance})=>`<button type="button" class="creditor-page-row" data-due-expense="${esc(item.id)}" data-creditor-asof="${esc(asOf)}">
+   <span class="creditor-page-row-main"><strong>${esc(item.duePerson||'Unknown creditor')}</strong><small>Expense due · ${esc(item.name||item.category||'Expense')} · ${fmt(item.date)}</small></span>
+   <strong class="creditor-page-row-amount">${money(balance)}</strong>
+  </button>`);
+ recent.innerHTML=[...supplierRows,...expenseRows].join('')||empty('No outstanding supplier or expense creditor balances as of '+fmt(asOf)+'.');
+
+ // Opening creditor records are carried forward while an unpaid balance remains.
+ const openingRows=openingCreditors.filter(item=>!item.date||String(item.date)<=asOf)
+  .map(item=>({item,balance:remainingOpening(item)})).filter(row=>row.balance>0.000001)
+  .sort((a,b)=>String(b.item.date||'').localeCompare(String(a.item.date||''))||String(a.item.party||'').localeCompare(String(b.item.party||'')))
+  .map(({item,balance})=>`<button type="button" class="creditor-page-row" data-opening-balance="creditor" data-opening-id="${esc(item.id)}" data-creditor-asof="${esc(asOf)}">
+   <span class="creditor-page-row-main"><strong>${esc(item.party||item.name||'Unknown creditor')}</strong><small>Starting balance · ${fmt(item.date||asOf)}</small></span>
+   <strong class="creditor-page-row-amount">${money(balance)}</strong>
+  </button>`);
+ starting.innerHTML=openingRows.join('')||empty('No unpaid starting creditor balances as of '+fmt(asOf)+'.');
+
+ // Build transaction history from saved records; only this section uses From + To.
+ const history=[];
+ const addHistory=(date,name,activity,method,amount,detail='')=>{
+  const when=String(date||''),value=Number(amount||0);
+  if(!inRange(when)||!Number.isFinite(value)||value<=0.000001)return;
+  history.push({date:when,name:String(name||'Unknown creditor'),activity,method,amount:value,detail});
+ };
+ (Array.isArray(db.purchaseBills)?db.purchaseBills:[]).forEach(bill=>{
+  if(!bill.supplier||String(bill.date||'')>asOf)return;
+  addHistory(bill.date,bill.supplier,'Purchase credit','Credit',billCredit(bill),bill.billNo?'Bill #'+bill.billNo:'');
+ });
+ (Array.isArray(db.supplierPayments)?db.supplierPayments:[]).forEach(payment=>{
+  if(String(payment.date||'')>asOf)return;
+  addHistory(payment.date,payment.supplier,'Repayment',payment.method||'Cash',payment.amount,payment.note||'');
+  addHistory(payment.date,payment.supplier,'Discount','Discount',payment.discount,payment.note||'');
+ });
+ openingCreditors.forEach(item=>{
+  if(item.date&&String(item.date)>asOf)return;
+  const name=item.party||item.name||'Unknown creditor';
+  addHistory(item.date||asOf,name,'Starting balance','Opening',item.amount,'');
+  (Array.isArray(item.settlements)?item.settlements:[]).forEach(settlement=>{
+   const when=settlement.date||item.date||asOf;if(String(when)>asOf)return;
+   addHistory(when,name,'Repayment',settlement.method||'Cash',settlement.amount,settlement.note||'');
+  });
+ });
+ (Array.isArray(db.expenses)?db.expenses:[]).filter(item=>item.paymentType==='Due'&&item.dueDirection==='i_owe'&&String(item.date||'')<=asOf).forEach(item=>{
+  const name=item.duePerson||'Unknown creditor';
+  addHistory(item.date,name,'Expense due','Due',item.amount,item.name||item.category||'');
+  expenseSettlements(item).forEach(settlement=>{
+   const when=settlement.date||item.date||asOf;if(String(when)>asOf)return;
+   addHistory(when,name,'Repayment',settlement.method||'Cash',settlement.amount,settlement.note||item.name||'');
+  });
+ });
+ history.sort((a,b)=>b.date.localeCompare(a.date)||a.name.localeCompare(b.name)||a.activity.localeCompare(b.activity));
+ historyList.innerHTML=history.map(row=>`<article class="creditor-history-row">
+  <div class="creditor-history-main"><strong>${esc(row.name)}</strong><small>${fmt(row.date)} · ${esc(row.activity)}${row.detail?' · '+esc(row.detail):''}</small></div>
+  <div class="creditor-history-amount"><span>${esc(row.method||'')}</span><strong>${money(row.amount)}</strong></div>
+ </article>`).join('')||empty('No creditor transactions from '+fmt(from)+' to '+fmt(to)+'.');
+
+ // A historical balance may have been repaid later; prevent a silent no-op.
+ recent.querySelectorAll('[data-creditor]').forEach(button=>button.onclick=()=>{
+  const name=button.dataset.creditor;
+  if(supplierOutstanding(name)<=0.000001){alert('This supplier had an outstanding balance on '+fmt(button.dataset.creditorAsof)+', but has no balance remaining today.');return}
+  openSupplierRepayAction(name);
+ });
+ recent.querySelectorAll('[data-due-expense]').forEach(button=>button.onclick=()=>{
+  const item=db.expenses.find(row=>row.id===button.dataset.dueExpense);
+  if(!item||expenseOutstanding(item)<=0.000001){alert('This expense due has already been settled.');return}
+  openExpenseDueAction(button.dataset.dueExpense);
+ });
+ starting.querySelectorAll('[data-opening-balance="creditor"]').forEach(button=>button.onclick=()=>openStartingBalanceAction('creditor',button.dataset.openingId));
 }
 $('creditorPageShow')?.addEventListener('click',()=>{
  const from=$('creditorPageFromDate')?.value||'',to=$('creditorPageToDate')?.value||'';
  if(!from||!to||from>to){alert('Choose a valid From and To date.');return}
  renderCreditorsPage();
 });
+
 
 activateReportSection('members');purchaseLines=[defaultPurchaseLine()];renderPurchaseLines();fillChoices();renderQuickMemberOptions([]);fillQuickActionOptions();updateQuickActionTypeFields();$('purchaseDate').value=today();updatePurchaseBillNo();productionInputs=[defaultProductionInput()];fillProductionOptions();resetProductionForm();applyThemeColor(db.settings.themeColor,false);applySideMenuColor(db.settings.sideMenuColor||'#111d30',false);applyTopBarColor(db.settings.topBarColor||'#101827',false);renderPurchaseCategorySettings();renderMasterLists();
 $('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`dayquest-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href)};
