@@ -5178,7 +5178,10 @@ $('disableDayQuestNotifications').onclick=async()=>{
   alert('DayQuest notifications are disabled on this device.');
  }catch(error){console.error('DayQuest push unsubscribe failed',error);alert('DayQuest could not update the notification subscription. Try again while online.')}
 };
-function showDayQuestSuccess(messageText){
+let dayQuestDialogQueue=Promise.resolve();
+function enqueueDayQuestDialog(task){const result=dayQuestDialogQueue.then(task,task);dayQuestDialogQueue=result.then(()=>undefined,()=>undefined);return result}
+function showDayQuestSuccess(messageText){return enqueueDayQuestDialog(()=>showDayQuestSuccessNow(messageText))}
+function showDayQuestSuccessNow(messageText){
  const dialog=$('dqSuccessDialog'),message=$('dqSuccessText'),button=$('dqSuccessOk');
  if(!dialog||!message||!button){
   console.error('DayQuest success dialog markup is missing:',String(messageText||'Saved successfully.'));
@@ -5188,7 +5191,7 @@ function showDayQuestSuccess(messageText){
  if(dialog.parentElement!==document.body)document.body.appendChild(dialog);
  message.textContent=String(messageText||'Saved Successfully.');
  // Reuse an already-open dialog instead of leaving later confirmations behind a stuck queue.
- if(dialog.open){button.focus({preventScroll:true});return Promise.resolve(true)}
+ if(dialog.open){console.warn('DayQuest success dialog was already open when queued action began.');return Promise.resolve(false)}
  return new Promise(resolve=>{
   let finished=false;
   const done=()=>{
@@ -5206,14 +5209,13 @@ function showDayQuestSuccess(messageText){
   try{
    if(typeof dialog.showModal==='function')dialog.showModal();
    else if(typeof dialog.show==='function')dialog.show();
-   else throw new Error('This browser does not support the dialog element.');
+   else {dialog.classList.add('dq-success-dialog-fallback');dialog.setAttribute('open','')}
   }catch(error){
    console.error('DayQuest could not open its native success dialog; using visible fallback:',error);
    dialog.classList.add('dq-success-dialog-fallback');
    dialog.style.position='fixed';dialog.style.inset='0';dialog.style.margin='auto';dialog.style.zIndex='100000';
    dialog.style.boxShadow='0 0 0 100vmax #10182788, 0 24px 70px #10182755';
-   try{if(typeof dialog.show==='function')dialog.show();else dialog.setAttribute('open','')}
-   catch{dialog.setAttribute('open','')}
+   dialog.setAttribute('open','')
   }
  });
 }
@@ -5232,10 +5234,9 @@ function installDayQuestMessageAlerts(){
  };
  // Alerts use the in-app dialog. Message content is plain text, never HTML or a link.
  if(dialog&&title&&message&&ok){
-  let queue=Promise.resolve();
   window.alert=value=>{
    const safeText=cleanMessage(value);
-   return queue=queue.then(()=>new Promise(resolve=>{
+   return enqueueDayQuestDialog(()=>new Promise(resolve=>{
     title.textContent='DayQuest';
     message.textContent=safeText;
     ok.textContent='OK';
@@ -5247,7 +5248,7 @@ function installDayQuestMessageAlerts(){
     };
     ok.addEventListener('click',done);
     dialog.addEventListener('cancel',event=>{event.preventDefault();done()},{once:true});
-    dialog.showModal();
+    try{if(typeof dialog.showModal==='function')dialog.showModal();else if(typeof dialog.show==='function')dialog.show();else{dialog.classList.add('dq-message-dialog-fallback');dialog.setAttribute('open','')}}catch(error){console.warn('DayQuest message dialog fallback:',error);dialog.classList.add('dq-message-dialog-fallback');dialog.setAttribute('open','')}
    })).catch(()=>withAppTitle(nativeAlert,[safeText]));
   };
  }else{
@@ -5256,8 +5257,8 @@ function installDayQuestMessageAlerts(){
  // Keep synchronous return values for existing app workflows while branding browser dialogs.
  window.dayQuestConfirm=messageText=>{
   const safeText=cleanMessage(messageText),cancel=$('dqMessageCancel');
-  if(!(dialog&&title&&message&&ok&&cancel&&typeof dialog.showModal==='function'))return Promise.resolve(withAppTitle(nativeConfirm,[safeText]));
-  return new Promise(resolve=>{
+  if(!(dialog&&title&&message&&ok&&cancel))return enqueueDayQuestDialog(()=>Promise.resolve(withAppTitle(nativeConfirm,[safeText])));
+  return enqueueDayQuestDialog(()=>new Promise(resolve=>{
    title.textContent='DayQuest';
    message.textContent=safeText;
    ok.textContent='Continue';
@@ -5278,15 +5279,15 @@ function installDayQuestMessageAlerts(){
    ok.addEventListener('click',accept);
    cancel.addEventListener('click',reject);
    dialog.addEventListener('cancel',onCancel);
-   dialog.showModal();
-  });
+   try{if(typeof dialog.showModal==='function')dialog.showModal();else if(typeof dialog.show==='function')dialog.show();else{dialog.classList.add('dq-message-dialog-fallback');dialog.setAttribute('open','')}}catch(error){console.warn('DayQuest confirmation dialog fallback:',error);dialog.classList.add('dq-message-dialog-fallback');dialog.setAttribute('open','')}
+  }));
  };
  window.dayQuestPrompt=(messageText,defaultValue='')=>{
   const safeText=cleanMessage(messageText),cancel=$('dqMessageCancel'),input=$('dqMessagePromptInput');
   if(!(dialog&&title&&message&&ok&&cancel&&input&&typeof dialog.showModal==='function')){
-   return Promise.resolve(withAppTitle(nativePrompt,[safeText,String(defaultValue??'')]));
+   return enqueueDayQuestDialog(()=>Promise.resolve(withAppTitle(nativePrompt,[safeText,String(defaultValue??'')])));
   }
-  return new Promise(resolve=>{
+  return enqueueDayQuestDialog(()=>new Promise(resolve=>{
    title.textContent='DayQuest';message.textContent=safeText;
    input.value=String(defaultValue??'');input.hidden=false;
    ok.textContent='Save';cancel.textContent='Cancel';cancel.hidden=false;
@@ -5303,8 +5304,9 @@ function installDayQuestMessageAlerts(){
    const onCancel=event=>{event.preventDefault();reject()};
    ok.addEventListener('click',accept);cancel.addEventListener('click',reject);
    input.addEventListener('keydown',onKey);dialog.addEventListener('cancel',onCancel);
-   dialog.showModal();input.focus();input.select();
-  });
+   try{if(typeof dialog.showModal==='function')dialog.showModal();else if(typeof dialog.show==='function')dialog.show();else{dialog.classList.add('dq-message-dialog-fallback');dialog.setAttribute('open','')}}catch(error){console.warn('DayQuest prompt dialog fallback:',error);dialog.classList.add('dq-message-dialog-fallback');dialog.setAttribute('open','')}
+   input.focus();input.select();
+  }));
  };
  window.confirm=messageText=>withAppTitle(nativeConfirm,[cleanMessage(messageText)]);
  window.prompt=function(messageText,defaultValue){
@@ -5326,7 +5328,7 @@ window.alert=value=>{
  return nativeDayQuestAlert(value);
 };
 function trackSaveUpdateButton(control){
- if(!control)return;
+ if(!control||control.closest('[data-quest-advance]'))return;
  const label=String(control.textContent||control.getAttribute('aria-label')||control.getAttribute('title')||control.id||control.name||control.type||'Action').replace(/\s+/g,' ').trim();
  // Ignore navigation, filters, modal openers, and line-add buttons; only track real data actions.
  if(!/\b(save|update|add|create|delete|remove|pay|payment|repay|collect|transfer|record|settle|import|restore|confirm)\b/i.test(label))return;
