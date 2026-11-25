@@ -1268,14 +1268,19 @@ function deleteCurrentBudget(){
 function budgetViewRows(plan){
  return (plan?.rows||[]).map((row,index)=>({sl:index+1,date:String(row.date||''),product:String(row.product||''),spec:String(row.spec||''),rate:Number(row.rate||0),quantity:Math.max(0,Number(row.quantity||0)),unit:String(row.unit||''),total:budgetRowAmount(row)}));
 }
+function budgetDateRange(plan){
+ const dates=(plan?.rows||[]).map(row=>String(row.date||'')).filter(value=>/^\\d{4}-\\d{2}-\\d{2}$/.test(value)).sort();
+ return {from:dates[0]||plan?.from||'',to:dates[dates.length-1]||plan?.to||''};
+}
 function renderBudgetView(){
  const plan=currentBudgetPlan();
  if(!plan){$('budgetViewTable').innerHTML=empty('No saved Budget is selected.');$('budgetViewTotal').textContent=money(0);$('budgetViewGrandTotal').textContent=money(0);$('budgetViewRange').textContent='No Budget selected';$('budgetViewPeriod').textContent='';return}
- const rows=budgetViewRows(plan),total=rows.reduce((sum,row)=>sum+row.total,0),actual=budgetActualGroups(plan).reduce((sum,row)=>sum+row.actualAmount,0);
- $('budgetViewRange').textContent=plan.name||'Budget';$('budgetViewPeriod').textContent=plan.name||'Budget';$('budgetViewTotal').textContent=money(total);$('budgetViewGrandTotal').textContent=money(total);
+ const rows=budgetViewRows(plan),total=rows.reduce((sum,row)=>sum+row.total,0),actual=budgetActualGroups(plan).reduce((sum,row)=>sum+row.actualAmount,0),range=budgetDateRange(plan);
+ const period=range.from?(range.from===range.to?fmt(range.from):fmt(range.from)+' – '+fmt(range.to)):'No dates';
+ $('budgetViewRange').textContent=plan.name||'Budget';$('budgetViewPeriod').textContent=(plan.name||'Budget')+' · '+period;$('budgetViewTotal').textContent=money(total);$('budgetViewGrandTotal').textContent=money(total);
  $('budgetViewTable').innerHTML='<div class="budget-table-wrap"><table class="budget-table budget-view-readonly"><thead><tr><th>Date</th><th>Product</th><th>Rate</th><th>Qty</th><th>Unit</th><th>Budget</th></tr></thead><tbody>'+
  rows.map(row=>'<tr><td>'+esc(fmt(row.date))+'</td><td><strong>'+esc(row.product)+'</strong>'+(row.spec?'<small>'+esc(row.spec)+'</small>':'')+'</td><td>'+money(row.rate)+'</td><td>'+numberText(row.quantity)+'</td><td>'+esc(row.unit)+'</td><td>'+money(row.total)+'</td></tr>').join('')+
- '</tbody></table></div><div class="budget-view-grand-total"><span>Actual spent</span><strong>'+money(actual)+'</strong></div>';
+ '</tbody></table></div><div class="budget-view-grand-total"><span>Actual spent</span><strong>'+money(actual)+'</strong></div><div class="budget-view-grand-total"><span>Remaining</span><strong>'+money(total-actual)+'</strong></div>';
 }
 function budgetAccessKey(){return activeBudgetKey||$('budgetPlanSelect')?.value||''}
 async function syncActiveSharedBudget(){
@@ -1329,28 +1334,29 @@ async function shareCurrentBudget(){
  alert('Budget Share হয়েছে।');renderSharedBudgetList();
 }
 function budgetStatementHtml(plan){
- const rows=budgetViewRows(plan),total=rows.reduce((sum,row)=>sum+row.total,0);
- const body=rows.map(row=>'<tr><td>'+esc(fmt(row.date))+'</td><td>'+esc(row.product)+(row.spec?' · '+esc(row.spec):'')+'</td><td>'+money(row.rate)+'</td><td>'+esc(numberText(row.quantity))+'</td><td>'+esc(row.unit)+'</td><td>'+money(row.total)+'</td></tr>').join('');
+ const rows=budgetViewRows(plan),total=rows.reduce((sum,row)=>sum+row.total,0),actual=budgetActualGroups(plan).reduce((sum,row)=>sum+row.actualAmount,0),range=budgetDateRange(plan);
+ const period=range.from?(range.from===range.to?fmt(range.from):fmt(range.from)+' – '+fmt(range.to)):'No dates';
+ const body=rows.map((row,index)=>'<tr><td>'+(index+1)+'</td><td>'+esc(fmt(row.date))+'</td><td>'+esc(row.product)+(row.spec?' · '+esc(row.spec):'')+'</td><td>'+money(row.rate)+'</td><td>'+esc(numberText(row.quantity))+'</td><td>'+esc(row.unit)+'</td><td>'+money(row.total)+'</td></tr>').join('');
  return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DayQuest Budget Statement</title><style>'+
- 'body{font-family:Arial,sans-serif;color:#182337;padding:24px}h1{font-size:21px;margin:0 0 6px}.period{font-size:12px;color:#667085;margin-bottom:18px}.grand{display:flex;justify-content:space-between;font-size:16px;font-weight:bold;margin-top:16px;padding:12px;background:#eef2f7}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #d8dee8;padding:8px;text-align:left}th{background:#eef2f7}td:nth-child(1){text-align:center;width:38px}td:nth-child(3),td:nth-child(6){white-space:nowrap;text-align:right}td:nth-child(4){text-align:right}@media print{body{padding:0}thead{display:table-header-group}tr{break-inside:avoid}}'+
- '</style></head><body><h1>DayQuest · Budget Statement</h1><div class="period">From '+esc(fmt(plan.from))+' to '+esc(fmt(plan.to))+'</div><table><thead><tr><th>SL</th><th>Products</th><th>Rate</th><th>Quantity</th><th>Unit</th><th>Total Cost</th></tr></thead><tbody>'+
- (body||'<tr><td colspan="6">No budget products.</td></tr>')+
- '</tbody></table><div class="grand"><span>Budget Total</span><strong>'+money(total)+'</strong></div></body></html>';
+ 'body{font-family:Arial,sans-serif;color:#182337;padding:24px}h1{font-size:21px;margin:0 0 6px}.period{font-size:12px;color:#667085;margin-bottom:18px}.grand{display:flex;justify-content:space-between;font-size:15px;font-weight:bold;margin-top:10px;padding:12px;background:#eef2f7}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #d8dee8;padding:8px;text-align:left}th{background:#eef2f7}td:first-child{text-align:center;width:34px}td:nth-child(4),td:nth-child(7){white-space:nowrap;text-align:right}td:nth-child(5){text-align:right}@media print{body{padding:0}thead{display:table-header-group}tr{break-inside:avoid}}'+
+ '</style></head><body><h1>DayQuest · Budget Statement</h1><div class="period"><strong>'+esc(plan.name||'Budget')+'</strong><br>Period: '+esc(period)+'</div><table><thead><tr><th>SL</th><th>Date</th><th>Product</th><th>Rate</th><th>Qty</th><th>Unit</th><th>Total</th></tr></thead><tbody>'+
+ (body||'<tr><td colspan="7">No budget products.</td></tr>')+
+ '</tbody></table><div class="grand"><span>Budget Total</span><strong>'+money(total)+'</strong></div><div class="grand"><span>Actual Spent</span><strong>'+money(actual)+'</strong></div><div class="grand"><span>Remaining</span><strong>'+money(total-actual)+'</strong></div></body></html>';
 }
 function exportBudgetStatement(format){
  const plan=currentBudgetPlan();
- if(!plan){alert('No saved budget is available for the selected date range.');return}
- const html=budgetStatementHtml(plan),period=String(plan.from||'')+'-'+String(plan.to||'');
+ if(!plan){alert('Select a Budget first.');return}
+ const range=budgetDateRange(plan),period=(range.from||'no-date')+'-'+(range.to||'no-date'),safeName=String(plan.name||'budget').toLocaleLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'budget';
+ const html=budgetStatementHtml(plan);
  if(format==='excel'){
-  const blob=new Blob(['\ufeff',html],{type:'application/vnd.ms-excel;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
-  a.href=url;a.download='dayquest-budget-'+period+'.xls';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);return;
+  const blob=new Blob(['\\ufeff',html],{type:'application/vnd.ms-excel;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='dayquest-'+safeName+'-'+period+'.xls';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);return
  }
  const popup=window.open('','_blank');
  if(!popup){alert('Allow pop-ups for DayQuest to print or save this Budget as PDF.');return}
  popup.document.open();popup.document.write(html);popup.document.close();popup.focus();
  setTimeout(()=>{try{popup.print()}catch{}},350);
 }
-
 function purchaseLineAmount(line){
  const amount=Number(line.amount);
  return Number.isFinite(amount)?Math.max(0,amount):roundPurchaseAmount(Math.max(0,Number(line.quantity||0))*Math.max(0,Number(line.rate||0)));
