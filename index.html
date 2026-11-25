@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261125-rate-unit-popup-v36">
+<link rel="stylesheet" href="style.css?v=20261125-sectioned-sidebar-v37">
 <title>DayQuest</title>
 </head>
 <body>
@@ -102,47 +102,84 @@
 <div id="appLayout" class="app-layout">
  <aside id="sidebar" class="sidebar" aria-label="Main navigation">
   <div class="sidebar-brand"><img class="sidebar-brand-logo" src="icons/icon-192.png?v=20261121-coin-check" alt="DayQuest app logo"><div><strong id="sidebarBrandTitle">DayQuest</strong><small id="sidebarBrandSubtitle">Personal dashboard</small></div></div>
-  <div class="sidebar-caption">MENU · HOLD TO REORDER</div>
+  <div class="sidebar-caption">MENU · HOLD A SECTION TITLE TO REORDER</div>
   <nav id="sideNav" class="side-nav" aria-label="Sections">
-   <button class="tab side-link active" data-menu-item="home" data-tab="home" type="button"><span class="side-link-mark">01</span><span>Overview</span></button>
-   <details class="side-group" data-menu-item="expenses">
-    <summary class="side-link side-group-title"><span class="side-link-mark">02</span><span>Expenses</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
-    <div class="side-submenu">
-     <button class="tab side-sub-link" data-tab="purchaseBills" type="button">Purchase</button>
-     <button class="tab side-sub-link" data-tab="quickExpenses" type="button">Quick Expenses</button>
+   <div class="side-menu-section" data-menu-section="overview">
+    <div class="side-menu-section-heading" data-section-drag-handle role="button" tabindex="0"><span class="side-menu-section-number">01</span><span class="side-menu-section-label">OVERVIEW</span><span class="side-menu-section-grip" aria-hidden="true">⠿</span></div>
+    <div class="side-menu-section-items"><button class="tab side-link active" data-tab="home" type="button">Overview</button></div>
+   </div>
+   <div class="side-menu-section" data-menu-section="transactions">
+    <div class="side-menu-section-heading" data-section-drag-handle role="button" tabindex="0"><span class="side-menu-section-number">02</span><span class="side-menu-section-label">DAILY TRANSACTIONS</span><span class="side-menu-section-grip" aria-hidden="true">⠿</span></div>
+    <div class="side-menu-section-items">
+     <details class="side-group" data-side-group="expenses">
+      <summary class="side-link side-group-title"><span>Expenses</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
+      <div class="side-submenu">
+       <button class="tab side-sub-link" data-tab="purchaseBills" type="button">Purchase</button>
+       <button class="tab side-sub-link" data-tab="expenseEntries" type="button">Expense Entries</button>
+       <button class="tab side-sub-link" data-tab="quickExpenses" type="button">Quick Expenses</button>
+      </div>
+     </details>
+     <button class="tab side-link" data-tab="income" type="button">Income</button>
+     <button class="tab side-link" data-tab="sales" type="button">Sales</button>
     </div>
-   </details>
-   <button class="tab side-link" data-menu-item="inventory" data-tab="inventory" type="button"><span class="side-link-mark">03</span><span>Inventory</span></button>
-   <button class="tab side-link" data-menu-item="budget" data-tab="budget" type="button"><span class="side-link-mark">04</span><span>Budget</span></button>
-   <button class="tab side-link" data-menu-item="production" data-tab="production" type="button"><span class="side-link-mark">05</span><span>Production</span></button>
-   <button class="tab side-link" data-menu-item="supplierAccounts" data-tab="supplierAccounts" type="button"><span class="side-link-mark">06</span><span>Suppliers</span></button>
-   <details class="side-group" data-menu-item="accounts" data-side-group="accounts">
-    <summary class="side-link side-group-title"><span class="side-link-mark">07</span><span>Accounts</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
-    <div class="side-submenu">
-     <button type="button" class="side-sub-link report-sub-link" data-report-go="creditors">Creditors</button>
-     <button type="button" class="side-sub-link report-sub-link" data-report-go="debitors">Debtors</button>
+   </div>
+   <div class="side-menu-section" data-menu-section="operations">
+    <div class="side-menu-section-heading" data-section-drag-handle role="button" tabindex="0"><span class="side-menu-section-number">03</span><span class="side-menu-section-label">INVENTORY &amp; OPERATIONS</span><span class="side-menu-section-grip" aria-hidden="true">⠿</span></div>
+    <div class="side-menu-section-items">
+     <button class="tab side-link" data-tab="inventory" type="button">Inventory</button>
+     <button class="tab side-link" data-tab="production" type="button">Production</button>
+     <button class="tab side-link" data-tab="budget" type="button">Budget</button>
     </div>
-   </details>
-   <button class="tab side-link" data-menu-item="loans" data-tab="loans" type="button"><span class="side-link-mark">08</span><span>Loans</span></button>
-   <button class="tab side-link" data-menu-item="income" data-tab="income" type="button"><span class="side-link-mark">09</span><span>Income</span></button>
-   <button class="tab side-link" data-menu-item="sales" data-tab="sales" type="button"><span class="side-link-mark">10</span><span>Sales</span></button>
-   <button class="tab side-link" data-menu-item="meals" data-tab="meals" type="button"><span class="side-link-mark">11</span><span>Meals</span></button>
-   <button class="tab side-link" data-menu-item="quests" data-tab="quests" type="button"><span class="side-link-mark">12</span><span>Daily Quest</span></button>
-   <details class="side-group" data-menu-item="reports" data-side-group="reports">
-    <summary class="side-link side-group-title"><span class="side-link-mark">13</span><span>Reports</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
-    <div class="side-submenu report-side-submenu">
-     <button type="button" class="side-sub-link report-sub-link active" data-report-go="members">Members Report</button>
-     <button type="button" class="side-sub-link report-sub-link" data-report-go="production">Production Report</button>
-     <button type="button" class="side-sub-link report-sub-link" data-report-go="cost">Cost Report</button>
-     <button type="button" class="side-sub-link report-sub-link" data-report-go="income">Income Report</button>
-     <button type="button" class="side-sub-link report-sub-link" data-report-go="sales">Sales Report</button>
-     <button type="button" class="side-sub-link report-sub-link" data-report-go="assets">Assets</button>
-     <button type="button" class="side-sub-link report-sub-link" data-report-go="purchase">Purchase Reports</button>
-     <button type="button" class="side-sub-link report-sub-link" data-report-go="all">All Reports</button>
+   </div>
+   <div class="side-menu-section" data-menu-section="accounts">
+    <div class="side-menu-section-heading" data-section-drag-handle role="button" tabindex="0"><span class="side-menu-section-number">04</span><span class="side-menu-section-label">ACCOUNTS &amp; OUTSTANDING</span><span class="side-menu-section-grip" aria-hidden="true">⠿</span></div>
+    <div class="side-menu-section-items">
+     <details class="side-group" data-side-group="accounts">
+      <summary class="side-link side-group-title"><span>Accounts</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
+      <div class="side-submenu">
+       <button class="tab side-sub-link" data-tab="supplierAccounts" type="button">Supplier Accounts</button>
+       <button class="tab side-sub-link" data-tab="creditors" type="button">Creditors</button>
+       <button class="tab side-sub-link" data-tab="debitors" type="button">Debtors</button>
+       <button class="tab side-sub-link" data-tab="loans" type="button">Loans</button>
+       <button class="tab side-sub-link" data-tab="payExpenseDue" type="button">Outstanding</button>
+      </div>
+     </details>
     </div>
-   </details>
-   <button class="tab side-link" data-menu-item="profile" data-tab="profile" type="button"><span class="side-link-mark">14</span><span>Profile</span></button>
-   <button class="tab side-link" data-menu-item="settings" data-tab="settings" type="button"><span class="side-link-mark">15</span><span>Settings</span></button>
+   </div>
+   <div class="side-menu-section" data-menu-section="family">
+    <div class="side-menu-section-heading" data-section-drag-handle role="button" tabindex="0"><span class="side-menu-section-number">05</span><span class="side-menu-section-label">FAMILY &amp; DAILY LIFE</span><span class="side-menu-section-grip" aria-hidden="true">⠿</span></div>
+    <div class="side-menu-section-items">
+     <button class="tab side-link" data-tab="meals" type="button">Meals</button>
+     <button class="tab side-link" data-tab="quests" type="button">Daily Quest</button>
+    </div>
+   </div>
+   <div class="side-menu-section" data-menu-section="reports">
+    <div class="side-menu-section-heading" data-section-drag-handle role="button" tabindex="0"><span class="side-menu-section-number">06</span><span class="side-menu-section-label">REPORTS</span><span class="side-menu-section-grip" aria-hidden="true">⠿</span></div>
+    <div class="side-menu-section-items">
+     <details class="side-group" data-side-group="reports">
+      <summary class="side-link side-group-title"><span>Reports</span><span class="side-chevron" aria-hidden="true">▾</span></summary>
+      <div class="side-submenu report-side-submenu">
+       <button type="button" class="side-sub-link report-sub-link active" data-report-go="members">Members Report</button>
+       <button type="button" class="side-sub-link report-sub-link" data-report-go="production">Production Report</button>
+       <button type="button" class="side-sub-link report-sub-link" data-report-go="cost">Cost Report</button>
+       <button type="button" class="side-sub-link report-sub-link" data-report-go="income">Income Report</button>
+       <button type="button" class="side-sub-link report-sub-link" data-report-go="sales">Sales Report</button>
+       <button type="button" class="side-sub-link report-sub-link" data-report-go="creditors">Creditors Report</button>
+       <button type="button" class="side-sub-link report-sub-link" data-report-go="debitors">Debtors Report</button>
+       <button type="button" class="side-sub-link report-sub-link" data-report-go="assets">Assets</button>
+       <button type="button" class="side-sub-link report-sub-link" data-report-go="purchase">Purchase Reports</button>
+       <button type="button" class="side-sub-link report-sub-link" data-report-go="all">All Reports</button>
+      </div>
+     </details>
+    </div>
+   </div>
+   <div class="side-menu-section" data-menu-section="setup">
+    <div class="side-menu-section-heading" data-section-drag-handle role="button" tabindex="0"><span class="side-menu-section-number">07</span><span class="side-menu-section-label">SETUP</span><span class="side-menu-section-grip" aria-hidden="true">⠿</span></div>
+    <div class="side-menu-section-items">
+     <button class="tab side-link" data-tab="profile" type="button">Profile</button>
+     <button class="tab side-link" data-tab="settings" type="button">Settings</button>
+    </div>
+   </div>
   </nav>
   <div class="sidebar-bottom">
    <div class="sidebar-account"><span id="userGreeting" class="user-greeting">Signed in</span><button id="logoutBtn" class="ghost" type="button">Log out</button></div>
@@ -435,7 +472,7 @@
 </section>
 <section id="payExpenseDue" class="panel">
 
- <div class="section-head outstanding-list-heading"><h2>Expenses Dues</h2><span class="muted">Select To Payment</span></div>
+ <div class="section-head outstanding-list-heading"><h2>Outstanding</h2><span class="muted">Select To Payment</span></div>
  <div id="expenseDueList" class="list"></div>
  <form id="expenseDueActionForm" class="form" hidden>
   <div class="total-preview"><span id="expenseDueActionLabel">Due settlement</span><strong id="expenseDueRemaining">৳0.00</strong></div>
@@ -1123,5 +1160,5 @@
 <dialog id="dqMessageDialog" class="dq-message-dialog" aria-labelledby="dqMessageTitle"><div class="dq-message-card"><div class="dq-message-brand"><img src="icons/icon-192.png?v=20261121-coin-check" alt="DayQuest app icon"><h2 id="dqMessageTitle">DayQuest</h2></div><p id="dqMessageText"></p><input id="dqMessagePromptInput" class="dq-message-prompt-input" type="text" maxlength="200" autocomplete="off" aria-label="Enter a value" hidden><div class="dq-message-actions"><button id="dqMessageCancel" class="secondary" type="button" hidden>Cancel</button><button id="dqMessageOk" class="primary" type="button">OK</button></div></div></dialog>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261125-rate-unit-popup-v36"></script>
+<script src="app.js?v=20261125-sectioned-sidebar-v37"></script>
 </body></html>
