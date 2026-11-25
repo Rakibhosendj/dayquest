@@ -15,9 +15,14 @@ function normalizeProductIdentity(value){return String(value??'').normalize('NFC
 function normalizeProductDictionary(entries){
  const source=Array.isArray(entries)?entries:DEFAULT_PRODUCT_DICTIONARY;
  const seen=new Set();
- return source.map(item=>({english:normalizeProductIdentity(item?.english??item?.en??''),bangla:normalizeProductIdentity(item?.bangla??item?.bn??''),meal:item?.meal!==false})).filter(item=>{
+ return source.map(item=>{
+  const english=normalizeProductIdentity(item?.english??item?.en??''),bangla=normalizeProductIdentity(item?.bangla??item?.bn??'');
+  const aliases=Array.isArray(item?.aliases)?item.aliases.map(normalizeProductIdentity).filter(Boolean):[];
+  if(english.toLocaleLowerCase()==='coriander leaves')aliases.push('ধনিয়া পাতা','ধনিয়া পাতা');
+  return {english,bangla,aliases:[...new Map(aliases.map(alias=>[productMasterKey(alias),alias])).values()],meal:item?.meal!==false};
+ }).filter(item=>{
   if(!item.english||!item.bangla)return false;
-  const key=normalizeProductIdentity(item.english).toLocaleLowerCase();if(seen.has(key))return false;seen.add(key);return true;
+  const key=productMasterKey(item.english);if(seen.has(key))return false;seen.add(key);return true;
  });
 }
 const load=()=>{try{return JSON.parse(localStorage.getItem('dayquest_v1'))||{expenses:[],quests:[],checks:{}}}catch{return{expenses:[],quests:[],checks:{}}}};
@@ -225,22 +230,32 @@ function latestPurchaseRateForProduct(value,unit){
   if(editingPurchaseBillId&&bill.id===editingPurchaseBillId)return;
   (bill.lines||[]).forEach((line,lineIndex)=>{
    if(productMasterKey(resolvePurchaseProductName(line.product))!==key)return;
-   const ratio=unitConversionRatio(String(line.unit||'pcs'),String(unit||'pcs'));if(ratio===null||!(ratio>0))return;
    const rate=Number(line.rate??(Number(line.quantity)>0?Number(line.amount||0)/Number(line.quantity):NaN));if(!Number.isFinite(rate)||rate<0)return;
+   const previousUnit=String(line.unit||'pcs'),currentUnit=String(unit||'pcs');
+   const ratio=unitConversionRatio(previousUnit,currentUnit),converted=ratio!==null&&ratio>0;
    const date=String(bill.date||'');
-   if(!latest||date>latest.date||(date===latest.date&&(billIndex>latestBillIndex||(billIndex===latestBillIndex&&lineIndex>latestLineIndex)))){
-    latest={date,rate:roundPurchaseAmount(rate/ratio)};latestBillIndex=billIndex;latestLineIndex=lineIndex;
+   if(!latest||date>latest.date||(date===latest.date&&(billIndex>latestBillIndex||(billIndex===latest.billIndex&&lineIndex>latestLineIndex)))){
+    latest={date,rate:converted?Number((rate/ratio).toFixed(6)):rate,unit:converted?currentUnit:previousUnit,converted,billIndex};latestBillIndex=billIndex;latestLineIndex=lineIndex;
    }
   });
  });
  return latest;
+}
+function shortPurchaseUnitLabel(unit){
+ const value=normalizeProductIdentity(unit),key=value.toLocaleLowerCase();
+ const abbreviations={pc:'pcs',pcs:'pcs',piece:'pcs',pieces:'pcs',kilogram:'kg',kilograms:'kg',gram:'g',grams:'g',millilitre:'ml',millilitres:'ml',milliliter:'ml',milliliters:'ml',litre:'L',litres:'L',liter:'L',liters:'L',packet:'pkt',packets:'pkt',bottle:'btl',bottles:'btl',dozen:'doz',hour:'hr',hours:'hr',month:'mo',months:'mo'};
+ return abbreviations[key]||value;
+}
+function formatLastPurchaseRate(value){
+ return '৳'+Number(value||0).toLocaleString('en-BD',{minimumFractionDigits:2,maximumFractionDigits:6});
 }
 function updateProductLastRatePopup(input,index){
  const node=input?.closest('.purchase-line'),popup=node?.querySelector('.pl-last-rate-popup'),line=purchaseLines[index];
  if(!popup)return;
  const active=document.activeElement===input,product=String(input?.value||'').trim();
  const last=active&&product?latestPurchaseRateForProduct(product,line?.unit):null;
- popup.textContent=last?money(last.rate):'';
+ popup.textContent=last?formatLastPurchaseRate(last.rate)+'/'+shortPurchaseUnitLabel(last.unit):'';
+ popup.title=last&&!last.converted?'Previous purchase unit: '+last.unit:'';
  popup.hidden=!last;
  popup.setAttribute('aria-hidden',last?'false':'true');
 }
@@ -1033,7 +1048,7 @@ function renderProductDictionary(){
 }
 function productDictionaryMatch(value){
  const query=productMasterKey(value);if(!query)return null;
- return db.productDictionary.find(item=>productMasterKey(item.english)===query||productMasterKey(item.bangla)===query)||null;
+ return db.productDictionary.find(item=>productMasterKey(item.english)===query||productMasterKey(item.bangla)===query||(Array.isArray(item.aliases)&&item.aliases.some(alias=>productMasterKey(alias)===query)))||null;
 }
 function updateProductDictionaryMatch(input){
  const hint=input?.closest('.purchase-line')?.querySelector('.pl-product-dictionary-match');if(hint){hint.textContent='';hint.hidden=true;}
@@ -1059,6 +1074,7 @@ function renderProductNameSuggestions(){
    const english=item.english.trim(),bangla=item.bangla.trim();
    if(english&&!options.has(english.toLocaleLowerCase()))options.set(english.toLocaleLowerCase(),`<option value="${esc(english)}" label="${esc(english+' · '+bangla)}"></option>`);
    if(bangla&&!options.has(bangla.toLocaleLowerCase()))options.set(bangla.toLocaleLowerCase(),`<option value="${esc(bangla)}" label="${esc(english+' · '+bangla)}"></option>`);
+   (item.aliases||[]).forEach(alias=>{const key=productMasterKey(alias);if(key&&!options.has(key))options.set(key,`<option value="${esc(alias)}" label="${esc(english+' · '+bangla)}"></option>`)});
   });list.innerHTML=[...options.values()].join('');
  }
  const count=$('productCatalogCount');if(count)count.textContent=`${db.productNames.length} saved product${db.productNames.length===1?'':'s'}`;
