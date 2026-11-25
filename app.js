@@ -217,6 +217,32 @@ function resolvePurchaseProductName(value){
 function productMasterDefaults(value){
  const key=productMasterKey(resolvePurchaseProductName(value));return key?db.productDefaults[key]||null:null;
 }
+function latestPurchaseRateForProduct(value,unit){
+ const key=productMasterKey(resolvePurchaseProductName(value));if(!key)return null;
+ let latest=null,latestBillIndex=-1,latestLineIndex=-1;
+ db.purchaseBills.forEach((bill,billIndex)=>{
+  if(editingPurchaseBillId&&bill.id===editingPurchaseBillId)return;
+  (bill.lines||[]).forEach((line,lineIndex)=>{
+   if(productMasterKey(resolvePurchaseProductName(line.product))!==key)return;
+   const ratio=unitConversionRatio(String(line.unit||'pcs'),String(unit||'pcs'));if(ratio===null||!(ratio>0))return;
+   const rate=Number(line.rate??(Number(line.quantity)>0?Number(line.amount||0)/Number(line.quantity):NaN));if(!Number.isFinite(rate)||rate<0)return;
+   const date=String(bill.date||'');
+   if(!latest||date>latest.date||(date===latest.date&&(billIndex>latestBillIndex||(billIndex===latestBillIndex&&lineIndex>latestLineIndex)))){
+    latest={date,rate:roundPurchaseAmount(rate/ratio)};latestBillIndex=billIndex;latestLineIndex=lineIndex;
+   }
+  });
+ });
+ return latest;
+}
+function updateProductLastRatePopup(input,index){
+ const node=input?.closest('.purchase-line'),popup=node?.querySelector('.pl-last-rate-popup'),line=purchaseLines[index];
+ if(!popup)return;
+ const active=document.activeElement===input,product=String(input?.value||'').trim();
+ const last=active&&product?latestPurchaseRateForProduct(product,line?.unit):null;
+ popup.textContent=last?money(last.rate):'';
+ popup.hidden=!last;
+ popup.setAttribute('aria-hidden',last?'false':'true');
+}
 function rememberPurchaseProductDefaults(lines){
  lines.forEach(line=>{
   const product=resolvePurchaseProductName(line.product),key=productMasterKey(product);
@@ -1230,7 +1256,7 @@ function purchaseLineTemplate(line,index){
  const units=db.units.map(u=>`<option value="${esc(u)}" ${line.unit===u?'selected':''}>${esc(u)}</option>`).join('');
  return `<div class="purchase-line" data-line-index="${index}">
   <div class="purchase-line-top"><strong>Product ${index+1}</strong><button type="button" class="delete remove-purchase-line" data-index="${index}" ${purchaseLines.length===1?'disabled':''}>Remove</button></div>
-  <div class="purchase-product-category-row"><div class="purchase-line-field-row"><label>Product name <input class="pl-product" list="productNameSuggestions" maxlength="80" value="${esc(line.product||'')}" placeholder="e.g. Rice / চাল" required></label><button type="button" class="mini-add pl-add-product" data-index="${index}" aria-label="Add product">＋ Add</button></div><label>Category <select class="pl-category" required>${[...new Set([...db.purchaseCategories,...(line.category&&!db.purchaseCategories.some(category=>productMasterKey(category)===productMasterKey(line.category))?[line.category]:[])])].map(category=>`<option value="${esc(category)}" ${productMasterKey(line.category||db.purchaseCategories[0]||'Staples')===productMasterKey(category)?'selected':''}>${esc(category)}</option>`).join('')}</select></label></div>
+  <div class="purchase-product-category-row"><div class="purchase-line-field-row"><label>Product name <span class="pl-product-input-wrap"><input class="pl-product" list="productNameSuggestions" maxlength="80" value="${esc(line.product||'')}" placeholder="e.g. Rice / চাল" required><span class="pl-last-rate-popup" hidden aria-hidden="true"></span></span></label><button type="button" class="mini-add pl-add-product" data-index="${index}" aria-label="Add product">＋ Add</button></div><label>Category <select class="pl-category" required>${[...new Set([...db.purchaseCategories,...(line.category&&!db.purchaseCategories.some(category=>productMasterKey(category)===productMasterKey(line.category))?[line.category]:[])])].map(category=>`<option value="${esc(category)}" ${productMasterKey(line.category||db.purchaseCategories[0]||'Staples')===productMasterKey(category)?'selected':''}>${esc(category)}</option>`).join('')}</select></label></div>
   <div class="purchase-product-type-row"><div class="purchase-line-field-row"><label>Product type <select class="pl-product-type" required>${db.productTypes.map(type=>`<option value="${esc(type)}" ${String(line.productType||'Other').toLocaleLowerCase()===type.toLocaleLowerCase()?'selected':''}>${esc(type)}</option>`).join('')}</select></label><button type="button" class="mini-add pl-add-product-type" data-index="${index}">＋ Add</button></div></div>
   <div class="purchase-numbers-grid"><div class="form-grid"><label>Quantity <input class="pl-quantity" type="number" min="0.001" step="any" value="${Number(line.quantity??1)}" required></label><label>Unit <span class="select-add"><select class="pl-unit">${units}</select><button type="button" class="mini-add pl-add-unit" data-index="${index}">＋ Add</button></span></label></div>
   <div class="form-grid"><label>Rate per unit <input class="pl-rate" type="number" min="0" step="any" value="${Number(line.rate||0)}" required></label><label>Line amount <input class="pl-amount" type="number" min="0" step="any" value="${purchaseLineAmount(line)}" required></label></div></div>
@@ -1279,15 +1305,17 @@ function renderPurchaseLines(){
     }
     line.unit=nextUnit;
    }else line[prop]=el.value;
+   if(prop==='unit'){const productInput=node.querySelector('.pl-product');if(productInput)updateProductLastRatePopup(productInput,index)}
    updatePurchaseTotals();
   };
   if(el.tagName==='SELECT')el.addEventListener('change',handle);else el.addEventListener('input',handle);
  }));
  $('purchaseLines').querySelectorAll('.pl-product').forEach((input,index)=>{
-  const update=()=>updateProductDictionaryMatch(input);
+  const update=()=>{updateProductDictionaryMatch(input);updateProductLastRatePopup(input,index)};
   input.addEventListener('input',update);
-  input.addEventListener('change',()=>applyProductMasterToPurchaseLine(input,index));
-  input.addEventListener('blur',()=>applyProductMasterToPurchaseLine(input,index));
+  input.addEventListener('focus',update);
+  input.addEventListener('change',()=>{applyProductMasterToPurchaseLine(input,index);updateProductLastRatePopup(input,index)});
+  input.addEventListener('blur',()=>{applyProductMasterToPurchaseLine(input,index);const popup=input.closest('.purchase-line')?.querySelector('.pl-last-rate-popup');if(popup){popup.hidden=true;popup.textContent='';popup.setAttribute('aria-hidden','true')}});
   update();
  });
  $('purchaseLines').querySelectorAll('.remove-purchase-line').forEach(btn=>btn.onclick=()=>{if(purchaseLines.length>1){purchaseLines.splice(Number(btn.dataset.index),1);renderPurchaseLines();updatePurchaseTotals()}});
