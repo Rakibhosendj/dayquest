@@ -229,7 +229,7 @@ function rememberPurchaseProductDefaults(lines){
  db.productNames=[...new Map(db.productNames.map(name=>[productMasterKey(name),String(name||'').trim()]).filter(([key,name])=>key&&name))].map(([,name])=>name);
 }
 (function seedProductMasterDefaults(){
- const bills=[...db.purchaseBills].sort((x,y)=>String(x.date||'').localeCompare(String(y.date||'')));
+ const bills=[...db.purchaseBills].sort((x,y)=>String(y.date||'').localeCompare(String(x.date||'')));
  bills.forEach(bill=>(bill.lines||[]).forEach(line=>{
   const product=resolvePurchaseProductName(line.product),key=productMasterKey(product);
   if(!key||db.productDefaults[key])return;
