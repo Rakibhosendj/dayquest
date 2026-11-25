@@ -1203,7 +1203,7 @@ function budgetEditorRow(row,index){
 }
 function renderBudgetComparison(groups,unplanned){
  const rows=groups.map(g=>{
-  const diff=g.plannedAmount-g.actualAmount,qtyDiff=g.plannedQty-g.actualQty,status=g.actualQty===0?'Pending':diff<0?'Over budget':qtyDiff<=0?'Completed':'In progress';
+  const diff=g.plannedAmount-g.actualAmount,qtyDiff=g.plannedQty-g.actualQty,status=g.actualQty===0?'Pending':(diff<0||qtyDiff<0)?'Over budget':qtyDiff<=0?'Completed':'In progress';
   return '<div class="budget-compare-row"><div><strong>'+esc(g.product)+'</strong><small>'+esc(fmt(g.date))+(g.spec?' · '+esc(g.spec):'')+' · '+esc(g.unit)+'</small></div>'+
    '<span><small>Plan · Qty '+numberText(g.plannedQty)+'</small><b>'+money(g.plannedAmount)+'</b></span><span><small>Actual · Qty '+numberText(g.actualQty)+'</small><b>'+money(g.actualAmount)+'</b></span>'+
    '<span><small>Left · Qty '+numberText(qtyDiff)+'</small><b class="'+(diff<0?'negative':'')+'">'+money(diff)+'</b></span><em>'+status+'</em></div>';
@@ -1227,13 +1227,13 @@ function renderBudget(){
  const plan=currentBudgetPlan();$('budgetName').value=plan?.name||'';
  $('budgetViewBtn').disabled=!plan||!plan.rows.length;$('budgetShareBtn').disabled=!plan||!plan.rows.length;$('budgetDeleteBtn').disabled=!plan;
  $('budgetList').innerHTML=plan?plan.rows.map(budgetEditorRow).join()||empty('Add your first planned item.'):'<div class="empty">Create a Budget to start planning purchases by date.</div>';
- const comparisons=plan?budgetActualGroups(plan):[],planned=comparisons.reduce((n,r)=>n+r.plannedAmount,0),actual=comparisons.reduce((n,r)=>n+r.actualAmount,0);
+ const comparisons=plan?budgetActualGroups(plan):[],unplanned=plan?budgetUnplannedPurchases(plan):[],planned=comparisons.reduce((n,r)=>n+r.plannedAmount,0),actual=comparisons.reduce((n,r)=>n+r.actualAmount,0)+unplanned.reduce((n,r)=>n+r.amount,0);
  $('budgetRangeLabel').textContent=plan?plan.rows.length+' items · '+comparisons.length+' date/product groups':'No Budget selected';
  $('budgetProductCount').textContent=plan?plan.rows.length+' items':'0 items';$('budgetGrandTotal').textContent=money(planned);
  if($('budgetActualTotal'))$('budgetActualTotal').textContent=money(actual);
  if($('budgetRemainingTotal'))$('budgetRemainingTotal').textContent=money(planned-actual);
  if($('budgetProgress'))$('budgetProgress').textContent=planned>0?Math.round(actual/planned*100)+'% used':'—';
- if($('budgetComparison'))$('budgetComparison').innerHTML=plan?renderBudgetComparison(comparisons,budgetUnplannedPurchases(plan)):'';
+ if($('budgetComparison'))$('budgetComparison').innerHTML=plan?renderBudgetComparison(comparisons,unplanned):'';
  const readOnly=!!(activeSharedBudgetContext&&plan&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner&&activeSharedBudgetContext.permission!=='edit');
  $('budgetName').disabled=readOnly;$('addBudgetRowBtn').disabled=readOnly;$('saveBudgetBtn').disabled=readOnly;$('budgetShareBtn').disabled=!plan||!plan.rows.length||readOnly;
  $('budgetList').querySelectorAll('input,button').forEach(el=>el.disabled=readOnly);
@@ -1255,7 +1255,7 @@ async function saveBudget(){
   const get=k=>el.querySelector('[data-field="'+k+'"]')?.value??'';
   return {id:plan.rows[index]?.id||'r'+Date.now()+index,date:get('date'),product:get('product').trim(),spec:plan.rows[index]?.spec||'',unit:get('unit').trim()||'pcs',quantity:Number(get('quantity')),rate:Number(get('rate'))};
  });
- if(!rows.length||rows.some(r=>!r.date||!r.product||!Number.isFinite(r.quantity)||r.quantity<0||!Number.isFinite(r.rate)||r.rate<0)){alert('Each item needs a date, product, valid quantity and rate.');return false}
+ if(!rows.length||rows.some(r=>!r.date||!r.product||!Number.isFinite(r.quantity)||r.quantity<=0||!Number.isFinite(r.rate)||r.rate<0)){alert('Each item needs a date, product, valid quantity and rate.');return false}
  plan.name=name;plan.rows=rows;plan.updatedAt=new Date().toISOString();localSaveOnly();renderBudget();
  if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey)await syncActiveSharedBudget();
  alert('Budget saved successfully.');return true;
