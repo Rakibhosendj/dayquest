@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261124-cost-report-refresh-v28">
+<link rel="stylesheet" href="style.css?v=20261125-auth-verification-v29">
 <title>DayQuest</title>
 </head>
 <body>
@@ -59,6 +59,13 @@
     <button class="primary full" type="submit">Create Family Account</button>
    </form>
    <button id="showLoginFromSignup" class="auth-link" type="button">Already have an account? Log in</button>
+  </div>
+  <div id="authVerifyView" hidden>
+   <h2>Verify your email</h2>
+   <p class="auth-copy">DayQuest sent a confirmation link to <strong id="verificationEmail"></strong>. Open that email and select the confirmation link to activate your Family Account.</p>
+   <p class="auth-copy">If you do not see it, check your spam folder. You can request another confirmation email below.</p>
+   <button id="resendSignupConfirmation" class="primary full" type="button">Resend confirmation email</button>
+   <button id="showLoginFromVerify" class="auth-link" type="button">Back to log in</button>
   </div>
   <div id="authLoginView" hidden>
    <h2>Welcome back</h2>
@@ -1116,5 +1123,5 @@
 <dialog id="dqMessageDialog" class="dq-message-dialog" aria-labelledby="dqMessageTitle"><div class="dq-message-card"><div class="dq-message-brand"><img src="icons/icon-192.png?v=20261121-coin-check" alt="DayQuest app icon"><h2 id="dqMessageTitle">DayQuest</h2></div><p id="dqMessageText"></p><input id="dqMessagePromptInput" class="dq-message-prompt-input" type="text" maxlength="200" autocomplete="off" aria-label="Enter a value" hidden><div class="dq-message-actions"><button id="dqMessageCancel" class="secondary" type="button" hidden>Cancel</button><button id="dqMessageOk" class="primary" type="button">OK</button></div></div></dialog>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261124-cost-report-refresh-v28"></script>
+<script src="app.js?v=20261125-auth-verification-v29"></script>
 </body></html>
