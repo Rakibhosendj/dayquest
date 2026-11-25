@@ -4,10 +4,11 @@ import { readFile } from "node:fs/promises";
 import { isTrustedWebPushEndpoint } from "../supabase/functions/_shared/push-endpoint.mjs";
 
 const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
-const [app, html, css, saveFunction, sendFunction] = await Promise.all([
+const [app, html, css, worker, saveFunction, sendFunction] = await Promise.all([
   read("../app.js"),
   read("../index.html"),
   read("../style.css"),
+  read("../sw.js"),
   read("../supabase/functions/save-notification-subscription/index.ts"),
   read("../supabase/functions/send-loan-reminders/index.ts"),
 ]);
@@ -95,4 +96,36 @@ test("Budget create, delete, and add-product buttons have click handlers", () =>
 test("Budget action buttons use compact font and spacing", () => {
   assert.match(css, /#budget button[\s\S]*?font-size:\s*11\.5px/);
   assert.match(css, /#budget \.budget-toolbar button[\s\S]*?font-size:\s*11px/);
+});
+
+test("Share Budget panel stays hidden until its own navigation tab is active", () => {
+  assert.match(css, /\.budget-share-page\s*\{\s*display:\s*none;/);
+  assert.match(css, /\.budget-share-page\.active\s*\{\s*display:\s*grid/);
+});
+
+test("PWA cache uses the current CSS and JavaScript asset versions", () => {
+  const cssAsset = html.match(/style\.css\?v=([^"']+)/)?.[1];
+  const appAsset = html.match(/app\.js\?v=([^"']+)/)?.[1];
+  assert.ok(cssAsset && worker.includes("./style.css?v=" + cssAsset));
+  assert.ok(appAsset && worker.includes("./app.js?v=" + appAsset));
+  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261125-budget-sharing-fixes-v43'\)/);
+});
+
+test("shared Budget context is saved per account and revalidated on refresh", () => {
+  assert.match(app, /dayquest_budget_share_context_v1:/);
+  assert.match(app, /function primeBudgetShareContext\(\)/);
+  assert.match(app, /function restoreBudgetShareContextFromList\(items\)/);
+  assert.match(app, /restoreBudgetShareContextFromList\(data\)/);
+  assert.match(app, /This shared Budget is view only/);
+});
+
+test("Budget summary, view, and statement use the same actual-spend calculation", () => {
+  assert.match(app, /function budgetActualTotal\(plan\)/);
+  assert.equal((app.match(/actual=budgetActualTotal\(plan\)/g) ?? []).length, 2);
+  assert.match(app, /actual=plan\?budgetActualTotal\(plan\):0/);
+});
+
+test("revoking or deleting shared Budgets cleans up the parent share record", () => {
+  assert.match(app, /p_shared_budget_id:sharedId,p_member_id:null/);
+  assert.match(app, /p_shared_budget_id:item\.shared_budget_id,p_member_id:null/);
 });
