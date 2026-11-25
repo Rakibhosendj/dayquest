@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
+import { isTrustedWebPushEndpoint } from "../_shared/push-endpoint.mjs";
 
 type Settlement = { amount?: number; date?: string; installmentId?: string | null };
 type Installment = { id?: string; dueDate?: string; amount?: number };
@@ -129,6 +130,11 @@ Deno.serve(async (request: Request) => {
   const globalNow = new Date();
 
   async function deliver(device: SubscriptionRow, eventKey: string, date: string, title: string, body: string, tag: string) {
+    // Revalidate stored subscriptions before making any outbound request.
+    if (!isTrustedWebPushEndpoint(device.endpoint) || String(device.subscription?.endpoint ?? "") !== device.endpoint) {
+      skipped++;
+      return;
+    }
     const { error: claimError } = await admin.from("dayquest_loan_reminder_deliveries").insert({
       endpoint: device.endpoint, user_id: device.user_id, loan_id: eventKey, reminder_date: date,
     });
