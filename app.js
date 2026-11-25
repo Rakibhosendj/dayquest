@@ -1196,8 +1196,8 @@ function renderBudget(){
  }
  const rows=Array.isArray(plan.rows)?plan.rows:[];
  if($('budgetProductCount'))$('budgetProductCount').textContent=rows.length+' product'+(rows.length===1?'':'s');
- list.innerHTML=rows.length?'<div class="budget-table-wrap"><table class="budget-table"><thead><tr><th>SL</th><th>Products</th><th>Rate</th><th>Quantity</th><th>Unit</th><th>Total Cost</th></tr></thead><tbody>'+
-  rows.map((row,index)=>'<tr><td>'+String(index+1)+'</td><td><strong>'+esc(row.product)+'</strong>'+(row.spec?'<small>'+esc(row.spec)+'</small>':'')+'</td><td class="budget-rate">'+money(row.rate)+'</td><td><input class="budget-quantity-input" type="number" min="0" step="any" inputmode="decimal" value="'+Number(row.quantity??0)+'" data-budget-quantity data-budget-key="'+esc(row.key)+'" data-budget-rate="'+Number(row.rate||0)+'" aria-label="Budget quantity for '+esc(row.product)+'"></td><td>'+esc(row.unit)+'</td><td class="budget-line-total" data-budget-line-total>'+money(budgetAmount(row.rate,row.quantity))+'</td></tr>').join('')+
+ list.innerHTML=rows.length?'<div class="budget-table-wrap"><table class="budget-table"><thead><tr><th>SL</th><th>Item</th><th>Rate</th><th>Qty</th><th>Unit</th><th>Amount</th></tr></thead><tbody>'+
+  rows.map((row,index)=>'<tr><td>'+String(index+1)+'</td><td data-label="Item"><strong>'+esc(row.product)+'</strong>'+(row.spec?'<small>'+esc(row.spec)+'</small>':'')+'</td><td class="budget-rate" data-label="Rate">'+money(row.rate)+'</td><td data-label="Qty"><input class="budget-quantity-input" type="number" min="0" step="any" inputmode="decimal" value="'+Number(row.quantity??0)+'" data-budget-quantity data-budget-key="'+esc(row.key)+'" data-budget-rate="'+Number(row.rate||0)+'" aria-label="Budget quantity for '+esc(row.product)+'"></td><td data-label="Unit">'+esc(row.unit)+'</td><td class="budget-line-total" data-label="Amount" data-budget-line-total>'+money(budgetAmount(row.rate,row.quantity))+'</td></tr>').join('')+
   '</tbody></table></div>':empty('No product purchases were found in this date range.');
  updateBudgetTotals();
 }
@@ -1234,7 +1234,7 @@ function renderBudgetView(){
  $('budgetViewTotal').textContent=money(total);
  $('budgetViewGrandTotal').textContent=money(total);
  $('budgetViewTable').innerHTML='<div class="budget-table-wrap"><table class="budget-table budget-view-readonly"><thead><tr><th>SL</th><th>Products</th><th>Rate</th><th>Quantity</th><th>Unit</th><th>Total Cost</th></tr></thead><tbody>'+
-  rows.map(row=>'<tr><td>'+row.sl+'</td><td><strong>'+esc(row.product)+'</strong>'+(row.spec?'<small>'+esc(row.spec)+'</small>':'')+'</td><td>'+money(row.rate)+'</td><td>'+numberText(row.quantity)+'</td><td>'+esc(row.unit)+'</td><td>'+money(row.total)+'</td></tr>').join('')+
+  rows.map(row=>'<tr><td>'+row.sl+'</td><td><strong>'+esc(row.product)+'</strong>'+(row.spec?'<small>'+esc(row.spec)+'</small>':'')+'</td><td data-label="Rate">'+money(row.rate)+'</td><td data-label="Qty">'+numberText(row.quantity)+'</td><td data-label="Unit">'+esc(row.unit)+'</td><td data-label="Amount">'+money(row.total)+'</td></tr>').join('')+
   '</tbody></table></div>';
 }
 function budgetStatementHtml(plan){
