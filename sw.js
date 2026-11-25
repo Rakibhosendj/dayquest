@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v261-overview-sorting-v30';
+const CACHE = 'dayquest-cache-v262-dayquest-dialog-v31';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
   './style.css?v=20261125-overview-sorting-v30',
-  './app.js?v=20261125-auth-verification-v29',
+  './app.js?v=20261125-dayquest-dialog-v31',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
   './icons/icon-512.svg',
