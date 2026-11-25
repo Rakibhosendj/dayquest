@@ -548,6 +548,28 @@ function syncMenuToggle(){
 }
 function closeSidebar(){const side=$('sidebar'),backdrop=$('sidebarBackdrop');side?.classList.remove('open');backdrop?.setAttribute('hidden','');syncMenuToggle()}
 
+function setSideMenuSectionOpen(section,open){
+ const nav=$('sideNav');if(!nav)return;
+ const sections=[...nav.querySelectorAll(':scope > [data-menu-section]')];
+ sections.forEach(item=>{
+  const isOpen=!!open&&item===section;
+  const content=item.querySelector('.side-menu-section-items');
+  const toggle=item.querySelector('[data-section-toggle]');
+  item.classList.toggle('is-open',isOpen);
+  if(content)content.hidden=!isOpen;
+  if(toggle)toggle.setAttribute('aria-expanded',String(isOpen));
+ });
+}
+function setupSideMenuSectionToggles(){
+ const nav=$('sideNav');if(!nav)return;
+ nav.querySelectorAll('[data-section-toggle]').forEach(toggle=>{
+  toggle.addEventListener('click',()=>{
+   const section=toggle.closest('[data-menu-section]');
+   setSideMenuSectionOpen(section,!section?.classList.contains('is-open'));
+  });
+ });
+ setSideMenuSectionOpen(null,false);
+}
 function applySideMenuOrder(){
  const nav=$('sideNav');if(!nav)return;
  const items=[...nav.children].filter(node=>node.dataset.menuSection),byKey=new Map(items.map(node=>[node.dataset.menuSection,node]));
@@ -836,11 +858,11 @@ function setTab(t,options={}){
     ? requestedReportSection
     : (document.querySelector('[data-report-go].active')?.dataset.reportGo||'members'))
   : '';
- const activeGroup=t==='reports'?document.querySelector('[data-side-group="reports"]'):activeTab?.closest('.side-group');
- // Only the submenu containing the current destination stays expanded.
- document.querySelectorAll('.side-group').forEach(group=>{
-  const active=group===activeGroup;group.open=active;group.classList.toggle('has-active',active);
- });
+ const activeSection=t==='reports'
+  ? document.querySelector('[data-menu-section="reports"]')
+  : activeTab?.closest('[data-menu-section]');
+ // Navigating to a page reveals its parent; all other sections collapse.
+ setSideMenuSectionOpen(activeSection,!!activeSection);
  if(t!=='reports')document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.remove('active'));
  closeSidebar();
  if(t==='reports'){
@@ -878,7 +900,7 @@ function setTab(t,options={}){
 document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
 $('backButton').onclick=goBackToPreviousPage;
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>setTab(b.dataset.go));
-setupSideMenuReordering();applySideMenuOrder();setupOverviewSectionReordering();applyOverviewSectionOrder();setupOverviewButtonSorting();
+setupSideMenuSectionToggles();setupSideMenuReordering();applySideMenuOrder();setupOverviewSectionReordering();applyOverviewSectionOrder();setupOverviewButtonSorting();
 $('menuToggle').onclick=()=>{
  if(window.innerWidth>=760){
   const hidden=$('appLayout').classList.toggle('sidebar-collapsed');
@@ -2977,10 +2999,8 @@ function activateReportSection(key){
  });
  const accountPage=['creditors','debitors'].includes(selected);
  const showDueButton=$('showDueAccounts');if(showDueButton)showDueButton.hidden=!accountPage;
- const accountGroup=document.querySelector('[data-side-group="accounts"]');
- if(accountGroup){accountGroup.open=false;accountGroup.classList.remove('has-active')}
- const group=document.querySelector('[data-side-group="reports"]');
- if(group){group.open=true;group.classList.add('has-active')}
+ const reportMenuSection=document.querySelector('[data-menu-section="reports"]');
+ setSideMenuSectionOpen(reportMenuSection,true);
  updateReportSummaryMetrics();
  updatePageBalanceTitle('reports');
  const target=selected==='all'?document.querySelector('[data-report-pane="purchase"]'):document.querySelector(`[data-report-pane="${selected}"]`);
@@ -5454,7 +5474,7 @@ function openAccountReportPage(destination,{addBrowserHistory=true,skipHistory=f
  }
  if(['creditors','debitors'].includes(destination)){
   setTab(destination,{skipHistory:skipHistory||currentPage===destination});
-  const accounts=document.querySelector('[data-side-group="accounts"]');if(accounts){accounts.open=true;accounts.classList.add('has-active')}
+  setSideMenuSectionOpen(document.querySelector('[data-menu-section="accounts"]'),true);
   if($('pageContextTitle'))$('pageContextTitle').textContent=destination==='creditors'?'Creditors':'Debtors';
   updateBackButton();return;
  }
@@ -5471,13 +5491,8 @@ function openAccountReportPage(destination,{addBrowserHistory=true,skipHistory=f
   const detail=pane.querySelector('.report-detail-disclosure');
   if(detail)detail.open=pane===chosenPane;
  });
- document.querySelectorAll('[data-report-go]').forEach(item=>{
-  item.classList.toggle('active',item.dataset.reportGo===destination);
- });
- const accounts=document.querySelector('[data-side-group="accounts"]');
- const reports=document.querySelector('[data-side-group="reports"]');
- if(accounts){accounts.open=true;accounts.classList.add('has-active')}
- if(reports){reports.open=false;reports.classList.remove('has-active')}
+ const reportMenuSection=document.querySelector('[data-menu-section="reports"]');
+ setSideMenuSectionOpen(reportMenuSection,true);
  const heading=$('pageContextTitle');
  if(heading)heading.textContent=destination==='creditors'?'Creditors':'Debtors';
  updateBackButton();
