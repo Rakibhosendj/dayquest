@@ -1215,6 +1215,13 @@ function renderBudgetComparison(groups,unplanned){
  const extras=unplanned.map(g=>'<div class="budget-compare-row unbudgeted"><div><strong>'+esc(g.product)+'</strong><small>'+esc(fmt(g.date))+' · '+esc(g.unit)+' · Unbudgeted</small></div><span><small>Qty</small><b>'+numberText(g.quantity)+'</b></span><span><small>Actual</small><b>'+money(g.amount)+'</b></span><span><small>Budget</small><b>—</b></span><em>Unbudgeted</em></div>').join('');
  return '<section class="budget-comparison-section"><div class="section-head"><h3>Budget vs Actual</h3><span class="muted">By purchase date</span></div>'+(rows||empty('No planned items yet.'))+(extras?'<h4>Unbudgeted Purchases</h4>'+extras:'')+'</section>';
 }
+function prefillBudgetPreviousRate(input){
+ const row=input?.closest('[data-budget-row]');if(!row)return;
+ const product=row.querySelector('[data-field="product"]')?.value||'',unit=row.querySelector('[data-field="unit"]')?.value||'pcs',rateInput=row.querySelector('[data-field="rate"]');
+ if(!product||!rateInput||Number(rateInput.value)>0)return;
+ const previous=latestPurchaseRateForProduct(product,unit);
+ if(previous){rateInput.value=Number(previous.rate).toFixed(2);updateBudgetTotals()}
+}
 function renderBudget(){
  ensureLegacyBudgetPlans();const select=$('budgetPlanSelect');if(!select)return;
  const entries=budgetPlanEntries().sort((a,b)=>String(b[1].updatedAt||b[1].createdAt||'').localeCompare(String(a[1].updatedAt||a[1].createdAt||'')));
@@ -1252,10 +1259,10 @@ async function saveBudget(){
   const get=k=>el.querySelector('[data-field="'+k+'"]')?.value??'';
   return {id:plan.rows[index]?.id||'r'+Date.now()+index,date:get('date'),product:get('product').trim(),spec:plan.rows[index]?.spec||'',unit:get('unit').trim()||'pcs',quantity:Number(get('quantity')),rate:Number(get('rate'))};
  });
- if(!rows.length||rows.some(r=>!r.date||!r.product||!Number.isFinite(r.quantity)||r.quantity<0||!Number.isFinite(r.rate)||r.rate<0)){alert('Each item needs a date, product, valid quantity and rate.');return}
+ if(!rows.length||rows.some(r=>!r.date||!r.product||!Number.isFinite(r.quantity)||r.quantity<0||!Number.isFinite(r.rate)||r.rate<0)){alert('Each item needs a date, product, valid quantity and rate.');return false}
  plan.name=name;plan.rows=rows;plan.updatedAt=new Date().toISOString();localSaveOnly();renderBudget();
  if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey)await syncActiveSharedBudget();
- alert('Budget saved successfully.');
+ alert('Budget saved successfully.');return true;
 }
 function deleteCurrentBudget(){
  const plan=currentBudgetPlan();if(!plan)return;
@@ -1313,6 +1320,7 @@ async function renderSharedBudgetList(){
  }
 }
 async function shareCurrentBudget(){
+ if(!await saveBudget())return;
  const plan=currentBudgetPlan();if(!plan){alert('আগে Budget তৈরি করুন।');return}
  if(!cloudUser||!supabaseClient){alert('Budget Share করতে Family Account-এ Login করুন।');return}
  const email=String($('budgetShareEmail')?.value||'').trim(),permission=$('budgetSharePermission')?.value||'view';
@@ -1473,6 +1481,9 @@ $('budgetViewBack').addEventListener('click',()=>setTab('budget'));
 $('budgetViewPrint').addEventListener('click',()=>exportBudgetStatement('print'));
 $('budgetViewPdf').addEventListener('click',()=>exportBudgetStatement('pdf'));
 $('budgetViewExcel').addEventListener('click',()=>exportBudgetStatement('excel'));
+$('budgetList').addEventListener('change',event=>{
+ if(event.target.matches('[data-field="product"],[data-field="unit"]'))prefillBudgetPreviousRate(event.target);
+});
 $('budgetList').addEventListener('input',event=>{
  if(event.target.matches('[data-field="quantity"],[data-field="rate"]'))updateBudgetTotals();
 });
