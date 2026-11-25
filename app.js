@@ -206,6 +206,36 @@ function normalizePurchaseInventory(){
  db.consumptions=db.consumptions.filter(x=>x&&x.billId&&x.lineId&&Number(x.quantity)>0);
 }
 normalizePurchaseInventory();
+db.productDefaults=db.productDefaults&&typeof db.productDefaults==='object'&&!Array.isArray(db.productDefaults)?db.productDefaults:{};
+function productMasterKey(value){return String(value||'').trim().replace(/\\s+/g,' ').toLocaleLowerCase()}
+function resolvePurchaseProductName(value){
+ const raw=String(value||'').trim().replace(/\\s+/g,' ');if(!raw)return '';
+ const dictionary=productDictionaryMatch(raw);if(dictionary)return dictionary.english;
+ const existing=db.productNames.find(name=>productMasterKey(name)===productMasterKey(raw));
+ return existing||raw;
+}
+function productMasterDefaults(value){
+ const key=productMasterKey(resolvePurchaseProductName(value));return key?db.productDefaults[key]||null:null;
+}
+function rememberPurchaseProductDefaults(lines){
+ lines.forEach(line=>{
+  const product=resolvePurchaseProductName(line.product),key=productMasterKey(product);
+  if(!key)return;
+  db.productDefaults[key]={product,category:String(line.category||db.purchaseCategories[0]||'Staples'),productType:String(line.productType||'Other'),updatedAt:today()};
+  const existing=db.productNames.find(name=>productMasterKey(name)===key);
+  if(existing){if(existing!==product)db.productNames[db.productNames.indexOf(existing)]=product}
+  else db.productNames.push(product);
+ });
+ db.productNames=[...new Map(db.productNames.map(name=>[productMasterKey(name),String(name||'').trim()]).filter(([key,name])=>key&&name))].map(([,name])=>name);
+}
+(function seedProductMasterDefaults(){
+ const bills=[...db.purchaseBills].sort((x,y)=>String(x.date||'').localeCompare(String(y.date||'')));
+ bills.forEach(bill=>(bill.lines||[]).forEach(line=>{
+  const product=resolvePurchaseProductName(line.product),key=productMasterKey(product);
+  if(!key||db.productDefaults[key])return;
+  db.productDefaults[key]={product,category:String(line.category||bill.category||db.purchaseCategories[0]||'Staples'),productType:String(line.productType||'Other'),updatedAt:String(bill.date||'')};
+ }));
+})();
 db.supplierPayments.forEach(p=>{if(p.supplier&&!db.suppliers.includes(p.supplier))db.suppliers.push(p.supplier)});
 if(db.profile.name&&!db.familyMembers.some(n=>n.toLocaleLowerCase()===db.profile.name.toLocaleLowerCase()))db.familyMembers.unshift(db.profile.name);
 db.memberProfiles=db.memberProfiles&&typeof db.memberProfiles==='object'&&!Array.isArray(db.memberProfiles)?db.memberProfiles:{};
@@ -981,6 +1011,19 @@ function productDictionaryMatch(value){
 function updateProductDictionaryMatch(input){
  const hint=input?.closest('.purchase-line')?.querySelector('.pl-product-dictionary-match');if(hint){hint.textContent='';hint.hidden=true;}
 }
+function applyProductMasterToPurchaseLine(input,index){
+ const line=purchaseLines[index],node=input?.closest('.purchase-line');if(!line||!node)return;
+ const resolved=resolvePurchaseProductName(input.value);if(!resolved)return;
+ line.product=resolved;input.value=resolved;
+ const defaults=productMasterDefaults(resolved);
+ if(defaults){
+  const category=db.purchaseCategories.find(name=>productMasterKey(name)===productMasterKey(defaults.category));
+  const type=db.productTypes.find(name=>productMasterKey(name)===productMasterKey(defaults.productType));
+  if(category){line.category=category;const select=node.querySelector('.pl-category');if(select)select.value=category}
+  if(type){line.productType=type;const select=node.querySelector('.pl-product-type');if(select)select.value=type}
+ }
+ updateProductDictionaryMatch(input);updatePurchaseTotals();
+}
 function renderProductNameSuggestions(){
  const list=$('productNameSuggestions');if(list){
   const options=new Map();
@@ -1187,7 +1230,7 @@ function purchaseLineTemplate(line,index){
  const units=db.units.map(u=>`<option value="${esc(u)}" ${line.unit===u?'selected':''}>${esc(u)}</option>`).join('');
  return `<div class="purchase-line" data-line-index="${index}">
   <div class="purchase-line-top"><strong>Product ${index+1}</strong><button type="button" class="delete remove-purchase-line" data-index="${index}" ${purchaseLines.length===1?'disabled':''}>Remove</button></div>
-  <div class="purchase-product-category-row"><div class="purchase-line-field-row"><label>Product name <input class="pl-product" list="productNameSuggestions" maxlength="80" value="${esc(line.product||'')}" placeholder="e.g. Rice / চাল" required></label><button type="button" class="mini-add pl-add-product" data-index="${index}" aria-label="Add product">＋ Add</button></div><label>Category <select class="pl-category" required>${db.purchaseCategories.map(category=>`<option value="${esc(category)}" ${String(line.category||'Staples').toLocaleLowerCase()===category.toLocaleLowerCase()?'selected':''}>${esc(category)}</option>`).join('')}</select></label></div>
+  <div class="purchase-product-category-row"><div class="purchase-line-field-row"><label>Product name <input class="pl-product" list="productNameSuggestions" maxlength="80" value="${esc(line.product||'')}" placeholder="e.g. Rice / চাল" required></label><button type="button" class="mini-add pl-add-product" data-index="${index}" aria-label="Add product">＋ Add</button></div><label>Category <select class="pl-category" required>${[...new Set([...db.purchaseCategories,...(line.category&&!db.purchaseCategories.some(category=>productMasterKey(category)===productMasterKey(line.category))?[line.category]:[])])].map(category=>`<option value="${esc(category)}" ${productMasterKey(line.category||db.purchaseCategories[0]||'Staples')===productMasterKey(category)?'selected':''}>${esc(category)}</option>`).join('')}</select></label></div>
   <div class="purchase-product-type-row"><div class="purchase-line-field-row"><label>Product type <select class="pl-product-type" required>${db.productTypes.map(type=>`<option value="${esc(type)}" ${String(line.productType||'Other').toLocaleLowerCase()===type.toLocaleLowerCase()?'selected':''}>${esc(type)}</option>`).join('')}</select></label><button type="button" class="mini-add pl-add-product-type" data-index="${index}">＋ Add</button></div></div>
   <div class="purchase-numbers-grid"><div class="form-grid"><label>Quantity <input class="pl-quantity" type="number" min="0.001" step="any" value="${Number(line.quantity??1)}" required></label><label>Unit <span class="select-add"><select class="pl-unit">${units}</select><button type="button" class="mini-add pl-add-unit" data-index="${index}">＋ Add</button></span></label></div>
   <div class="form-grid"><label>Rate per unit <input class="pl-rate" type="number" min="0" step="any" value="${Number(line.rate||0)}" required></label><label>Line amount <input class="pl-amount" type="number" min="0" step="any" value="${purchaseLineAmount(line)}" required></label></div></div>
@@ -1240,7 +1283,13 @@ function renderPurchaseLines(){
   };
   if(el.tagName==='SELECT')el.addEventListener('change',handle);else el.addEventListener('input',handle);
  }));
- $('purchaseLines').querySelectorAll('.pl-product').forEach(input=>{const update=()=>updateProductDictionaryMatch(input);input.addEventListener('input',update);input.addEventListener('change',update);update()});
+ $('purchaseLines').querySelectorAll('.pl-product').forEach((input,index)=>{
+  const update=()=>updateProductDictionaryMatch(input);
+  input.addEventListener('input',update);
+  input.addEventListener('change',()=>applyProductMasterToPurchaseLine(input,index));
+  input.addEventListener('blur',()=>applyProductMasterToPurchaseLine(input,index));
+  update();
+ });
  $('purchaseLines').querySelectorAll('.remove-purchase-line').forEach(btn=>btn.onclick=()=>{if(purchaseLines.length>1){purchaseLines.splice(Number(btn.dataset.index),1);renderPurchaseLines();updatePurchaseTotals()}});
  $('purchaseLines').querySelectorAll('.pl-add-product').forEach(btn=>btn.onclick=()=>addNewPurchaseProduct(Number(btn.dataset.index)));
  $('purchaseLines').querySelectorAll('.pl-add-product-type').forEach(btn=>btn.onclick=()=>addProductTypeToPurchaseLine(Number(btn.dataset.index)));
@@ -1330,7 +1379,7 @@ purchaseSupplierDialogForm.onsubmit=event=>{
 $('purchaseBillForm').onsubmit=async e=>{
  e.preventDefault();if(editingPurchaseBillId&&db.settings.allowPurchaseBillEdits===false){if($('purchaseEditHint')){$('purchaseEditHint').textContent='Editing is disabled. Enable “Allow editing saved purchase bills” in Settings, then reopen this bill.';$('purchaseEditHint').hidden=false}return}const old=editingPurchaseBillId?db.purchaseBills.find(b=>b.id===editingPurchaseBillId):null;const supplierInput=$('purchaseSupplier').value.trim(),date=$('purchaseDate').value,cashPaid=Number($('purchaseCashPaid').value||0),bankPaid=Number($('purchaseBankPaid').value||0),subtotal=currentPurchaseSubtotal(),transitCost=Math.max(0,Number($('purchaseTransitCost').value||0)),transitPaidFrom=$('purchaseTransitPaidFrom').value==='Bank'?'Bank':'Cash',discount=Math.max(0,Number($('purchaseDiscount').value||0)),total=currentPurchaseTotal(),unpaid=Math.max(0,total-cashPaid-bankPaid);
  const supplier=supplierInput||(unpaid>0?'Unassigned supplier':'');
- const lines=purchaseLines.map(l=>({id:l.lineId||crypto.randomUUID(),product:String(l.product||'').trim(),category:String(l.category||db.purchaseCategories[0]||'Staples').trim(),productType:String(l.productType||'Other').trim()||'Other',spec:String(l.spec||'').trim(),quantity:Number(l.quantity),unit:String(l.unit||'pcs'),rate:Number(l.rate),amount:purchaseLineAmount(l),costType:['family','member','unassigned','members'].includes(l.costType)?l.costType:'unassigned',costMember:String(l.costMember||'').trim(),costMembers:Array.isArray(l.costMembers)?uniquePeople(l.costMembers):[]}));
+ const lines=purchaseLines.map(l=>({id:l.lineId||crypto.randomUUID(),product:resolvePurchaseProductName(l.product),category:String(l.category||db.purchaseCategories[0]||'Staples').trim(),productType:String(l.productType||'Other').trim()||'Other',spec:String(l.spec||'').trim(),quantity:Number(l.quantity),unit:String(l.unit||'pcs'),rate:Number(l.rate),amount:purchaseLineAmount(l),costType:['family','member','unassigned','members'].includes(l.costType)?l.costType:'unassigned',costMember:String(l.costMember||'').trim(),costMembers:Array.isArray(l.costMembers)?uniquePeople(l.costMembers):[]}));
  if(unpaid>0&&db.settings.requireSupplierForDuePurchase&&!supplierInput){purchaseFormNotice('Select a supplier because this purchase has an unpaid balance. You can change this rule in Settings.');return}
  if(!date){purchaseFormNotice('Select the purchase date.');return}
  if(!lines.length||purchaseLines.some(l=>l.calcError)||lines.some(l=>!l.product||!l.productType||!(l.quantity>0)||!(l.rate>=0)||!(l.amount>=0)||!Number.isFinite(l.quantity)||!Number.isFinite(l.rate)||!Number.isFinite(l.amount))){purchaseFormNotice('Enter a product name, product type, valid quantity, rate and line amount for every bill line. For amount-based calculation, enter the required quantity or rate first.');return}
@@ -1373,7 +1422,7 @@ $('purchaseBillForm').onsubmit=async e=>{
   recalculateProductionCostsFromInventory();
  }
  else db.purchaseBills.unshift({id:crypto.randomUUID(),...values});
- if(supplier&&!db.suppliers.includes(supplier))db.suppliers.push(supplier);lines.forEach(l=>{if(!db.productNames.includes(l.product))db.productNames.push(l.product);if(!db.purchaseCategories.includes(l.category))db.purchaseCategories.push(l.category);if(!db.productTypes.some(type=>type.toLocaleLowerCase()===l.productType.toLocaleLowerCase()))db.productTypes.push(l.productType);if(!db.units.includes(l.unit))db.units.push(l.unit)});
+ if(supplier&&!db.suppliers.includes(supplier))db.suppliers.push(supplier);lines.forEach(l=>{if(!db.productNames.some(name=>productMasterKey(name)===productMasterKey(l.product)))db.productNames.push(l.product);if(!db.purchaseCategories.includes(l.category))db.purchaseCategories.push(l.category);if(!db.productTypes.some(type=>type.toLocaleLowerCase()===l.productType.toLocaleLowerCase()))db.productTypes.push(l.productType);if(!db.units.includes(l.unit))db.units.push(l.unit)});rememberPurchaseProductDefaults(lines);
  const wasEditing=!!editingPurchaseBillId;resetPurchaseForm();pendingSaveAction=null;save();await showDayQuestSuccess(wasEditing?'Purchase bill updated successfully.':'Purchase bill saved successfully.');
 };
 function inventoryMemberChecks(line){
@@ -1915,7 +1964,7 @@ function editPurchaseBill(id){
  editingPurchaseBillId=id;purchaseBillOriginalDate=String(b.date||'');ensureOption($('purchaseSupplier'),b.supplier);$('purchaseSupplier').value=b.supplier;
  fillChoices();
  $('purchaseBillNo').value=b.billNo||'';$('purchaseAmountMode').value='rate';$('purchaseDate').value=b.date||today();$('purchaseCashPaid').value=Number(b.cashPaid||0);$('purchaseBankPaid').value=Number(b.bankPaid||0);$('purchaseTransitCost').value=Number(b.transitCost||0);$('purchaseTransitPaidFrom').value=b.transitPaidFrom==='Bank'?'Bank':'Cash';$('purchaseDiscount').value=Number(b.discount||0);$('purchaseNote').value=b.note||'';
- purchaseLines=(b.lines||[]).map(l=>({lineId:l.id||null,product:l.product||'',category:l.category||b.category||'Staples',productType:l.productType||'Other',spec:l.spec||'',quantity:Number(l.quantity||0),unit:l.unit||'pcs',rate:Number(l.rate||0),amount:Number(l.amount??(Number(l.quantity||0)*Number(l.rate||0))),amountMode:'rate',calcError:'',amountPending:false,costType:l.costType||'unassigned',costMember:l.costMember||'',costMembers:assignedMembers(l)}));
+ purchaseLines=(b.lines||[]).map(l=>({lineId:l.id||null,product:l.product||'',category:l.category||b.category||db.purchaseCategories[0]||'Staples',productType:l.productType||'Other',spec:l.spec||'',quantity:Number(l.quantity||0),unit:l.unit||'pcs',rate:Number(l.rate||0),amount:Number(l.amount??(Number(l.quantity||0)*Number(l.rate||0))),amountMode:'rate',calcError:'',amountPending:false,costType:l.costType||'unassigned',costMember:l.costMember||'',costMembers:assignedMembers(l)}));
  purchaseLines.forEach(l=>{if(!db.units.includes(l.unit))db.units.push(l.unit)});if($('purchaseEditHint')){$('purchaseEditHint').hidden=false;const hasUsedLines=db.consumptions.some(c=>c.billId===id);$('purchaseEditHint').textContent=hasUsedLines?'You are updating a bill already linked to inventory use, production or sales. Keep the used line in place; quantity changes proportionally update linked stock movements, unit/price corrections recalculate downstream production costs, supplier balances and reports.':'You are updating a saved bill. Inventory, supplier balances, production costs and all reports recalculate when you save.';}renderPurchaseLines();$('purchaseBillSubmit').textContent='Update recent bill';$('cancelPurchaseEdit').hidden=false;$('purchaseBillForm').scrollIntoView({behavior:'smooth',block:'start'});
 }
 $('cancelPurchaseEdit').onclick=resetPurchaseForm;
