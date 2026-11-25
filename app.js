@@ -1513,7 +1513,7 @@ $('budgetViewBtn').addEventListener('click',()=>{
  if(!currentBudgetPlan()){alert('Select a Budget first.');return}
  setTab('budgetViewPage');renderBudgetView();
 });
-$('budgetViewBack').addEventListener('click',()=>setTab('budget'));
+
 $('budgetViewPrint').addEventListener('click',()=>exportBudgetStatement('print'));
 $('budgetViewPdf').addEventListener('click',()=>exportBudgetStatement('pdf'));
 $('budgetViewExcel').addEventListener('click',()=>exportBudgetStatement('excel'));
