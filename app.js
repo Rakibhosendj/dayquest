@@ -494,6 +494,7 @@ function paymentBalanceError(method,amount,addBack=0){
  return value>available+0.000001?`Insufficient ${account} balance. Available balance: ${money(available)}.`:'';
 }
 let activeReportSectionKey='members';
+let latestCreditorOutstandingTotal=0;
 function updatePageBalanceTitle(tab){
  const titles={home:'Overview',purchaseBills:'Purchase',inventory:'Inventory',budget:'Budget',budgetViewPage:'Budget',production:'Production',supplierAccounts:'Supplier Accounts',supplierEntry:'Supplier Entry',creditors:'Creditors',debitors:'Debtors',payExpenseDue:'Outstanding',loans:'Loans',income:'Income',meals:'Meals',quests:'Daily Quest',questSetup:'Daily Quest',profile:'Profile',memberProfilePage:selectedMemberProfileName||'Member Profile',settings:'Settings',costChartPage:'Cost Chart',quickExpenses:'Quick Expenses',expenseEntries:'Expenses'};
  let title=titles[tab]||String(tab||'DayQuest').replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase());
@@ -2839,7 +2840,7 @@ function reportSummaryMetrics(key){
  if(key==='assets')return `${reportMetricText('assetPurchaseTotal')} · ${reportMetricText('assetPurchaseLines')} lines`;
  if(key==='members')return `${reportMetricText('familyCostTotal')} shared · ${reportMetricText('memberDirectCostTotal')} direct`;
  if(key==='production')return `${reportMetricText('productionReportCost')} · ${reportMetricText('productionReportBatchCount')} batches`;
- if(key==='creditors')return `${reportMetricText('iOweTotal')} outstanding`;
+ if(key==='creditors')return `${money(latestCreditorOutstandingTotal)} outstanding`;
  if(key==='debitors')return `${reportMetricText('owedToMeTotal')} receivable`;
  if(key==='cost')return `${reportMetricText('reportTotal')} total cost`;
  if(key==='income')return `${reportMetricText('reportIncomeTotal')} recorded · ${reportMetricText('reportIncomeCollected')} received`;
@@ -3216,11 +3217,12 @@ function updateProfilePhotoPreview(){
 }
 function updateAppBrand(){
  const familyName=String($('familyName')?.value ?? db.profile?.familyName ?? '').trim();
- const title=familyName?`${familyName} Day Quest`:'Day Quest';
+ const brandTitle=familyName||'DayQuest';
+ const documentTitle=familyName?`${familyName} · DayQuest`:'DayQuest';
  const sideTitle=$('sidebarBrandTitle'),sideSubtitle=$('sidebarBrandSubtitle');
- if(sideTitle)sideTitle.textContent=title;
+ if(sideTitle)sideTitle.textContent=brandTitle;
  if(sideSubtitle)sideSubtitle.textContent=familyName?'Family dashboard':'Personal dashboard';
- document.title=title;
+ document.title=documentTitle;
  const authTitle=$('authTitle');if(authTitle)authTitle.textContent='Day Quest';
 }
 function mealPersonKey(name){return String(name||'').trim().toLocaleLowerCase()}
@@ -3963,6 +3965,7 @@ function renderReport(){
  const reportOutputs=['productTypePurchaseReport','productPurchaseReport','supplierCreditorReport','iOweList','startingCreditorList','creditorHistoryList','owedToMeList','incomeDueList','categoryBreakdown','memberCostBreakdown','memberProductConsumption','guestReport','incomePersonBreakdown','incomeHeadBreakdown','salesReportList','productionReportList','assetPurchaseReportList'];
  if(!from||!to||from>to){
   const message=!from||!to?'Choose both a From date and a To date to view reports.':'Invalid date range: the From date must be on or before the To date.';
+  latestCreditorOutstandingTotal=0;
   if(hint){hint.textContent=message;hint.classList.add('date-range-error')}
   reportOutputs.forEach(id=>{const node=$(id);if(node)node.innerHTML=empty(message)});
   ['reportTotal','costReportPaidTotal','costReportDueTotal','costReportDiscountTotal','reportIncomeTotal','reportIncomeCollected','reportSalesTotal','reportSalesCollected','reportSalesDue','familyCostTotal','familyCostPerMember','memberDirectCostTotal','unassignedCostTotal','iOweExpenseTotal','owedToMeExpenseTotal','incomeDueTotal','productionReportCost','assetPurchaseTotal'].forEach(id=>{if($(id))$(id).textContent=money(0)});
@@ -4059,9 +4062,12 @@ function renderDueReport(from,to){
  const expenseOweTotal=iOwe.reduce((t,x)=>t+expenseOutstandingAt(x,asOf),0);
  const owedExpenseTotal=owedExpenses.reduce((t,x)=>t+expenseOutstandingAt(x,asOf),0);
  const incomeDueAmount=incomeDue.reduce((t,x)=>t+incomeOutstandingAt(x,asOf),0);
- $('iOweTotal').textContent=money(supplierTotal+expenseOweTotal+openingCreditorTotal);$('iOweExpenseTotal').textContent=money(expenseOweTotal+openingCreditorTotal);
+ latestCreditorOutstandingTotal=supplierTotal+expenseOweTotal+openingCreditorTotal;
+ const creditorTotalNode=$('iOweTotal');if(creditorTotalNode)creditorTotalNode.textContent=money(latestCreditorOutstandingTotal);
+ const creditorExpenseTotalNode=$('iOweExpenseTotal');if(creditorExpenseTotalNode)creditorExpenseTotalNode.textContent=money(expenseOweTotal+openingCreditorTotal);
  $('owedToMeTotal').textContent=money(owedExpenseTotal+incomeDueAmount+openingDebtorTotal);$('owedToMeExpenseTotal').textContent=money(owedExpenseTotal+openingDebtorTotal);$('incomeDueTotal').textContent=money(incomeDueAmount);
- $('creditorAsOfLabel').textContent=fmt(asOf);$('debitorAsOfLabel').textContent=fmt(asOf);
+ const creditorDateNode=$('creditorAsOfLabel');if(creditorDateNode)creditorDateNode.textContent=fmt(asOf);
+ const debtorDateNode=$('debitorAsOfLabel');if(debtorDateNode)debtorDateNode.textContent=fmt(asOf);
  const openingRows=(items,kind)=>items.filter(x=>(!x.date||String(x.date)<=asOf)).map(x=>{
   const remaining=openingRemaining(x),canSettle=remaining>0.000001;
   return `<button type="button" class="breakrow creditor-one-line recent-balance-row" data-opening-balance="${kind}" data-opening-id="${esc(x.id)}" ${canSettle?'':'disabled'} aria-label="${canSettle?(kind==='creditor'?'Repay':'Collect'):'Settled'} ${esc(x.party||x.name||'Unknown account')}"><span><strong>${esc(x.party||x.name||'Unknown creditor')}</strong></span><strong class="creditor-row-balance">${money(remaining)}</strong></button>`;
