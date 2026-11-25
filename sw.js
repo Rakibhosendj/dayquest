@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v269-collapsible-sidebar-v38';
+const CACHE = 'dayquest-cache-v270-full-app-review-fixes-v39';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261125-collapsible-sidebar-v38',
-  './app.js?v=20261125-collapsible-sidebar-v38',
+  './style.css?v=20261125-full-app-review-fixes-v39',
+  './app.js?v=20261125-full-app-review-fixes-v39',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
   './icons/icon-512.svg',
