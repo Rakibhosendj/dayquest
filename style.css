@@ -947,12 +947,30 @@ button,input,select,textarea{
 .supplier-entry-info b{color:#526176}
 @media(max-width:560px){.supplier-entry-grid{grid-template-columns:1fr}.supplier-entry-row{align-items:flex-start;flex-direction:column}.supplier-entry-row .edit-btn{align-self:flex-end}}
 
-/* Hold a side-menu row to reorder it. The full row moves as one item, including its submenu. */
-.side-nav>[data-menu-item]{position:relative;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:pan-y}
-.side-nav>[data-menu-item].side-menu-dragging{opacity:.78;z-index:4;transform:scale(.985);outline:2px solid #ffffff70;outline-offset:2px;cursor:grabbing;box-shadow:0 10px 24px #0005}
-.side-nav.side-menu-reordering>[data-menu-item]:not(.side-menu-dragging){transition:transform .08s ease}
-.side-nav>[data-menu-item]:focus-visible{outline:2px solid #f7c76b;outline-offset:2px}
-.side-menu-reorder-hint{padding:5px 10px;color:#9baac0;font-size:9px}
+/* Sectioned sidebar: compact category labels and whole-section sorting. */
+.side-nav{display:grid;gap:8px}
+.side-menu-section{display:grid;gap:4px;min-width:0}
+.side-menu-section+.side-menu-section{padding-top:8px;border-top:1px solid #ffffff16}
+.side-menu-section-heading{display:flex;align-items:center;gap:7px;min-height:25px;padding:3px 9px;border:0;border-radius:7px;background:transparent;color:var(--sidebar-muted-color,#9baac0);font-size:9px;font-weight:850;letter-spacing:1.25px;line-height:1.25;text-align:left;cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:pan-y}
+.side-menu-section-heading:hover{background:#ffffff08;color:var(--sidebar-text-color,#fff)}
+.side-menu-section-heading:focus-visible{outline:2px solid #f7c76b;outline-offset:2px}
+.side-menu-section-number{display:grid;place-items:center;flex:0 0 21px;height:19px;border-radius:6px;background:#ffffff10;color:var(--sidebar-muted-color,#b6c4d8);font-size:8px;letter-spacing:.2px}
+.side-menu-section-label{min-width:0}
+.side-menu-section-grip{margin-left:auto;font-size:14px;line-height:1;letter-spacing:0;opacity:.65}
+.side-menu-section-items{display:grid;gap:3px;min-width:0}
+.side-menu-section-dragging{position:relative;z-index:4;opacity:.8;transform:scale(.99);outline:2px solid #ffffff70;outline-offset:2px;cursor:grabbing;box-shadow:0 10px 24px #0005}
+.side-nav.side-menu-reordering>.side-menu-section:not(.side-menu-section-dragging){transition:transform .08s ease}
+.side-menu-section-heading[aria-grabbed="true"]{cursor:grabbing}
+.side-menu-section .side-link{min-height:39px}
+.side-menu-section .side-sub-link{min-height:36px;padding:8px 10px}
+.side-menu-section .side-submenu{padding-left:20px}
+.report-side-submenu{max-height:min(44vh,390px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding-right:4px}
+@media(max-width:759px){
+ .side-menu-section-heading{min-height:28px}
+ .side-menu-section .side-link{min-height:42px}
+ .side-menu-section .side-sub-link{min-height:40px}
+ .report-side-submenu{max-height:42vh}
+}
 
 /* Settings: manual newer-cloud-data update notice */
 .settings-cloud-update-btn{display:inline-flex;align-items:center;gap:9px;margin:4px 0 8px;padding:11px 16px;border:1px solid #c62828;border-radius:10px;background:#fff5f5;color:#a31313;font-weight:800;cursor:pointer}
