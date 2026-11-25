@@ -1235,7 +1235,7 @@ function renderBudget(){
  if($('budgetProgress'))$('budgetProgress').textContent=planned>0?Math.round(actual/planned*100)+'% used':'—';
  if($('budgetComparison'))$('budgetComparison').innerHTML=plan?renderBudgetComparison(comparisons,budgetUnplannedPurchases(plan)):'';
  const readOnly=!!(activeSharedBudgetContext&&plan&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner&&activeSharedBudgetContext.permission!=='edit');
- $('budgetName').disabled=readOnly;$('addBudgetRowBtn').disabled=readOnly;$('saveBudgetBtn').disabled=readOnly;
+ $('budgetName').disabled=readOnly;$('addBudgetRowBtn').disabled=readOnly;$('saveBudgetBtn').disabled=readOnly;$('budgetShareBtn').disabled=!plan||!plan.rows.length||readOnly;
  $('budgetList').querySelectorAll('input,button').forEach(el=>el.disabled=readOnly);
 }
 function createBudget(){
