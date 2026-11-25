@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { isTrustedWebPushEndpoint } from "../_shared/push-endpoint.mjs";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,8 +67,8 @@ Deno.serve(async (request: Request) => {
     timeZone: String(rawPreferences.timeZone || "Asia/Dhaka").slice(0, 80),
   };
 
-  if (!endpoint || endpoint.length > 2048 || !endpoint.startsWith("https://")) {
-    return json({ error: "A valid HTTPS push endpoint is required." }, 400);
+  if (!isTrustedWebPushEndpoint(endpoint)) {
+    return json({ error: "This browser push endpoint is not from a supported provider." }, 400);
   }
 
   const admin = createClient(supabaseUrl, serviceRoleKey, {
