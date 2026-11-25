@@ -1234,7 +1234,7 @@ function renderBudgetView(){
  $('budgetViewTotal').textContent=money(total);
  $('budgetViewGrandTotal').textContent=money(total);
  $('budgetViewTable').innerHTML='<div class="budget-table-wrap"><table class="budget-table budget-view-readonly"><thead><tr><th>SL</th><th>Products</th><th>Rate</th><th>Quantity</th><th>Unit</th><th>Total Cost</th></tr></thead><tbody>'+
-  rows.map(row=>'<tr><td>'+row.sl+'</td><td><strong>'+esc(row.product)+'</strong>'+(row.spec?'<small>'+esc(row.spec)+'</small>':'')+'</td><td data-label="Rate">'+money(row.rate)+'</td><td data-label="Qty">'+numberText(row.quantity)+'</td><td data-label="Unit">'+esc(row.unit)+'</td><td data-label="Amount">'+money(row.total)+'</td></tr>').join('')+
+  rows.map(row=>'<tr><td>'+row.sl+'</td><td data-label="Item"><strong>'+esc(row.product)+'</strong>'+(row.spec?'<small>'+esc(row.spec)+'</small>':'')+'</td><td data-label="Rate">'+money(row.rate)+'</td><td data-label="Qty">'+numberText(row.quantity)+'</td><td data-label="Unit">'+esc(row.unit)+'</td><td data-label="Amount">'+money(row.total)+'</td></tr>').join('')+
   '</tbody></table></div>';
 }
 function budgetStatementHtml(plan){
