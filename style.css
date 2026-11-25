@@ -2931,3 +2931,11 @@ body{color:var(--dq-font-color,#263b5c)}
  .cost-report-group-total{font-size:11px}
 }
 @media(max-width:360px){.cost-report-item-details{grid-template-columns:minmax(0,1fr)}.cost-report-summary-metrics article strong{font-size:10px}}
+
+
+/* DayQuest email-confirmation screen: clear instructions and accessible mobile controls. */
+#authVerifyView .auth-copy strong{color:#263b5c;overflow-wrap:anywhere}
+#authVerifyView #resendSignupConfirmation{min-height:46px;margin:5px 0 8px}
+#authVerifyView #showLoginFromVerify{min-height:44px}
+#authVerifyView[hidden]{display:none!important}
+@media(max-width:520px){.cloud-auth-card{width:100%;max-width:460px;box-sizing:border-box;padding:20px}.auth-form label{font-size:12px}.auth-form input,.auth-form select{min-height:42px;font-size:16px}}
