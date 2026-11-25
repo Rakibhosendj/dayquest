@@ -1515,6 +1515,9 @@ $('budgetShareBtn').addEventListener('click',async()=>{
  });
  $('refreshSharedBudgets').addEventListener('click',renderSharedBudgetList);
  $('budgetPlanSelect').addEventListener('change',()=>{activeBudgetKey=$('budgetPlanSelect').value;activeSharedBudgetContext=null;renderBudget()});
+$('newBudgetBtn').addEventListener('click',createBudget);
+$('budgetDeleteBtn').addEventListener('click',deleteCurrentBudget);
+$('addBudgetRowBtn').addEventListener('click',addBudgetRow);
 $('saveBudgetBtn').addEventListener('click',saveBudget);
 $('budgetViewBtn').addEventListener('click',()=>{
  if(!currentBudgetPlan()){alert('Select a Budget first.');return}
