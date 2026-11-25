@@ -11,12 +11,13 @@ function normalizeSideMenuOrder(value,availableKeys=SIDE_MENU_DEFAULT_ORDER){
  return [...new Set([...picked,...defaults])];
 }
 const DEFAULT_PRODUCT_DICTIONARY=[{"english":"Rice","bangla":"চাল"},{"english":"Miniket Rice","bangla":"মিনিকেট চাল"},{"english":"Nazirshail Rice","bangla":"নাজিরশাইল চাল"},{"english":"Basmati Rice","bangla":"বাসমতী চাল"},{"english":"Brown Rice","bangla":"লাল চাল"},{"english":"Flattened Rice (Chira)","bangla":"চিড়া"},{"english":"Puffed Rice (Muri)","bangla":"মুড়ি"},{"english":"Wheat Flour (Atta)","bangla":"আটা"},{"english":"All-purpose Flour (Maida)","bangla":"ময়দা"},{"english":"Semolina (Suji)","bangla":"সুজি"},{"english":"Vermicelli (Shemai)","bangla":"সেমাই"},{"english":"Lentils (Dal)","bangla":"ডাল"},{"english":"Red Lentils (Masoor Dal)","bangla":"মসুর ডাল"},{"english":"Yellow Split Peas (Moong Dal)","bangla":"মুগ ডাল"},{"english":"Chickpeas (Chhola)","bangla":"ছোলা"},{"english":"Black Gram (Mashkalai Dal)","bangla":"মাষকলাই ডাল"},{"english":"Peas","bangla":"মটরশুঁটি"},{"english":"Soybean Oil","bangla":"সয়াবিন তেল"},{"english":"Mustard Oil","bangla":"সরিষার তেল"},{"english":"Palm Oil","bangla":"পাম তেল"},{"english":"Ghee","bangla":"ঘি"},{"english":"Salt","bangla":"লবণ"},{"english":"Sugar","bangla":"চিনি"},{"english":"Jaggery","bangla":"গুড়"},{"english":"Tea","bangla":"চা"},{"english":"Coffee","bangla":"কফি"},{"english":"Milk","bangla":"দুধ"},{"english":"Powdered Milk","bangla":"গুঁড়া দুধ"},{"english":"Yogurt","bangla":"দই"},{"english":"Butter","bangla":"মাখন"},{"english":"Cheese","bangla":"পনির"},{"english":"Eggs","bangla":"ডিম"},{"english":"Chicken","bangla":"মুরগি"},{"english":"Beef","bangla":"গরুর মাংস"},{"english":"Mutton","bangla":"খাসির মাংস"},{"english":"Fish","bangla":"মাছ"},{"english":"Hilsa Fish","bangla":"ইলিশ মাছ"},{"english":"Rohu Fish","bangla":"রুই মাছ"},{"english":"Tilapia Fish","bangla":"তেলাপিয়া মাছ"},{"english":"Prawns","bangla":"চিংড়ি"},{"english":"Dried Fish","bangla":"শুঁটকি"},{"english":"Potato","bangla":"আলু"},{"english":"Onion","bangla":"পেঁয়াজ"},{"english":"Garlic","bangla":"রসুন"},{"english":"Ginger","bangla":"আদা"},{"english":"Tomato","bangla":"টমেটো"},{"english":"Green Chilli","bangla":"কাঁচা মরিচ"},{"english":"Red Chilli Powder","bangla":"মরিচ গুঁড়া"},{"english":"Turmeric Powder","bangla":"হলুদ গুঁড়া"},{"english":"Cumin","bangla":"জিরা"},{"english":"Coriander","bangla":"ধনিয়া"},{"english":"Cinnamon","bangla":"দারুচিনি"},{"english":"Cardamom","bangla":"এলাচ"},{"english":"Cloves","bangla":"লবঙ্গ"},{"english":"Bay Leaf","bangla":"তেজপাতা"},{"english":"Black Pepper","bangla":"গোলমরিচ"},{"english":"Brinjal (Eggplant)","bangla":"বেগুন"},{"english":"Cucumber","bangla":"শসা"},{"english":"Carrot","bangla":"গাজর"},{"english":"Cauliflower","bangla":"ফুলকপি"},{"english":"Cabbage","bangla":"বাঁধাকপি"},{"english":"Pumpkin","bangla":"মিষ্টি কুমড়া"},{"english":"Bottle Gourd","bangla":"লাউ"},{"english":"Spinach","bangla":"পালং শাক"},{"english":"Red Amaranth","bangla":"লাল শাক"},{"english":"Coriander Leaves","bangla":"ধনেপাতা"},{"english":"Lemon","bangla":"লেবু"},{"english":"Green Banana","bangla":"কাঁচা কলা"},{"english":"Banana","bangla":"কলা"},{"english":"Mango","bangla":"আম"},{"english":"Jackfruit","bangla":"কাঁঠাল"},{"english":"Apple","bangla":"আপেল"},{"english":"Orange","bangla":"কমলা"},{"english":"Papaya","bangla":"পেঁপে"},{"english":"Bread","bangla":"পাউরুটি"},{"english":"Biscuits","bangla":"বিস্কুট"},{"english":"Noodles","bangla":"নুডলস"},{"english":"Pasta","bangla":"পাস্তা"},{"english":"Tomato Sauce","bangla":"টমেটো সস"},{"english":"Chips","bangla":"চিপস"},{"english":"Dates","bangla":"খেজুর"},{"english":"Peanuts","bangla":"চিনাবাদাম"},{"english":"Bathing Soap","bangla":"গোসলের সাবান"},{"english":"Laundry Detergent","bangla":"কাপড় কাচার ডিটারজেন্ট"},{"english":"Dishwashing Liquid","bangla":"বাসন ধোয়ার তরল"},{"english":"Dishwashing Bar","bangla":"বাসন ধোয়ার সাবান"},{"english":"Shampoo","bangla":"শ্যাম্পু"},{"english":"Toothpaste","bangla":"টুথপেস্ট"},{"english":"Toothbrush","bangla":"টুথব্রাশ"},{"english":"Tissue Paper","bangla":"টিস্যু পেপার"},{"english":"Toilet Cleaner","bangla":"টয়লেট ক্লিনার"},{"english":"Floor Cleaner","bangla":"মেঝে পরিষ্কারের তরল"},{"english":"Phenyl","bangla":"ফিনাইল"},{"english":"Drinking Water","bangla":"পানীয় জল"},{"english":"LPG Gas","bangla":"এলপিজি গ্যাস"},{"english":"Matchbox","bangla":"দেশলাই"},{"english":"Mosquito Coil","bangla":"মশার কয়েল"},{"english":"Light Bulb","bangla":"বৈদ্যুতিক বাল্ব"},{"english":"Battery","bangla":"ব্যাটারি"},{"english":"Candle","bangla":"মোমবাতি"},{"english":"Baby Diaper","bangla":"শিশুর ডায়াপার"},{"english":"Sanitary Napkin","bangla":"স্যানিটারি ন্যাপকিন"},{"english":"Garbage Bag","bangla":"ময়লার ব্যাগ"}];
+function normalizeProductIdentity(value){return String(value??'').normalize('NFC').replace(/\s+/g,' ').trim()}
 function normalizeProductDictionary(entries){
  const source=Array.isArray(entries)?entries:DEFAULT_PRODUCT_DICTIONARY;
  const seen=new Set();
- return source.map(item=>({english:String(item?.english??item?.en??'').trim(),bangla:String(item?.bangla??item?.bn??'').trim(),meal:item?.meal!==false})).filter(item=>{
+ return source.map(item=>({english:normalizeProductIdentity(item?.english??item?.en??''),bangla:normalizeProductIdentity(item?.bangla??item?.bn??''),meal:item?.meal!==false})).filter(item=>{
   if(!item.english||!item.bangla)return false;
-  const key=item.english.toLocaleLowerCase();if(seen.has(key))return false;seen.add(key);return true;
+  const key=normalizeProductIdentity(item.english).toLocaleLowerCase();if(seen.has(key))return false;seen.add(key);return true;
  });
 }
 const load=()=>{try{return JSON.parse(localStorage.getItem('dayquest_v1'))||{expenses:[],quests:[],checks:{}}}catch{return{expenses:[],quests:[],checks:{}}}};
@@ -185,14 +186,14 @@ db.supplierDetails=db.supplierDetails&&typeof db.supplierDetails==='object'&&!Ar
 db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers.filter(name=>db.suppliers.includes(name)))]:[];
 db.mealPlan=db.mealPlan&&typeof db.mealPlan==='object'?db.mealPlan:{};db.mealPlan.defaultCount=Math.max(0,Math.floor(Number(db.mealPlan.defaultCount??3)||0));db.mealPlan.dateCounts=db.mealPlan.dateCounts&&typeof db.mealPlan.dateCounts==='object'?db.mealPlan.dateCounts:{};db.mealPlan.memberStatus=db.mealPlan.memberStatus&&typeof db.mealPlan.memberStatus==='object'?db.mealPlan.memberStatus:{};db.mealPlan.memberCounts=db.mealPlan.memberCounts&&typeof db.mealPlan.memberCounts==='object'?db.mealPlan.memberCounts:{};db.mealPlan.memberChecks=db.mealPlan.memberChecks&&typeof db.mealPlan.memberChecks==='object'?db.mealPlan.memberChecks:{};db.mealPlan.personDates=db.mealPlan.personDates&&typeof db.mealPlan.personDates==='object'?db.mealPlan.personDates:{};db.mealPlan.guestStatus=db.mealPlan.guestStatus&&typeof db.mealPlan.guestStatus==='object'?db.mealPlan.guestStatus:{};db.mealPlan.guestAssignments=db.mealPlan.guestAssignments&&typeof db.mealPlan.guestAssignments==='object'?db.mealPlan.guestAssignments:{};db.mealPlan.guestChecks=db.mealPlan.guestChecks&&typeof db.mealPlan.guestChecks==='object'?db.mealPlan.guestChecks:{};db.mealPlan.costPerMeal=Math.max(0,Number(db.mealPlan.costPerMeal)||0);
 db.productNames=Array.isArray(db.productNames)?db.productNames:[];
-db.productNames=[...new Map(db.productNames.map(n=>[String(n||'').trim().toLocaleLowerCase(),String(n||'').trim()]).filter(([key,value])=>key&&value))].map(([key,value])=>value);
+db.productNames=[...new Map(db.productNames.map(n=>{const value=normalizeProductIdentity(n);return [value.toLocaleLowerCase(),value]}).filter(([key,value])=>key&&value))].map(([,value])=>value);
 db.consumptions=Array.isArray(db.consumptions)?db.consumptions:[];
 db.productions=Array.isArray(db.productions)?db.productions:[];
 function normalizePurchaseInventory(){
  db.purchaseBills.forEach(b=>{
   if(b.supplier&&!db.suppliers.includes(b.supplier))db.suppliers.push(b.supplier);
   (b.lines||[]).forEach(l=>{
-   if(l.product&&!db.productNames.includes(l.product))db.productNames.push(l.product);
+   if(l.product){const product=resolvePurchaseProductName(l.product);if(!db.productNames.some(name=>productMasterKey(name)===productMasterKey(product)))db.productNames.push(product);}
    l.category=String(l.category||b.category||'Staples').trim()||'Staples';
    if(!db.purchaseCategories.some(name=>name.toLocaleLowerCase()===l.category.toLocaleLowerCase()))db.purchaseCategories.push(l.category);
    l.productType=String(l.productType||'Other').trim()||'Other';
@@ -207,9 +208,9 @@ function normalizePurchaseInventory(){
 }
 normalizePurchaseInventory();
 db.productDefaults=db.productDefaults&&typeof db.productDefaults==='object'&&!Array.isArray(db.productDefaults)?db.productDefaults:{};
-function productMasterKey(value){return String(value||'').trim().replace(/\\s+/g,' ').toLocaleLowerCase()}
+function productMasterKey(value){return normalizeProductIdentity(value).toLocaleLowerCase()}
 function resolvePurchaseProductName(value){
- const raw=String(value||'').trim().replace(/\\s+/g,' ');if(!raw)return '';
+ const raw=normalizeProductIdentity(value);if(!raw)return '';
  const dictionary=productDictionaryMatch(raw);if(dictionary)return dictionary.english;
  const existing=db.productNames.find(name=>productMasterKey(name)===productMasterKey(raw));
  return existing||raw;
@@ -1031,8 +1032,8 @@ function renderProductDictionary(){
  });
 }
 function productDictionaryMatch(value){
- const query=String(value||'').trim().toLocaleLowerCase();if(!query)return null;
- return db.productDictionary.find(item=>item.english.toLocaleLowerCase()===query||item.bangla.toLocaleLowerCase()===query)||null;
+ const query=productMasterKey(value);if(!query)return null;
+ return db.productDictionary.find(item=>productMasterKey(item.english)===query||productMasterKey(item.bangla)===query)||null;
 }
 function updateProductDictionaryMatch(input){
  const hint=input?.closest('.purchase-line')?.querySelector('.pl-product-dictionary-match');if(hint){hint.textContent='';hint.hidden=true;}
