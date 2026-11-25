@@ -351,20 +351,20 @@
  <div id="inventoryList" class="list"></div>
 </section>
 <section id="budget" class="panel">
- <p class="muted budget-intro">Budget Planning</p>
+ 
  <div class="form budget-filter-form">
   <div class="budget-date-row">
-   <label>From <input id="budgetFromDate" type="date"></label>
-   <label>To <input id="budgetToDate" type="date"></label>
-   <button type="button" class="primary" id="buildBudgetBtn">Budget</button>
+   <label>Start <input id="budgetFromDate" type="date" aria-label="Budget start date"></label>
+   <label>End <input id="budgetToDate" type="date" aria-label="Budget end date"></label>
+   <button type="button" class="primary" id="buildBudgetBtn">Build</button>
   </div>
  </div>
- <div class="section-head budget-result-head"><div><h3>Budget product list</h3><span class="muted" id="budgetRangeLabel">Choose a date range</span></div><div class="budget-result-actions"><span class="pill" id="budgetProductCount">0 products</span><button type="button" class="secondary" id="budgetViewBtn" disabled>View</button></div></div>
+ <div class="section-head budget-result-head"><div><h3>Items</h3><span class="muted" id="budgetRangeLabel">Choose a date range</span></div><div class="budget-result-actions"><span class="pill" id="budgetProductCount">0 products</span><button type="button" class="secondary" id="budgetViewBtn" disabled>Details</button></div></div>
  <div id="budgetList" class="budget-list"><div class="empty">Select a From and To date, then click Budget.</div></div>
- <div class="budget-total-row"><span>Budget Total</span><strong id="budgetGrandTotal">৳0.00</strong></div>
+ <div class="budget-total-row"><span>Total</span><strong id="budgetGrandTotal">৳0.00</strong></div>
 </section>
 <section id="budgetViewPage" class="panel budget-view-page">
- <div class="section-head budget-view-toolbar"><div><h2>Budget View</h2><span class="muted" id="budgetViewRange">Selected date range</span></div><button type="button" class="secondary" id="budgetViewBack">← Back to Budget</button></div>
+ <div class="section-head budget-view-toolbar"><div><h2>Budget View</h2><span class="muted" id="budgetViewRange">Selected date range</span></div><button type="button" class="secondary" id="budgetViewBack">← Back</button></div>
  <div class="budget-view-document">
   <div class="budget-view-heading"><div><h2>DayQuest · Budget Statement</h2><span id="budgetViewPeriod"></span></div><strong id="budgetViewTotal">৳0.00</strong></div>
   <div id="budgetViewTable" class="budget-view-table"></div>
