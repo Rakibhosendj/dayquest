@@ -359,9 +359,11 @@
    <button type="button" class="primary" id="buildBudgetBtn">Build</button>
   </div>
  </div>
- <div class="section-head budget-result-head"><div><h3>Items</h3><span class="muted" id="budgetRangeLabel">Choose a date range</span></div><div class="budget-result-actions"><span class="pill" id="budgetProductCount">0 products</span><button type="button" class="secondary" id="budgetViewBtn" disabled>Details</button></div></div>
+ <div class="section-head budget-result-head"><div><h3>Items</h3><span class="muted" id="budgetRangeLabel">Choose a date range</span></div><div class="budget-result-actions"><span class="pill" id="budgetProductCount">0 products</span><button type="button" class="secondary" id="budgetShareBtn">Share</button><button type="button" class="secondary" id="budgetViewBtn" disabled>Details</button></div></div>
  <div id="budgetList" class="budget-list"><div class="empty">Select a From and To date, then click Budget.</div></div>
  <div class="budget-total-row"><span>Total</span><strong id="budgetGrandTotal">৳0.00</strong></div>
+ <div class="section-head shared-budget-heading"><h3>Shared Budgets</h3><button type="button" class="secondary" id="refreshSharedBudgets">Refresh</button></div>
+ <div id="sharedBudgetList" class="shared-budget-list"><div class="empty">No shared budgets yet.</div></div>
 </section>
 <section id="budgetViewPage" class="panel budget-view-page">
  <div class="section-head budget-view-toolbar"><div><h2>Budget View</h2><span class="muted" id="budgetViewRange">Selected date range</span></div><button type="button" class="secondary" id="budgetViewBack">← Back</button></div>
@@ -1103,6 +1105,16 @@
 </section>
 </main>
 <footer>DayQuest · Private by design · Works offline</footer>
+<dialog id="budgetShareDialog" class="dq-message-dialog budget-share-dialog" aria-labelledby="budgetShareTitle">
+ <form id="budgetShareForm" class="dq-message-card">
+  <div class="dq-message-brand"><img src="icons/icon-192.png?v=20261121-coin-check" alt="DayQuest app icon"><h2>DayQuest</h2></div>
+  <h3 id="budgetShareTitle">Share Budget</h3>
+  <label>User Email <input id="budgetShareEmail" type="email" autocomplete="email" placeholder="Registered DayQuest email" required></label>
+  <label>Permission <select id="budgetSharePermission"><option value="view">View only</option><option value="edit">Can edit</option></select></label>
+  <p class="hint">The recipient must have a verified DayQuest account. Only this Budget will be shared.</p>
+  <div class="dq-message-actions"><button class="secondary" id="budgetShareCancel" type="button">Cancel</button><button class="primary" type="submit">Share</button></div>
+ </form>
+</dialog>
 <dialog id="newProductEntryDialog" class="dq-message-dialog new-product-entry-dialog" aria-labelledby="newProductEntryTitle"><form id="newProductEntryForm" class="dq-message-card"><div class="dq-message-brand"><img src="icons/icon-192.png?v=20261121-coin-check" alt="DayQuest app icon"><h2>DayQuest</h2></div><h3 id="newProductEntryTitle">New Product</h3><label>Product name (English) <input id="newProductEntryEnglish" maxlength="80" required placeholder="Enter product name"></label><label>Product name (Bangla) <input id="newProductEntryBangla" maxlength="80" lang="bn" placeholder="Enter Bangla name (optional)"></label><label class="new-product-meal-check"><input id="newProductEntryMeal" type="checkbox" checked> Meals</label><div class="dq-message-actions"><button class="secondary" id="newProductEntryCancel" type="button">Cancel</button><button class="primary" type="submit">Add Product</button></div></form></dialog>
 <dialog id="purchaseSupplierDialog" class="dq-message-dialog purchase-supplier-dialog" aria-labelledby="purchaseSupplierDialogTitle">
  <form id="purchaseSupplierDialogForm" class="dq-message-card">
