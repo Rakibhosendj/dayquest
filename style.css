@@ -2974,3 +2974,35 @@ body{color:var(--dq-font-color,#263b5c)}
 .pl-product-input-wrap>.pl-product{width:100%;padding-right:112px!important}
 .pl-last-rate-popup{position:absolute;right:6px;top:50%;transform:translateY(-50%);z-index:2;display:inline-flex;align-items:center;max-width:104px;overflow:hidden;padding:3px 6px;border:1px solid #dce5f0;border-radius:7px;background:#f1f5fa;color:#344964;font-size:10px;line-height:1.2;font-weight:750;white-space:nowrap;text-overflow:ellipsis;pointer-events:none;box-shadow:0 2px 7px rgba(25,43,68,.12)}
 .pl-last-rate-popup[hidden]{display:none}
+
+
+/* Budget: compact mobile cards with short labels, while keeping the full desktop table. */
+@media(max-width:620px){
+ #budget .budget-result-head{gap:7px;align-items:center}
+ #budget .budget-result-head h3{font-size:13px}
+ #budget .budget-result-actions{gap:5px}
+ #budget .budget-result-actions .pill{font-size:9px;padding:4px 6px}
+ #budget .budget-result-actions button{min-height:36px;padding:7px 9px;font-size:11px}
+ #budget .budget-table-wrap{overflow:visible;border:0;background:transparent}
+ #budget .budget-table{display:block;min-width:0;width:100%;font-size:11px}
+ #budget .budget-table thead{display:none}
+ #budget .budget-table tbody{display:grid;gap:8px}
+ #budget .budget-table tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 10px;padding:10px;border:1px solid #e5eaf1;border-radius:11px;background:#fff}
+ #budget .budget-table tbody td{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:7px;min-width:0;width:auto!important;padding:0!important;border:0!important;text-align:right!important;white-space:normal!important;overflow:visible!important;font-size:11px!important}
+ #budget .budget-table tbody td:before{content:attr(data-label);color:#788497;font-size:10px;font-weight:650;text-align:left}
+ #budget .budget-table tbody td:first-child{display:none}
+ #budget .budget-table tbody td[data-label="Item"]{grid-column:1/-1;display:block;text-align:left!important;padding-bottom:5px!important;border-bottom:1px solid #edf0f4!important}
+ #budget .budget-table tbody td[data-label="Item"]:before{content:"";display:none}
+ #budget .budget-table tbody td[data-label="Item"] strong{font-size:12px;white-space:normal;overflow-wrap:anywhere}
+ #budget .budget-table tbody td[data-label="Item"] small{display:block!important;font-size:10px}
+ #budget .budget-table tbody td[data-label="Qty"]{display:flex;align-items:center;justify-content:space-between;gap:8px}
+ #budget .budget-quantity-input{width:76px;min-height:38px;padding:7px 5px;font-size:14px;text-align:center}
+ #budget .budget-table tbody td[data-label="Amount"]{font-weight:800;color:#233b5a}
+ #budget .budget-total-row{margin-top:9px;padding:11px 12px}
+ #budget .budget-total-row strong{font-size:16px}
+ #budget .budget-date-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #budget .budget-date-row button{grid-column:1/-1;min-height:42px}
+ #budgetViewPage .budget-view-toolbar{align-items:center}
+ #budgetViewPage .budget-view-toolbar button{min-height:40px}
+ #budgetViewPage .budget-view-readonly tbody td{display:table-cell!important;padding:7px 5px!important;font-size:10px!important}
+}
