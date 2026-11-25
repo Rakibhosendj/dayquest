@@ -2490,7 +2490,7 @@ body{color:var(--dq-font-color,#263b5c)}
  #overviewSectionAccountTotals .account-total-card .quick-action-button-stats>span{font-size:9px}
  #overviewSectionAccountTotals .account-total-card .quick-action-button-stats>span:first-child{font-size:15px}
  #overviewSectionAccountTotals .account-total-card .quick-action-button-stats>span:last-child{font-size:9px}
- #overviewSectionAccountTotals .account-total-card:last-child{grid-column:auto}
+ #overviewSectionAccountTotals .account-total-card:last-child{grid-column:1/-1}
 }
 
 #overviewSectionIncomeTotals .overview-account-total-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,220px));gap:12px}
@@ -2939,3 +2939,9 @@ body{color:var(--dq-font-color,#263b5c)}
 #authVerifyView #showLoginFromVerify{min-height:44px}
 #authVerifyView[hidden]{display:none!important}
 @media(max-width:520px){.cloud-auth-card{width:100%;max-width:460px;box-sizing:border-box;padding:20px}.auth-form label{font-size:12px}.auth-form input,.auth-form select{min-height:42px;font-size:16px}}
+
+/* Overview drag affordance and compact mobile summary tiles. */
+#home .overview-sortable-section{position:relative}
+#home .overview-sections-reordering .overview-sortable-section{cursor:grabbing}
+#home .overview-section-dragging{touch-action:none}
+@media(max-width:620px){#overviewSectionAccountTotals .overview-account-total-list,#overviewSectionIncomeTotals .overview-account-total-list{gap:7px}#overviewSectionAccountTotals .account-total-card,#overviewSectionIncomeTotals .account-total-card{min-width:0}}
