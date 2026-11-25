@@ -1274,6 +1274,56 @@ function renderBudgetView(){
  rows.map(row=>'<tr><td>'+esc(fmt(row.date))+'</td><td><strong>'+esc(row.product)+'</strong>'+(row.spec?'<small>'+esc(row.spec)+'</small>':'')+'</td><td>'+money(row.rate)+'</td><td>'+numberText(row.quantity)+'</td><td>'+esc(row.unit)+'</td><td>'+money(row.total)+'</td></tr>').join('')+
  '</tbody></table></div><div class="budget-view-grand-total"><span>Actual spent</span><strong>'+money(actual)+'</strong></div>';
 }
+function budgetAccessKey(){return activeBudgetKey||$('budgetPlanSelect')?.value||''}
+async function syncActiveSharedBudget(){
+ const context=activeSharedBudgetContext;if(!context||!supabaseClient||!cloudUser)return;
+ const plan=db.budgetPlans[context.budget_key];if(!plan)return;
+ try{
+  const result=context.is_owner
+   ?await supabaseClient.rpc('dayquest_update_owned_budget',{p_budget_key:context.budget_key,p_budget:plan})
+   :await supabaseClient.rpc('dayquest_update_shared_budget',{p_shared_budget_id:context.id,p_budget:plan});
+  if(result.error)throw result.error;
+ }catch(error){console.error('Shared Budget sync failed',error);alert('Shared Budget sync failed. Your local copy is saved. '+String(error.message||error).slice(0,120))}
+}
+async function renderSharedBudgetList(){
+ const list=$('sharedBudgetList'),owned=$('ownedBudgetShares');if(!list)return;
+ if(!cloudUser||!supabaseClient){list.innerHTML='<div class="empty">Log in to share or receive Budgets.</div>';if(owned)owned.innerHTML='<div class="empty">Log in to manage shared access.</div>';return}
+ list.innerHTML='<div class="empty">Loading…</div>';if(owned)owned.innerHTML='<div class="empty">Loading…</div>';
+ const {data,error}=await supabaseClient.rpc('dayquest_list_shared_budgets');
+ if(error){list.innerHTML='<div class="empty">Shared Budget setup is pending. Apply the Supabase migrations first.</div>';if(owned)owned.innerHTML='<div class="empty">Share management is unavailable.</div>';return}
+ const incoming=(Array.isArray(data)?data:[]).filter(item=>!item.is_owner);
+ if(!incoming.length)list.innerHTML='<div class="empty">No shared Budgets received yet.</div>';
+ else list.innerHTML=incoming.map((item,index)=>'<button type="button" class="shared-budget-item" data-shared-index="'+index+'"><span><strong>'+esc(item.budget?.name||item.budget_key||'Shared Budget')+'</strong><small>'+esc(item.owner_email||'DayQuest User')+' · '+(item.permission==='edit'?'Can edit':'View only')+'</small></span><strong>'+money((item.budget?.rows||[]).reduce((sum,row)=>sum+budgetRowAmount(row),0))+'</strong></button>').join('');
+ list.querySelectorAll('[data-shared-index]').forEach(button=>button.addEventListener('click',()=>{
+  const item=incoming[Number(button.dataset.sharedIndex)];if(!item)return;
+  const key=item.budget_key;db.budgetPlans[key]=JSON.parse(JSON.stringify(item.budget||{}));activeBudgetKey=key;
+  activeSharedBudgetContext={id:item.id,budget_key:key,permission:item.permission,is_owner:false};localSaveOnly();renderBudget();setTab('budget');
+ }));
+ if(owned){
+  const {data:shares,error:shareError}=await supabaseClient.rpc('dayquest_list_owned_budget_shares');
+  if(shareError){owned.innerHTML='<div class="empty">Apply the latest Budget sharing migration to manage access.</div>';return}
+  const rows=Array.isArray(shares)?shares:[];
+  owned.innerHTML=rows.length?rows.map((item,index)=>'<div class="owned-budget-share-row"><span><strong>'+esc(item.budget_name||'Budget')+'</strong><small>'+esc(item.member_email||'User')+' · '+(item.permission==='edit'?'Can edit':'View only')+'</small></span><button type="button" class="secondary" data-revoke-share="'+index+'">Revoke</button></div>').join():'<div class="empty">No outgoing shares.</div>';
+  owned.querySelectorAll('[data-revoke-share]').forEach(button=>button.addEventListener('click',async()=>{
+   const item=rows[Number(button.dataset.revokeShare)];if(!item||!confirm('Revoke Budget access for '+item.member_email+'?'))return;
+   const result=await supabaseClient.rpc('dayquest_remove_budget_access',{p_shared_budget_id:item.shared_budget_id,p_member_id:item.member_id});
+   if(result.error){alert('Could not revoke access: '+String(result.error.message||result.error));return}
+   alert('Budget access revoked.');renderSharedBudgetList();
+  }));
+ }
+}
+async function shareCurrentBudget(){
+ const plan=currentBudgetPlan();if(!plan){alert('আগে Budget তৈরি করুন।');return}
+ if(!cloudUser||!supabaseClient){alert('Budget Share করতে Family Account-এ Login করুন।');return}
+ const email=String($('budgetShareEmail')?.value||'').trim(),permission=$('budgetSharePermission')?.value||'view';
+ if(!email){$('budgetShareEmail')?.focus();return}
+ plan.name=String($('budgetName').value||plan.name||'Budget').trim();const key=budgetAccessKey();
+ const {error}=await supabaseClient.rpc('dayquest_share_budget',{p_budget_key:key,p_budget:plan,p_recipient_email:email,p_permission:permission});
+ if(error){alert(String(error.message||'Budget Share করা যায়নি।'));return}
+ $('budgetShareDialog')?.close();$('budgetShareEmail').value='';
+ activeSharedBudgetContext={id:null,budget_key:key,permission:'owner',is_owner:true};
+ alert('Budget Share হয়েছে।');renderSharedBudgetList();
+}
 function budgetStatementHtml(plan){
  const rows=budgetViewRows(plan),total=rows.reduce((sum,row)=>sum+row.total,0);
  const body=rows.map(row=>'<tr><td>'+esc(fmt(row.date))+'</td><td>'+esc(row.product)+(row.spec?' · '+esc(row.spec):'')+'</td><td>'+money(row.rate)+'</td><td>'+esc(numberText(row.quantity))+'</td><td>'+esc(row.unit)+'</td><td>'+money(row.total)+'</td></tr>').join('');
