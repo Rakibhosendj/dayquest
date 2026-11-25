@@ -1205,8 +1205,8 @@ function renderBudgetComparison(groups,unplanned){
  const rows=groups.map(g=>{
   const diff=g.plannedAmount-g.actualAmount,qtyDiff=g.plannedQty-g.actualQty,status=g.actualQty===0?'Pending':diff<0?'Over budget':qtyDiff<=0?'Completed':'In progress';
   return '<div class="budget-compare-row"><div><strong>'+esc(g.product)+'</strong><small>'+esc(fmt(g.date))+(g.spec?' · '+esc(g.spec):'')+' · '+esc(g.unit)+'</small></div>'+
-   '<span><small>Plan</small><b>'+money(g.plannedAmount)+'</b></span><span><small>Actual</small><b>'+money(g.actualAmount)+'</b></span>'+
-   '<span><small>Left</small><b class="'+(diff<0?'negative':'')+'">'+money(diff)+'</b></span><em>'+status+'</em></div>';
+   '<span><small>Plan · Qty '+numberText(g.plannedQty)+'</small><b>'+money(g.plannedAmount)+'</b></span><span><small>Actual · Qty '+numberText(g.actualQty)+'</small><b>'+money(g.actualAmount)+'</b></span>'+
+   '<span><small>Left · Qty '+numberText(qtyDiff)+'</small><b class="'+(diff<0?'negative':'')+'">'+money(diff)+'</b></span><em>'+status+'</em></div>';
  }).join('');
  const extras=unplanned.map(g=>'<div class="budget-compare-row unbudgeted"><div><strong>'+esc(g.product)+'</strong><small>'+esc(fmt(g.date))+' · '+esc(g.unit)+' · Unbudgeted</small></div><span><small>Qty</small><b>'+numberText(g.quantity)+'</b></span><span><small>Actual</small><b>'+money(g.amount)+'</b></span><span><small>Budget</small><b>—</b></span><em>Unbudgeted</em></div>').join('');
  return '<section class="budget-comparison-section"><div class="section-head"><h3>Budget vs Actual</h3><span class="muted">By purchase date</span></div>'+(rows||empty('No planned items yet.'))+(extras?'<h4>Unbudgeted Purchases</h4>'+extras:'')+'</section>';
