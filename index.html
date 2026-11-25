@@ -351,19 +351,28 @@
  <div id="inventoryList" class="list"></div>
 </section>
 <section id="budget" class="panel">
- 
- <div class="form budget-filter-form">
-  <div class="budget-date-row">
-   <label>Start <input id="budgetFromDate" type="date" aria-label="Budget start date"></label>
-   <label>End <input id="budgetToDate" type="date" aria-label="Budget end date"></label>
-   <button type="button" class="primary" id="buildBudgetBtn">Build</button>
-  </div>
+ <div class="budget-toolbar">
+  <label class="budget-select-label">Budget <select id="budgetPlanSelect"><option value="">Select Budget</option></select></label>
+  <button type="button" class="secondary" id="newBudgetBtn">＋ New</button>
+  <button type="button" class="secondary" id="budgetDeleteBtn" disabled>Delete</button>
  </div>
- <div class="section-head budget-result-head"><div><h3>Items</h3><span class="muted" id="budgetRangeLabel">Choose a date range</span></div><div class="budget-result-actions"><span class="pill" id="budgetProductCount">0 products</span><button type="button" class="secondary" id="budgetShareBtn">Share</button><button type="button" class="secondary" id="budgetViewBtn" disabled>Details</button></div></div>
- <div id="budgetList" class="budget-list"><div class="empty">Select a From and To date, then click Budget.</div></div>
- <div class="budget-total-row"><span>Total</span><strong id="budgetGrandTotal">৳0.00</strong></div>
+ <div class="budget-create-head">
+  <label>Budget Name <input id="budgetName" maxlength="100" placeholder="e.g. Monthly Grocery"></label>
+  <div class="budget-create-actions"><button type="button" class="secondary" id="addBudgetRowBtn">＋ Add Item</button><button type="button" class="primary" id="saveBudgetBtn">Save Budget</button></div>
+ </div>
+ <div class="section-head budget-result-head"><div><h3>Planned Items</h3><span class="muted" id="budgetRangeLabel">Create a Budget</span></div><div class="budget-result-actions"><span class="pill" id="budgetProductCount">0 items</span><button type="button" class="secondary" id="budgetShareBtn" disabled>Share</button><button type="button" class="secondary" id="budgetViewBtn" disabled>Details</button></div></div>
+ <div id="budgetList" class="budget-list"><div class="empty">Create a Budget to plan products by purchase date.</div></div>
+ <div class="budget-total-row"><span>Planned Total</span><strong id="budgetGrandTotal">৳0.00</strong></div>
+ <div class="cards budget-actual-summary">
+  <article class="stat"><span class="muted">Actual</span><strong id="budgetActualTotal">৳0.00</strong></article>
+  <article class="stat"><span class="muted">Remaining</span><strong id="budgetRemainingTotal">৳0.00</strong></article>
+  <article class="stat"><span class="muted">Progress</span><strong id="budgetProgress">—</strong></article>
+ </div>
+ <div id="budgetComparison"></div>
  <div class="section-head shared-budget-heading"><h3>Shared Budgets</h3><button type="button" class="secondary" id="refreshSharedBudgets">Refresh</button></div>
  <div id="sharedBudgetList" class="shared-budget-list"><div class="empty">No shared budgets yet.</div></div>
+ <div class="section-head shared-budget-heading"><h3>My Shared Access</h3></div>
+ <div id="ownedBudgetShares" class="shared-budget-list"><div class="empty">No outgoing shares.</div></div>
 </section>
 <section id="budgetViewPage" class="panel budget-view-page">
  <div class="section-head budget-view-toolbar"><div><h2>Budget View</h2><span class="muted" id="budgetViewRange">Selected date range</span></div><button type="button" class="secondary" id="budgetViewBack">← Back</button></div>
