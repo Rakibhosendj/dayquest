@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v273-budget-planner-v42';
+const CACHE = 'dayquest-cache-v274-budget-share-fixes-v43';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261125-budget-planner-v42',
-  './app.js?v=20261125-budget-planner-v42',
+  './style.css?v=20261125-share-page-fix-v44',
+  './app.js?v=20261125-budget-sharing-v43',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
   './icons/icon-512.svg',
