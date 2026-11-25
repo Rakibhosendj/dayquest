@@ -1,4 +1,14 @@
 const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slice(0,10);
+// Keep core Budget actions delegated at document level so rerenders or other
+// page initialization cannot leave these buttons without click handlers.
+document.addEventListener('click',event=>{
+ const target=event.target?.closest?.('#newBudgetBtn,#budgetDeleteBtn,#addBudgetRowBtn');
+ if(!target||target.disabled)return;
+ event.preventDefault();
+ if(target.id==='newBudgetBtn')createBudget();
+ else if(target.id==='budgetDeleteBtn')deleteCurrentBudget();
+ else addBudgetRow();
+},true);
 const appPageHistory=[];
 let outstandingReturnReport='';
 let adminCloudUnlocked=false;
@@ -1258,7 +1268,7 @@ async function saveBudget(options={}){
  if(!rows.length||rows.some(r=>!r.date||!r.product||!Number.isFinite(r.quantity)||r.quantity<=0||!Number.isFinite(r.rate)||r.rate<0)){alert('Each item needs a date, product, valid quantity and rate.');return false}
  plan.name=name;plan.rows=rows;plan.updatedAt=new Date().toISOString();localSaveOnly();renderBudget();
  if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey)await syncActiveSharedBudget();
- alert('Budget saved successfully.');return true;
+  if(!options.silent)alert('Budget saved successfully.');return true;
 }
 async function deleteCurrentBudget(){
   const plan=currentBudgetPlan();if(!plan)return;
@@ -1505,10 +1515,7 @@ $('budgetShareBtn').addEventListener('click',async()=>{
  });
  $('refreshSharedBudgets').addEventListener('click',renderSharedBudgetList);
  $('budgetPlanSelect').addEventListener('change',()=>{activeBudgetKey=$('budgetPlanSelect').value;activeSharedBudgetContext=null;renderBudget()});
-$('newBudgetBtn').addEventListener('click',createBudget);
-$('addBudgetRowBtn').addEventListener('click',addBudgetRow);
 $('saveBudgetBtn').addEventListener('click',saveBudget);
-$('budgetDeleteBtn').addEventListener('click',deleteCurrentBudget);
 $('budgetViewBtn').addEventListener('click',()=>{
  if(!currentBudgetPlan()){alert('Select a Budget first.');return}
  setTab('budgetViewPage');renderBudgetView();
