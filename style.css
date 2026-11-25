@@ -3053,3 +3053,40 @@ body{color:var(--dq-font-color,#263b5c)}
  .budget-compare-row>div{grid-column:1/-1}
  .budget-compare-row em{justify-self:end}
 }
+
+/* Budget page cleanup and separate sharing workspace. */
+.budget-share-page{display:grid;gap:14px}
+.budget-share-intro h2{margin:0 0 4px;font-size:18px}
+.budget-share-intro p{margin:0;font-size:12px}
+.budget-share-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:14px;border:1px solid var(--line,#dfe4ec);border-radius:14px;background:var(--surface,#fff)}
+.budget-share-form label{display:grid;gap:5px;font-size:12px;font-weight:700;color:var(--muted,#667085)}
+.budget-share-form input,.budget-share-form select{width:100%;min-width:0;min-height:42px;padding:9px 10px;font-size:14px}
+.budget-share-form .hint{grid-column:1/-1;margin:0;font-size:11px}
+.budget-share-form>button{grid-column:1/-1;min-height:42px;font-size:14px}
+.budget-share-page .shared-budget-heading{margin-top:4px}
+.budget-share-page .shared-budget-heading h3{font-size:14px}
+@media(max-width:620px){
+ .budget-toolbar{grid-template-columns:minmax(0,1fr) auto auto;gap:6px}
+ .budget-toolbar button{min-height:40px;padding:8px 10px;font-size:13px}
+ .budget-create-head{gap:10px;padding:11px}
+ .budget-create-head>label{font-size:12px}
+ .budget-create-head input{min-height:42px;font-size:14px}
+ .budget-create-actions{gap:7px}
+ .budget-create-actions button{min-height:42px;padding:9px 8px;font-size:13px}
+ .budget-edit-row label{font-size:12px}
+ .budget-edit-row input{min-height:40px;font-size:14px;padding:7px}
+ .budget-row-remove{min-height:38px;min-width:38px;font-size:15px}
+ .budget-result-head h3{font-size:14px}
+ .budget-result-actions button{min-height:38px;font-size:13px;padding:8px 10px}
+ .budget-result-actions .pill{font-size:11px}
+ .budget-actual-summary .stat{min-height:66px;padding:10px 8px}
+ .budget-actual-summary .stat .muted{font-size:11px}
+ .budget-actual-summary .stat strong{font-size:15px}
+ .budget-compare-row{font-size:12px;padding:10px 8px}
+ .budget-compare-row small{font-size:11px}
+ .budget-share-form{grid-template-columns:1fr;padding:12px}
+ .budget-share-form .hint,.budget-share-form>button{grid-column:auto}
+ .budget-share-form label{font-size:12px}
+ .budget-share-form input,.budget-share-form select{min-height:44px;font-size:14px}
+ .budget-share-form>button{min-height:44px}
+}
