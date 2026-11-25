@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v267-rate-unit-popup-v36';
+const CACHE = 'dayquest-cache-v268-sectioned-sidebar-v37';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261125-rate-unit-popup-v36',
-  './app.js?v=20261125-rate-unit-popup-v36',
+  './style.css?v=20261125-sectioned-sidebar-v37',
+  './app.js?v=20261125-sectioned-sidebar-v37',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
   './icons/icon-512.svg',
