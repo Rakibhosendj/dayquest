@@ -881,11 +881,7 @@ function setTab(t,options={}){
  if(t==='quickExpenses'){renderQuickMemberOptions(quickSelectedMembers());fillQuickActionOptions($('quickActionIncomeType')?.value||'', $('quickActionIncomeBy')?.value||'');renderQuickActions();}
  if(t==='questSetup'){if($('questSetupList'))$('questSetupList').innerHTML=questHTML(dayQuests(questLocalDate()),true);}
  if(t==='inventory')renderInventory();
- if(t==='budget'){
-  if(!$('budgetFromDate').value)$('budgetFromDate').value=today().slice(0,8)+'01';
-  if(!$('budgetToDate').value)$('budgetToDate').value=today();
-  renderBudget();
- }
+ if(t==='budget'){renderBudget();renderSharedBudgetList()}
  if(t==='production'){fillProductionOptions();renderProductionList();renderProductionInputs()}
  if(t==='supplierAccounts')renderSupplierAccounts();
   if(t==='creditors')renderCreditorsPage();
