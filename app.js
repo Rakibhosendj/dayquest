@@ -3,12 +3,12 @@ const appPageHistory=[];
 let outstandingReturnReport='';
 let adminCloudUnlocked=false;
 const ADMIN_PASSWORD_ITERATIONS=310000;
-const SIDE_MENU_DEFAULT_ORDER=['home','expenses','inventory','budget','production','supplierAccounts','accounts','loans','income','sales','meals','quests','reports','profile','settings'];
-function normalizeSideMenuOrder(value,availableKeys=SIDE_MENU_DEFAULT_ORDER){
- const defaults=[...new Set([...(Array.isArray(availableKeys)?availableKeys:SIDE_MENU_DEFAULT_ORDER),...SIDE_MENU_DEFAULT_ORDER])];
- const valid=new Set(defaults);
- const picked=Array.isArray(value)?value.filter(key=>valid.has(key)):[];
- return [...new Set([...picked,...defaults])];
+const SIDE_MENU_DEFAULT_ORDER=['overview','transactions','operations','accounts','family','reports','setup'];
+const SIDE_MENU_LEGACY_SECTION_MAP={home:'overview',expenses:'transactions',income:'transactions',sales:'transactions',inventory:'operations',production:'operations',budget:'operations',supplierAccounts:'accounts',accounts:'accounts',loans:'accounts',meals:'family',quests:'family',reports:'reports',profile:'setup',settings:'setup'};
+function normalizeSideMenuOrder(value){
+ const valid=new Set(SIDE_MENU_DEFAULT_ORDER);
+ const picked=Array.isArray(value)?value.map(key=>SIDE_MENU_LEGACY_SECTION_MAP[key]||key).filter(key=>valid.has(key)):[];
+ return [...new Set([...picked,...SIDE_MENU_DEFAULT_ORDER])];
 }
 const DEFAULT_PRODUCT_DICTIONARY=[{"english":"Rice","bangla":"চাল"},{"english":"Miniket Rice","bangla":"মিনিকেট চাল"},{"english":"Nazirshail Rice","bangla":"নাজিরশাইল চাল"},{"english":"Basmati Rice","bangla":"বাসমতী চাল"},{"english":"Brown Rice","bangla":"লাল চাল"},{"english":"Flattened Rice (Chira)","bangla":"চিড়া"},{"english":"Puffed Rice (Muri)","bangla":"মুড়ি"},{"english":"Wheat Flour (Atta)","bangla":"আটা"},{"english":"All-purpose Flour (Maida)","bangla":"ময়দা"},{"english":"Semolina (Suji)","bangla":"সুজি"},{"english":"Vermicelli (Shemai)","bangla":"সেমাই"},{"english":"Lentils (Dal)","bangla":"ডাল"},{"english":"Red Lentils (Masoor Dal)","bangla":"মসুর ডাল"},{"english":"Yellow Split Peas (Moong Dal)","bangla":"মুগ ডাল"},{"english":"Chickpeas (Chhola)","bangla":"ছোলা"},{"english":"Black Gram (Mashkalai Dal)","bangla":"মাষকলাই ডাল"},{"english":"Peas","bangla":"মটরশুঁটি"},{"english":"Soybean Oil","bangla":"সয়াবিন তেল"},{"english":"Mustard Oil","bangla":"সরিষার তেল"},{"english":"Palm Oil","bangla":"পাম তেল"},{"english":"Ghee","bangla":"ঘি"},{"english":"Salt","bangla":"লবণ"},{"english":"Sugar","bangla":"চিনি"},{"english":"Jaggery","bangla":"গুড়"},{"english":"Tea","bangla":"চা"},{"english":"Coffee","bangla":"কফি"},{"english":"Milk","bangla":"দুধ"},{"english":"Powdered Milk","bangla":"গুঁড়া দুধ"},{"english":"Yogurt","bangla":"দই"},{"english":"Butter","bangla":"মাখন"},{"english":"Cheese","bangla":"পনির"},{"english":"Eggs","bangla":"ডিম"},{"english":"Chicken","bangla":"মুরগি"},{"english":"Beef","bangla":"গরুর মাংস"},{"english":"Mutton","bangla":"খাসির মাংস"},{"english":"Fish","bangla":"মাছ"},{"english":"Hilsa Fish","bangla":"ইলিশ মাছ"},{"english":"Rohu Fish","bangla":"রুই মাছ"},{"english":"Tilapia Fish","bangla":"তেলাপিয়া মাছ"},{"english":"Prawns","bangla":"চিংড়ি"},{"english":"Dried Fish","bangla":"শুঁটকি"},{"english":"Potato","bangla":"আলু"},{"english":"Onion","bangla":"পেঁয়াজ"},{"english":"Garlic","bangla":"রসুন"},{"english":"Ginger","bangla":"আদা"},{"english":"Tomato","bangla":"টমেটো"},{"english":"Green Chilli","bangla":"কাঁচা মরিচ"},{"english":"Red Chilli Powder","bangla":"মরিচ গুঁড়া"},{"english":"Turmeric Powder","bangla":"হলুদ গুঁড়া"},{"english":"Cumin","bangla":"জিরা"},{"english":"Coriander","bangla":"ধনিয়া"},{"english":"Cinnamon","bangla":"দারুচিনি"},{"english":"Cardamom","bangla":"এলাচ"},{"english":"Cloves","bangla":"লবঙ্গ"},{"english":"Bay Leaf","bangla":"তেজপাতা"},{"english":"Black Pepper","bangla":"গোলমরিচ"},{"english":"Brinjal (Eggplant)","bangla":"বেগুন"},{"english":"Cucumber","bangla":"শসা"},{"english":"Carrot","bangla":"গাজর"},{"english":"Cauliflower","bangla":"ফুলকপি"},{"english":"Cabbage","bangla":"বাঁধাকপি"},{"english":"Pumpkin","bangla":"মিষ্টি কুমড়া"},{"english":"Bottle Gourd","bangla":"লাউ"},{"english":"Spinach","bangla":"পালং শাক"},{"english":"Red Amaranth","bangla":"লাল শাক"},{"english":"Coriander Leaves","bangla":"ধনেপাতা"},{"english":"Lemon","bangla":"লেবু"},{"english":"Green Banana","bangla":"কাঁচা কলা"},{"english":"Banana","bangla":"কলা"},{"english":"Mango","bangla":"আম"},{"english":"Jackfruit","bangla":"কাঁঠাল"},{"english":"Apple","bangla":"আপেল"},{"english":"Orange","bangla":"কমলা"},{"english":"Papaya","bangla":"পেঁপে"},{"english":"Bread","bangla":"পাউরুটি"},{"english":"Biscuits","bangla":"বিস্কুট"},{"english":"Noodles","bangla":"নুডলস"},{"english":"Pasta","bangla":"পাস্তা"},{"english":"Tomato Sauce","bangla":"টমেটো সস"},{"english":"Chips","bangla":"চিপস"},{"english":"Dates","bangla":"খেজুর"},{"english":"Peanuts","bangla":"চিনাবাদাম"},{"english":"Bathing Soap","bangla":"গোসলের সাবান"},{"english":"Laundry Detergent","bangla":"কাপড় কাচার ডিটারজেন্ট"},{"english":"Dishwashing Liquid","bangla":"বাসন ধোয়ার তরল"},{"english":"Dishwashing Bar","bangla":"বাসন ধোয়ার সাবান"},{"english":"Shampoo","bangla":"শ্যাম্পু"},{"english":"Toothpaste","bangla":"টুথপেস্ট"},{"english":"Toothbrush","bangla":"টুথব্রাশ"},{"english":"Tissue Paper","bangla":"টিস্যু পেপার"},{"english":"Toilet Cleaner","bangla":"টয়লেট ক্লিনার"},{"english":"Floor Cleaner","bangla":"মেঝে পরিষ্কারের তরল"},{"english":"Phenyl","bangla":"ফিনাইল"},{"english":"Drinking Water","bangla":"পানীয় জল"},{"english":"LPG Gas","bangla":"এলপিজি গ্যাস"},{"english":"Matchbox","bangla":"দেশলাই"},{"english":"Mosquito Coil","bangla":"মশার কয়েল"},{"english":"Light Bulb","bangla":"বৈদ্যুতিক বাল্ব"},{"english":"Battery","bangla":"ব্যাটারি"},{"english":"Candle","bangla":"মোমবাতি"},{"english":"Baby Diaper","bangla":"শিশুর ডায়াপার"},{"english":"Sanitary Napkin","bangla":"স্যানিটারি ন্যাপকিন"},{"english":"Garbage Bag","bangla":"ময়লার ব্যাগ"}];
 function normalizeProductIdentity(value){return String(value??'').normalize('NFC').replace(/\s+/g,' ').trim()}
@@ -550,16 +550,15 @@ function closeSidebar(){const side=$('sidebar'),backdrop=$('sidebarBackdrop');si
 
 function applySideMenuOrder(){
  const nav=$('sideNav');if(!nav)return;
- const items=[...nav.children].filter(node=>node.dataset.menuItem);
- const byKey=new Map(items.map(node=>[node.dataset.menuItem,node]));
- const order=normalizeSideMenuOrder(db.sideMenuOrder,items.map(node=>node.dataset.menuItem));
+ const items=[...nav.children].filter(node=>node.dataset.menuSection),byKey=new Map(items.map(node=>[node.dataset.menuSection,node]));
+ const order=normalizeSideMenuOrder(db.sideMenuOrder);
  order.forEach(key=>{const node=byKey.get(key);if(node)nav.appendChild(node)});
  db.sideMenuOrder=order.filter(key=>byKey.has(key));
- [...nav.children].filter(node=>node.dataset.menuItem).forEach((node,index)=>{
-  const mark=node.querySelector('.side-link-mark');
-  if(mark)mark.textContent=String(index+1).padStart(2,'0');
-  node.setAttribute('aria-label',`Hold and drag to move ${node.querySelector('.side-link span:nth-child(2)')?.textContent||node.dataset.menuItem}`);
-  node.title='Hold and drag to change menu order';
+ [...nav.children].filter(node=>node.dataset.menuSection).forEach((node,index)=>{
+  const number=node.querySelector('.side-menu-section-number'),handle=node.querySelector('[data-section-drag-handle]');
+  const label=node.querySelector('.side-menu-section-label')?.textContent?.trim()||node.dataset.menuSection;
+  if(number)number.textContent=String(index+1).padStart(2,'0');
+  if(handle){handle.setAttribute('aria-label',`Reorder ${label}. Hold and drag, or use Alt plus an arrow key.`);handle.title='Hold and drag to move this whole section'}
  });
  db.sideMenuOrder=order;
 }
@@ -569,83 +568,62 @@ function setupSideMenuReordering(){
  const clearTimer=()=>{if(holdTimer!==null){clearTimeout(holdTimer);holdTimer=null}};
  const begin=(item,x,y,pointerId,kind)=>{
   if(!item||item.parentElement!==nav)return;
-  clearTimer();
-  active={item,x,y,pointerId,kind,dragging:false};
+  clearTimer();active={item,x,y,pointerId,kind,dragging:false};
   holdTimer=setTimeout(()=>{
    if(!active)return;
-   active.dragging=true;item.classList.add('side-menu-dragging');
-   nav.classList.add('side-menu-reordering');
-   item.setAttribute('aria-grabbed','true');
+   active.dragging=true;item.classList.add('side-menu-section-dragging');nav.classList.add('side-menu-reordering');item.setAttribute('aria-grabbed','true');
    if(kind==='pointer'&&nav.setPointerCapture){try{nav.setPointerCapture(pointerId)}catch{}}
    if(kind==='touch'&&navigator.vibrate)navigator.vibrate(20);
   },380);
  };
  const move=(x,y,event)=>{
   if(!active)return;
-  if(!active.dragging){
-   if(Math.hypot(x-active.x,y-active.y)>9){clearTimer();active=null}
-   return;
-  }
+  if(!active.dragging){if(Math.hypot(x-active.x,y-active.y)>9){clearTimer();active=null}return}
   event?.preventDefault?.();
-  const under=document.elementFromPoint(x,y)?.closest('[data-menu-item]');
+  const under=document.elementFromPoint(x,y)?.closest('[data-menu-section]');
   if(!under||under.parentElement!==nav||under===active.item)return;
-  const rect=under.getBoundingClientRect();
-  nav.insertBefore(active.item,y<rect.top+rect.height/2?under:under.nextElementSibling);
+  const rect=under.getBoundingClientRect();nav.insertBefore(active.item,y<rect.top+rect.height/2?under:under.nextElementSibling);
  };
  const finish=(persist=true)=>{
-  clearTimer();
-  if(!active)return;
-  const dragged=active.dragging;
-  active.item.classList.remove('side-menu-dragging');
-  active.item.setAttribute('aria-grabbed','false');
-  nav.classList.remove('side-menu-reordering');
+  clearTimer();if(!active)return;
+  const dragged=active.dragging;active.item.classList.remove('side-menu-section-dragging');active.item.setAttribute('aria-grabbed','false');nav.classList.remove('side-menu-reordering');
   if(dragged){
-   db.sideMenuOrder=normalizeSideMenuOrder([...nav.children].filter(node=>node.dataset.menuItem).map(node=>node.dataset.menuItem));
-   suppressClickUntil=Date.now()+450;
-   applySideMenuOrder();
-   if(persist)save();
+   db.sideMenuOrder=normalizeSideMenuOrder([...nav.children].filter(node=>node.dataset.menuSection).map(node=>node.dataset.menuSection));
+   suppressClickUntil=Date.now()+450;applySideMenuOrder();if(persist)save();
   }
   active=null;
  };
- // Mouse/pen: press and hold, then drag.
  nav.addEventListener('pointerdown',event=>{
   if(event.pointerType==='touch'||event.button!==0)return;
-  if(event.target.closest('.side-submenu'))return;
-  const item=event.target.closest('[data-menu-item]');
-  if(!item||item.parentElement!==nav)return;
-  begin(item,event.clientX,event.clientY,event.pointerId,'pointer');
+  const handle=event.target.closest('[data-section-drag-handle]'),item=handle?.closest('[data-menu-section]');
+  if(!item||item.parentElement!==nav)return;begin(item,event.clientX,event.clientY,event.pointerId,'pointer');
  });
- nav.addEventListener('pointermove',event=>{
-  if(!active||active.kind!=='pointer'||event.pointerId!==active.pointerId)return;
-  move(event.clientX,event.clientY,event);
- });
+ nav.addEventListener('pointermove',event=>{if(active?.kind==='pointer'&&event.pointerId===active.pointerId)move(event.clientX,event.clientY,event)});
  nav.addEventListener('pointerup',event=>{if(active?.kind==='pointer'&&event.pointerId===active.pointerId)finish(true)});
  nav.addEventListener('pointercancel',event=>{if(active?.kind==='pointer'&&event.pointerId===active.pointerId)finish(true)});
- // Touch: use a non-passive move listener so a held item can be dragged instead of scrolling.
  nav.addEventListener('touchstart',event=>{
   if(event.touches.length!==1)return;
-  if(event.target.closest('.side-submenu'))return;
-  const touch=event.touches[0],item=event.target.closest('[data-menu-item]');
+  const handle=event.target.closest('[data-section-drag-handle]'),item=handle?.closest('[data-menu-section]');
   if(!item||item.parentElement!==nav)return;
-  begin(item,touch.clientX,touch.clientY,touch.identifier,'touch');
+  const touch=event.touches[0];begin(item,touch.clientX,touch.clientY,touch.identifier,'touch');
  },{passive:true});
  nav.addEventListener('touchmove',event=>{
   if(!active||active.kind!=='touch')return;
-  const touch=[...event.changedTouches].find(item=>item.identifier===active.pointerId);
-  if(touch)move(touch.clientX,touch.clientY,event);
+  const touch=[...event.changedTouches].find(item=>item.identifier===active.pointerId);if(touch)move(touch.clientX,touch.clientY,event);
  },{passive:false});
- nav.addEventListener('touchend',event=>{
-  if(active?.kind==='touch'&&[...event.changedTouches].some(touch=>touch.identifier===active.pointerId))finish(true);
- },{passive:true});
+ nav.addEventListener('touchend',event=>{if(active?.kind==='touch'&&[...event.changedTouches].some(t=>t.identifier===active.pointerId))finish(true)},{passive:true});
  nav.addEventListener('touchcancel',()=>{if(active?.kind==='touch')finish(true)},{passive:true});
- // A drag should not accidentally activate the menu item when the finger/mouse is released.
- nav.addEventListener('click',event=>{
-  if(Date.now()>=suppressClickUntil)return;
-  if(event.target.closest('[data-menu-item]')){event.preventDefault();event.stopImmediatePropagation()}
- },true);
- nav.addEventListener('contextmenu',event=>{
-  if(nav.classList.contains('side-menu-reordering'))event.preventDefault();
+ nav.addEventListener('keydown',event=>{
+  const handle=event.target.closest('[data-section-drag-handle]'),section=handle?.closest('[data-menu-section]');
+  if(!section||!event.altKey||!['ArrowUp','ArrowDown'].includes(event.key))return;
+  const sibling=event.key==='ArrowUp'?section.previousElementSibling:section.nextElementSibling;
+  if(!sibling||!sibling.matches('[data-menu-section]'))return;
+  if(event.key==='ArrowUp')nav.insertBefore(section,sibling);else nav.insertBefore(sibling,section);
+  db.sideMenuOrder=normalizeSideMenuOrder([...nav.children].filter(node=>node.dataset.menuSection).map(node=>node.dataset.menuSection));
+  applySideMenuOrder();save();section.querySelector('[data-section-drag-handle]')?.focus();event.preventDefault();
  });
+ nav.addEventListener('click',event=>{if(Date.now()<suppressClickUntil&&event.target.closest('[data-menu-section]')){event.preventDefault();event.stopImmediatePropagation()}},true);
+ nav.addEventListener('contextmenu',event=>{if(nav.classList.contains('side-menu-reordering'))event.preventDefault()});
 }
 const OVERVIEW_SECTION_KEYS=['quickExpenses','accountTotals','incomeTotals','quickSuppliers','todayActivity','quickActions','recentExpenses','todayQuests'];
 function normalizeOverviewSectionOrder(order){
@@ -858,18 +836,12 @@ function setTab(t,options={}){
     ? requestedReportSection
     : (document.querySelector('[data-report-go].active')?.dataset.reportGo||'members'))
   : '';
- const accountReportActive=['creditors','debitors'].includes(activeReportSection);
- const activeGroup=t==='reports'
-  ? document.querySelector(accountReportActive?'[data-side-group="accounts"]':'[data-side-group="reports"]')
-  : (['creditors','debitors'].includes(t)?document.querySelector('[data-side-group="accounts"]'):activeTab?.closest('.side-group'));
- // Keep every unused menu group collapsed. Only the group containing the current
- // submenu selection (or a selected top-level item) may remain expanded.
+ const activeGroup=t==='reports'?document.querySelector('[data-side-group="reports"]'):activeTab?.closest('.side-group');
+ // Only the submenu containing the current destination stays expanded.
  document.querySelectorAll('.side-group').forEach(group=>{
-  const active=group===activeGroup;
-  group.open=active;
-  group.classList.toggle('has-active',active);
+  const active=group===activeGroup;group.open=active;group.classList.toggle('has-active',active);
  });
- if(t!=='reports')document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.toggle('active',['creditors','debitors'].includes(t)&&item.dataset.reportGo===t));
+ if(t!=='reports')document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.remove('active'));
  closeSidebar();
  if(t==='reports'){
   renderReport();
@@ -3006,9 +2978,9 @@ function activateReportSection(key){
  const accountPage=['creditors','debitors'].includes(selected);
  const showDueButton=$('showDueAccounts');if(showDueButton)showDueButton.hidden=!accountPage;
  const accountGroup=document.querySelector('[data-side-group="accounts"]');
- if(accountGroup){accountGroup.open=accountPage;accountGroup.classList.toggle('has-active',accountPage)}
+ if(accountGroup){accountGroup.open=false;accountGroup.classList.remove('has-active')}
  const group=document.querySelector('[data-side-group="reports"]');
- if(group){group.open=!accountPage;group.classList.toggle('has-active',!accountPage)}
+ if(group){group.open=true;group.classList.add('has-active')}
  updateReportSummaryMetrics();
  updatePageBalanceTitle('reports');
  const target=selected==='all'?document.querySelector('[data-report-pane="purchase"]'):document.querySelector(`[data-report-pane="${selected}"]`);
@@ -3025,13 +2997,9 @@ document.addEventListener('click',event=>{
  event.stopImmediatePropagation();
  const reportKey=button.dataset.reportGo;
  try{
-  if(reportKey==='creditors'||reportKey==='debitors'){
-   openAccountReportPage(reportKey);
-  }else{
-   if(document.querySelector('.panel.active')?.id!=='reports')setTab('reports');
-   renderReport();
-   activateReportSection(reportKey);
-  }
+  if(document.querySelector('.panel.active')?.id!=='reports')setTab('reports');
+  renderReport();
+  activateReportSection(reportKey);
  }catch(error){
   console.error('Reports submenu navigation failed:',error);
   document.querySelectorAll('.panel').forEach(panel=>panel.classList.toggle('active',panel.id==='reports'));
@@ -5486,7 +5454,6 @@ function openAccountReportPage(destination,{addBrowserHistory=true,skipHistory=f
  }
  if(['creditors','debitors'].includes(destination)){
   setTab(destination,{skipHistory:skipHistory||currentPage===destination});
-  document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.toggle('active',item.dataset.reportGo===destination));
   const accounts=document.querySelector('[data-side-group="accounts"]');if(accounts){accounts.open=true;accounts.classList.add('has-active')}
   if($('pageContextTitle'))$('pageContextTitle').textContent=destination==='creditors'?'Creditors':'Debtors';
   updateBackButton();return;
