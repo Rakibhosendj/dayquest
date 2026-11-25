@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261125-collapsible-sidebar-v38">
+<link rel="stylesheet" href="style.css?v=20261125-full-app-review-fixes-v39">
 <title>DayQuest</title>
 </head>
 <body>
@@ -488,7 +488,7 @@
   <button class="primary full" id="expenseSubmitBtn">Save expense</button>
   <button class="secondary full" type="button" id="cancelExpenseEdit" hidden>Cancel edit</button>
  </form>
- <div class="toolbar"><input id="expenseSearch" placeholder="Search expenses…"><select id="expenseFilter"><option value="all">All categories</option><option>Food</option><option>Transport</option><option>Shopping</option><option>Bills</option><option>Health</option><option>Education</option><option>Entertainment</option><option>Other</option></select></div>
+ <div class="toolbar"><input id="expenseSearch" placeholder="Search expenses…" aria-label="Search expenses"><select id="expenseFilter" aria-label="Filter expenses by category"><option value="all">All categories</option><option>Food</option><option>Transport</option><option>Shopping</option><option>Bills</option><option>Health</option><option>Education</option><option>Entertainment</option><option>Other</option></select></div>
  <div id="expenseList" class="list"></div>
 
 </section>
@@ -915,10 +915,10 @@
  <details class="settings-card custom-lists-settings-card">
   <summary class="section-head settings-section-head"><h3>Custom lists</h3></summary>
   <div class="settings-master-grid settings-master-accordions">
-   <details class="settings-master-group"><summary>Suppliers</summary><form id="addSettingSupplierForm" class="category-add-form"><input id="newSettingSupplier" maxlength="80" placeholder="Add supplier" required><button class="primary" type="submit">＋ Add</button></form><div id="settingsSupplierList" class="list category-settings-list"></div></details>
-   <details class="settings-master-group"><summary>Product Dictionary · English / বাংলা</summary><p class="settings-copy">Search, edit or add product names in English and Bangla. Both names are suggested in the Purchase Form product field.</p><form id="addProductDictionaryForm" class="product-dictionary-add-form"><input id="newProductDictionaryEnglish" maxlength="80" placeholder="English product name" required><input id="newProductDictionaryBangla" maxlength="80" placeholder="বাংলা পণ্যের নাম" lang="bn" required><label class="dictionary-meal-check"><input id="newProductDictionaryMeal" type="checkbox"> Meals</label><button class="primary" type="submit">＋ Add product</button></form><label class="product-dictionary-search">Search dictionary <input id="productDictionarySearch" type="search" placeholder="Search English or বাংলা"></label><div class="section-head"><span class="muted" id="productDictionaryCount">0 dictionary entries</span></div><div id="productDictionaryList" class="product-dictionary-list"></div></details>
-   <details class="settings-master-group"><summary>Product types</summary><form id="addSettingProductTypeForm" class="category-add-form"><input id="newSettingProductType" maxlength="60" placeholder="Add product type" required><button class="primary" type="submit">＋ Add</button></form><div id="settingsProductTypeList" class="list category-settings-list"></div></details>
-   <details class="settings-master-group"><summary>Units</summary><form id="addSettingUnitForm" class="category-add-form"><input id="newSettingUnit" maxlength="30" placeholder="Add unit name" required><button class="primary" type="submit">＋ Add</button></form><div id="settingsUnitList" class="list category-settings-list"></div></details>
+   <details class="settings-master-group"><summary>Suppliers</summary><form id="addSettingSupplierForm" class="category-add-form"><input id="newSettingSupplier" maxlength="80" placeholder="Add supplier" aria-label="Add supplier" required><button class="primary" type="submit">＋ Add</button></form><div id="settingsSupplierList" class="list category-settings-list"></div></details>
+   <details class="settings-master-group"><summary>Product Dictionary · English / বাংলা</summary><p class="settings-copy">Search, edit or add product names in English and Bangla. Both names are suggested in the Purchase Form product field.</p><form id="addProductDictionaryForm" class="product-dictionary-add-form"><input id="newProductDictionaryEnglish" maxlength="80" placeholder="English product name" aria-label="English product name" required><input id="newProductDictionaryBangla" maxlength="80" placeholder="বাংলা পণ্যের নাম" aria-label="বাংলা পণ্যের নাম" lang="bn" required><label class="dictionary-meal-check"><input id="newProductDictionaryMeal" type="checkbox"> Meals</label><button class="primary" type="submit">＋ Add product</button></form><label class="product-dictionary-search">Search dictionary <input id="productDictionarySearch" type="search" placeholder="Search English or বাংলা"></label><div class="section-head"><span class="muted" id="productDictionaryCount">0 dictionary entries</span></div><div id="productDictionaryList" class="product-dictionary-list"></div></details>
+   <details class="settings-master-group"><summary>Product types</summary><form id="addSettingProductTypeForm" class="category-add-form"><input id="newSettingProductType" maxlength="60" placeholder="Add product type" aria-label="Add product type" required><button class="primary" type="submit">＋ Add</button></form><div id="settingsProductTypeList" class="list category-settings-list"></div></details>
+   <details class="settings-master-group"><summary>Units</summary><form id="addSettingUnitForm" class="category-add-form"><input id="newSettingUnit" maxlength="30" placeholder="Add unit name" aria-label="Add unit name" required><button class="primary" type="submit">＋ Add</button></form><div id="settingsUnitList" class="list category-settings-list"></div></details>
    <details class="settings-master-group settings-master-category"><summary>Purchase item categories</summary><form id="addPurchaseCategoryForm" class="category-add-form"><input id="newPurchaseCategory" maxlength="40" placeholder="Add a category name" aria-label="New purchase category" required><button class="primary" type="submit">＋ Add category</button></form><div id="purchaseCategoryList" class="list category-settings-list"></div><p class="hint">These categories are available beside Product Name on purchase lines and are used in cost and asset reports.</p></details>
   </div>
  </details>
@@ -1182,5 +1182,5 @@
 <dialog id="dqMessageDialog" class="dq-message-dialog" aria-labelledby="dqMessageTitle"><div class="dq-message-card"><div class="dq-message-brand"><img src="icons/icon-192.png?v=20261121-coin-check" alt="DayQuest app icon"><h2 id="dqMessageTitle">DayQuest</h2></div><p id="dqMessageText"></p><input id="dqMessagePromptInput" class="dq-message-prompt-input" type="text" maxlength="200" autocomplete="off" aria-label="Enter a value" hidden><div class="dq-message-actions"><button id="dqMessageCancel" class="secondary" type="button" hidden>Cancel</button><button id="dqMessageOk" class="primary" type="button">OK</button></div></div></dialog>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261125-collapsible-sidebar-v38"></script>
+<script src="app.js?v=20261125-full-app-review-fixes-v39"></script>
 </body></html>
