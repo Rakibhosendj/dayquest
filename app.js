@@ -1172,6 +1172,22 @@ function primeBudgetShareContext(){
   activeSharedBudgetContext={id:saved.id||null,budget_key:activeBudgetKey,permission:saved.is_owner?'owner':'view',is_owner:!!saved.is_owner};
  }catch(error){console.warn('Could not restore Budget sharing context:',error)}
 }
+function syncKnownSharedBudgetCopies(items){
+ const storageKey=cloudUser?.id?'dayquest_shared_budget_keys_v1:'+cloudUser.id:'';if(!storageKey)return false;
+ let previous=[];try{previous=JSON.parse(localStorage.getItem(storageKey)||'[]')}catch{}
+ if(!Array.isArray(previous))previous=[];
+ const incoming=(Array.isArray(items)?items:[]).filter(item=>!item.is_owner);
+ const activeIds=new Set(incoming.map(item=>String(item.id||'')));
+ let changed=false;
+ previous.forEach(saved=>{
+  if(!saved?.id||activeIds.has(String(saved.id))||!saved.budget_key)return;
+  delete db.budgetPlans[saved.budget_key];changed=true;
+  if(activeBudgetKey===saved.budget_key){activeBudgetKey='';setActiveSharedBudgetContext(null)}
+ });
+ try{localStorage.setItem(storageKey,JSON.stringify(incoming.map(item=>({id:String(item.id||''),budget_key:String(item.budget_key||'')})).filter(item=>item.id&&item.budget_key)))}catch(error){console.warn('Could not update shared Budget cache index:',error)}
+ if(changed){localSaveOnly();renderBudget()}
+ return changed;
+}
 function restoreBudgetShareContextFromList(items){
  const storageKey=budgetShareContextStorageKey();if(!storageKey)return false;
  let saved=null;try{saved=JSON.parse(localStorage.getItem(storageKey)||'null')}catch{}
@@ -1384,6 +1400,7 @@ async function renderSharedBudgetList(){
  list.innerHTML='<div class="empty">Loading…</div>';if(owned)owned.innerHTML='<div class="empty">Loading…</div>';
  const {data,error}=await supabaseClient.rpc('dayquest_list_shared_budgets');
  if(error){list.innerHTML='<div class="empty">Shared Budget setup is pending. Apply the Supabase migrations first.</div>';if(owned)owned.innerHTML='<div class="empty">Share management is unavailable.</div>';return}
+ syncKnownSharedBudgetCopies(data);
  restoreBudgetShareContextFromList(data);
  const incoming=(Array.isArray(data)?data:[]).filter(item=>!item.is_owner);
  if(!incoming.length)list.innerHTML='<div class="empty">No shared Budgets received yet.</div>';
