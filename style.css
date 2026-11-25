@@ -3017,3 +3017,39 @@ body{color:var(--dq-font-color,#263b5c)}
 .shared-budget-item>strong{white-space:nowrap}
 #budget .budget-table input:disabled{opacity:.7;background:#f1f3f6}
 @media(max-width:600px){.shared-budget-item{padding:10px}.shared-budget-item strong{font-size:12px}}
+
+
+/* Date-wise Budget planner */
+.budget-toolbar,.budget-create-head,.budget-create-actions{display:flex;align-items:end;gap:10px;flex-wrap:wrap}
+.budget-toolbar{margin-bottom:12px}.budget-select-label{flex:1;min-width:180px}
+.budget-create-head{justify-content:space-between;margin:10px 0 14px;padding:12px;border:1px solid var(--line,#dfe4ec);border-radius:14px;background:var(--surface,#fff)}
+.budget-create-head>label{flex:1;min-width:180px}.budget-create-actions{align-items:center}
+.budget-edit-row{display:grid;grid-template-columns:122px minmax(130px,1.6fr) 76px 72px 88px 100px 34px;gap:7px;align-items:end;padding:9px 8px;border-bottom:1px solid var(--line,#e5e7eb)}
+.budget-edit-row label{display:grid;gap:4px;font-size:11px;color:var(--muted,#667085);min-width:0}
+.budget-edit-row input{width:100%;min-width:0;min-height:36px;padding:6px 7px;font-size:13px}
+.budget-edit-row .budget-line-total{align-self:center;text-align:right;font-size:13px;white-space:nowrap}
+.budget-row-remove{min-width:32px;min-height:34px;padding:4px}
+.budget-actual-summary{margin:14px 0;grid-template-columns:repeat(3,minmax(0,1fr))}
+.budget-comparison-section{margin-top:18px}.budget-compare-row,.owned-budget-share-row{display:grid;grid-template-columns:minmax(120px,1.5fr) repeat(3,minmax(72px,.7fr)) auto;gap:9px;align-items:center;padding:10px 8px;border-bottom:1px solid var(--line,#e5e7eb);font-size:12px}
+.budget-compare-row>div,.budget-compare-row>span,.owned-budget-share-row>span{min-width:0}
+.budget-compare-row small,.owned-budget-share-row small{display:block;color:var(--muted,#667085);font-size:10px;margin-top:3px}
+.budget-compare-row b{display:block;font-size:12px}.budget-compare-row em{font-size:10px;font-style:normal;white-space:nowrap}
+.budget-compare-row.unbudgeted{background:color-mix(in srgb,#d97706 7%,transparent)}
+.owned-budget-share-row{grid-template-columns:1fr auto}
+.budget-view-readonly td:first-child{white-space:nowrap}
+@media(max-width:680px){
+ .budget-toolbar{display:grid;grid-template-columns:1fr auto auto;gap:7px}.budget-select-label{grid-column:1/-1}
+ .budget-create-head{display:grid;grid-template-columns:1fr;padding:10px}
+ .budget-create-actions{display:grid;grid-template-columns:1fr 1fr}
+ .budget-edit-row{grid-template-columns:90px minmax(100px,1fr) 64px 64px;gap:6px;padding:8px 3px}
+ .budget-edit-row .budget-product-field{grid-column:span 3}
+ .budget-edit-row label{font-size:10px}
+ .budget-edit-row input{min-height:34px;font-size:12px;padding:5px}
+ .budget-edit-row .budget-line-total{grid-column:2/4;text-align:left;padding:5px 0}
+ .budget-row-remove{grid-column:4;grid-row:3}
+ .budget-actual-summary{gap:6px}.budget-actual-summary .stat{padding:9px 7px}
+ .budget-actual-summary .stat strong{font-size:14px}
+ .budget-compare-row{grid-template-columns:1fr 1fr;gap:6px}
+ .budget-compare-row>div{grid-column:1/-1}
+ .budget-compare-row em{justify-self:end}
+}
