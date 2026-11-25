@@ -80,3 +80,19 @@ test("both push Edge Functions validate subscriptions before storing or sending"
 test("CSS braces are balanced", () => {
   assert.equal((css.match(/\{/g) ?? []).length, (css.match(/\}/g) ?? []).length);
 });
+
+test("Budget create, delete, and add-product buttons have click handlers", () => {
+  for (const [id, handler] of [
+    ["newBudgetBtn", "createBudget"],
+    ["budgetDeleteBtn", "deleteCurrentBudget"],
+    ["addBudgetRowBtn", "addBudgetRow"],
+  ]) {
+    assert.match(app, new RegExp("\\$\\('" + id + "'\\)\\.addEventListener\\('click',\\s*" + handler + "\\)"));
+    assert.equal([...html.matchAll(new RegExp('id="' + id + '"', "g"))].length, 1);
+  }
+});
+
+test("Budget action buttons use compact font and spacing", () => {
+  assert.match(css, /#budget button[\s\S]*?font-size:\s*11\.5px/);
+  assert.match(css, /#budget \.budget-toolbar button[\s\S]*?font-size:\s*11px/);
+});
