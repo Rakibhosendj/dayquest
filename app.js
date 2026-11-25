@@ -575,7 +575,7 @@ function setupSideMenuReordering(){
   if(nav.classList.contains('side-menu-reordering'))event.preventDefault();
  });
 }
-const OVERVIEW_SECTION_KEYS=['quickExpenses','quickSuppliers','todayActivity','quickActions','recentExpenses','todayQuests'];
+const OVERVIEW_SECTION_KEYS=['quickExpenses','accountTotals','incomeTotals','quickSuppliers','todayActivity','quickActions','recentExpenses','todayQuests'];
 function normalizeOverviewSectionOrder(order){
  const requested=Array.isArray(order)?order.map(String):[];
  const normalized=requested.filter((key,index)=>OVERVIEW_SECTION_KEYS.includes(key)&&requested.indexOf(key)===index);
@@ -636,8 +636,11 @@ function setupOverviewSectionReordering(){
  };
  home.addEventListener('pointerdown',event=>{
   if(db.settings?.overviewSortingEnabled===false||event.pointerType==='touch'||event.button!==0)return;
-  const handle=event.target.closest('[data-overview-drag-handle]'),section=handle?.closest('[data-overview-section]');
-  if(!handle||!section)return;
+  const target=event.target;
+   const handle=target.closest('[data-overview-drag-handle]');
+   const interactive=target.closest('button,a,input,select,textarea,[contenteditable="true"],[data-overview-button]');
+   const section=target.closest('[data-overview-section]');
+   if(!section||(interactive&&!handle)||target.closest('[data-overview-button]'))return;
   begin(section,event.clientX,event.clientY,event.pointerId,'pointer');
  });
  home.addEventListener('pointermove',event=>{
@@ -648,8 +651,11 @@ function setupOverviewSectionReordering(){
  home.addEventListener('pointercancel',event=>{if(active?.kind==='pointer'&&event.pointerId===active.pointerId)finish(true)});
  home.addEventListener('touchstart',event=>{
   if(db.settings?.overviewSortingEnabled===false||event.touches.length!==1)return;
-  const touch=event.touches[0],handle=event.target.closest('[data-overview-drag-handle]'),section=handle?.closest('[data-overview-section]');
-  if(!handle||!section)return;
+  const touch=event.touches[0],target=event.target;
+   const handle=target.closest('[data-overview-drag-handle]');
+   const interactive=target.closest('button,a,input,select,textarea,[contenteditable="true"],[data-overview-button]');
+   const section=target.closest('[data-overview-section]');
+   if(!section||(interactive&&!handle)||target.closest('[data-overview-button]'))return;
   begin(section,touch.clientX,touch.clientY,touch.identifier,'touch');
  },{passive:true});
  home.addEventListener('touchmove',event=>{
@@ -3534,7 +3540,7 @@ $('balanceTransferSubmit').onclick=()=>{
  $('balanceTransferAmount').value='';$('balanceTransferCost').value='0.00';$('balanceTransferNote').value='';pendingSaveAction=null;save();alert('Balance transferred successfully.');
 };
 function renderOverviewAccountTotals(){
- const host=$('overviewAccountTotalsList');if(!host)return;
+ const host=$('overviewAccountTotalsList');if(!host)return;host.dataset.overviewButtonGroup='accountTotals';
  const asOf=today(),dueExpenses=db.expenses.filter(x=>x.paymentType==='Due'&&String(x.date||'')<=asOf);
  const iOwe=dueExpenses.filter(x=>x.dueDirection==='i_owe').reduce((t,x)=>t+expenseOutstandingAt(x,asOf),0);
  const owedExpenses=dueExpenses.filter(x=>x.dueDirection==='owed_to_me').reduce((t,x)=>t+expenseOutstandingAt(x,asOf),0);
@@ -3547,19 +3553,19 @@ function renderOverviewAccountTotals(){
  const debtors=owedExpenses+incomeDue+openingDebtors;
  const loans=loanMoneySummary(),totalLoans=loans.given+loans.taken;
  host.innerHTML=`
-  <button type="button" class="quick-action-card account-total-card" data-account-summary-route="debitors" aria-label="Open Debtors. Outstanding ${esc(money(debtors))}.">
+  <button type="button" class="quick-action-card account-total-card" data-overview-button="debtors" data-account-summary-route="debitors" aria-label="Open Debtors. Outstanding ${esc(money(debtors))}.">
    <span class="quick-action-button-title">Total Debtors</span><span class="quick-action-button-stats"><span><strong>${money(debtors)}</strong></span><span>Collect</span></span>
   </button>
-  <button type="button" class="quick-action-card account-total-card" data-account-summary-route="creditors" aria-label="Open Creditors. Outstanding ${esc(money(creditors))}.">
+  <button type="button" class="quick-action-card account-total-card" data-overview-button="creditors" data-account-summary-route="creditors" aria-label="Open Creditors. Outstanding ${esc(money(creditors))}.">
    <span class="quick-action-button-title">Total Creditors</span><span class="quick-action-button-stats"><span><strong>${money(creditors)}</strong></span><span>To pay</span></span>
   </button>
-  <button type="button" class="quick-action-card account-total-card" data-account-summary-route="loans" aria-label="Open Loans. Total outstanding ${esc(money(totalLoans))}.">
+  <button type="button" class="quick-action-card account-total-card" data-overview-button="loans" data-account-summary-route="loans" aria-label="Open Loans. Total outstanding ${esc(money(totalLoans))}.">
    <span class="quick-action-button-title">Total Loans</span><span class="quick-action-button-stats"><span><strong>${money(totalLoans)}</strong></span><span>Collect ${money(loans.given)} · Repay ${money(loans.taken)}</span></span>
   </button>`;
-
+ applyOverviewButtonOrder(host);
 }
 
-function renderOverviewIncomeTotals(){const host=$('overviewIncomeTotalsList');if(!host)return;const m=today().slice(0,7),inc=db.incomes.filter(x=>!x.salesMemo&&String(x.date||'').startsWith(m)),sal=db.incomes.filter(x=>x.salesMemo&&String(x.date||'').startsWith(m));host.innerHTML=`<button type="button" class="quick-action-card account-total-card" data-overview-income-go="income"><span class="quick-action-button-title">Income</span><span class="quick-action-button-stats"><span><strong>${money(sum(inc))}</strong></span><span>Recorded</span></span></button><button type="button" class="quick-action-card account-total-card" data-overview-income-go="sales"><span class="quick-action-button-title">Sales</span><span class="quick-action-button-stats"><span><strong>${money(sum(sal))}</strong></span><span>Sales total</span></span></button>`;host.querySelectorAll('[data-overview-income-go]').forEach(b=>b.onclick=()=>setTab(b.dataset.overviewIncomeGo))}
+function renderOverviewIncomeTotals(){const host=$('overviewIncomeTotalsList');if(!host)return;host.dataset.overviewButtonGroup='incomeTotals';const m=today().slice(0,7),inc=db.incomes.filter(x=>!x.salesMemo&&String(x.date||'').startsWith(m)),sal=db.incomes.filter(x=>x.salesMemo&&String(x.date||'').startsWith(m));host.innerHTML=`<button type="button" class="quick-action-card account-total-card" data-overview-button="income" data-overview-income-go="income"><span class="quick-action-button-title">Income</span><span class="quick-action-button-stats"><span><strong>${money(sum(inc))}</strong></span><span>Recorded</span></span></button><button type="button" class="quick-action-card account-total-card" data-overview-button="sales" data-overview-income-go="sales"><span class="quick-action-button-title">Sales</span><span class="quick-action-button-stats"><span><strong>${money(sum(sal))}</strong></span><span>Sales total</span></span></button>`;applyOverviewButtonOrder(host);host.querySelectorAll('[data-overview-income-go]').forEach(b=>b.onclick=()=>setTab(b.dataset.overviewIncomeGo))}
 function render(){
  applySideMenuOrder();applyOverviewSectionOrder();
  let d=today(),questDate=questLocalDate(),exToday=db.expenses.filter(x=>x.date===d),billsToday=db.purchaseBills.filter(x=>x.date===d),qToday=dayQuestsForNow(questDate),done=qToday.filter(q=>completed(q,q._occurrenceDate||questDate)).length;
