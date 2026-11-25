@@ -887,8 +887,8 @@ function setTab(t,options={}){
  }
  if(t==='production'){fillProductionOptions();renderProductionList();renderProductionInputs()}
  if(t==='supplierAccounts')renderSupplierAccounts();
- if(t==='creditors'){renderCreditorsPage();document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.toggle('active',item.dataset.reportGo==='creditors'));const accounts=document.querySelector('[data-side-group="accounts"]');if(accounts){accounts.open=true;accounts.classList.add('has-active')}}
- if(t==='debitors'){renderDebtorsPage();document.querySelectorAll('[data-report-go]').forEach(item=>item.classList.toggle('active',item.dataset.reportGo==='debitors'));const accounts=document.querySelector('[data-side-group="accounts"]');if(accounts){accounts.open=true;accounts.classList.add('has-active')}}
+  if(t==='creditors')renderCreditorsPage();
+  if(t==='debitors')renderDebtorsPage();
  if(t==='supplierEntry'){renderSupplierEntryList();resetSupplierEntryForm()}
  if(t==='meals'){if(!$('mealControlDate').value)$('mealControlDate').value=today();if(!$('mealFromDate').value)$('mealFromDate').value=today();if(!$('mealToDate').value)$('mealToDate').value=today();renderMeals()}
  if(t==='purchaseBills'){fillChoices();renderPurchaseLines();renderSupplierAccounts();}
@@ -4548,7 +4548,7 @@ function showAuthView(view,message=''){
 }
 function startAppSession(user,{offline=false}={}){
  $('authScreen').hidden=true;$('appShell').hidden=false;
- document.querySelectorAll('.side-group').forEach(group=>{group.open=false;group.classList.remove('has-active')});
+  setSideMenuSectionOpen(null,false);
  const familyName=String(db.profile?.familyName||user?.user_metadata?.family_name||'').trim();
  $('userGreeting').textContent=`Signed in: ${familyName||user?.email||'Family Account'}`;
  refreshAdminCloudConfig();
