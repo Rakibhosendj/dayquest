@@ -183,12 +183,12 @@
   <div class="hero-metric hero-balance"><div class="eyebrow">AVAILABLE BALANCE</div><div class="money" id="earnedBalance">৳0.00</div><div class="hero-balance-breakdown"><span>Cash <strong id="cashBalance">৳0.00</strong></span><span>Bank <strong id="bankBalance">৳0.00</strong></span></div></div>
  </section>
  <section class="overview-quick-panel overview-sortable-section" id="overviewSectionQuickExpenses" data-overview-section="quickExpenses">
-  <div class="section-head overview-quick-head"><div><h2 data-overview-drag-handle><button type="button" class="overview-quick-title" id="overviewQuickSetupLink">Quick Expenses</button></h2><small class="overview-quick-hint">Tap 1 · Record 1 · Hold title to move</small></div><div class="overview-quick-controls"><button type="button" id="overviewQuickActionTapToggle" class="quick-action-tap-toggle is-on" aria-pressed="true">ON</button><button type="button" id="overviewQuickActionModeToggle" class="quick-action-mode-toggle add-mode" aria-pressed="false">＋ Add</button></div></div>
+  <div class="section-head overview-quick-head"><div><h2 data-overview-drag-handle><button type="button" class="overview-quick-title" id="overviewQuickSetupLink">Quick Expenses</button></h2><small class="overview-quick-hint">Tap 1 · Record 1 · Hold anywhere on section to move</small></div><div class="overview-quick-controls"><button type="button" id="overviewQuickActionTapToggle" class="quick-action-tap-toggle is-on" aria-pressed="true">ON</button><button type="button" id="overviewQuickActionModeToggle" class="quick-action-mode-toggle add-mode" aria-pressed="false">＋ Add</button></div></div>
   <div id="overviewQuickActionList" class="quick-action-list"></div>
  </section>
  <section class="overview-quick-panel overview-sortable-section overview-account-totals" id="overviewSectionAccountTotals" data-overview-section="accountTotals">
   <div class="section-head overview-quick-head"><div><h2 data-overview-drag-handle>Accounts Summary</h2><small class="overview-quick-hint">Current outstanding balances</small></div></div>
-  <div id="overviewAccountTotalsList" class="quick-action-list overview-account-total-list">
+  <div id="overviewAccountTotalsList" class="quick-action-list overview-account-total-list" data-overview-button-group="accountTotals">
    <button type="button" class="quick-action-card account-total-card" data-account-summary-route="debitors"><span class="quick-action-button-title">Total Debtors</span><span class="quick-action-button-stats"><span><strong>৳0.00</strong></span><span>Collect</span></span></button>
    <button type="button" class="quick-action-card account-total-card" data-account-summary-route="creditors"><span class="quick-action-button-title">Total Creditors</span><span class="quick-action-button-stats"><span>৳0.00</span></span></button>
    <button type="button" class="quick-action-card account-total-card" data-account-summary-route="loans"><span class="quick-action-button-title">Total Loans</span><span class="quick-action-button-stats"><span>৳0.00</span></span></button>
@@ -196,7 +196,7 @@
  </section>
  <section class="overview-quick-panel overview-sortable-section overview-account-totals" id="overviewSectionIncomeTotals" data-overview-section="incomeTotals">
  <div class="section-head overview-quick-head"><div><h2 data-overview-drag-handle>Income</h2><small class="overview-quick-hint">This month</small></div></div>
- <div id="overviewIncomeTotalsList" class="quick-action-list overview-account-total-list">
+ <div id="overviewIncomeTotalsList" class="quick-action-list overview-account-total-list" data-overview-button-group="incomeTotals">
  <button type="button" class="quick-action-card account-total-card" data-overview-income-go="income"><span class="quick-action-button-title">Income</span><span class="quick-action-button-stats"><span><strong>৳0.00</strong></span><span>Recorded</span></span></button>
  <button type="button" class="quick-action-card account-total-card" data-overview-income-go="sales"><span class="quick-action-button-title">Sales</span><span class="quick-action-button-stats"><span><strong>৳0.00</strong></span><span>Sales total</span></span></button>
  </div></section>
@@ -210,7 +210,7 @@
  </section>
  <section class="overview-sortable-section overview-actions-section" id="overviewSectionQuickActions" data-overview-section="quickActions">
   <div class="section-head"><h2 data-overview-drag-handle>Quick actions</h2></div>
-  <div class="quick"><button class="primary" data-go="expenseEntries">＋ Add expense</button><button class="secondary" data-go="income">＋ Add income</button><button class="secondary" data-go="quests">＋ Add daily quest</button></div>
+  <div class="quick" data-overview-button-group="quickActions"><button class="primary" data-overview-button="addExpense" data-go="expenseEntries">＋ Add expense</button><button class="secondary" data-overview-button="addIncome" data-go="income">＋ Add income</button><button class="secondary" data-overview-button="addQuest" data-go="quests">＋ Add daily quest</button></div>
  </section>
  <section class="overview-sortable-section" id="overviewSectionRecentExpenses" data-overview-section="recentExpenses">
   <div class="section-head"><h2 data-overview-drag-handle>Recent expenses</h2><button class="link" data-go="expenseEntries">See all</button></div>
