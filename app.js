@@ -4439,13 +4439,19 @@ function rememberLoginIdentity(email,name=''){
 function getRememberedLoginIdentity(){
  try{const value=JSON.parse(localStorage.getItem('dayquest_last_login_identity_v1')||'null');return value&&typeof value.email==='string'?value:null}catch{return null}
 }
+let pendingEmailVerificationAddress='';
+let verificationResendTimer=null;
+function authRedirectUrl(){return new URL('./',location.href).href}
+function maskAuthEmail(email){const value=String(email||'').trim(),at=value.indexOf('@');if(at<1)return value;const local=value.slice(0,at),domain=value.slice(at+1);return (local.length>2?local.slice(0,2):local.slice(0,1))+'•••@'+domain}
+function showEmailVerification(email,message=''){pendingEmailVerificationAddress=String(email||'').trim().toLowerCase();$('verificationEmail').textContent=maskAuthEmail(pendingEmailVerificationAddress);showAuthView('verify',message||'Confirm your email before logging in. Open the latest email from DayQuest.');const button=$('resendSignupConfirmation');if(button){clearInterval(verificationResendTimer);verificationResendTimer=null;button.disabled=false;button.textContent='Resend confirmation email'}}
+function applySignupProfile(metadata,email){const memberName=String(metadata.full_name||'').trim(),familyName=String(metadata.family_name||'').trim(),country=String(metadata.country||''),division=String(metadata.division||''),district=String(metadata.district||''),subDistrict=String(metadata.sub_district||''),village=String(metadata.village||''),road=String(metadata.road||''),phone=String(metadata.phone||''),phone2=String(metadata.phone2||''),religion=String(metadata.religion||''),gender=String(metadata.gender||''),birthDate=String(metadata.birth_date||''),address=String(metadata.address||composeMemberAddress({country,division,district,subDistrict,village,road}));db.profile={...db.profile,name:memberName,phone,phone2,address,country,division,district,subDistrict,village,road,religion,gender,birthDate,familyName};db.familyMembers=uniquePeople([memberName,...db.familyMembers]);db.incomePeople=uniquePeople([memberName,...db.incomePeople]);db.memberProfiles=db.memberProfiles&&typeof db.memberProfiles==='object'?db.memberProfiles:{};db.memberProfiles[memberProfileKey(memberName)]={fullName:memberName,phone,phone2,email,gender,religion,birthDate,relation:'',occupation:'',country,division,district,subDistrict,village,road,notes:''};localSaveOnly()}
 function showAuthView(view,message=''){
  $('authScreen').hidden=false;$('appShell').hidden=true;document.title='Day Quest';hideCloudStatus();lockAdminCloudSettings();
  // Keep login fields directly interactive even after a failed session restore.
  ['loginEmail','loginPassword','signupFamilyName','signupMemberName','signupPhone','signupPhone2','signupCountry','signupDivision','signupDistrict','signupSubDistrict','signupVillage','signupRoad','signupGender','signupReligion','signupBirthDate','signupEmail','signupPassword','signupPasswordConfirm','recoveryPassword','recoveryPasswordConfirm'].forEach(id=>{const field=$(id);if(field){field.disabled=false;field.readOnly=false;field.removeAttribute('aria-disabled');field.style.pointerEvents='auto';field.style.userSelect='text'}});
- ['authSignupView','authLoginView','authResetView'].forEach(id=>$(id).hidden=true);
+ ['authSignupView','authLoginView','authResetView','authVerifyView'].forEach(id=>$(id).hidden=true);
  // Cloud connection editing is available only after login in Settings → Administrator.
- const target={signup:'authSignupView',login:'authLoginView',reset:'authResetView'}[view]||'authLoginView';$(target).hidden=false;
+ const target={signup:'authSignupView',login:'authLoginView',reset:'authResetView',verify:'authVerifyView'}[view]||'authLoginView';$(target).hidden=false;
  if(view==='login'){
   const remembered=getRememberedLoginIdentity();
   if(remembered&&$('loginEmail')&&!$('loginEmail').value)$('loginEmail').value=remembered.email;
@@ -4718,8 +4724,8 @@ async function initAuth(){
   const {data,error}=await withCloudRequestTimeout(supabaseClient.auth.getSession(),10000);
   if(error)throw error;
   if(cloudPasswordRecovery){showAuthView('reset','Enter a new password for your Family Account.');return}
-  if(data.session){await connectCloudSession(data.session.user);return}
-  showAuthView(new URLSearchParams(location.search).get('register')==='1'?'signup':'login');
+  if(data.session){if(data.session.user?.email_confirmed_at){await connectCloudSession(data.session.user);return}showEmailVerification(data.session.user?.email||getRememberedLoginIdentity()?.email||'','Please confirm your email address before using DayQuest.');return}
+  const query=new URLSearchParams(location.search),authError=query.get('error_code')||query.get('error');if(authError)showAuthView('login',authError==='otp_expired'?'This confirmation link has expired. Request a new confirmation email below.':'The email confirmation link could not be completed. Please request a new one.');else showAuthView(query.get('register')==='1'?'signup':'login');
  }catch(error){
   console.warn('DayQuest session restore failed:',error);
   showAuthView('login','Could not restore your cloud session. Please log in again. '+(error.message||''));
@@ -4876,43 +4882,44 @@ $('useSharedCloudConfig').onclick=async()=>{
  location.reload();
 };
 $('authSignupForm').onsubmit=async e=>{
- e.preventDefault();if(!supabaseClient){$('authMessage').textContent='Cloud connection unavailable. Please contact your DayQuest administrator.';return}
+ e.preventDefault();if(!supabaseClient){$('authMessage').textContent='DayQuest cloud connection is unavailable. Please try again later.';return}
  const familyName=$('signupFamilyName').value.trim(),memberName=$('signupMemberName').value.trim(),phone=$('signupPhone').value.trim(),phone2=$('signupPhone2').value.trim(),country=$('signupCountry').value.trim(),division=$('signupDivision').value.trim(),district=$('signupDistrict').value.trim(),subDistrict=$('signupSubDistrict').value.trim(),village=$('signupVillage').value.trim(),road=$('signupRoad').value.trim(),religion=$('signupReligion').value.trim(),gender=$('signupGender').value,birthDate=$('signupBirthDate').value,email=$('signupEmail').value.trim().toLowerCase(),password=$('signupPassword').value,confirmPassword=$('signupPasswordConfirm').value;
  const address=composeMemberAddress({country,division,district,subDistrict,village,road});
- if(!familyName||!memberName||!country||!division||!district||!village){$('authMessage').textContent='Enter the family name, account holder name, country, division, district and village.';return}if(password.length<8){$('authMessage').textContent='Use a password with at least 8 characters.';return}if(password!==confirmPassword){$('authMessage').textContent='The passwords do not match.';return}
- const button=$('authSignupForm').querySelector('button[type="submit"]');button.disabled=true;$('authMessage').textContent='Creating your Family Account…';
+ if(!familyName||!memberName||!country||!division||!district||!village){$('authMessage').textContent='Enter the family name, account holder name, country, division, district and village.';return}
+ if(!email||!$('signupEmail').checkValidity()){$('authMessage').textContent='Enter a valid email address.';return}
+ if(password.length<8){$('authMessage').textContent='Use a password with at least 8 characters.';return}
+ if(password!==confirmPassword){$('authMessage').textContent='The passwords do not match.';return}
+ const button=$('authSignupForm').querySelector('button[type="submit"]');button.disabled=true;button.textContent='Creating account…';$('authMessage').textContent='Creating your DayQuest Family Account…';
  try{
   const metadata={family_name:familyName,full_name:memberName,phone,phone2,address,country,division,district,sub_district:subDistrict,village,road,religion,gender,birth_date:birthDate};
-  rememberLoginIdentity(email,memberName);
-  const {data,error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:location.href.split('#')[0],data:metadata}});if(error)throw error;
-  db.profile={...db.profile,name:memberName,phone,phone2,address,country,division,district,subDistrict,village,road,religion,gender,birthDate,familyName};
-  db.familyMembers=uniquePeople([memberName,...db.familyMembers]);db.incomePeople=uniquePeople([memberName,...db.incomePeople]);
-  db.memberProfiles=db.memberProfiles&&typeof db.memberProfiles==='object'?db.memberProfiles:{};
-  db.memberProfiles[memberProfileKey(memberName)]={fullName:memberName,phone,phone2,email,gender,religion,birthDate,relation:'',occupation:'',country,division,district,subDistrict,village,road,notes:''};
-  localSaveOnly();$('signupPassword').value='';$('signupPasswordConfirm').value='';
-  if(data.session){await connectCloudSession(data.user||data.session.user)}else{showAuthView('login','Account created. Check your email for the confirmation link, then log in here.')}
- }
- catch(error){$('authMessage').textContent=error.message||'Could not create the Family Account.'}
- finally{button.disabled=false}
+  const {data,error}=await withCloudRequestTimeout(supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:authRedirectUrl(),data:metadata}}),20000);if(error)throw error;
+  if(data.user&&Array.isArray(data.user.identities)&&data.user.identities.length===0){$('loginEmail').value=email;$('loginPassword').value='';showAuthView('login','A DayQuest account already exists for this email. Log in, or use Forgot password if needed.');return}
+  rememberLoginIdentity(email,memberName);$('signupPassword').value='';$('signupPasswordConfirm').value='';
+  if(data.session&&data.user?.email_confirmed_at){applySignupProfile(metadata,email);await connectCloudSession(data.user||data.session.user)}
+  else showEmailVerification(email,'Your account request was received. Check your inbox and confirm your email before logging in.');
+ }catch(error){console.error('DayQuest registration failed:',error);const message=String(error?.message||'');$('authMessage').textContent=/already registered|already exists|user already/i.test(message)?'A DayQuest account already exists for this email. Log in, or use Forgot password if needed.':/rate limit|too many requests/i.test(message)?'Too many registration attempts. Please wait a little and try again.':/invalid email/i.test(message)?'Enter a valid email address.':'DayQuest could not create your account right now. Please check your connection and try again.'}
+ finally{button.disabled=false;button.textContent='Create Family Account'}
 };
 $('authLoginForm').onsubmit=async e=>{
- e.preventDefault();if(!supabaseClient){$('authMessage').textContent='Cloud Database Preparing......';return}
- const email=$('loginEmail').value.trim().toLowerCase(),password=$('loginPassword').value,button=$('authLoginForm').querySelector('button[type="submit"]');button.disabled=true;$('authMessage').textContent='Signing in…';
- try{const {data,error}=await withCloudRequestTimeout(supabaseClient.auth.signInWithPassword({email,password}),20000);if(error)throw error;rememberLoginIdentity(email,data.user?.user_metadata?.full_name||'');$('loginPassword').value='';$('authMessage').textContent='Signed in. Loading your family data…';await connectCloudSession(data.user||data.session.user)}
- catch(error){
-  const code=String(error.code||'').toLowerCase(),message=String(error.message||'');
-  const accountMissing=['user_not_found','email_not_found','account_not_found'].includes(code)||/user (does not exist|not found)|email (does not exist|not found)|account not found|not registered/i.test(message);
-  if(accountMissing){$('signupEmail').value=email;showAuthView('signup','No registered Family Account was found for this email. Please create your Family Account.')}
-  else{
-   const connectionProblem=/fetch failed|failed to fetch|network|timeout|503|502|500|database|server error|temporarily unavailable/i.test(message)||!navigator.onLine;
-   const text=connectionProblem?'Cloud Database Preparing......':(code==='invalid_credentials'?'Email or password is incorrect. If you have not registered yet, select Create Family Account.':(message||'Unable to log in. Please try again.'));
-   $('authMessage').textContent=text;
-   
-  }
- }
- finally{button.disabled=false}
+ e.preventDefault();if(!supabaseClient){$('authMessage').textContent='DayQuest cloud connection is unavailable. Please try again later.';return}
+ const email=$('loginEmail').value.trim().toLowerCase(),password=$('loginPassword').value,button=$('authLoginForm').querySelector('button[type="submit"]');
+ if(!email||!$('loginEmail').checkValidity()){$('authMessage').textContent='Enter the email address used to register your Family Account.';return}
+ button.disabled=true;button.textContent='Signing in…';$('authMessage').textContent='Signing in to DayQuest…';
+ try{const {data,error}=await withCloudRequestTimeout(supabaseClient.auth.signInWithPassword({email,password}),20000);if(error)throw error;if(!data.user?.email_confirmed_at){$('loginPassword').value='';showEmailVerification(email,'Please confirm your email address before logging in.');return}rememberLoginIdentity(email,data.user?.user_metadata?.full_name||'');$('loginPassword').value='';$('authMessage').textContent='Signed in. Loading your family data…';await connectCloudSession(data.user||data.session.user)}
+ catch(error){const code=String(error.code||'').toLowerCase(),message=String(error.message||''),unconfirmed=['email_not_confirmed','email_not_verified'].includes(code)||/email.*not confirmed|confirm.*email|email.*not verified/i.test(message),accountMissing=['user_not_found','email_not_found','account_not_found'].includes(code)||/user (does not exist|not found)|email (does not exist|not found)|account not found|not registered/i.test(message);
+ if(unconfirmed){$('loginPassword').value='';showEmailVerification(email,'Your email address is not confirmed yet. Open the confirmation email or resend a new link below.')}
+ else if(accountMissing){$('signupEmail').value=email;showAuthView('signup','No registered DayQuest Family Account was found for this email. Create your account to continue.')}
+ else{const connectionProblem=/fetch failed|failed to fetch|network|timeout|503|502|500|database|server error|temporarily unavailable/i.test(message)||!navigator.onLine;$('authMessage').textContent=connectionProblem?'DayQuest is temporarily unable to connect. Check your internet connection and try again.':code==='invalid_credentials'?'Email or password is incorrect. If you have not registered yet, select Create Family Account.':'Unable to log in. Please check your details and try again.'}}
+ finally{button.disabled=false;button.textContent='Log in'}
 };
 $('showLoginFromSignup').onclick=()=>showAuthView('login');$('showSignupFromLogin').onclick=()=>showAuthView('signup');
+$('showLoginFromVerify').onclick=()=>showAuthView('login','After confirming your email, log in with your DayQuest password.');
+$('resendSignupConfirmation').onclick=async()=>{
+ const button=$('resendSignupConfirmation'),email=String(pendingEmailVerificationAddress||'').trim().toLowerCase();if(!email){$('authMessage').textContent='Return to registration or login and enter your email address first.';return}if(!supabaseClient||!navigator.onLine){$('authMessage').textContent='Connect to the internet before requesting another confirmation email.';return}
+ button.disabled=true;button.textContent='Sending…';
+ try{const {error}=await withCloudRequestTimeout(supabaseClient.auth.resend({type:'signup',email,options:{emailRedirectTo:authRedirectUrl()}}),20000);if(error)throw error;$('authMessage').textContent='If this address has a pending DayQuest registration, a new confirmation email has been requested. Check your inbox and spam folder.';let seconds=30;button.textContent='Resend in '+seconds+'s';clearInterval(verificationResendTimer);verificationResendTimer=setInterval(()=>{seconds--;if(seconds<=0){clearInterval(verificationResendTimer);verificationResendTimer=null;button.disabled=false;button.textContent='Resend confirmation email'}else button.textContent='Resend in '+seconds+'s'},1000)}
+ catch(error){console.warn('DayQuest confirmation resend failed:',error);button.disabled=false;button.textContent='Resend confirmation email';$('authMessage').textContent=/rate limit|too many requests/i.test(String(error?.message||''))?'Please wait before requesting another confirmation email.':'DayQuest could not send a confirmation email right now. Check your connection and try again.'}
+};
 $('forgotCloudPassword').onclick=async()=>{
  const email=$('loginEmail').value.trim().toLowerCase();if(!email){$('authMessage').textContent='Enter your email address first.';return}
  try{const {error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:location.href.split('#')[0]});if(error)throw error;$('authMessage').textContent='If this email belongs to an account, a password reset link has been sent.'}
