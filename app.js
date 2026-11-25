@@ -1255,6 +1255,7 @@ async function shareCurrentBudget(){
  const {error}=await supabaseClient.rpc('dayquest_share_budget',{p_budget_key:key,p_budget:plan,p_recipient_email:email,p_permission:permission});
  if(error){alert(String(error.message||'Budget Share করা যায়নি।'));return}
  $('budgetShareDialog')?.close();$('budgetShareEmail').value='';
+ activeSharedBudgetContext={id:null,budget_key:key,permission:'owner',is_owner:true};
  alert('Budget Share হয়েছে।');renderSharedBudgetList();
 }
 function currentBudgetPlan(){
@@ -1419,7 +1420,6 @@ $('budgetShareCancel').addEventListener('click',()=>$('budgetShareDialog').close
 $('refreshSharedBudgets').addEventListener('click',renderSharedBudgetList);
 $('budgetFromDate').addEventListener('change',()=>{activeSharedBudgetContext=null;renderBudget()});
 $('budgetToDate').addEventListener('change',()=>{activeSharedBudgetContext=null;renderBudget()});
-renderSharedBudgetList();
 $('budgetViewBtn').addEventListener('click',()=>{
  if(!currentBudgetPlan()){alert('Generate a budget first by selecting a date range and clicking Budget.');return}
  setTab('budgetViewPage');renderBudgetView();
@@ -4669,7 +4669,7 @@ db.quickSuppliers=Array.isArray(db.quickSuppliers)?[...new Set(db.quickSuppliers
  if(db.profile.name&&!db.incomePeople.includes(db.profile.name))db.incomePeople.unshift(db.profile.name);if(!db.incomePeople.includes('Unassigned'))db.incomePeople.push('Unassigned');
 }
 function refreshAfterCloudLoad(){
- try{fillChoices();fillQuickActionOptions();updateQuickActionTypeFields();renderQuickMemberOptions([]);fillProductionOptions();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);applySideMenuColor(db.settings.sideMenuColor||'#111d30',false);applyTopBarColor(db.settings.topBarColor||'#101827',false);renderPurchaseCategorySettings();renderMasterLists();updateAppBrand();render();renderReport()}catch(error){console.error('DayQuest refresh after cloud load failed',error)}
+ try{renderSharedBudgetList();fillChoices();fillQuickActionOptions();updateQuickActionTypeFields();renderQuickMemberOptions([]);fillProductionOptions();loadProfileForm();applyThemeColor(db.settings.themeColor||'#263b5c',false);applySideMenuColor(db.settings.sideMenuColor||'#111d30',false);applyTopBarColor(db.settings.topBarColor||'#101827',false);renderPurchaseCategorySettings();renderMasterLists();updateAppBrand();render();renderReport()}catch(error){console.error('DayQuest refresh after cloud load failed',error)}
 }
 function saveCloudMeta(version,dirty){writeCloudMeta({userId:cloudUser?.id||getCloudMeta().userId||null,version:Number(version||0),dirty:!!dirty})}
 async function withCloudRequestTimeout(request,ms=20000){
