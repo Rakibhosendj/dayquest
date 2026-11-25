@@ -1,9 +1,9 @@
-const CACHE = 'dayquest-cache-v271-budget-mobile-cards-v40';
+const CACHE = 'dayquest-cache-v272-shared-budget-v41';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261125-budget-mobile-cards-v40',
+  './style.css?v=20261125-shared-budget-v41',
   './app.js?v=20261125-budget-mobile-cards-v40',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
