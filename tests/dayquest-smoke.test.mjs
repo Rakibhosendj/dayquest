@@ -129,3 +129,10 @@ test("revoking or deleting shared Budgets cleans up the parent share record", ()
   assert.match(app, /p_shared_budget_id:sharedId,p_member_id:null/);
   assert.match(app, /p_shared_budget_id:item\.shared_budget_id,p_member_id:null/);
 });
+
+test("recipient cached shared Budgets are removed after access disappears", () => {
+  assert.match(app, /function syncKnownSharedBudgetCopies\(items\)/);
+  assert.match(app, /dayquest_shared_budget_keys_v1:/);
+  assert.match(app, /syncKnownSharedBudgetCopies\(data\)/);
+  assert.match(app, /delete db\.budgetPlans\[saved\.budget_key\]/);
+});
