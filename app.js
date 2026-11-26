@@ -1144,6 +1144,7 @@ function roundPurchaseAmount(value){return Math.round((Number(value||0)+Number.E
 
 function budgetRangeKey(from,to){return String(from||'')+'__'+String(to||'')}
 let activeBudgetKey='';
+let showAllBudgetEntries=false;
 let activeSharedBudgetContext=null;
 function budgetShareContextStorageKey(){return cloudUser?.id?'dayquest_budget_share_context_v1:'+cloudUser.id:''}
 function setActiveSharedBudgetContext(context){
@@ -1217,7 +1218,16 @@ function currentBudgetPlan(){
  return plan&&Array.isArray(plan.rows)?plan:null;
 }
 function budgetRowAmount(row){return budgetAmount(row.rate,row.quantity)}
-function budgetRowMatchKey(row){return [String(row.product||'').trim().toLocaleLowerCase(),String(row.spec||'').trim().toLocaleLowerCase(),String(row.unit||'').trim().toLocaleLowerCase()].join('|')}
+function budgetProductIdentity(value){return productMasterKey(resolvePurchaseProductName(value||''))}
+function budgetRowMatchKey(row){return [budgetProductIdentity(row.product),String(row.unit||'pcs').trim().toLocaleLowerCase()].join('|')}
+function findBudgetActualGroup(groups,row){
+ const identity=budgetProductIdentity(row.product),exact=groups.get(budgetRowMatchKey(row));if(exact)return {group:exact,ratio:1};
+ for(const group of groups.values()){
+  if(budgetProductIdentity(group.product)!==identity)continue;
+  const ratio=unitConversionRatio(row.unit||'pcs',group.unit||'pcs');if(ratio!==null)return {group,ratio};
+ }
+ return null;
+}
 function budgetActualGroups(plan){
  const groups=new Map(),range=budgetDateRange(plan);
  (plan?.rows||[]).filter(row=>String(row.product||'').trim()).forEach(row=>{
@@ -1228,18 +1238,19 @@ function budgetActualGroups(plan){
  (db.purchaseBills||[]).forEach(bill=>{
   const date=String(bill.date||'');if((range.from&&date<range.from)||(range.to&&date>range.to))return;
   (bill.lines||[]).forEach(line=>{
-   const row={product:String(line.product||''),spec:String(line.spec||''),unit:String(line.unit||'pcs')},g=groups.get(budgetRowMatchKey(row));
-   if(g){g.actualQty+=Math.max(0,Number(line.quantity||0));g.actualAmount+=purchaseLineCost(bill,line)}
+   const row={product:String(line.product||''),spec:String(line.spec||''),unit:String(line.unit||'pcs')},match=findBudgetActualGroup(groups,row);
+   if(match){match.group.actualQty+=Math.max(0,Number(line.quantity||0))*match.ratio;match.group.actualAmount+=purchaseLineCost(bill,line)}
   });
  });
  return [...groups.values()].sort((a,b)=>a.date.localeCompare(b.date)||a.product.localeCompare(b.product));
 }
 function budgetUnplannedPurchases(plan){
  const range=budgetDateRange(plan);if(!range.from||!range.to)return [];
- const matched=new Set((plan?.rows||[]).filter(row=>String(row.product||'').trim()).map(budgetRowMatchKey)),rows=[];
+ const planned=(plan?.rows||[]).filter(row=>String(row.product||'').trim()),rows=[];
  (db.purchaseBills||[]).forEach(bill=>(bill.lines||[]).forEach(line=>{
   const row={date:String(bill.date||''),product:String(line.product||''),spec:String(line.spec||''),unit:String(line.unit||'pcs')};
-  if(row.date<range.from||row.date>range.to||matched.has(budgetRowMatchKey(row)))return;
+  const isPlanned=planned.some(item=>budgetProductIdentity(item.product)===budgetProductIdentity(row.product)&&unitConversionRatio(row.unit||'pcs',item.unit||'pcs')!==null);
+  if(row.date<range.from||row.date>range.to||isPlanned)return;
   const qty=Math.max(0,Number(line.quantity||0));if(qty)rows.push({...row,quantity:qty,amount:purchaseLineCost(bill,line)});
  }));
  return rows;
@@ -1263,9 +1274,11 @@ function updateBudgetTotals(){
  if($('budgetCreateProductCount'))$('budgetCreateProductCount').textContent=root.querySelectorAll('[data-budget-row]').length+' items';
 }
 function budgetEditorRow(row,index){
- const qty=Number(row.quantity||0),rate=Number(row.rate||0),total=budgetAmount(rate,qty);
- return '<tr class="budget-edit-row" data-budget-row="'+index+'" data-purchase-key="'+esc(row.sourcePurchaseKey||'')+'">'+
-  '<td class="budget-product-cell"><input data-field="product" list="productNameSuggestions" maxlength="100" value="'+esc(row.product||'')+'" placeholder="Product name" aria-label="Product name"><small class="budget-product-meta">'+esc([row.spec||'',row.unit||'pcs',row.date?fmt(row.date):''].filter(Boolean).join(' · '))+'</small></td>'+
+ const qty=Number(row.quantity||0),rate=Number(row.rate||0),total=budgetAmount(rate,qty),selectedUnit=String(row.unit||'pcs');
+ const units=[...new Set([selectedUnit,...(Array.isArray(db.units)?db.units:[])].map(value=>String(value||'').trim()).filter(Boolean))];
+ const unitOptions=units.map(unit=>'<option value="'+esc(unit)+'"'+(unit===selectedUnit?' selected':'')+'>'+esc(shortPurchaseUnitLabel(unit))+'</option>').join('');
+ return '<tr class="budget-edit-row" data-budget-row="'+index+'">'+
+  '<td class="budget-product-cell"><input data-field="product" list="productNameSuggestions" maxlength="100" value="'+esc(row.product||'')+'" placeholder="Product name" aria-label="Product name"><div class="budget-product-controls"><select data-field="unit" aria-label="Unit for '+esc(row.product||'product')+'">'+unitOptions+'</select><small class="budget-product-meta">'+esc([row.spec||'',row.date?fmt(row.date):''].filter(Boolean).join(' · '))+'</small></div><small class="budget-row-error" data-row-error="'+index+'" role="status" hidden></small></td>'+
   '<td><input type="number" min="0" step="any" inputmode="decimal" data-field="quantity" value="'+(qty||'')+'" placeholder="Q" aria-label="Quantity"></td>'+
   '<td><input type="number" min="0" step="0.01" inputmode="decimal" data-field="rate" value="'+(rate||'')+'" placeholder="R" aria-label="Rate"></td>'+
   '<td><input type="number" min="0" step="0.01" inputmode="decimal" data-field="total" value="'+(total?total.toFixed(2):'')+'" placeholder="T" aria-label="Total"></td>'+
@@ -1295,7 +1308,9 @@ function renderBudget(){
  if(select){select.innerHTML='<option value="">Select Budget</option>'+entries.map(([key,plan])=>'<option value="'+esc(key)+'">'+esc(plan.name||'Budget')+'</option>').join('');const landingActive=document.querySelector('.panel.active')?.id==='budget';activeBudgetKey=entries.some(([key])=>key===prior)?prior:(landingActive?(entries[0]?.[0]||''):'');select.value=activeBudgetKey}
  const list=$('recentBudgetList');
  if(list){
-  const recent=entries.slice(0,8);
+  const recent=showAllBudgetEntries?entries:entries.slice(0,8);
+  const heading=$('budgetListHeading');if(heading)heading.textContent=showAllBudgetEntries?'All Budgets':'Recent Budgets';
+  const allButton=$('budgetShowAllBtn');if(allButton){allButton.hidden=entries.length<=8;allButton.textContent=showAllBudgetEntries?'Recent only':'View all ('+entries.length+')';}
   list.innerHTML=recent.length?recent.map(([key,plan])=>{
    const range=budgetDateRange(plan),count=(plan.rows||[]).filter(row=>String(row.product||'').trim()).length,total=(plan.rows||[]).reduce((sum,row)=>sum+(String(row.product||'').trim()?budgetRowAmount(row):0),0);
    const dates=range.from&&range.to?fmt(range.from)+' – '+fmt(range.to):'Date range not set';
@@ -1328,6 +1343,40 @@ function openBudgetPlan(key){
 }
 function blankBudgetRow(date=today()){return {id:'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),date:String(date||today()),product:'',spec:'',unit:'pcs',quantity:1,rate:0}}
 function showBudgetPurchaseMessage(message){const node=$('budgetPurchaseMessage');if(node){node.textContent=String(message||'');node.hidden=!message}}
+function renderBudgetPurchaseResults(from,to){
+ const root=$('budgetPurchaseResults');if(!root)return {count:0,total:0};
+ const rows=[];
+ (db.purchaseBills||[]).filter(bill=>String(bill.date||'')>=from&&String(bill.date||'')<=to).forEach(bill=>(bill.lines||[]).forEach(line=>{
+  const quantity=Math.max(0,Number(line.quantity||0)),product=String(line.product||'').trim();if(!product||!quantity)return;
+  const amount=Math.max(0,Number(purchaseLineCost(bill,line)||0));
+  rows.push({date:String(bill.date||''),billNo:String(bill.billNo||bill.number||''),product,spec:String(line.spec||''),unit:String(line.unit||'pcs'),quantity,rate:amount/quantity,amount});
+ }));
+ rows.sort((a,b)=>a.date.localeCompare(b.date)||a.product.localeCompare(b.product));
+ const total=rows.reduce((sum,row)=>sum+row.amount,0);root.hidden=false;
+ if(!rows.length){root.innerHTML='<div class="budget-purchased-heading"><h3>Purchased Products</h3><span>0 rows</span></div>'+empty('No purchased products in the selected date range.');return {count:0,total:0}}
+ root.innerHTML='<div class="budget-purchased-heading"><h3>Purchased Products</h3><span>'+rows.length+' rows</span></div><div class="budget-purchase-table-wrap"><table class="budget-purchase-table"><thead><tr><th>Date</th><th>Product</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead><tbody>'+
+  rows.map(row=>'<tr><td>'+esc(fmt(row.date))+'</td><td><strong>'+esc(row.product)+'</strong><small>'+esc([row.spec,shortPurchaseUnitLabel(row.unit)].filter(Boolean).join(' · '))+'</small></td><td>'+numberText(row.quantity)+'</td><td>'+money(row.rate)+'</td><td>'+money(row.amount)+'</td></tr>').join('')+
+  '</tbody></table></div><div class="budget-purchased-total"><span>Purchase total</span><strong>'+money(total)+'</strong></div>';
+ return {count:rows.length,total};
+}
+function budgetRowError(row){
+ if(!String(row.querySelector('[data-field="product"]')?.value||'').trim())return '';
+ const quantity=Number(row.querySelector('[data-field="quantity"]')?.value||0),rate=Number(row.querySelector('[data-field="rate"]')?.value||0);
+ if(!Number.isFinite(quantity)||quantity<=0)return 'Enter a quantity greater than 0.';
+ if(!Number.isFinite(rate)||rate<0)return 'Enter a valid rate.';
+ return '';
+}
+function updateBudgetEditorValidation(){
+ const root=$('budgetList'),errors=[];
+ root?.querySelectorAll('[data-budget-row]').forEach(row=>{
+  const message=budgetRowError(row),errorNode=row.querySelector('[data-row-error]');
+  if(errorNode){errorNode.textContent=message;errorNode.hidden=!message}
+  if(message)errors.push(message);
+ });
+ const status=$('budgetEditorStatus');
+ if(status){status.textContent=errors.length?'Not saved: '+errors[0]:'Product edits save automatically. Tap Save to update the name and dates.';status.classList.toggle('is-error',errors.length>0)}
+ return errors.length===0;
+}
 function updateBudgetFilterDateHints(){['budgetLoadFromDate','budgetLoadToDate'].forEach(id=>{const input=$(id),label=input?.closest('.budget-filter-date');if(label)label.classList.toggle('is-filled',!!input.value)})}
 function renderBudgetCreatePage(){
  const plan=currentBudgetPlan(),shared=!!(plan&&activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner),readOnly=shared&&activeSharedBudgetContext.permission!=='edit';
@@ -1339,11 +1388,12 @@ function renderBudgetCreatePage(){
   if(!String($('budgetLoadToDate').value||''))$('budgetLoadToDate').value=range.to||'';
  }
  updateBudgetFilterDateHints();
+ if($('budgetPurchaseResults')){$('budgetPurchaseResults').hidden=true;$('budgetPurchaseResults').innerHTML=''}
  $('budgetName').disabled=readOnly;$('budgetHeaderFrom').disabled=readOnly;$('budgetHeaderTo').disabled=readOnly;$('budgetHeaderSaveBtn').disabled=readOnly;
  $('budgetLoadShowBtn').disabled=!plan||readOnly;$('budgetLoadDeleteBtn').disabled=!plan||shared;$('addBudgetRowBtn').disabled=!plan||readOnly;
  $('budgetShareBtn').disabled=!plan||readOnly||shared||!plan.rows.some(row=>String(row.product||'').trim());
  $('budgetViewBtn').disabled=!plan||!plan.rows.some(row=>String(row.product||'').trim());
- if(!plan){$('budgetList').innerHTML=empty('Save the Budget date range to add products.');$('budgetGrandTotalCreate').textContent=money(0);$('budgetCreateProductCount').textContent='0 items';return}
+ if(!plan){$('budgetList').innerHTML=empty('Save the Budget date range to add products.');$('budgetGrandTotalCreate').textContent=money(0);$('budgetCreateProductCount').textContent='0 items';if($('budgetEditorStatus'))$('budgetEditorStatus').textContent='Save the Budget date range first.';return}
  const rows=Array.isArray(plan.rows)?plan.rows:[];if(!rows.length)rows.push(blankBudgetRow(plan.from));
  $('budgetList').innerHTML='<div class="budget-table-wrap"><table class="budget-entry-table"><thead><tr><th>Name</th><th>Q</th><th>R</th><th>T</th><th aria-label="Remove"></th></tr></thead><tbody>'+rows.map(budgetEditorRow).join('')+'</tbody></table></div>';updateBudgetTotals();
  $('budgetList').querySelectorAll('input,button').forEach(el=>el.disabled=readOnly);
@@ -1362,6 +1412,7 @@ function updateBudgetRowFromInput(event){
  const index=Number(tr.dataset.budgetRow),field=input.dataset.field,get=name=>tr.querySelector('[data-field="'+name+'"]');
  let row=plan.rows[index];if(!row)row=plan.rows[index]=blankBudgetRow(plan.from||today());
  if(field==='product')row.product=input.value;
+ if(field==='unit')row.unit=String(input.value||'pcs');
  if(field==='quantity')row.quantity=Math.max(0,Number(input.value||0));
  if(field==='rate')row.rate=Math.max(0,Number(input.value||0));
  if(field==='total'){
@@ -1373,7 +1424,7 @@ function updateBudgetRowFromInput(event){
  row.date=row.date||plan.from||today();row.unit=row.unit||'pcs';
  if(field!=='total'){row.rate=Math.max(0,Number(get('rate')?.value||0));row.quantity=Math.max(0,Number(get('quantity')?.value||0))}
  const sum=budgetAmount(row.rate,row.quantity),totalInput=get('total');if(totalInput&&document.activeElement!==totalInput)totalInput.value=sum?sum.toFixed(2):'';
- const meta=tr.querySelector('.budget-product-meta');if(meta)meta.textContent=[row.spec||'',row.unit||'pcs',row.date?fmt(row.date):''].filter(Boolean).join(' · ');updateBudgetTotals();
+ const meta=tr.querySelector('.budget-product-meta');if(meta)meta.textContent=[row.spec||'',row.date?fmt(row.date):''].filter(Boolean).join(' · ');updateBudgetTotals();updateBudgetEditorValidation();
 }
 async function saveBudgetHeader(){
  const name=String($('budgetName').value||'').trim(),from=String($('budgetHeaderFrom').value||''),to=String($('budgetHeaderTo').value||'');
@@ -1381,6 +1432,7 @@ async function saveBudgetHeader(){
  if(!from||!to||from>to){alert('Choose a valid From and To date. From must be on or before To.');return}
  let plan=currentBudgetPlan();
  if(plan&&activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner&&activeSharedBudgetContext.permission!=='edit'){alert('This shared Budget is view only.');return}
+ if(plan&&!updateBudgetEditorValidation()){alert('Fix the highlighted product quantity or rate before saving the Budget.');return}
  if(!plan){const id='b'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);activeBudgetKey=budgetPlanKey(id);plan=db.budgetPlans[activeBudgetKey]={id,name,from,to,rows:[blankBudgetRow(from)],createdAt:new Date().toISOString()}}
  else{plan.name=name;plan.from=from;plan.to=to;if(!Array.isArray(plan.rows)||!plan.rows.length)plan.rows=[blankBudgetRow(from)];plan.updatedAt=new Date().toISOString()}
  $('budgetLoadFromDate').value=from;$('budgetLoadToDate').value=to;updateBudgetFilterDateHints();
@@ -1390,15 +1442,20 @@ async function saveBudgetHeader(){
 async function saveBudget(options={}){
  const plan=currentBudgetPlan();if(!plan){if(!options.silent)alert('Save the Budget date range first.');return false}
  if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner&&activeSharedBudgetContext.permission!=='edit'){if(!options.silent)alert('This shared Budget is view only.');renderBudgetCreatePage();return false}
- const name=String($('budgetName').value||plan.name||'').trim(),from=String($('budgetHeaderFrom').value||plan.from||''),to=String($('budgetHeaderTo').value||plan.to||'');
- if(!name||!from||!to||from>to){if(!options.silent)alert('Enter a Budget name and a valid From / To date range.');return false}
+ const name=options.productsOnly?plan.name:String($('budgetName').value||plan.name||'').trim();
+ const from=options.productsOnly?plan.from:String($('budgetHeaderFrom').value||plan.from||'');
+ const to=options.productsOnly?plan.to:String($('budgetHeaderTo').value||plan.to||'');
+ if(!options.productsOnly&&(!name||!from||!to||from>to)){if(!options.silent)alert('Enter a Budget name and a valid From / To date range.');return false}
  const rows=[...$('budgetList').querySelectorAll('[data-budget-row]')].map((el,index)=>{
   const get=k=>el.querySelector('[data-field="'+k+'"]')?.value??'',old=plan.rows?.[index]||{};
-  return {...old,id:old.id||'r'+Date.now()+index,date:old.date||from,product:String(get('product')||'').trim(),spec:String(old.spec||''),unit:String(old.unit||'pcs'),quantity:Math.max(0,Number(get('quantity')||0)),rate:Math.max(0,Number(get('rate')||0))};
+  return {...old,id:old.id||'r'+Date.now()+index,date:old.date||from||plan.from||today(),product:String(get('product')||'').trim(),spec:String(old.spec||''),unit:String(get('unit')||old.unit||'pcs'),quantity:Math.max(0,Number(get('quantity')||0)),rate:Math.max(0,Number(get('rate')||0))};
  });
+ if(!updateBudgetEditorValidation()){if(!options.silent)alert('Each product needs a quantity greater than 0 and a valid rate.');return false}
  if(rows.some(row=>row.product&&(!Number.isFinite(row.quantity)||row.quantity<=0||!Number.isFinite(row.rate)||row.rate<0))){if(!options.silent)alert('Each product needs a valid quantity and rate.');return false}
- plan.name=name;plan.from=from;plan.to=to;plan.rows=rows.length?rows:[blankBudgetRow(from)];plan.updatedAt=new Date().toISOString();
+ if(!options.productsOnly){plan.name=name;plan.from=from;plan.to=to}
+ plan.rows=rows.length?rows:[blankBudgetRow(plan.from||today())];plan.updatedAt=new Date().toISOString();
  localSaveOnly();renderBudget();updateBudgetTotals();if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey)await syncActiveSharedBudget();
+ const status=$('budgetEditorStatus');if(status){status.textContent='Saved';status.classList.remove('is-error')}
  if(!options.silent)alert('Budget products saved successfully.');return true;
 }
 async function showPurchasedProductsInBudget(){
@@ -1406,22 +1463,15 @@ async function showPurchasedProductsInBudget(){
  if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner&&activeSharedBudgetContext.permission!=='edit'){alert('This shared Budget is view only.');return}
  const from=String($('budgetLoadFromDate').value||''),to=String($('budgetLoadToDate').value||'');
  if(!from||!to||from>to){alert('Choose a valid purchase From and To date range.');return}
- const known=new Set((plan.rows||[]).map(row=>String(row.sourcePurchaseKey||'')).filter(Boolean)),added=[];
- (db.purchaseBills||[]).filter(bill=>String(bill.date||'')>=from&&String(bill.date||'')<=to).forEach(bill=>(bill.lines||[]).forEach(line=>{
-  const sourcePurchaseKey=String(bill.id||'')+'::'+String(line.id||line.product||'');if(known.has(sourcePurchaseKey))return;
-  const quantity=Math.max(0,Number(line.quantity||0));if(!quantity)return;
-  const total=Math.max(0,Number(purchaseLineCost(bill,line)||0)),rate=Number((total/quantity).toFixed(4));
-  added.push({id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),sourcePurchaseKey,date:String(bill.date||from),product:String(line.product||''),spec:String(line.spec||''),unit:String(line.unit||'pcs'),quantity,rate});known.add(sourcePurchaseKey);
- }));
- if(!added.length){showBudgetPurchaseMessage('No purchase products found in '+fmt(from)+' – '+fmt(to)+'.');alert('No purchase products found for the selected date range.');return}
- plan.rows=(plan.rows||[]).filter(row=>String(row.product||'').trim()).concat(added);
- plan.updatedAt=new Date().toISOString();localSaveOnly();renderBudget();renderBudgetCreatePage();await syncActiveSharedBudget();
- showBudgetPurchaseMessage(added.length+' purchase product '+(added.length===1?'row':'rows')+' added from '+fmt(from)+' – '+fmt(to)+'.');alert(added.length+' purchase product rows added successfully.');
+ const result=renderBudgetPurchaseResults(from,to);
+ if(!result.count){showBudgetPurchaseMessage('No purchases found from '+fmt(from)+' – '+fmt(to)+'. Planned products and totals are unchanged.');alert('No purchase products found for the selected date range.');return}
+ showBudgetPurchaseMessage(result.count+' purchased rows shown from '+fmt(from)+' – '+fmt(to)+'. Purchase total: '+money(result.total)+'. These rows are separate from the planned Budget.');
+ alert(result.count+' purchased product rows shown below. The planned Budget total has not changed.');
 }
 async function deleteCurrentBudget(){
   const plan=currentBudgetPlan();if(!plan)return;
   if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner){alert('You cannot delete a Budget shared with you.');return}
-  if(!confirm('Delete "'+plan.name+'"? Any sharing access for this Budget will also be revoked.'))return;
+  if(!await window.dayQuestConfirm('Delete Budget “'+plan.name+'”? Any sharing access for this Budget will also be revoked.'))return;
   if(cloudUser&&supabaseClient){
    try{
     const {data,error}=await supabaseClient.rpc('dayquest_list_owned_budget_shares');
@@ -1675,6 +1725,7 @@ $('budgetShareBtn').addEventListener('click',async()=>{
  $('refreshSharedBudgets').addEventListener('click',renderSharedBudgetList);
  $('budgetPlanSelect').addEventListener('change',()=>{activeBudgetKey=$('budgetPlanSelect').value;setActiveSharedBudgetContext(null);renderBudget()});
 $('newBudgetBtn').addEventListener('click',createBudget);
+$('budgetShowAllBtn').addEventListener('click',()=>{showAllBudgetEntries=!showAllBudgetEntries;renderBudget()});
 $('budgetHeaderSaveBtn').addEventListener('click',saveBudgetHeader);
 $('budgetLoadShowBtn').addEventListener('click',showPurchasedProductsInBudget);
 $('budgetLoadDeleteBtn').addEventListener('click',deleteCurrentBudget);
@@ -1691,13 +1742,12 @@ $('budgetViewPrint').addEventListener('click',()=>exportBudgetStatement('print')
 $('budgetViewPdf').addEventListener('click',()=>exportBudgetStatement('pdf'));
 $('budgetViewExcel').addEventListener('click',()=>exportBudgetStatement('excel'));
 $('budgetList').addEventListener('change',event=>{
+ if(event.target.matches('[data-field="unit"]'))updateBudgetRowFromInput(event);
  if(event.target.matches('[data-field="product"],[data-field="unit"]'))prefillBudgetPreviousRate(event.target);
+ if(event.target.matches('[data-field="product"],[data-field="unit"],[data-field="quantity"],[data-field="rate"],[data-field="total"]'))saveBudget({silent:true,productsOnly:true});
 });
 $('budgetList').addEventListener('input',event=>{
  if(event.target.matches('[data-field="product"],[data-field="quantity"],[data-field="rate"],[data-field="total"]'))updateBudgetRowFromInput(event);
-});
-$('budgetList').addEventListener('change',event=>{
- if(event.target.matches('[data-field="product"],[data-field="quantity"],[data-field="rate"],[data-field="total"]'))saveBudget({silent:true});
 });
 $('budgetList').addEventListener('click',async event=>{
  const button=event.target.closest('[data-remove-budget-row]');if(!button)return;
@@ -4723,7 +4773,7 @@ $('installBtn').onclick=async()=>{
  }
  showDayQuestInstallHelp();
 };
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v45').then(registration=>{
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v46').then(registration=>{
  console.info('DayQuest offline support is ready:',registration.scope);
 }).catch(error=>{
  console.warn('DayQuest offline support could not be registered:',error);
