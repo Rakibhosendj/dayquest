@@ -258,8 +258,8 @@ test("Historical Budget import controls are responsive and assets are cache-vers
 });
 
 test("Filled Budget purchase date labels hide only the caption, never the date-entry control", () => {
-  assert.match(css,/#budgetCreatePage \.budget-filter-date\.is-filled>span:first-child\{display:none\}/);
-  assert.match(css,/#budgetCreatePage \.budget-filter-date\.is-filled>\.dq-date-wrap\{display:flex\}/);
+  assert.match(css,/#budgetCreatePage \.budget-filter-date\.is-filled>span:not\(\.dq-date-wrap\)\{display:none!important\}/);
+  assert.match(css,/#budgetCreatePage \.budget-filter-date>\.dq-date-wrap\{[\s\S]*?left:auto!important[\s\S]*?transform:none!important/);
 });
 test("Saved Budgets keep the previous-purchase filter available and preserve its values", () => {
   assert.match(app,/function budgetPurchaseDefaultRange\(startDate\)/);
