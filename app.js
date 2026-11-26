@@ -1348,21 +1348,103 @@ function openBudgetPlan(key){
 }
 function blankBudgetRow(date=today()){return {id:'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),date:String(date||today()),product:'',spec:'',unit:'pcs',quantity:1,rate:0}}
 function showBudgetPurchaseMessage(message){const node=$('budgetPurchaseMessage');if(node){node.textContent=String(message||'');node.hidden=!message}}
+function collectBudgetPurchaseRows(from,to){
+ const rows=[];
+ (db.purchaseBills||[]).forEach((bill,billIndex)=>{
+  const date=String(bill.date||'');if(date<from||date>to)return;
+  (bill.lines||[]).forEach((line,lineIndex)=>{
+   const quantity=Math.max(0,Number(line.quantity||0)),product=String(line.product||'').trim();if(!product||!quantity)return;
+   const amount=Math.max(0,Number(purchaseLineCost(bill,line)||0));
+   const billKey=String(bill.id||bill.billNo||bill.number||('purchase-'+date+'-'+billIndex));
+   const lineKey=String(line.id||'line-'+lineIndex);
+   rows.push({sourceKey:'purchase:'+billKey+'::'+lineKey,date,billNo:String(bill.billNo||bill.number||''),product,spec:String(line.spec||''),unit:String(line.unit||'pcs'),quantity,rate:amount/quantity,amount});
+  });
+ });
+ rows.sort((a,b)=>a.date.localeCompare(b.date)||a.product.localeCompare(b.product));
+ return rows;
+}
+function budgetPurchaseImportPreview(rows,plan){
+ const importedKeys=new Set(),existingImported=new Map();
+ (plan?.rows||[]).forEach(row=>{
+  if(Array.isArray(row.sourcePurchaseKeys))row.sourcePurchaseKeys.forEach(key=>importedKeys.add(String(key)));
+  if(row.sourcePurchaseKey)importedKeys.add(String(row.sourcePurchaseKey));
+  const hasSource=!!row.sourcePurchaseKey||(Array.isArray(row.sourcePurchaseKeys)&&row.sourcePurchaseKeys.length>0);
+  if(hasSource&&String(row.product||'').trim())existingImported.set(budgetRowMatchKey(row),row);
+ });
+ const pending=(rows||[]).filter(row=>!importedKeys.has(String(row.sourceKey)));
+ const grouped=new Map();
+ pending.forEach(row=>{
+  const key=budgetRowMatchKey(row);let group=grouped.get(key);
+  if(!group){group={key,product:row.product,spec:row.spec,unit:row.unit,quantity:0,amount:0,sourcePurchaseKeys:[],sourcePurchaseDates:[]};grouped.set(key,group)}
+  group.quantity+=Math.max(0,Number(row.quantity)||0);group.amount+=Math.max(0,Number(row.amount)||0);
+  group.sourcePurchaseKeys.push(String(row.sourceKey));group.sourcePurchaseDates.push(String(row.date||''));
+ });
+ const manualKeys=new Set((plan?.rows||[]).filter(row=>{
+  const sourced=!!row.sourcePurchaseKey||(Array.isArray(row.sourcePurchaseKeys)&&row.sourcePurchaseKeys.length>0);
+  return String(row.product||'').trim()&&!sourced;
+ }).map(budgetRowMatchKey));
+ const groups=[];let alreadyPlanned=0;
+ grouped.forEach(group=>{
+  if(manualKeys.has(group.key)){alreadyPlanned++;return}
+  if(group.quantity>0)groups.push({...group,existingImportedRow:existingImported.get(group.key)||null});
+ });
+ return {groups,alreadyImported:rows.length-pending.length,alreadyPlanned};
+}
 function renderBudgetPurchaseResults(from,to){
  const root=$('budgetPurchaseResults');if(!root)return {count:0,total:0};
- const rows=[];
- (db.purchaseBills||[]).filter(bill=>String(bill.date||'')>=from&&String(bill.date||'')<=to).forEach(bill=>(bill.lines||[]).forEach(line=>{
-  const quantity=Math.max(0,Number(line.quantity||0)),product=String(line.product||'').trim();if(!product||!quantity)return;
-  const amount=Math.max(0,Number(purchaseLineCost(bill,line)||0));
-  rows.push({date:String(bill.date||''),billNo:String(bill.billNo||bill.number||''),product,spec:String(line.spec||''),unit:String(line.unit||'pcs'),quantity,rate:amount/quantity,amount});
- }));
- rows.sort((a,b)=>a.date.localeCompare(b.date)||a.product.localeCompare(b.product));
+ const rows=collectBudgetPurchaseRows(from,to);
  const total=rows.reduce((sum,row)=>sum+row.amount,0);root.hidden=false;
  if(!rows.length){root.innerHTML='<div class="budget-purchased-heading"><h3>Purchased Products</h3><span>0 rows</span></div>'+empty('No purchased products in the selected date range.');return {count:0,total:0}}
+ const plan=currentBudgetPlan(),preview=budgetPurchaseImportPreview(rows,plan);
+ const buttonLabel=preview.groups.length?'＋ Add '+preview.groups.length+' products to Planned':'Already in Planned';
  root.innerHTML='<div class="budget-purchased-heading"><h3>Purchased Products</h3><span>'+rows.length+' rows</span></div><div class="budget-purchase-table-wrap"><table class="budget-purchase-table"><thead><tr><th>Date</th><th>Product</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead><tbody>'+
   rows.map(row=>'<tr><td>'+esc(fmt(row.date))+'</td><td><strong>'+esc(row.product)+'</strong><small>'+esc([row.spec,shortPurchaseUnitLabel(row.unit)].filter(Boolean).join(' · '))+'</small></td><td>'+numberText(row.quantity)+'</td><td>'+money(row.rate)+'</td><td>'+money(row.amount)+'</td></tr>').join('')+
-  '</tbody></table></div><div class="budget-purchased-total"><span>Purchase total</span><strong>'+money(total)+'</strong></div>';
- return {count:rows.length,total};
+  '</tbody></table></div><div class="budget-purchased-total"><span>Purchase total</span><strong>'+money(total)+'</strong></div><div class="budget-purchase-import-actions"><button type="button" class="secondary budget-import-purchases" id="budgetImportPurchasesBtn" '+(preview.groups.length?'':'disabled')+'>'+buttonLabel+'</button><small>Imported products are planned from '+esc(fmt(plan?.from||today()))+' and do not change purchase records.</small></div>';
+ const importButton=$('budgetImportPurchasesBtn');if(importButton)importButton.addEventListener('click',importBudgetPurchasesToPlan);
+ return {count:rows.length,total,importable:preview.groups.length};
+}
+async function importBudgetPurchasesToPlan(){
+ const plan=currentBudgetPlan();if(!plan){showBudgetPurchaseMessage('Save the Budget date range first.');return}
+ if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner&&activeSharedBudgetContext.permission!=='edit'){showBudgetPurchaseMessage('This shared Budget is view only.');return}
+ const from=String($('budgetLoadFromDate').value||''),to=String($('budgetLoadToDate').value||'');
+ if(!from||!to||from>to){showBudgetPurchaseMessage('Choose a valid purchase From and To date range.');return}
+ const rows=collectBudgetPurchaseRows(from,to);
+ if(!rows.length){showBudgetPurchaseMessage('No purchased products in the selected date range.');return}
+ const preview=budgetPurchaseImportPreview(rows,plan);
+ if(!preview.groups.length){
+  const detail=preview.alreadyPlanned?' Matching products already exist in Planned Products and were left unchanged.':' The selected purchase rows have already been imported.';
+  showBudgetPurchaseMessage('Nothing new was added.'+detail);return;
+ }
+ const targetDate=String(plan.from||today()),createdAt=new Date().toISOString();
+ let addedCount=0,updatedCount=0;
+ preview.groups.forEach((group,index)=>{
+  const rate=Number((group.amount/group.quantity).toFixed(4)),target=group.existingImportedRow;
+  if(target){
+   const oldQuantity=Math.max(0,Number(target.quantity)||0),oldRate=Math.max(0,Number(target.rate)||0);
+   const combinedQuantity=oldQuantity+group.quantity,combinedAmount=oldQuantity*oldRate+group.amount;
+   target.quantity=Number(combinedQuantity.toFixed(4));target.rate=Number((combinedAmount/combinedQuantity).toFixed(4));
+   target.sourcePurchaseKeys=[...new Set([...(target.sourcePurchaseKeys||[]),...group.sourcePurchaseKeys])];
+   target.sourcePurchaseDates=[...new Set([...(target.sourcePurchaseDates||[]),...group.sourcePurchaseDates])];
+   target.sourcePurchaseRange={from:target.sourcePurchaseRange?.from&&target.sourcePurchaseRange.from<from?target.sourcePurchaseRange.from:from,to:target.sourcePurchaseRange?.to&&target.sourcePurchaseRange.to>to?target.sourcePurchaseRange.to:to};
+   updatedCount++;
+  }else{
+   plan.rows.push({
+    id:'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)+index,
+    date:targetDate,product:group.product,spec:group.spec,unit:group.unit,
+    quantity:Number(group.quantity.toFixed(4)),rate,
+    sourcePurchaseKeys:[...group.sourcePurchaseKeys],
+    sourcePurchaseDates:[...new Set(group.sourcePurchaseDates)],
+    sourcePurchaseRange:{from,to}
+   });
+   addedCount++;
+  }
+ });
+ plan.updatedAt=createdAt;
+ localSaveOnly();
+ renderBudgetCreatePage();renderBudgetPurchaseResults(from,to);
+ const skipped=preview.alreadyPlanned?' '+preview.alreadyPlanned+' matching product group(s) already existed manually and were left unchanged.':'';
+ showBudgetPurchaseMessage(addedCount+' new product group(s) added'+(updatedCount?' and '+updatedCount+' existing imported group(s) updated':'')+' using purchases from '+fmt(from)+' – '+fmt(to)+'. Planned date: '+fmt(targetDate)+'. Purchase records and actual spending were not changed.'+skipped);
+ await syncActiveSharedBudget();
 }
 function budgetRowError(row){
  if(!String(row.querySelector('[data-field="product"]')?.value||'').trim())return '';
@@ -1484,7 +1566,7 @@ async function showPurchasedProductsInBudget(){
  if(!from||!to||from>to){alert('Choose a valid purchase From and To date range.');return}
  const result=renderBudgetPurchaseResults(from,to);
  if(!result.count){showBudgetPurchaseMessage('No purchases found from '+fmt(from)+' – '+fmt(to)+'. Planned products and totals are unchanged.');alert('No purchase products found for the selected date range.');return}
- showBudgetPurchaseMessage(result.count+' purchased rows shown from '+fmt(from)+' – '+fmt(to)+'. Purchase total: '+money(result.total)+'. These rows are separate from the planned Budget.');
+ showBudgetPurchaseMessage(result.count+' purchased rows shown from '+fmt(from)+' – '+fmt(to)+'. Purchase total: '+money(result.total)+'. Use Add to Planned only for products you want to budget.');
  alert(result.count+' purchased product rows shown below. The planned Budget total has not changed.');
 }
 async function deleteCurrentBudget(){
@@ -4793,7 +4875,7 @@ $('installBtn').onclick=async()=>{
  }
  showDayQuestInstallHelp();
 };
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v48').then(registration=>{
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v49').then(registration=>{
  console.info('DayQuest offline support is ready:',registration.scope);
 }).catch(error=>{
  console.warn('DayQuest offline support could not be registered:',error);
