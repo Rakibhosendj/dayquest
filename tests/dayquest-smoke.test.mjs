@@ -109,7 +109,7 @@ test("PWA cache uses the current CSS and JavaScript asset versions", () => {
   const appAsset = html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset && worker.includes("./style.css?v=" + cssAsset));
   assert.ok(appAsset && worker.includes("./app.js?v=" + appAsset));
-  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v55'\)/);
+  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v56'\)/);
 });
 
 test("shared Budget context is saved per account and revalidated on refresh", () => {
@@ -161,7 +161,7 @@ test("Show finds historical purchases and loads them into editable Planned Produ
   const show = app.slice(app.indexOf("async function showPurchasedProductsInBudget"), app.indexOf("async function deleteCurrentBudget"));
   assert.match(show,/renderBudgetPurchaseResults\(normalizedFrom,normalizedTo\)/);
   assert.match(show,/await importBudgetPurchasesToPlan\(\{fromShow:true,planKey:activeBudgetKey\}\)/);
-  assert.doesNotMatch(show,/db\.purchaseBills\s*=|localSaveOnly\(/);
+  assert.doesNotMatch(show,/db\.purchaseBills\s*=/);
   assert.ok(html.includes('id="budgetPurchaseResults"'));
   assert.match(html,/budget-purchase-results/);
   const importer=app.slice(app.indexOf("async function importBudgetPurchasesToPlan"),app.indexOf("async function deleteCurrentBudget"));
@@ -176,10 +176,13 @@ test("Budget planned rows have a selectable unit and unit-compatible actual matc
   assert.match(app,/unitConversionRatio\(row\.unit\|\|'pcs',group\.unit\|\|'pcs'\)/);
   assert.ok(app.includes("latestPurchaseRateForProduct(product,unit)"));
 });
-test("Product autosave does not save uncommitted Budget header dates", () => {
-  assert.ok(app.includes("saveBudget({silent:true,productsOnly:true})"));
+test("Product autosave persists row edits without saving uncommitted Budget header dates", () => {
+  assert.match(app,/function persistBudgetEditorState\(syncShared=false\)/);
+  assert.match(app,/localStorage\.setItem\('dayquest_v1',JSON\.stringify\(db\)\)/);
+  assert.match(app,/queueCloudSave\(\)/);
   assert.ok(app.includes("options.productsOnly?plan.from"));
   assert.ok(app.includes("if(!options.productsOnly){plan.name=name;plan.from=from;plan.to=to}"));
+  assert.doesNotMatch(app,/saveBudget\(\{silent:true,productsOnly:true\}\)/);
 });
 test("Invalid Budget rows show inline validation instead of silently appearing saved", () => {
   assert.ok(html.includes('id="budgetEditorStatus"'));
@@ -241,7 +244,7 @@ test("Historical purchases can be imported explicitly into Planned Products with
   assert.match(app,/id="budgetImportPurchasesBtn"/);
   assert.match(app,/importButton\.addEventListener\('click',importBudgetPurchasesToPlan\)/);
   const show = app.slice(app.indexOf("function showPurchasedProductsInBudget"), app.indexOf("async function deleteCurrentBudget"));
-  assert.doesNotMatch(show,/plan\.rows\s*=|localSaveOnly\(|syncActiveSharedBudget\(/);
+  assert.match(show,/await importBudgetPurchasesToPlan\(\{fromShow:true,planKey:activeBudgetKey\}\)/);
 });
 test("Budget import prevents duplicate purchase rows and protects manually planned products", () => {
   const preview = app.slice(app.indexOf("function budgetPurchaseImportPreview"), app.indexOf("function renderBudgetPurchaseResults"));
@@ -259,7 +262,7 @@ test("Historical Budget import controls are responsive and assets are cache-vers
   const appAsset=html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset&&worker.includes("./style.css?v="+cssAsset));
   assert.ok(appAsset&&worker.includes("./app.js?v="+appAsset));
-  assert.match(app,/serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v55'\)/);
+  assert.match(app,/serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v56'\)/);
 });
 
 test("Filled Budget purchase date labels hide only the caption, never the date-entry control", () => {
@@ -281,7 +284,7 @@ test("Share and Details are enabled for a saved Budget before products are added
   assert.match(app,/if\(\$\('budgetViewBtn'\)\)\$\('budgetViewBtn'\)\.disabled=!plan/);
 });
 test("A saved Budget editor displays a saved-state hint and counts only named products", () => {
-  assert.match(app,/Saved\. Add products with ＋/);
+  assert.match(app,/Product rows are editable\. Changes save as you type\./);
   assert.ok(app.includes("filter(row=>String(row.querySelector('[data-field=\"product\"]')?.value||'').trim())"));
 });
 
@@ -375,8 +378,10 @@ test("Saving a Budget opens its exact key and persists an editable starter row",
 });
 test("Add Product restores a blank row when a saved Budget row list is empty", () => {
   const add=app.slice(app.indexOf("async function addBudgetRow"),app.indexOf("function updateBudgetRowFromInput"));
-  assert.match(add,/if\(!Array\.isArray\(plan\.rows\)\)plan\.rows=\[\]/);
-  assert.match(add,/if\(!plan\.rows\.length\)plan\.rows=\[blankBudgetRow/);
+  assert.match(add,/budgetPlanForEditor\(key\)/);
+  assert.match(add,/plan\.rows\.push\(blankBudgetRow/);
+  assert.match(add,/persistBudgetEditorState\(true\)/);
+  assert.doesNotMatch(add,/localSaveOnly\(\)|renderBudget\(\)/);
 });
 test("Show and import refresh the same exact selected Budget product table", () => {
   assert.match(app,/await importBudgetPurchasesToPlan\(\{fromShow:true,planKey:activeBudgetKey\}\)/);
@@ -411,4 +416,11 @@ test("Budget row inputs are saved as users type and retain edit permission state
   assert.match(app,/function budgetPlanIsReadOnly\(key\)/);
   assert.match(app,/queueCloudSave\(\)/);
   assert.match(css,/#budgetCreatePage \.budget-entry-table td input:not\(:disabled\)\{pointer-events:auto/);
+});
+
+test("Shared Budget Edit permission survives reload and keeps row editing enabled", () => {
+  assert.match(app,/permission:activeSharedBudgetContext\.is_owner\?'owner':\(activeSharedBudgetContext\.permission==='edit'\?'edit':'view'\)/);
+  assert.match(app,/permission:saved\.is_owner\?'owner':\(saved\.permission==='edit'\?'edit':'view'\)/);
+  assert.match(app,/function budgetPlanIsReadOnly\(key\)/);
+  assert.match(app,/permission!=='edit'/);
 });
