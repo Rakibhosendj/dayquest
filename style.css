@@ -3166,8 +3166,8 @@ body{color:var(--dq-font-color,#263b5c)}
 #budgetCreatePage .budget-purchase-filter-row{display:flex;align-items:center;gap:6px;margin:0 0 10px;min-width:0}
 #budgetCreatePage .budget-filter-date-box{display:grid;grid-template-columns:1fr 1fr;gap:5px;flex:1 1 auto;min-width:0}
 #budgetCreatePage .budget-filter-date{position:relative;display:block;min-width:0}
-#budgetCreatePage .budget-filter-date>span{position:absolute;z-index:1;left:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--muted,#8792a2);pointer-events:none}
-#budgetCreatePage .budget-filter-date.is-filled>span:first-child{display:none}
+#budgetCreatePage .budget-filter-date>span:not(.dq-date-wrap){position:absolute;z-index:2;left:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--muted,#8792a2);pointer-events:none}
+#budgetCreatePage .budget-filter-date.is-filled>span:not(.dq-date-wrap){display:none}
 #budgetCreatePage .budget-filter-date>input{box-sizing:border-box;width:100%;height:37px;min-width:0;padding:5px 5px 5px 8px;border:1px solid var(--line,#dce2ea);border-radius:8px;background:var(--card,#fff);color:var(--text,#172033);font:inherit;font-size:10px}
 #budgetCreatePage .budget-filter-show{flex:0 0 52px;width:52px;height:37px;min-height:37px;margin:0;padding:5px 7px;font-size:11px}
 #budgetCreatePage .budget-filter-delete{flex:0 0 78px;width:78px;height:37px;min-height:37px;margin:0;padding:5px 5px;font-size:9px;text-align:center;white-space:nowrap}
@@ -3243,9 +3243,6 @@ body{color:var(--dq-font-color,#263b5c)}
 @media(max-width:380px){#budgetCreatePage .budget-purchase-import-actions{align-items:stretch}#budgetCreatePage .budget-import-purchases{width:100%}}
 
 
-/* Keep purchase range controls visible after dates are filled. */
-#budgetCreatePage .budget-filter-date.is-filled>.dq-date-wrap{display:flex}
-
 
 /* Keep the Budget purchase dates as one compact, editable date control.
    The shared date enhancer wraps each native date input in .dq-date-wrap. */
@@ -3254,3 +3251,87 @@ body{color:var(--dq-font-color,#263b5c)}
 #budgetCreatePage .budget-filter-date>.dq-date-wrap>input.dq-date-entry:focus{outline:0;box-shadow:none}
 #budgetCreatePage .budget-filter-date>.dq-date-wrap>input.dq-native-date-control{position:absolute!important;top:0!important;right:0!important;bottom:0!important;left:auto!important;z-index:3;display:block;width:42px!important;height:100%!important;min-height:100%!important;margin:0!important;padding:0!important;border:0!important;border-radius:inherit!important;opacity:0!important;cursor:pointer!important;background:transparent!important}
 #budgetCreatePage .budget-filter-date>.dq-date-wrap>.dq-date-icon{position:relative;z-index:1;flex:0 0 16px;width:16px;text-align:center;font-size:13px;pointer-events:none}
+
+
+/* Budget purchase filter: caption and editable date control are separate siblings. */
+#budgetCreatePage .budget-filter-date{position:relative;display:block;min-width:0}
+#budgetCreatePage .budget-filter-date>span:not(.dq-date-wrap){position:absolute;z-index:2;top:50%;left:8px;transform:translateY(-50%);pointer-events:none}
+#budgetCreatePage .budget-filter-date.is-filled>span:not(.dq-date-wrap){display:none!important}
+#budgetCreatePage .budget-filter-date>.dq-date-wrap{
+ position:relative!important;inset:auto!important;top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;
+ transform:none!important;z-index:1!important;display:flex!important;align-items:center!important;
+ box-sizing:border-box;width:100%;height:37px;min-height:37px;margin:0;padding:0 7px;gap:5px;overflow:hidden;
+ border:1px solid var(--line,#dce2ea);border-radius:8px;background:var(--card,#fff);pointer-events:auto!important
+}
+#budgetCreatePage .budget-filter-date>.dq-date-wrap>input.dq-date-entry{
+ position:relative!important;inset:auto!important;transform:none!important;display:block!important;flex:1 1 auto!important;
+ width:auto!important;min-width:0!important;height:auto!important;min-height:28px!important;margin:0!important;padding:0!important;
+ border:0!important;border-radius:0!important;outline:0!important;background:transparent!important;color:var(--text,#172033);
+ font:inherit!important;font-size:11px!important;line-height:1.2
+}
+#budgetCreatePage .budget-filter-date>.dq-date-wrap>input.dq-native-date-control{
+ position:absolute!important;top:0!important;right:0!important;bottom:0!important;left:auto!important;z-index:3!important;
+ display:block!important;width:42px!important;height:100%!important;min-height:100%!important;margin:0!important;padding:0!important;
+ border:0!important;border-radius:inherit!important;opacity:0!important;cursor:pointer!important;background:transparent!important
+}
+#budgetCreatePage .budget-filter-date>.dq-date-wrap>.dq-date-icon{position:relative!important;inset:auto!important;transform:none!important;z-index:1!important;display:block;flex:0 0 16px;width:16px;text-align:center;pointer-events:none}
+
+
+/* Purchase form — mobile-first, thumb-friendly layout. */
+@media(max-width:560px){
+ .purchase-form{box-sizing:border-box;width:100%;padding:9px;gap:10px;border-radius:12px}
+ .purchase-header-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .purchase-header-grid>label:first-child{grid-column:1/-1}
+ .purchase-header-grid>label{min-width:0;gap:5px;font-size:11px}
+ .purchase-header-grid input,.purchase-header-grid select{box-sizing:border-box;width:100%;min-width:0;min-height:44px;padding:9px 10px;font-size:16px!important}
+ .purchase-header-grid .select-add{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:6px;width:100%}
+ .purchase-header-grid .select-add>.mini-add{width:44px;min-width:44px;min-height:44px;padding:4px;font-size:16px}
+ .purchase-lines{gap:9px}
+ .purchase-lines-heading{margin:5px 2px}
+ .purchase-lines-heading h3{font-size:13px}
+ .purchase-line{box-sizing:border-box;width:100%;min-width:0;padding:9px;gap:9px;border-radius:11px}
+ .purchase-line-top{font-size:11px}
+ .purchase-line-top .remove-purchase-line{min-height:34px;padding:6px 10px;font-size:10px}
+ .purchase-product-category-row{grid-template-columns:minmax(0,1fr);gap:8px}
+ .purchase-product-category-row>label{min-width:0}
+ .purchase-product-category-row .purchase-line-field-row,
+ .purchase-product-type-row .purchase-line-field-row{grid-template-columns:minmax(0,1fr) 44px;gap:6px;align-items:end}
+ .purchase-line-field-row>label{min-width:0;gap:4px;font-size:10px}
+ .purchase-line-field-row>.mini-add{box-sizing:border-box;width:44px;min-width:44px;min-height:44px;padding:4px;font-size:17px}
+ .purchase-line .pl-product-input-wrap{display:block;width:100%;min-width:0}
+ .purchase-line .pl-product{padding-right:112px!important}
+ .purchase-product-type-row{grid-template-columns:minmax(0,1fr)}
+ .purchase-numbers-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .purchase-numbers-grid>.form-grid{display:contents}
+ .purchase-line label{min-width:0;gap:4px;font-size:10px}
+ .purchase-line input,.purchase-line select{box-sizing:border-box;width:100%;max-width:100%;min-width:0;min-height:44px;padding:9px 8px;font-size:16px!important}
+ .purchase-line .pl-calc-message{font-size:10px;line-height:1.35}
+ .purchase-lines-footer{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:8px}
+ .purchase-lines-footer>label{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;min-width:0;font-size:10px;white-space:normal}
+ .purchase-lines-footer>label input,.purchase-lines-footer>label select{box-sizing:border-box;width:100%;min-width:0;min-height:44px;padding:8px;font-size:16px!important}
+ .purchase-subtotal-inline{display:flex;align-items:center;justify-content:space-between;min-width:0;min-height:44px;padding:8px;font-size:10px}
+ .purchase-subtotal-inline strong{font-size:13px}
+ .purchase-add-line-button{box-sizing:border-box;width:100%;min-width:0;min-height:44px;padding:7px;font-size:12px;line-height:1.2}
+ .purchase-adjustments{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:9px}
+ .purchase-transit-separate{grid-template-columns:minmax(0,1fr);gap:4px;font-size:10px}
+ .purchase-transit-separate input,.purchase-transit-method select{box-sizing:border-box;width:100%;min-width:0;min-height:44px;padding:8px;font-size:16px!important}
+ .purchase-adjustments>.total-preview{box-sizing:border-box;min-width:0;min-height:48px;padding:8px;font-size:10px}
+ .purchase-adjustments>.total-preview strong{font-size:13px;white-space:normal;overflow-wrap:anywhere}
+ .purchase-payment-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .purchase-payment-grid label{min-width:0;gap:4px;font-size:10px}
+ .purchase-payment-grid input{box-sizing:border-box;width:100%;min-height:44px;padding:8px;font-size:16px!important}
+ .purchase-form .credit-preview{min-height:48px;padding:9px 10px;font-size:10px}
+ .purchase-form .credit-preview strong{font-size:14px}
+ .purchase-form-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}
+ .purchase-form-actions button{min-width:0;min-height:46px;padding:10px;font-size:12px}
+ .purchase-form .dq-date-wrap{box-sizing:border-box;width:100%;min-height:44px;height:44px;padding:0 9px}
+ .purchase-form .dq-date-wrap>.dq-date-entry{min-height:34px!important;font-size:16px!important}
+}
+@media(max-width:380px){
+ .purchase-header-grid{gap:6px}
+ .purchase-header-grid>label{font-size:10px}
+ .purchase-product-category-row,.purchase-numbers-grid,.purchase-adjustments,.purchase-payment-grid{gap:6px}
+ .purchase-lines-footer{gap:6px;padding:7px}
+ .purchase-line{padding:8px}
+ .purchase-line input,.purchase-line select{padding:8px 7px}
+}
