@@ -152,7 +152,15 @@ function normalizeMemberAssignments(){
 }
 db.incomePeople=Array.isArray(db.incomePeople)?db.incomePeople:[];
 db.purchaseBills=Array.isArray(db.purchaseBills)?db.purchaseBills:[];
-db.budgetPlans=db.budgetPlans&&typeof db.budgetPlans==='object'&&!Array.isArray(db.budgetPlans)?db.budgetPlans:{};
+if(Array.isArray(db.budgetPlans)){
+ const legacyBudgetArray=db.budgetPlans,convertedBudgetPlans={};
+ legacyBudgetArray.forEach((plan,index)=>{
+  if(!plan||typeof plan!=='object'||Array.isArray(plan))return;
+  const id=String(plan.id||'legacy-array-'+index);
+  convertedBudgetPlans[budgetPlanKey(id)]={...plan,id,rows:Array.isArray(plan.rows)?plan.rows:(Array.isArray(plan.products)?plan.products:(Array.isArray(plan.items)?plan.items:[]))};
+ });
+ db.budgetPlans=convertedBudgetPlans;
+}else db.budgetPlans=db.budgetPlans&&typeof db.budgetPlans==='object'?db.budgetPlans:{ };
 // Purchase bill numbers use MM-YYYY-N and remain unique across the entire bill register.
 function purchaseBillPrefix(date){
  const match=/^(\d{4})-(\d{2})-\d{2}$/.exec(String(date||''));
@@ -496,13 +504,22 @@ function paymentBalanceError(method,amount,addBack=0){
 let activeReportSectionKey='members';
 let latestCreditorOutstandingTotal=0;
 function updatePageBalanceTitle(tab){
- const titles={home:'Overview',purchaseBills:'Purchase',inventory:'Inventory',budget:'Budget',budgetCreatePage:'Create Budget',budgetViewPage:'Budget',production:'Production',supplierAccounts:'Supplier Accounts',supplierEntry:'Supplier Entry',creditors:'Creditors',debitors:'Debtors',payExpenseDue:'Outstanding',loans:'Loans',income:'Income',meals:'Meals',quests:'Daily Quest',questSetup:'Daily Quest',profile:'Profile',memberProfilePage:selectedMemberProfileName||'Member Profile',settings:'Settings',costChartPage:'Cost Chart',quickExpenses:'Quick Expenses',expenseEntries:'Expenses'};
- let title=titles[tab]||String(tab||'DayQuest').replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase());
- if(tab==='reports'){
+ const activePage=document.querySelector('.panel.active')?.id||'';
+ const budgetPages=new Set(['budget','budgetCreatePage','budgetViewPage','budgetSharePage']);
+ const isBudgetPage=budgetPages.has(String(tab||''))||budgetPages.has(activePage);
+ const resolvedTab=isBudgetPage?'budget':(activePage||tab);
+ const titles={home:'Overview',purchaseBills:'Purchase',inventory:'Inventory',budget:'Budget',budgetCreatePage:'Budget',budgetViewPage:'Budget',budgetSharePage:'Budget',production:'Production',supplierAccounts:'Supplier Accounts',supplierEntry:'Supplier Entry',creditors:'Creditors',debitors:'Debtors',payExpenseDue:'Outstanding',loans:'Loans',income:'Income',meals:'Meals',quests:'Daily Quest',questSetup:'Daily Quest',profile:'Profile',memberProfilePage:selectedMemberProfileName||'Member Profile',settings:'Settings',costChartPage:'Cost Chart',quickExpenses:'Quick Expenses',expenseEntries:'Expenses'};
+ let title=titles[resolvedTab]||String(resolvedTab||'DayQuest').replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase());
+ if(resolvedTab==='reports'){
   const selected=activeReportSectionKey||document.querySelector('[data-report-go].active')?.dataset.reportGo||document.querySelector('[data-report-pane]:not([hidden])')?.dataset.reportPane||'members';
   title=selected==='all'?'All Reports':(REPORT_TITLES[selected]||'Reports');
  }
- const pageIcon=$('pageContextIcon');if(pageIcon)pageIcon.hidden=false;
+ const pageIcon=$('pageContextIcon');
+ if(pageIcon){
+  pageIcon.src=isBudgetPage?'icons/budget.svg?v=20261126-budget-icon':'icons/icon-192.png?v=20261121-coin-check';
+  pageIcon.alt=isBudgetPage?'Budget':'';
+  pageIcon.hidden=false;
+ }
  const element=$('pageContextTitle');if(element)element.textContent=title;
  showBalances();
 }
@@ -890,7 +907,7 @@ function setTab(t,options={}){
  if(t==='supplierEntry'){renderSupplierEntryList();resetSupplierEntryForm()}
  if(t==='meals'){if(!$('mealControlDate').value)$('mealControlDate').value=today();if(!$('mealFromDate').value)$('mealFromDate').value=today();if(!$('mealToDate').value)$('mealToDate').value=today();renderMeals()}
  if(t==='purchaseBills'){fillChoices();renderPurchaseLines();renderSupplierAccounts();}
- updatePageBalanceTitle(t);
+ updatePageBalanceTitle(document.querySelector('.panel.active')?.id||t);
  if(t==='creditors'&&$('pageContextTitle'))$('pageContextTitle').textContent='Creditors';
  if(t==='debitors'&&$('pageContextTitle'))$('pageContextTitle').textContent='Debtors';
  updateBackButton();
@@ -1206,12 +1223,26 @@ function restoreBudgetShareContextFromList(items){
 function budgetPlanKey(id){return 'budget:'+String(id||'')}
 function budgetPlanEntries(){return Object.entries(db.budgetPlans||{}).filter(([key,plan])=>key.startsWith('budget:')&&plan&&typeof plan==='object'&&!Array.isArray(plan))}
 function ensureLegacyBudgetPlans(){
+ let changed=false;
  Object.entries(db.budgetPlans||{}).forEach(([key,plan])=>{
-  if(key.startsWith('budget:')||!plan||!Array.isArray(plan.rows))return;
-  const match=/^(\d{4}-\d{2}-\d{2})__(\d{4}-\d{2}-\d{2})$/.exec(key);if(!match)return;
-  const id='legacy-'+key.replace(/[^0-9]/g,'');const newKey=budgetPlanKey(id);if(db.budgetPlans[newKey])return;
-  db.budgetPlans[newKey]={id,name:'Previous Budget · '+match[1]+' to '+match[2],from:match[1],to:match[2],rows:plan.rows.map((r,i)=>({...r,id:'legacy-'+i,date:match[1]})),createdAt:plan.builtAt||new Date().toISOString(),legacy:true};
+  if(key.startsWith('budget:')||!plan||typeof plan!=='object'||Array.isArray(plan))return;
+  const keyRange=/^(\d{4}-\d{2}-\d{2})__(\d{4}-\d{2}-\d{2})$/.exec(key);
+  const from=normalizeBudgetPurchaseDate(plan.from||keyRange?.[1]||''),to=normalizeBudgetPurchaseDate(plan.to||keyRange?.[2]||'');
+  const sourceRows=Array.isArray(plan.rows)?plan.rows:(Array.isArray(plan.products)?plan.products:(Array.isArray(plan.items)?plan.items:[]));
+  const looksLikeBudget=!!keyRange||(!!from&&!!to&&!!(plan.name||sourceRows.length||plan.type==='budget'||plan.kind==='budget'));
+  if(!looksLikeBudget)return;
+  const id=String(plan.id||('legacy-'+key.replace(/[^a-z0-9]/gi,'').slice(0,48)));
+  let newKey=budgetPlanKey(id);
+  if(db.budgetPlans[newKey])return;
+  const rows=sourceRows.filter(row=>row&&typeof row==='object').map((row,index)=>({...row,id:row.id||'legacy-'+index,date:normalizeBudgetPurchaseDate(row.date)||from||today()}));
+  if(!rows.length)rows.push(blankBudgetRow(from||today()));
+  db.budgetPlans[newKey]={...plan,id,name:String(plan.name||('Previous Budget · '+(from||'')+' to '+(to||''))),from,to,rows,createdAt:plan.createdAt||plan.builtAt||new Date().toISOString(),legacy:true};
+  changed=true;
  });
+ if(changed){
+  try{localStorage.setItem('dayquest_v1',JSON.stringify(db));queueCloudSave()}
+  catch(error){console.warn('Could not persist migrated Budget records:',error)}
+ }
 }
 function budgetPlanMatchingCurrentHeader(entries=budgetPlanEntries()){
  const name=String($('budgetName')?.value||'').trim().toLocaleLowerCase(),from=String($('budgetHeaderFrom')?.value||''),to=String($('budgetHeaderTo')?.value||'');
@@ -1310,12 +1341,12 @@ function budgetEditorRow(row,index){
  const qty=Number(row.quantity||0),rate=Number(row.rate||0),total=budgetAmount(rate,qty),selectedUnit=String(row.unit||'pcs');
  const units=[...new Set([selectedUnit,...(Array.isArray(db.units)?db.units:[])].map(value=>String(value||'').trim()).filter(Boolean))];
  const unitOptions=units.map(unit=>'<option value="'+esc(unit)+'"'+(unit===selectedUnit?' selected':'')+'>'+esc(shortPurchaseUnitLabel(unit))+'</option>').join('');
- return '<tr class="budget-edit-row" data-budget-row="'+index+'">'+
-  '<td class="budget-product-cell"><input data-field="product" list="productNameSuggestions" maxlength="100" value="'+esc(row.product||'')+'" placeholder="Product name" aria-label="Product name"><div class="budget-product-controls"><select data-field="unit" aria-label="Unit for '+esc(row.product||'product')+'">'+unitOptions+'</select><small class="budget-product-meta">'+esc([row.spec||'',row.date?fmt(row.date):''].filter(Boolean).join(' · '))+'</small></div><small class="budget-row-error" data-row-error="'+index+'" role="status" hidden></small></td>'+
-  '<td><input type="number" min="0" step="any" inputmode="decimal" data-field="quantity" value="'+(qty||'')+'" placeholder="Q" aria-label="Quantity"></td>'+
-  '<td><input type="number" min="0" step="0.01" inputmode="decimal" data-field="rate" value="'+(rate||'')+'" placeholder="R" aria-label="Rate"></td>'+
-  '<td><input type="number" min="0" step="0.01" inputmode="decimal" data-field="total" value="'+(total?total.toFixed(2):'')+'" placeholder="T" aria-label="Total"></td>'+
-  '<td><button type="button" class="delete budget-row-remove" data-remove-budget-row="'+index+'" aria-label="Remove '+esc(row.product||'product row')+'">×</button></td></tr>';
+ return '<div class="budget-edit-row" role="row" data-budget-row="'+index+'">'+
+  '<div class="budget-product-cell" role="cell"><input data-field="product" list="productNameSuggestions" maxlength="100" value="'+esc(row.product||'')+'" placeholder="Product name" aria-label="Product name"><div class="budget-product-controls"><select data-field="unit" aria-label="Unit for '+esc(row.product||'product')+'">'+unitOptions+'</select><small class="budget-product-meta">'+esc([row.spec||'',row.date?fmt(row.date):''].filter(Boolean).join(' · '))+'</small></div><small class="budget-row-error" data-row-error="'+index+'" role="status" hidden></small></div>'+
+  '<label class="budget-number-cell budget-number-cell-quantity" role="cell"><small>Qty</small><input type="number" min="0" step="any" inputmode="decimal" data-field="quantity" value="'+(qty||'')+'" placeholder="Q" aria-label="Quantity"></label>'+
+  '<label class="budget-number-cell budget-number-cell-rate" role="cell"><small>Rate</small><input type="number" min="0" step="0.01" inputmode="decimal" data-field="rate" value="'+(rate||'')+'" placeholder="R" aria-label="Rate"></label>'+
+  '<label class="budget-number-cell budget-number-cell-total" role="cell"><small>Total</small><input type="number" min="0" step="0.01" inputmode="decimal" data-field="total" value="'+(total?total.toFixed(2):'')+'" placeholder="T" aria-label="Total"></label>'+
+  '<div class="budget-row-remove-cell" role="cell"><button type="button" class="delete budget-row-remove" data-remove-budget-row="'+index+'" aria-label="Remove '+esc(row.product||'product row')+'">×</button></div></div>';
 }
 function renderBudgetComparison(groups,unplanned){
  const rows=groups.map(g=>{
@@ -1343,7 +1374,7 @@ function renderBudget(){
  if(list){
   const recent=showAllBudgetEntries?entries:entries.slice(0,8);
   const heading=$('budgetListHeading');if(heading)heading.textContent=showAllBudgetEntries?'All Budgets':'Recent Budgets';
-  const allButton=$('budgetShowAllBtn');if(allButton){allButton.hidden=entries.length<=8;allButton.textContent=showAllBudgetEntries?'Recent only':'View all ('+entries.length+')';}
+  const allButton=$('budgetShowAllBtn');if(allButton){allButton.hidden=entries.length===0;allButton.disabled=entries.length===0;allButton.textContent=showAllBudgetEntries?'Recent only':'View all ('+entries.length+')';}
   list.innerHTML=recent.length?recent.map(([key,plan])=>{
    const range=budgetDateRange(plan),count=(plan.rows||[]).filter(row=>String(row.product||'').trim()).length,total=(plan.rows||[]).reduce((sum,row)=>sum+(String(row.product||'').trim()?budgetRowAmount(row):0),0);
    const dates=range.from&&range.to?fmt(range.from)+' – '+fmt(range.to):'Date range not set';
@@ -1554,7 +1585,7 @@ function renderBudgetCreatePage(savedPlanKey=''){
   if(!readOnly){try{localStorage.setItem('dayquest_v1',JSON.stringify(db))}catch(error){console.error('Could not persist the blank Budget row:',error)}}
  }
  const rows=plan.rows;
- $('budgetList').innerHTML='<div class="budget-table-wrap"><table class="budget-entry-table"><thead><tr><th>Name</th><th>Q</th><th>R</th><th>T</th><th aria-label="Remove"></th></tr></thead><tbody>'+rows.map(budgetEditorRow).join('')+'</tbody></table></div>';updateBudgetTotals();
+ $('budgetList').innerHTML='<div class="budget-table-wrap"><div class="budget-entry-table" role="table" aria-label="Planned Products"><div class="budget-entry-head" role="row"><span role="columnheader">Name</span><span role="columnheader">Q</span><span role="columnheader">R</span><span role="columnheader">T</span><span role="columnheader" aria-label="Remove"></span></div><div class="budget-entry-body" role="rowgroup">'+rows.map(budgetEditorRow).join('')+'</div></div></div>';updateBudgetTotals();
  $('budgetList').querySelectorAll('input,button').forEach(el=>el.disabled=readOnly);
  const status=$('budgetEditorStatus');if(status){status.textContent=readOnly?'Shared Budget · view only':'Product rows are editable. Changes save as you type.';status.classList.remove('is-error')}
 }
@@ -4984,7 +5015,7 @@ $('installBtn').onclick=async()=>{
  }
  showDayQuestInstallHelp();
 };
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v56').then(registration=>{
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v57').then(registration=>{
  console.info('DayQuest offline support is ready:',registration.scope);
 }).catch(error=>{
  console.warn('DayQuest offline support could not be registered:',error);
