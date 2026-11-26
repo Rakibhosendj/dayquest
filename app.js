@@ -1334,8 +1334,10 @@ function renderBudgetCreatePage(){
  $('budgetName').value=plan?.name||$('budgetName').value||'';
  const range=plan?budgetDateRange(plan):{from:$('budgetHeaderFrom').value||today(),to:$('budgetHeaderTo').value||today()};
  $('budgetHeaderFrom').value=range.from||today();$('budgetHeaderTo').value=range.to||range.from||today();
- if(!String($('budgetLoadFromDate').value||''))$('budgetLoadFromDate').value=range.from||today();
- if(!String($('budgetLoadToDate').value||''))$('budgetLoadToDate').value=range.to||today();
+ if(plan){
+  if(!String($('budgetLoadFromDate').value||''))$('budgetLoadFromDate').value=range.from||'';
+  if(!String($('budgetLoadToDate').value||''))$('budgetLoadToDate').value=range.to||'';
+ }
  updateBudgetFilterDateHints();
  $('budgetName').disabled=readOnly;$('budgetHeaderFrom').disabled=readOnly;$('budgetHeaderTo').disabled=readOnly;$('budgetHeaderSaveBtn').disabled=readOnly;
  $('budgetLoadShowBtn').disabled=!plan||readOnly;$('budgetLoadDeleteBtn').disabled=!plan||shared;$('addBudgetRowBtn').disabled=!plan||readOnly;
