@@ -108,7 +108,7 @@ test("PWA cache uses the current CSS and JavaScript asset versions", () => {
   const appAsset = html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset && worker.includes("./style.css?v=" + cssAsset));
   assert.ok(appAsset && worker.includes("./app.js?v=" + appAsset));
-  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v49'\)/);
+  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v50'\)/);
 });
 
 test("shared Budget context is saved per account and revalidated on refresh", () => {
@@ -250,5 +250,28 @@ test("Historical Budget import controls are responsive and assets are cache-vers
   const appAsset=html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset&&worker.includes("./style.css?v="+cssAsset));
   assert.ok(appAsset&&worker.includes("./app.js?v="+appAsset));
-  assert.match(app,/serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v49'\)/);
+  assert.match(app,/serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v50'\)/);
+});
+
+test("Filled Budget purchase date labels hide only the caption, never the date-entry control", () => {
+  assert.match(css,/#budgetCreatePage \.budget-filter-date\.is-filled>span:first-child\{display:none\}/);
+  assert.match(css,/#budgetCreatePage \.budget-filter-date\.is-filled>\.dq-date-wrap\{display:flex\}/);
+});
+test("Saved Budgets keep the previous-purchase filter available and preserve its values", () => {
+  assert.match(app,/function budgetPurchaseDefaultRange\(startDate\)/);
+  assert.match(app,/const purchaseDefaults=budgetPurchaseDefaultRange\(from\)/);
+  assert.match(app,/syncDQDateDisplay\(\$\('budgetLoadFromDate'\)\)/);
+  assert.match(app,/function showPurchasedProductsInBudget\(\)[\s\S]*?renderBudgetPurchaseResults\(from,to\)/);
+  const editor=app.slice(app.indexOf("function renderBudgetCreatePage"),app.indexOf("function openBudgetProductRowFocus"));
+  assert.doesNotMatch(editor,/budgetPurchaseResults'\)\.hidden=true/);
+});
+test("Share and Details are enabled for a saved Budget before products are added", () => {
+  assert.match(app,/\$\('budgetShareBtn'\)\.disabled=!plan\|\|readOnly\|\|shared/);
+  assert.match(app,/\$\('budgetViewBtn'\)\.disabled=!plan;/);
+  assert.match(app,/if\(\$\('budgetShareBtn'\)\)\$\('budgetShareBtn'\)\.disabled=!plan\|\|shared/);
+  assert.match(app,/if\(\$\('budgetViewBtn'\)\)\$\('budgetViewBtn'\)\.disabled=!plan/);
+});
+test("A saved Budget editor displays a saved-state hint and counts only named products", () => {
+  assert.match(app,/Saved\. Add products with ＋/);
+  assert.match(app,/filter\(row=>String\(row\.querySelector\('\[data-field="product"\]'\)\?\.value\|\|' '\)\.trim\(\)\)/);
 });
