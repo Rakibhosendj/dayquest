@@ -193,11 +193,14 @@ test("Budget editor uses app title and Back navigation", () => {
   assert.ok(app.includes("['budgetViewPage','budgetCreatePage'].includes(t)?'budget':t"));
 });
 
-test("New Budget purchase date filters remain blank until a date range is chosen", () => {
+test("New Budget purchase filters remain blank until save, then default to the prior dates in the budget month", () => {
   const createPage = app.slice(app.indexOf("function renderBudgetCreatePage()"), app.indexOf("function openBudgetProductRowFocus()"));
   assert.match(createPage, /if\(plan\)\{/);
-  assert.match(createPage, /budgetLoadFromDate'\)\.value=range\.from\|\|''/);
-  assert.match(createPage, /budgetLoadToDate'\)\.value=range\.to\|\|''/);
+  assert.match(createPage, /budgetPurchaseDefaultRange\(range\.from\)/);
+  assert.match(createPage, /defaults\.from/);
+  assert.match(createPage, /defaults\.to/);
+  assert.match(app,/function budgetPurchaseDefaultRange\(startDate\)/);
+  assert.match(app,/purchaseDefaults=budgetPurchaseDefaultRange\(from\)/);
 });
 
 test("Saving a new Budget keeps its selected key and refreshes Recent Budgets and the product table", () => {
@@ -273,5 +276,11 @@ test("Share and Details are enabled for a saved Budget before products are added
 });
 test("A saved Budget editor displays a saved-state hint and counts only named products", () => {
   assert.match(app,/Saved\. Add products with ＋/);
-  assert.match(app,/filter\(row=>String\(row\.querySelector\('\[data-field="product"\]'\)\?\.value\|\|' '\)\.trim\(\)\)/);
+  assert.ok(app.includes("filter(row=>String(row.querySelector('[data-field=\"product\"]')?.value||'').trim())"));
+});
+
+test("Budget selection recovers a saved plan from the visible name and date range", () => {
+  assert.match(app,/function budgetPlanMatchingCurrentHeader\(entries=budgetPlanEntries\(\)\)/);
+  assert.match(app,/budgetPlanMatchingCurrentHeader\(entries\)\?\.\[0\]/);
+  assert.match(app,/budgetPlanMatchingCurrentHeader\(entries\)\?\.\[0\]\|\|''/);
 });
