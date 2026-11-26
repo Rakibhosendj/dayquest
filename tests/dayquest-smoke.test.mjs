@@ -165,3 +165,10 @@ test("Budget editor uses app title and Back navigation", () => {
   assert.ok(app.includes("budgetCreatePage:'Create Budget'"));
   assert.ok(app.includes("['budgetViewPage','budgetCreatePage'].includes(t)?'budget':t"));
 });
+
+test("New Budget purchase date filters remain blank until a date range is chosen", () => {
+  const createPage = app.slice(app.indexOf("function renderBudgetCreatePage()"), app.indexOf("function openBudgetProductRowFocus()"));
+  assert.match(createPage, /if\(plan\)\{/);
+  assert.match(createPage, /budgetLoadFromDate'\)\.value=range\.from\|\|''/);
+  assert.match(createPage, /budgetLoadToDate'\)\.value=range\.to\|\|''/);
+});
