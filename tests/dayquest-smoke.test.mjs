@@ -108,7 +108,7 @@ test("PWA cache uses the current CSS and JavaScript asset versions", () => {
   const appAsset = html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset && worker.includes("./style.css?v=" + cssAsset));
   assert.ok(appAsset && worker.includes("./app.js?v=" + appAsset));
-  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v47'\)/);
+  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v48'\)/);
 });
 
 test("shared Budget context is saved per account and revalidated on refresh", () => {
@@ -198,4 +198,23 @@ test("New Budget purchase date filters remain blank until a date range is chosen
   assert.match(createPage, /if\(plan\)\{/);
   assert.match(createPage, /budgetLoadFromDate'\)\.value=range\.from\|\|''/);
   assert.match(createPage, /budgetLoadToDate'\)\.value=range\.to\|\|''/);
+});
+
+test("Saving a new Budget keeps its selected key and refreshes Recent Budgets and the product table", () => {
+  assert.match(app,/function currentBudgetPlan\(\)[\s\S]*?candidates=\[activeBudgetKey,select\?\.value\]/);
+  assert.match(app,/let savedKey=activeBudgetKey/);
+  assert.match(app,/renderBudget\(\);activeBudgetKey=savedKey/);
+  assert.match(app,/renderBudgetCreatePage\(\);[\s\S]*?if\(!currentBudgetPlan\(\)\)/);
+  assert.match(app,/Budget is now in Recent Budgets/);
+});
+test("Budget editor actions are reachable after saving and have explicit handlers", () => {
+  for (const [id,handler] of [
+    ["budgetHeaderSaveBtn","saveBudgetHeader"],
+    ["budgetLoadShowBtn","showPurchasedProductsInBudget"],
+    ["budgetLoadDeleteBtn","deleteCurrentBudget"],
+    ["addBudgetRowBtn","addBudgetRow"],
+  ]) assert.match(app,new RegExp("\\$\\('" + id + "'\\)\\.addEventListener\\('click',\\s*" + handler + "\\)"));
+  assert.ok(html.includes('id="budgetBackRecentBtn"'));
+  assert.ok(app.includes("budgetBackRecentBtn"));
+  assert.ok(app.includes('id="budgetList"')===false || html.includes('id="budgetList"'));
 });
