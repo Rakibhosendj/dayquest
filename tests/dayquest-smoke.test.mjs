@@ -109,7 +109,7 @@ test("PWA cache uses the current CSS and JavaScript asset versions", () => {
   const appAsset = html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset && worker.includes("./style.css?v=" + cssAsset));
   assert.ok(appAsset && worker.includes("./app.js?v=" + appAsset));
-  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v53'\)/);
+  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v54'\)/);
 });
 
 test("shared Budget context is saved per account and revalidated on refresh", () => {
@@ -160,7 +160,7 @@ test("Entering Total recalculates Rate or Quantity", () => {
 test("Show finds historical purchases and loads them into editable Planned Products without editing original bills", () => {
   const show = app.slice(app.indexOf("async function showPurchasedProductsInBudget"), app.indexOf("async function deleteCurrentBudget"));
   assert.match(show,/renderBudgetPurchaseResults\(normalizedFrom,normalizedTo\)/);
-  assert.match(show,/await importBudgetPurchasesToPlan\(\{fromShow:true\}\)/);
+  assert.match(show,/await importBudgetPurchasesToPlan\(\{fromShow:true,planKey:activeBudgetKey\}\)/);
   assert.doesNotMatch(show,/db\.purchaseBills\s*=|localSaveOnly\(/);
   assert.ok(html.includes('id="budgetPurchaseResults"'));
   assert.match(html,/budget-purchase-results/);
@@ -200,7 +200,7 @@ test("Budget editor uses app title and Back navigation", () => {
 });
 
 test("New Budget purchase filters remain blank until save, then default to the prior dates in the budget month", () => {
-  const createPage = app.slice(app.indexOf("function renderBudgetCreatePage()"), app.indexOf("function openBudgetProductRowFocus()"));
+  const createPage = app.slice(app.indexOf("function renderBudgetCreatePage(savedPlanKey"), app.indexOf("function openBudgetProductRowFocus()"));
   assert.match(createPage, /if\(plan\)\{/);
   assert.match(createPage, /budgetPurchaseDefaultRange\(range\.from\)/);
   assert.match(createPage, /defaults\.from/);
@@ -210,10 +210,10 @@ test("New Budget purchase filters remain blank until save, then default to the p
 });
 
 test("Saving a new Budget keeps its selected key and refreshes Recent Budgets and the product table", () => {
-  assert.match(app,/function currentBudgetPlan\(\)[\s\S]*?candidates=\[activeBudgetKey,select\?\.value\]/);
+  assert.match(app,/function currentBudgetPlan\(\)[\s\S]*?candidates=\[activeBudgetKey,select\?\.value\][\s\S]*?candidate\.startsWith\('budget:'\)/);
   assert.match(app,/let savedKey=activeBudgetKey/);
   assert.match(app,/renderBudget\(\);activeBudgetKey=savedKey/);
-  assert.match(app,/renderBudgetCreatePage\(\);[\s\S]*?if\(!currentBudgetPlan\(\)\)/);
+  assert.match(app,/renderBudgetCreatePage\(savedKey\);[\s\S]*?const reopenedPlan=db\.budgetPlans\?\.\[savedKey\]/);
   assert.match(app,/Budget is now in Recent Budgets/);
 });
 test("Budget editor actions are reachable after saving and have explicit handlers", () => {
@@ -259,7 +259,7 @@ test("Historical Budget import controls are responsive and assets are cache-vers
   const appAsset=html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset&&worker.includes("./style.css?v="+cssAsset));
   assert.ok(appAsset&&worker.includes("./app.js?v="+appAsset));
-  assert.match(app,/serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v53'\)/);
+  assert.match(app,/serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v54'\)/);
 });
 
 test("Filled Budget purchase date labels hide only the caption, never the date-entry control", () => {
@@ -335,7 +335,7 @@ test("Show normalizes legacy purchase dates and loads matches into editable Plan
   assert.match(app,/Array\.isArray\(bill\.lines\)\?bill\.lines:\[\]/);
   const show=app.slice(app.indexOf("async function showPurchasedProductsInBudget"),app.indexOf("async function deleteCurrentBudget"));
   assert.match(show,/renderBudgetPurchaseResults\(normalizedFrom,normalizedTo\)/);
-  assert.match(show,/await importBudgetPurchasesToPlan\(\{fromShow:true\}\)/);
+  assert.match(show,/await importBudgetPurchasesToPlan\(\{fromShow:true,planKey:activeBudgetKey\}\)/);
   assert.doesNotMatch(show,/alert\('No purchase products found/);
   const importer=app.slice(app.indexOf("async function importBudgetPurchasesToPlan"),app.indexOf("function budgetRowError"));
   assert.match(importer,/plan\.rows\.push\(/);
@@ -346,7 +346,7 @@ test("Saved Budget always persists at least one editable blank product row", () 
   const editor=app.slice(app.indexOf("function renderBudgetCreatePage"),app.indexOf("function openBudgetProductRowFocus"));
   assert.match(editor,/if\(!Array\.isArray\(plan\.rows\)\)plan\.rows=\[\]/);
   assert.match(editor,/if\(!plan\.rows\.length\)\{\s*plan\.rows=\[blankBudgetRow\(plan\.from\|\|today\(\)\)\]/);
-  assert.match(editor,/if\(!readOnly\)localSaveOnly\(\)/);
+  assert.match(editor,/if\(!readOnly\)\{try\{localStorage\.setItem\(/);
   assert.match(editor,/const rows=plan\.rows/);
   assert.match(app,/function saveBudgetHeader\(\)[\s\S]*?rows:\[blankBudgetRow\(from\)\]/);
 });
@@ -359,4 +359,27 @@ test("Historical purchase date normalizer accepts ISO, display dates and legacy 
   assert.equal(normalize("2026-11-26T00:00:00.000Z"),"2026-11-26");
   assert.equal(normalize("26-Nov-2026"),"2026-11-26");
   assert.equal(normalize("26/11/2026"),"2026-11-26");
+});
+
+test("Budget registry and current selection recover a saved plan even if its rows array is missing", () => {
+  assert.match(app,/function budgetPlanEntries\(\)\{return Object\.entries\(db\.budgetPlans\|\|\{\}\)\.filter\(\(\[key,plan\]\)=>key\.startsWith\('budget:'\)&&plan&&typeof plan==='object'&&!Array\.isArray\(plan\)\)\}/);
+  assert.match(app,/const plan=db\.budgetPlans\[key\];if\(!Array\.isArray\(plan\.rows\)\)plan\.rows=\[\]/);
+});
+test("Saving a Budget opens its exact key and persists an editable starter row", () => {
+  assert.match(app,/function renderBudgetCreatePage\(savedPlanKey=''\)/);
+  assert.match(app,/renderBudgetCreatePage\(savedKey\)/);
+  assert.match(app,/const reopenedPlan=db\.budgetPlans\?\.\[savedKey\]/);
+  assert.match(app,/plan\.rows=\[blankBudgetRow\(plan\.from\|\|today\(\)\)\]/);
+  assert.match(app,/localStorage\.setItem\('dayquest_v1',JSON\.stringify\(db\)\)/);
+  assert.match(app,/const rows=plan\.rows/);
+});
+test("Add Product restores a blank row when a saved Budget row list is empty", () => {
+  const add=app.slice(app.indexOf("async function addBudgetRow"),app.indexOf("function updateBudgetRowFromInput"));
+  assert.match(add,/if\(!Array\.isArray\(plan\.rows\)\)plan\.rows=\[\]/);
+  assert.match(add,/if\(!plan\.rows\.length\)plan\.rows=\[blankBudgetRow/);
+});
+test("Show and import refresh the same exact selected Budget product table", () => {
+  assert.match(app,/await importBudgetPurchasesToPlan\(\{fromShow:true,planKey:activeBudgetKey\}\)/);
+  assert.match(app,/options\.planKey&&db\.budgetPlans\?\.\[options\.planKey\]/);
+  assert.match(app,/renderBudgetCreatePage\(activeBudgetKey\);renderBudgetPurchaseResults\(from,to\)/);
 });
