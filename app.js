@@ -1344,7 +1344,9 @@ function renderBudget(){
 function createBudget(){
  activeBudgetKey='';if($('budgetPlanSelect'))$('budgetPlanSelect').value='';setActiveSharedBudgetContext(null);
  $('budgetName').value='';$('budgetHeaderFrom').value=today();$('budgetHeaderTo').value=today();
- $('budgetLoadFromDate').value='';$('budgetLoadToDate').value='';clearBudgetPurchaseResults();
+ const initialPurchaseRange=budgetPurchaseDefaultRange($('budgetHeaderFrom').value);
+ $('budgetLoadFromDate').value=initialPurchaseRange.from;$('budgetLoadToDate').value=initialPurchaseRange.to;
+ syncDQDateDisplay($('budgetLoadFromDate'));syncDQDateDisplay($('budgetLoadToDate'));clearBudgetPurchaseResults();updateBudgetFilterDateHints();
  setTab('budgetCreatePage');renderBudgetCreatePage();$('budgetName').focus();
 }
 function openBudgetPlan(key){
@@ -1364,6 +1366,13 @@ function budgetPurchaseDefaultRange(startDate){
  if(from.getDate()===1){from.setDate(0);from.setDate(1)}else from.setDate(1);
  const key=date=>String(date.getFullYear()).padStart(4,'0')+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');
  return {from:key(from),to:key(end)};
+}
+function updateBudgetPurchaseRangeFromStartDate(){
+ const start=String($('budgetHeaderFrom').value||'');if(!start)return;
+ const range=budgetPurchaseDefaultRange(start);
+ $('budgetLoadFromDate').value=range.from;$('budgetLoadToDate').value=range.to;
+ syncDQDateDisplay($('budgetLoadFromDate'));syncDQDateDisplay($('budgetLoadToDate'));
+ updateBudgetFilterDateHints();clearBudgetPurchaseResults();
 }
 function clearBudgetPurchaseResults(){
  const root=$('budgetPurchaseResults');if(root){root.hidden=true;root.innerHTML=''}
@@ -1857,6 +1866,7 @@ $('budgetHeaderSaveBtn').addEventListener('click',saveBudgetHeader);
 $('budgetBackRecentBtn').addEventListener('click',()=>{renderBudget();setTab('budget',{skipHistory:true})});
 $('budgetLoadShowBtn').addEventListener('click',showPurchasedProductsInBudget);
 $('budgetLoadDeleteBtn').addEventListener('click',deleteCurrentBudget);
+$('budgetHeaderFrom').addEventListener('change',updateBudgetPurchaseRangeFromStartDate);
 ['budgetLoadFromDate','budgetLoadToDate'].forEach(id=>$(id).addEventListener('change',updateBudgetFilterDateHints));
 $('budgetDeleteBtn').addEventListener('click',deleteCurrentBudget);
 $('addBudgetRowBtn').addEventListener('click',addBudgetRow);
@@ -4901,7 +4911,7 @@ $('installBtn').onclick=async()=>{
  }
  showDayQuestInstallHelp();
 };
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v50').then(registration=>{
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v51').then(registration=>{
  console.info('DayQuest offline support is ready:',registration.scope);
 }).catch(error=>{
  console.warn('DayQuest offline support could not be registered:',error);
