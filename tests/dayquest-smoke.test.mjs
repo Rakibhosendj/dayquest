@@ -108,7 +108,7 @@ test("PWA cache uses the current CSS and JavaScript asset versions", () => {
   const appAsset = html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset && worker.includes("./style.css?v=" + cssAsset));
   assert.ok(appAsset && worker.includes("./app.js?v=" + appAsset));
-  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v45'\)/);
+  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v46'\)/);
 });
 
 test("shared Budget context is saved per account and revalidated on refresh", () => {
@@ -156,10 +156,36 @@ test("Entering Total recalculates Rate or Quantity", () => {
   assert.ok(app.includes("row.rate=Number((total/quantity).toFixed(4))"));
   assert.ok(app.includes("row.quantity=Number((total/rate).toFixed(4))"));
 });
-test("Show imports purchase products in selected date range without duplication", () => {
-  assert.match(app,/function showPurchasedProductsInBudget\(\)/);
-  assert.ok(app.includes("sourcePurchaseKey"));
-  assert.ok(app.includes("String(bill.date||'')>=from&&String(bill.date||'')<=to"));
+test("Show displays purchased products separately without changing the planned Budget", () => {
+  const show = app.slice(app.indexOf("async function showPurchasedProductsInBudget"), app.indexOf("async function deleteCurrentBudget"));
+  assert.match(show,/renderBudgetPurchaseResults\(from,to\)/);
+  assert.doesNotMatch(show,/plan\.rows\s*=|localSaveOnly\(|syncActiveSharedBudget\(/);
+  assert.ok(html.includes('id="budgetPurchaseResults"'));
+  assert.match(html,/budget-purchase-results/);
+});
+test("Budget planned rows have a selectable unit and unit-compatible actual matching", () => {
+  assert.ok(app.includes('data-field="unit"'));
+  assert.match(app,/function budgetRowMatchKey\(row\)[\s\S]*?row\.unit/);
+  assert.match(app,/unitConversionRatio\(row\.unit\|\|'pcs',group\.unit\|\|'pcs'\)/);
+  assert.ok(app.includes("latestPurchaseRateForProduct(product,unit)"));
+});
+test("Product autosave does not save uncommitted Budget header dates", () => {
+  assert.ok(app.includes("saveBudget({silent:true,productsOnly:true})"));
+  assert.ok(app.includes("options.productsOnly?plan.from"));
+  assert.ok(app.includes("if(!options.productsOnly){plan.name=name;plan.from=from;plan.to=to}"));
+});
+test("Invalid Budget rows show inline validation instead of silently appearing saved", () => {
+  assert.ok(html.includes('id="budgetEditorStatus"'));
+  assert.match(app,/function updateBudgetEditorValidation\(\)/);
+  assert.match(app,/Enter a quantity greater than 0\./);
+});
+test("Older Budgets can be opened from All Budgets", () => {
+  assert.ok(html.includes('id="budgetShowAllBtn"'));
+  assert.ok(app.includes("showAllBudgetEntries?entries:entries.slice(0,8)"));
+});
+test("Budget deletion uses the branded confirmation dialog", () => {
+  assert.match(app,/window\.dayQuestConfirm\('Delete Budget/);
+  assert.doesNotMatch(app,/if\(!confirm\('Delete/);
 });
 test("Budget editor uses app title and Back navigation", () => {
   assert.ok(app.includes("budgetCreatePage:'Create Budget'"));
