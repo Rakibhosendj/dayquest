@@ -1302,7 +1302,7 @@ function renderBudget(){
  ensureLegacyBudgetPlans();
  const select=$('budgetPlanSelect'),entries=budgetPlanEntries().sort((a,b)=>String(b[1].updatedAt||b[1].createdAt||'').localeCompare(String(a[1].updatedAt||a[1].createdAt||'')));
  const prior=activeBudgetKey||select?.value||'';
- if(select){select.innerHTML='<option value="">Select Budget</option>'+entries.map(([key,plan])=>'<option value="'+esc(key)+'">'+esc(plan.name||'Budget')+'</option>').join('');activeBudgetKey=entries.some(([key])=>key===prior)?prior:(entries[0]?.[0]||'');select.value=activeBudgetKey}
+ if(select){select.innerHTML='<option value="">Select Budget</option>'+entries.map(([key,plan])=>'<option value="'+esc(key)+'">'+esc(plan.name||'Budget')+'</option>').join('');const landingActive=document.querySelector('.panel.active')?.id==='budget';activeBudgetKey=entries.some(([key])=>key===prior)?prior:(landingActive?(entries[0]?.[0]||''):'');select.value=activeBudgetKey}
  const list=$('recentBudgetList');
  if(list){
   const recent=entries.slice(0,8);
@@ -1354,6 +1354,7 @@ function renderBudgetCreatePage(){
  if(!plan){$('budgetList').innerHTML=empty('Save the Budget date range to add products.');$('budgetGrandTotalCreate').textContent=money(0);$('budgetCreateProductCount').textContent='0 items';return}
  const rows=Array.isArray(plan.rows)?plan.rows:[];if(!rows.length)rows.push(blankBudgetRow(plan.from));
  $('budgetList').innerHTML='<div class="budget-table-wrap"><table class="budget-entry-table"><thead><tr><th>Name</th><th>Q</th><th>R</th><th>T</th><th aria-label="Remove"></th></tr></thead><tbody>'+rows.map(budgetEditorRow).join('')+'</tbody></table></div>';updateBudgetTotals();
+ $('budgetList').querySelectorAll('input,button').forEach(el=>el.disabled=readOnly);
 }
 function openBudgetProductRowFocus(){const inputs=$('budgetList').querySelectorAll('[data-field="product"]');inputs[inputs.length-1]?.focus()}
 async function addBudgetRow(){
