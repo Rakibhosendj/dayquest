@@ -1380,7 +1380,7 @@ function clearBudgetPurchaseResults(){
 }
 function normalizeBudgetPurchaseDate(value){
  const raw=String(value||'').trim();if(!raw)return '';
- const iso=raw.match(/^(\\d{4}-\\d{2}-\\d{2})(?:$|[T\\s])/);
+ const iso=raw.match(/^(\d{4}-\d{2}-\d{2})(?:$|[T\s])/);
  if(iso){const parsed=parseDQTypedDate(iso[1]);if(parsed)return parsed}
  return parseDQTypedDate(raw)||'';
 }
