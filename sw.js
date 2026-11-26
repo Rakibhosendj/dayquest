@@ -1,10 +1,10 @@
-const CACHE = 'dayquest-cache-v280-budget-page-v50';
+const CACHE = 'dayquest-cache-v281-budget-page-v51';
 const SUPABASE_SDK = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js';
 const FILES = [
   './',
   './index.html',
-  './style.css?v=20261126-budget-page-v48',
-  './app.js?v=20261126-budget-page-v50',
+  './style.css?v=20261126-budget-page-v49',
+  './app.js?v=20261126-budget-page-v51',
   './manifest.json',
   './icons/icon-192.png?v=20261121-admin-password-gate',
   './icons/icon-512.svg',
