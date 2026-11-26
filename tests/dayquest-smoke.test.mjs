@@ -136,3 +136,31 @@ test("recipient cached shared Budgets are removed after access disappears", () =
   assert.match(app, /syncKnownSharedBudgetCopies\(data\)/);
   assert.match(app, /delete db\.budgetPlans\[saved\.budget_key\]/);
 });
+
+test("Budget landing page has Recent Budgets and a separate Create Budget page", () => {
+  assert.match(html, /id="recentBudgetList"/);
+  assert.match(html, /id="budgetCreatePage" class="panel budget-create-page"/);
+  assert.match(html, /id="newBudgetBtn"[^>]*>＋ Create</);
+  assert.match(app, /function openBudgetPlan\(key\)/);
+  assert.match(app, /if\(t==='budgetCreatePage'\)renderBudgetCreatePage\(\)/);
+});
+test("Create Budget has compact date rows and editable Name Q R T columns", () => {
+  for (const id of ["budgetName","budgetHeaderFrom","budgetHeaderTo","budgetHeaderSaveBtn","budgetLoadFromDate","budgetLoadToDate","budgetLoadShowBtn","budgetLoadDeleteBtn","budgetList","addBudgetRowBtn"]) assert.ok(html.includes('id="' + id + '"'));
+  assert.ok(app.includes('<th>Name</th><th>Q</th><th>R</th><th>T</th>'));
+  for (const field of ["product","quantity","rate","total"]) assert.ok(app.includes('data-field="' + field + '"'));
+  assert.match(app,/function updateBudgetRowFromInput\(event\)/);
+});
+test("Entering Total recalculates Rate or Quantity", () => {
+  assert.ok(app.includes("if(field==='total')"));
+  assert.ok(app.includes("row.rate=Number((total/quantity).toFixed(4))"));
+  assert.ok(app.includes("row.quantity=Number((total/rate).toFixed(4))"));
+});
+test("Show imports purchase products in selected date range without duplication", () => {
+  assert.match(app,/function showPurchasedProductsInBudget\(\)/);
+  assert.ok(app.includes("sourcePurchaseKey"));
+  assert.ok(app.includes("String(bill.date||'')>=from&&String(bill.date||'')<=to"));
+});
+test("Budget editor uses app title and Back navigation", () => {
+  assert.ok(app.includes("budgetCreatePage:'Create Budget'"));
+  assert.ok(app.includes("['budgetViewPage','budgetCreatePage'].includes(t)?'budget':t"));
+});
