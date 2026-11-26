@@ -1378,13 +1378,22 @@ function clearBudgetPurchaseResults(){
  const root=$('budgetPurchaseResults');if(root){root.hidden=true;root.innerHTML=''}
  showBudgetPurchaseMessage('');
 }
+function normalizeBudgetPurchaseDate(value){
+ const raw=String(value||'').trim();if(!raw)return '';
+ const iso=raw.match(/^(\\d{4}-\\d{2}-\\d{2})(?:$|[T\\s])/);
+ if(iso){const parsed=parseDQTypedDate(iso[1]);if(parsed)return parsed}
+ return parseDQTypedDate(raw)||'';
+}
 function collectBudgetPurchaseRows(from,to){
- const rows=[];
- (db.purchaseBills||[]).forEach((bill,billIndex)=>{
-  const date=String(bill.date||'');if(date<from||date>to)return;
-  (bill.lines||[]).forEach((line,lineIndex)=>{
-   const quantity=Math.max(0,Number(line.quantity||0)),product=String(line.product||'').trim();if(!product||!quantity)return;
-   const amount=Math.max(0,Number(purchaseLineCost(bill,line)||0));
+ const rows=[],start=normalizeBudgetPurchaseDate(from),end=normalizeBudgetPurchaseDate(to);
+ if(!start||!end||start>end)return rows;
+ (Array.isArray(db.purchaseBills)?db.purchaseBills:[]).forEach((bill,billIndex)=>{
+  const date=normalizeBudgetPurchaseDate(bill?.date);if(!date||date<start||date>end)return;
+  const lines=Array.isArray(bill.lines)?bill.lines:[];
+  lines.forEach((line,lineIndex)=>{
+   const quantity=Math.max(0,Number(line?.quantity||0)),product=String(line?.product||'').trim();if(!product||!quantity)return;
+   let amount=Math.max(0,Number(purchaseLineBaseAmount(line)||0));
+   try{const landed=Number(purchaseLineCost(bill,line));if(Number.isFinite(landed)&&landed>=0)amount=landed}catch(error){console.warn('Budget purchase line cost fallback:',error)}
    const billKey=String(bill.id||bill.billNo||bill.number||('purchase-'+date+'-'+billIndex));
    const lineKey=String(line.id||'line-'+lineIndex);
    rows.push({sourceKey:'purchase:'+billKey+'::'+lineKey,date,billNo:String(bill.billNo||bill.number||''),product,spec:String(line.spec||''),unit:String(line.unit||'pcs'),quantity,rate:amount/quantity,amount});
@@ -1433,7 +1442,7 @@ function renderBudgetPurchaseResults(from,to){
  const importButton=$('budgetImportPurchasesBtn');if(importButton)importButton.addEventListener('click',importBudgetPurchasesToPlan);
  return {count:rows.length,total,importable:preview.groups.length};
 }
-async function importBudgetPurchasesToPlan(){
+async function importBudgetPurchasesToPlan(options={}){
  const plan=currentBudgetPlan();if(!plan){showBudgetPurchaseMessage('Save the Budget date range first.');return}
  if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner&&activeSharedBudgetContext.permission!=='edit'){showBudgetPurchaseMessage('This shared Budget is view only.');return}
  const from=String($('budgetLoadFromDate').value||''),to=String($('budgetLoadToDate').value||'');
@@ -1473,7 +1482,7 @@ async function importBudgetPurchasesToPlan(){
  localSaveOnly();
  renderBudgetCreatePage();renderBudgetPurchaseResults(from,to);
  const skipped=preview.alreadyPlanned?' '+preview.alreadyPlanned+' matching product group(s) already existed manually and were left unchanged.':'';
- showBudgetPurchaseMessage(addedCount+' new product group(s) added'+(updatedCount?' and '+updatedCount+' existing imported group(s) updated':'')+' using purchases from '+fmt(from)+' – '+fmt(to)+'. Planned date: '+fmt(targetDate)+'. Purchase records and actual spending were not changed.'+skipped);
+ showBudgetPurchaseMessage(addedCount+' new product group(s) added'+(updatedCount?' and '+updatedCount+' existing imported group(s) updated':'')+' to the editable Planned Products table using purchases from '+fmt(from)+' – '+fmt(to)+'. Planned date: '+fmt(targetDate)+'. Original purchase records and actual spending were not changed.'+skipped);
  await syncActiveSharedBudget();
 }
 function budgetRowError(row){
@@ -1512,7 +1521,12 @@ function renderBudgetCreatePage(){
  $('budgetShareBtn').disabled=!plan||readOnly||shared;
  $('budgetViewBtn').disabled=!plan;
  if(!plan){$('budgetList').innerHTML=empty('Save the Budget date range to add products.');$('budgetGrandTotalCreate').textContent=money(0);$('budgetCreateProductCount').textContent='0 items';if($('budgetEditorStatus'))$('budgetEditorStatus').textContent='Save the Budget date range first. The product table and other actions activate after saving.';return}
- const rows=Array.isArray(plan.rows)?plan.rows:[];if(!rows.length)rows.push(blankBudgetRow(plan.from));
+ if(!Array.isArray(plan.rows))plan.rows=[];
+ if(!plan.rows.length){
+  plan.rows=[blankBudgetRow(plan.from||today())];plan.updatedAt=new Date().toISOString();
+  if(!readOnly)localSaveOnly();
+ }
+ const rows=plan.rows;
  $('budgetList').innerHTML='<div class="budget-table-wrap"><table class="budget-entry-table"><thead><tr><th>Name</th><th>Q</th><th>R</th><th>T</th><th aria-label="Remove"></th></tr></thead><tbody>'+rows.map(budgetEditorRow).join('')+'</tbody></table></div>';updateBudgetTotals();
  $('budgetList').querySelectorAll('input,button').forEach(el=>el.disabled=readOnly);
  const status=$('budgetEditorStatus');if(status){status.textContent=readOnly?'Shared Budget · view only':'Saved. Add products with ＋, or show previous purchases to plan from history.';status.classList.remove('is-error')}
@@ -1595,14 +1609,18 @@ async function saveBudget(options={}){
  if(!options.silent)alert('Budget products saved successfully.');return true;
 }
 async function showPurchasedProductsInBudget(){
- const plan=currentBudgetPlan();if(!plan){alert('Save the Budget date range first.');return}
- if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner&&activeSharedBudgetContext.permission!=='edit'){alert('This shared Budget is view only.');return}
+ const plan=currentBudgetPlan();if(!plan){showBudgetPurchaseMessage('Save the Budget name and date range first.');return}
+ if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner&&activeSharedBudgetContext.permission!=='edit'){showBudgetPurchaseMessage('This shared Budget is view only.');return}
  const from=String($('budgetLoadFromDate').value||''),to=String($('budgetLoadToDate').value||'');
- if(!from||!to||from>to){alert('Choose a valid purchase From and To date range.');return}
- const result=renderBudgetPurchaseResults(from,to);
- if(!result.count){showBudgetPurchaseMessage('No purchases found from '+fmt(from)+' – '+fmt(to)+'. Planned products and totals are unchanged.');alert('No purchase products found for the selected date range.');return}
- showBudgetPurchaseMessage(result.count+' purchased rows shown from '+fmt(from)+' – '+fmt(to)+'. Purchase total: '+money(result.total)+'. Use Add to Planned only for products you want to budget.');
- alert(result.count+' purchased product rows shown below. The planned Budget total has not changed.');
+ const normalizedFrom=normalizeBudgetPurchaseDate(from),normalizedTo=normalizeBudgetPurchaseDate(to);
+ if(!normalizedFrom||!normalizedTo||normalizedFrom>normalizedTo){showBudgetPurchaseMessage('Choose a valid purchase From and To date range.');return}
+ const result=renderBudgetPurchaseResults(normalizedFrom,normalizedTo);
+ if(!result.count){
+  showBudgetPurchaseMessage('No purchase products were found from '+fmt(normalizedFrom)+' – '+fmt(normalizedTo)+'. Your blank Planned Products row is ready for manual entry.');
+  return;
+ }
+ showBudgetPurchaseMessage(result.count+' purchase line(s) found. Loading them into Planned Products so you can edit quantities and rates.');
+ await importBudgetPurchasesToPlan({fromShow:true});
 }
 async function deleteCurrentBudget(){
   const plan=currentBudgetPlan();if(!plan)return;
@@ -4911,7 +4929,7 @@ $('installBtn').onclick=async()=>{
  }
  showDayQuestInstallHelp();
 };
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v52').then(registration=>{
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v53').then(registration=>{
  console.info('DayQuest offline support is ready:',registration.scope);
 }).catch(error=>{
  console.warn('DayQuest offline support could not be registered:',error);
