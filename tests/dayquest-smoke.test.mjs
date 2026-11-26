@@ -108,7 +108,7 @@ test("PWA cache uses the current CSS and JavaScript asset versions", () => {
   const appAsset = html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset && worker.includes("./style.css?v=" + cssAsset));
   assert.ok(appAsset && worker.includes("./app.js?v=" + appAsset));
-  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261125-budget-sharing-fixes-v43'\)/);
+  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v45'\)/);
 });
 
 test("shared Budget context is saved per account and revalidated on refresh", () => {
@@ -122,7 +122,7 @@ test("shared Budget context is saved per account and revalidated on refresh", ()
 test("Budget summary, view, and statement use the same actual-spend calculation", () => {
   assert.match(app, /function budgetActualTotal\(plan\)/);
   assert.equal((app.match(/actual=budgetActualTotal\(plan\)/g) ?? []).length, 2);
-  assert.match(app, /actual=plan\?budgetActualTotal\(plan\):0/);
+  assert.match(app, /function renderBudgetView\(\)[\s\S]*?actual=budgetActualTotal\(plan\)/);\n  assert.match(app, /function budgetStatementHtml\(plan\)[\s\S]*?actual=budgetActualTotal\(plan\)/);
 });
 
 test("revoking or deleting shared Budgets cleans up the parent share record", () => {
