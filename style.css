@@ -3335,3 +3335,19 @@ body{color:var(--dq-font-color,#263b5c)}
  .purchase-line{padding:8px}
  .purchase-line input,.purchase-line select{padding:8px 7px}
 }
+
+
+/* Recent Budget card with a separate delete control (not nested inside the open button). */
+#budget .budget-recent-item{display:flex;align-items:stretch;gap:6px;min-width:0}
+#budget .budget-recent-item>[data-budget-open]{flex:1 1 auto;min-width:0;text-align:left}
+#budget .budget-recent-delete{flex:0 0 auto;min-width:54px;min-height:38px;padding:6px 9px;border-radius:9px;font-size:10px;white-space:nowrap}
+@media(max-width:420px){
+ #budget .budget-recent-item{gap:5px}
+ #budget .budget-recent-delete{min-width:48px;min-height:40px;padding:5px 7px;font-size:10px}
+}
+
+/* Keep editable Budget inputs visibly enabled and finger-friendly. */
+#budgetCreatePage .budget-entry-table td input:not(:disabled){pointer-events:auto;opacity:1;background:#fff}
+#budgetCreatePage .budget-entry-table td input:disabled{opacity:.68;cursor:not-allowed}
+#budgetCreatePage #addBudgetRowBtn:not(:disabled){pointer-events:auto;cursor:pointer}
+#budgetCreatePage #budgetList{min-height:48px}
