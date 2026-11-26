@@ -166,6 +166,7 @@ test("Show displays purchased products separately without changing the planned B
 test("Budget planned rows have a selectable unit and unit-compatible actual matching", () => {
   assert.ok(app.includes('data-field="unit"'));
   assert.match(app,/function budgetRowMatchKey\(row\)[\s\S]*?row\.unit/);
+  assert.match(app,/function budgetSpecsCompatible\(left,right\)/);
   assert.match(app,/unitConversionRatio\(row\.unit\|\|'pcs',group\.unit\|\|'pcs'\)/);
   assert.ok(app.includes("latestPurchaseRateForProduct(product,unit)"));
 });
