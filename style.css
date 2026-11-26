@@ -3167,7 +3167,7 @@ body{color:var(--dq-font-color,#263b5c)}
 #budgetCreatePage .budget-filter-date-box{display:grid;grid-template-columns:1fr 1fr;gap:5px;flex:1 1 auto;min-width:0}
 #budgetCreatePage .budget-filter-date{position:relative;display:block;min-width:0}
 #budgetCreatePage .budget-filter-date>span{position:absolute;z-index:1;left:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--muted,#8792a2);pointer-events:none}
-#budgetCreatePage .budget-filter-date.is-filled>span{display:none}
+#budgetCreatePage .budget-filter-date.is-filled>span:first-child{display:none}
 #budgetCreatePage .budget-filter-date input{box-sizing:border-box;width:100%;height:37px;min-width:0;padding:5px 5px 5px 8px;border:1px solid var(--line,#dce2ea);border-radius:8px;background:var(--card,#fff);color:var(--text,#172033);font:inherit;font-size:10px}
 #budgetCreatePage .budget-filter-show{flex:0 0 52px;width:52px;height:37px;min-height:37px;margin:0;padding:5px 7px;font-size:11px}
 #budgetCreatePage .budget-filter-delete{flex:0 0 78px;width:78px;height:37px;min-height:37px;margin:0;padding:5px 5px;font-size:9px;text-align:center;white-space:nowrap}
@@ -3241,3 +3241,7 @@ body{color:var(--dq-font-color,#263b5c)}
 #budgetCreatePage .budget-import-purchases{min-height:32px;padding:6px 9px;font-size:10.5px;font-weight:800;white-space:nowrap}
 #budgetCreatePage .budget-import-purchases:disabled{opacity:.58;cursor:not-allowed}
 @media(max-width:380px){#budgetCreatePage .budget-purchase-import-actions{align-items:stretch}#budgetCreatePage .budget-import-purchases{width:100%}}
+
+
+/* Keep purchase range controls visible after dates are filled. */
+#budgetCreatePage .budget-filter-date.is-filled>.dq-date-wrap{display:flex}
