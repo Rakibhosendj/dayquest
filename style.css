@@ -3144,6 +3144,9 @@ body{color:var(--dq-font-color,#263b5c)}
 /* DayQuest Budget rebuild: Creditors-style compact page with a dedicated editor. */
 #budget .budget-main-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 10px}
 #budget .budget-main-head h2{font-size:14px;font-weight:850}
+#budget .budget-list-actions{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+#budget .budget-list-actions button{min-height:32px;padding:5px 8px;font-size:10px}
+#budget .budget-list-actions button[hidden]{display:none!important}
 #budget .budget-main-head .muted{display:block;margin-top:3px;font-size:10px}
 #budget .budget-create-open{height:36px;min-height:36px;padding:6px 12px;font-size:12px;white-space:nowrap}
 #budget .budget-recent-list{display:grid;gap:6px}
@@ -3167,7 +3170,7 @@ body{color:var(--dq-font-color,#263b5c)}
 #budgetCreatePage .budget-filter-date.is-filled>span{display:none}
 #budgetCreatePage .budget-filter-date input{box-sizing:border-box;width:100%;height:37px;min-width:0;padding:5px 5px 5px 8px;border:1px solid var(--line,#dce2ea);border-radius:8px;background:var(--card,#fff);color:var(--text,#172033);font:inherit;font-size:10px}
 #budgetCreatePage .budget-filter-show{flex:0 0 52px;width:52px;height:37px;min-height:37px;margin:0;padding:5px 7px;font-size:11px}
-#budgetCreatePage .budget-filter-delete{flex:0 0 58px;width:58px;height:37px;min-height:37px;margin:0;padding:5px 6px;font-size:11px;text-align:center}
+#budgetCreatePage .budget-filter-delete{flex:0 0 78px;width:78px;height:37px;min-height:37px;margin:0;padding:5px 5px;font-size:9px;text-align:center;white-space:nowrap}
 #budgetCreatePage .budget-purchase-message{margin:0 0 9px;padding:8px 10px;border:1px solid #d9e4f1;border-radius:9px;background:#f2f6fb;color:#344b69;font-size:10px;line-height:1.45}
 #budgetCreatePage .budget-purchase-message[hidden]{display:none!important}
 #budgetCreatePage .budget-products-section{margin:2px 0 0;min-width:0}
@@ -3176,18 +3179,36 @@ body{color:var(--dq-font-color,#263b5c)}
 #budgetCreatePage .budget-products-heading .muted{font-size:9px}
 #budgetCreatePage .budget-table-wrap{width:100%;overflow-x:auto;border:1px solid var(--line,#e5eaf1);border-radius:10px;background:var(--card,#fff)}
 #budgetCreatePage .budget-entry-table{width:100%;min-width:0;border-collapse:collapse;table-layout:fixed}
-#budgetCreatePage .budget-entry-table th{padding:8px 5px;border-bottom:1px solid var(--line,#e5eaf1);background:#f4f6f9;color:var(--muted,#7b8797);font-size:9px;font-weight:850;text-align:left}
+#budgetCreatePage .budget-entry-table th{padding:8px 5px;border-bottom:1px solid var(--line,#e5eaf1);background:#f4f6f9;color:var(--muted,#7b8797);font-size:10px;font-weight:850;text-align:left}
 #budgetCreatePage .budget-entry-table th:nth-child(1){width:43%}
 #budgetCreatePage .budget-entry-table th:nth-child(2),#budgetCreatePage .budget-entry-table th:nth-child(3){width:17%}
 #budgetCreatePage .budget-entry-table th:nth-child(4){width:19%}
 #budgetCreatePage .budget-entry-table th:nth-child(5){width:4%;padding:4px 2px}
 #budgetCreatePage .budget-entry-table td{padding:6px 4px;border-bottom:1px solid #edf0f4;vertical-align:middle;min-width:0}
 #budgetCreatePage .budget-entry-table tr:last-child td{border-bottom:0}
-#budgetCreatePage .budget-entry-table td input{box-sizing:border-box;width:100%;min-width:0;height:35px;padding:5px 5px;border:1px solid #e1e6ee;border-radius:7px;background:#fff;color:#172033;font:inherit;font-size:11px;font-variant-numeric:tabular-nums}
+#budgetCreatePage .budget-entry-table td input{box-sizing:border-box;width:100%;min-width:0;height:35px;padding:5px 5px;border:1px solid #e1e6ee;border-radius:7px;background:#fff;color:#172033;font:inherit;font-size:12px;font-variant-numeric:tabular-nums}
 #budgetCreatePage .budget-entry-table td input:focus{border-color:#7892b8;outline:2px solid #7892b822}
 #budgetCreatePage .budget-entry-table td:not(:first-child) input{text-align:right}
 #budgetCreatePage .budget-product-cell input{text-align:left!important}
-#budgetCreatePage .budget-product-meta{display:block;max-width:100%;margin:3px 2px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted,#8a95a5);font-size:8px;line-height:1.2}
+#budgetCreatePage .budget-product-controls{display:flex;align-items:center;gap:5px;margin:3px 1px 0;min-width:0}
+#budgetCreatePage .budget-product-controls select{flex:0 0 58px;width:58px;min-width:0;height:22px;padding:1px 3px;border:1px solid #e1e6ee;border-radius:6px;background:#fff;color:#39465a;font:inherit;font-size:11px}
+#budgetCreatePage .budget-product-meta{display:block;min-width:0;flex:1;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted,#8a95a5);font-size:10px;line-height:1.2}
+#budgetCreatePage .budget-row-error{display:block;margin:3px 2px 0;color:#b42318;font-size:10px;line-height:1.25}
+#budgetCreatePage .budget-row-error[hidden]{display:none!important}
+#budgetCreatePage .budget-editor-status{display:block;margin:5px 2px 0;color:var(--muted,#7b8797);font-size:10px}
+#budgetCreatePage .budget-editor-status.is-error{color:#b42318;font-weight:700}
+#budgetCreatePage .budget-purchase-results{margin:8px 0 12px;padding:9px;border:1px solid var(--line,#e5eaf1);border-radius:10px;background:var(--card,#fff)}
+#budgetCreatePage .budget-purchase-results[hidden]{display:none!important}
+#budgetCreatePage .budget-purchased-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 7px}
+#budgetCreatePage .budget-purchased-heading h3{margin:0;font-size:12px;font-weight:850}
+#budgetCreatePage .budget-purchased-heading span{color:var(--muted,#7b8797);font-size:10px}
+#budgetCreatePage .budget-purchase-table-wrap{width:100%;overflow-x:auto}
+#budgetCreatePage .budget-purchase-table{width:100%;border-collapse:collapse;table-layout:auto;font-size:11px}
+#budgetCreatePage .budget-purchase-table th,#budgetCreatePage .budget-purchase-table td{padding:6px 4px;border-bottom:1px solid #edf0f4;text-align:right;white-space:nowrap}
+#budgetCreatePage .budget-purchase-table th{color:var(--muted,#7b8797);font-size:10px}
+#budgetCreatePage .budget-purchase-table th:nth-child(2),#budgetCreatePage .budget-purchase-table td:nth-child(2){text-align:left;white-space:normal}
+#budgetCreatePage .budget-purchase-table td small{display:block;color:var(--muted,#8792a2);font-size:10px}
+#budgetCreatePage .budget-purchased-total{display:flex;justify-content:space-between;gap:8px;margin-top:7px;font-size:11px;font-weight:800}
 #budgetCreatePage .budget-row-remove{display:grid;place-items:center;width:25px;min-width:25px;height:27px;min-height:27px;margin:0;padding:0;border-radius:7px;font-size:15px;line-height:1}
 #budgetCreatePage .budget-products-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 2px 0}
 #budgetCreatePage .budget-products-total{display:flex;align-items:center;gap:12px;font-size:11px;font-weight:800;color:var(--muted,#687386)}
@@ -3205,9 +3226,10 @@ body{color:var(--dq-font-color,#263b5c)}
  #budgetCreatePage .budget-purchase-filter-row{gap:4px}
  #budgetCreatePage .budget-filter-date-box{gap:3px}
  #budgetCreatePage .budget-filter-show{flex-basis:46px;width:46px}
- #budgetCreatePage .budget-filter-delete{flex-basis:52px;width:52px}
+ #budgetCreatePage .budget-filter-delete{flex-basis:70px;width:70px}
  #budgetCreatePage .budget-entry-table th{padding:7px 3px}
  #budgetCreatePage .budget-entry-table td{padding:5px 2px}
- #budgetCreatePage .budget-entry-table td input{height:33px;padding:4px 3px;font-size:10px}
+ #budgetCreatePage .budget-entry-table td input{height:33px;padding:4px 3px;font-size:11px}
+ #budgetCreatePage .budget-product-controls select{font-size:10px}
  #budgetCreatePage .budget-row-remove{width:22px;min-width:22px}
 }
