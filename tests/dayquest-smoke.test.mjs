@@ -108,7 +108,7 @@ test("PWA cache uses the current CSS and JavaScript asset versions", () => {
   const appAsset = html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset && worker.includes("./style.css?v=" + cssAsset));
   assert.ok(appAsset && worker.includes("./app.js?v=" + appAsset));
-  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v50'\)/);
+  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v51'\)/);
 });
 
 test("shared Budget context is saved per account and revalidated on refresh", () => {
@@ -253,7 +253,7 @@ test("Historical Budget import controls are responsive and assets are cache-vers
   const appAsset=html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset&&worker.includes("./style.css?v="+cssAsset));
   assert.ok(appAsset&&worker.includes("./app.js?v="+appAsset));
-  assert.match(app,/serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v50'\)/);
+  assert.match(app,/serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v51'\)/);
 });
 
 test("Filled Budget purchase date labels hide only the caption, never the date-entry control", () => {
@@ -283,4 +283,19 @@ test("Budget selection recovers a saved plan from the visible name and date rang
   assert.match(app,/function budgetPlanMatchingCurrentHeader\(entries=budgetPlanEntries\(\)\)/);
   assert.match(app,/budgetPlanMatchingCurrentHeader\(entries\)\?\.\[0\]/);
   assert.match(app,/budgetPlanMatchingCurrentHeader\(entries\)\?\.\[0\]\|\|''/);
+});
+
+test("Budget purchase date controls do not receive conflicting full-width styles", () => {
+  assert.match(css,/#budgetCreatePage \.budget-filter-date>input\{/);
+  assert.match(css,/#budgetCreatePage \.budget-filter-date>\.dq-date-wrap>input\.dq-date-entry\{[\s\S]*?width:auto!important/);
+  assert.match(css,/#budgetCreatePage \.budget-filter-date>\.dq-date-wrap>input\.dq-native-date-control\{[\s\S]*?position:absolute!important[\s\S]*?width:42px!important/);
+  assert.doesNotMatch(css,/#budgetCreatePage \.budget-filter-date input\{/);
+});
+test("Budget start date automatically updates the previous-purchase range while keeping it editable", () => {
+  assert.match(app,/function updateBudgetPurchaseRangeFromStartDate\(\)/);
+  assert.match(app,/\$\('budgetHeaderFrom'\)\.addEventListener\('change',updateBudgetPurchaseRangeFromStartDate\)/);
+  assert.match(app,/function budgetPurchaseDefaultRange\(startDate\)[\s\S]*?end\.setDate\(end\.getDate\(\)-1\)/);
+  assert.match(app,/const initialPurchaseRange=budgetPurchaseDefaultRange\(\$\('budgetHeaderFrom'\)\.value\)/);
+  assert.match(app,/\$\('budgetLoadFromDate'\)\.value=range\.from/);
+  assert.match(app,/\$\('budgetLoadToDate'\)\.value=range\.to/);
 });
