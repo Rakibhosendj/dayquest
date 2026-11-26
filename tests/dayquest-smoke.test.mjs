@@ -108,7 +108,7 @@ test("PWA cache uses the current CSS and JavaScript asset versions", () => {
   const appAsset = html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset && worker.includes("./style.css?v=" + cssAsset));
   assert.ok(appAsset && worker.includes("./app.js?v=" + appAsset));
-  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v48'\)/);
+  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v49'\)/);
 });
 
 test("shared Budget context is saved per account and revalidated on refresh", () => {
@@ -217,4 +217,38 @@ test("Budget editor actions are reachable after saving and have explicit handler
   assert.ok(html.includes('id="budgetBackRecentBtn"'));
   assert.ok(app.includes("budgetBackRecentBtn"));
   assert.ok(app.includes('id="budgetList"')===false || html.includes('id="budgetList"'));
+});
+
+test("Historical purchases can be imported explicitly into Planned Products without changing actual purchase records", () => {
+  assert.match(app,/function collectBudgetPurchaseRows\(from,to\)/);
+  assert.match(app,/function budgetPurchaseImportPreview\(rows,plan\)/);
+  const importer = app.slice(app.indexOf("async function importBudgetPurchasesToPlan"), app.indexOf("function budgetRowError"));
+  assert.match(importer,/date:targetDate/);
+  assert.match(importer,/sourcePurchaseKeys:/);
+  assert.match(importer,/sourcePurchaseRange:/);
+  assert.match(importer,/plan\.rows\.push\(/);
+  assert.match(importer,/localSaveOnly\(\)/);
+  assert.match(importer,/await syncActiveSharedBudget\(\)/);
+  assert.match(app,/id="budgetImportPurchasesBtn"/);
+  assert.match(app,/importButton\.addEventListener\('click',importBudgetPurchasesToPlan\)/);
+  const show = app.slice(app.indexOf("function showPurchasedProductsInBudget"), app.indexOf("async function deleteCurrentBudget"));
+  assert.doesNotMatch(show,/plan\.rows\s*=|localSaveOnly\(|syncActiveSharedBudget\(/);
+});
+test("Budget import prevents duplicate purchase rows and protects manually planned products", () => {
+  const preview = app.slice(app.indexOf("function budgetPurchaseImportPreview"), app.indexOf("function renderBudgetPurchaseResults"));
+  assert.match(preview,/sourcePurchaseKeys/);
+  assert.match(preview,/importedKeys\.has/);
+  assert.match(preview,/manualKeys/);
+  assert.match(preview,/alreadyPlanned/);
+  assert.match(app,/existingImportedRow/);
+  assert.match(app,/sourcePurchaseDates:/);
+});
+test("Historical Budget import controls are responsive and assets are cache-version aligned", () => {
+  assert.match(css,/#budgetCreatePage \.budget-purchase-import-actions/);
+  assert.match(css,/#budgetCreatePage \.budget-import-purchases/);
+  const cssAsset=html.match(/style\.css\?v=([^"']+)/)?.[1];
+  const appAsset=html.match(/app\.js\?v=([^"']+)/)?.[1];
+  assert.ok(cssAsset&&worker.includes("./style.css?v="+cssAsset));
+  assert.ok(appAsset&&worker.includes("./app.js?v="+appAsset));
+  assert.match(app,/serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v49'\)/);
 });
