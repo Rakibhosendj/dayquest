@@ -157,12 +157,17 @@ test("Entering Total recalculates Rate or Quantity", () => {
   assert.ok(app.includes("row.rate=Number((total/quantity).toFixed(4))"));
   assert.ok(app.includes("row.quantity=Number((total/rate).toFixed(4))"));
 });
-test("Show displays purchased products separately without changing the planned Budget", () => {
+test("Show finds historical purchases and loads them into editable Planned Products without editing original bills", () => {
   const show = app.slice(app.indexOf("async function showPurchasedProductsInBudget"), app.indexOf("async function deleteCurrentBudget"));
-  assert.match(show,/renderBudgetPurchaseResults\(from,to\)/);
-  assert.doesNotMatch(show,/plan\.rows\s*=|localSaveOnly\(|syncActiveSharedBudget\(/);
+  assert.match(show,/renderBudgetPurchaseResults\(normalizedFrom,normalizedTo\)/);
+  assert.match(show,/await importBudgetPurchasesToPlan\(\{fromShow:true\}\)/);
+  assert.doesNotMatch(show,/db\.purchaseBills\s*=|localSaveOnly\(/);
   assert.ok(html.includes('id="budgetPurchaseResults"'));
   assert.match(html,/budget-purchase-results/);
+  const importer=app.slice(app.indexOf("async function importBudgetPurchasesToPlan"),app.indexOf("async function deleteCurrentBudget"));
+  assert.match(importer,/plan\.rows\.push\(/);
+  assert.match(importer,/sourcePurchaseKeys:/);
+  assert.match(importer,/syncActiveSharedBudget\(\)/);
 });
 test("Budget planned rows have a selectable unit and unit-compatible actual matching", () => {
   assert.ok(app.includes('data-field="unit"'));
@@ -261,11 +266,11 @@ test("Filled Budget purchase date labels hide only the caption, never the date-e
   assert.match(css,/#budgetCreatePage \.budget-filter-date\.is-filled>span:not\(\.dq-date-wrap\)\{display:none!important\}/);
   assert.match(css,/#budgetCreatePage \.budget-filter-date>\.dq-date-wrap\{[\s\S]*?left:auto!important[\s\S]*?transform:none!important/);
 });
-test("Saved Budgets keep the previous-purchase filter available and preserve its values", () => {
+test("Saved Budgets keep the previous-purchase filter available and normalize its values", () => {
   assert.match(app,/function budgetPurchaseDefaultRange\(startDate\)/);
   assert.match(app,/const purchaseDefaults=budgetPurchaseDefaultRange\(from\)/);
   assert.match(app,/syncDQDateDisplay\(\$\('budgetLoadFromDate'\)\)/);
-  assert.match(app,/function showPurchasedProductsInBudget\(\)[\s\S]*?renderBudgetPurchaseResults\(from,to\)/);
+  assert.match(app,/function showPurchasedProductsInBudget\(\)[\s\S]*?normalizeBudgetPurchaseDate\(from\)[\s\S]*?renderBudgetPurchaseResults\(normalizedFrom,normalizedTo\)/);
   const editor=app.slice(app.indexOf("function renderBudgetCreatePage"),app.indexOf("function openBudgetProductRowFocus"));
   assert.doesNotMatch(editor,/budgetPurchaseResults'\)\.hidden=true/);
 });
