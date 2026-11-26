@@ -1360,7 +1360,7 @@ function openBudgetPlan(key){
 function blankBudgetRow(date=today()){return {id:'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),date:String(date||today()),product:'',spec:'',unit:'pcs',quantity:1,rate:0}}
 function showBudgetPurchaseMessage(message){const node=$('budgetPurchaseMessage');if(node){node.textContent=String(message||'');node.hidden=!message}}
 function budgetPurchaseDefaultRange(startDate){
- const start=dateObj(/^\\d{4}-\\d{2}-\\d{2}$/.test(String(startDate||''))?String(startDate):today());
+ const start=dateObj(/^\d{4}-\d{2}-\d{2}$/.test(String(startDate||''))?String(startDate):today());
  const end=new Date(start);end.setDate(end.getDate()-1);
  const from=new Date(start);
  if(from.getDate()===1){from.setDate(0);from.setDate(1)}else from.setDate(1);
@@ -4911,7 +4911,7 @@ $('installBtn').onclick=async()=>{
  }
  showDayQuestInstallHelp();
 };
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v51').then(registration=>{
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v52').then(registration=>{
  console.info('DayQuest offline support is ready:',registration.scope);
 }).catch(error=>{
  console.warn('DayQuest offline support could not be registered:',error);
