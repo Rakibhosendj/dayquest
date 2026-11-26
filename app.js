@@ -1221,6 +1221,25 @@ function budgetPlanMatchingCurrentHeader(entries=budgetPlanEntries()){
  if(named)return named;
  return matches.length===1?matches[0]:null;
 }
+function budgetPlanIsReadOnly(key){
+ const context=activeSharedBudgetContext;
+ return !!(context&&context.budget_key===key&&!context.is_owner&&context.permission!=='edit');
+}
+function budgetPlanForEditor(key=activeBudgetKey){
+ const plan=key&&db.budgetPlans?.[key];
+ if(!plan||typeof plan!=='object'||Array.isArray(plan))return null;
+ if(!Array.isArray(plan.rows))plan.rows=[];
+ return plan;
+}
+function persistBudgetEditorState(syncShared=false){
+ const plan=budgetPlanForEditor(activeBudgetKey);if(!plan)return false;
+ plan.updatedAt=new Date().toISOString();
+ try{localStorage.setItem('dayquest_v1',JSON.stringify(db))}
+ catch(error){const status=$('budgetEditorStatus');if(status){status.textContent='Could not save this Budget on the device: '+String(error.message||error).slice(0,100);status.classList.add('is-error')}return false}
+ queueCloudSave();
+ if(syncShared&&activeSharedBudgetContext?.budget_key===activeBudgetKey)syncActiveSharedBudget();
+ return true;
+}
 function currentBudgetPlan(){
  const select=$('budgetPlanSelect'),entries=budgetPlanEntries(),candidates=[activeBudgetKey,select?.value].filter(Boolean);
  const key=candidates.find(candidate=>db.budgetPlans?.[candidate]&&candidate.startsWith('budget:'))||budgetPlanMatchingCurrentHeader(entries)?.[0]||'';
@@ -1328,9 +1347,11 @@ function renderBudget(){
   list.innerHTML=recent.length?recent.map(([key,plan])=>{
    const range=budgetDateRange(plan),count=(plan.rows||[]).filter(row=>String(row.product||'').trim()).length,total=(plan.rows||[]).reduce((sum,row)=>sum+(String(row.product||'').trim()?budgetRowAmount(row):0),0);
    const dates=range.from&&range.to?fmt(range.from)+' – '+fmt(range.to):'Date range not set';
-   return '<button type="button" class="recent-purchase-row budget-recent-row" data-budget-open="'+esc(key)+'" aria-label="Open Budget '+esc(plan.name||'Budget')+'"><span class="recent-purchase-main"><strong>'+esc(plan.name||'Budget')+'</strong><small>'+esc(dates)+' · '+count+' products</small></span><span class="budget-recent-right"><strong class="recent-purchase-cost">'+money(total)+'</strong><small>Planned</small></span></button>';
+   const canDelete=canDeleteRecentBudget(key);
+   return '<div class="budget-recent-item"><button type="button" class="recent-purchase-row budget-recent-row" data-budget-open="'+esc(key)+'" aria-label="Open Budget '+esc(plan.name||'Budget')+'"><span class="recent-purchase-main"><strong>'+esc(plan.name||'Budget')+'</strong><small>'+esc(dates)+' · '+count+' products</small></span><span class="budget-recent-right"><strong class="recent-purchase-cost">'+money(total)+'</strong><small>Planned</small></span></button>'+(canDelete?'<button type="button" class="delete budget-recent-delete" data-budget-delete="'+esc(key)+'" aria-label="Delete Budget '+esc(plan.name||'Budget')+'">Delete</button>':'')+'</div>';
   }).join(''):empty('No budgets yet. Create your first Budget.');
   list.querySelectorAll('[data-budget-open]').forEach(button=>button.addEventListener('click',()=>openBudgetPlan(button.dataset.budgetOpen)));
+  list.querySelectorAll('[data-budget-delete]').forEach(button=>button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();deleteBudgetByKey(button.dataset.budgetDelete)}));
  }
  if($('recentBudgetCount'))$('recentBudgetCount').textContent=entries.length+' '+(entries.length===1?'budget':'budgets');
  const plan=currentBudgetPlan(),shared=!!(activeSharedBudgetContext&&plan&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner);
@@ -1501,7 +1522,7 @@ function updateBudgetEditorValidation(){
   if(message)errors.push(message);
  });
  const status=$('budgetEditorStatus');
- if(status){status.textContent=errors.length?'Not saved: '+errors[0]:'Product edits save automatically. Tap Save to update the name and dates. Add a product to enable Share and Details.';status.classList.toggle('is-error',errors.length>0)}
+ if(status){status.textContent=errors.length?'Not saved: '+errors[0]:'Product edits save automatically. Tap Save to update the Budget name and dates.';status.classList.toggle('is-error',errors.length>0)}
  return errors.length===0;
 }
 function updateBudgetFilterDateHints(){['budgetLoadFromDate','budgetLoadToDate'].forEach(id=>{const input=$(id),label=input?.closest('.budget-filter-date');if(label)label.classList.toggle('is-filled',!!input.value)})}
@@ -1511,7 +1532,7 @@ function renderBudgetCreatePage(savedPlanKey=''){
   activeBudgetKey=savedPlanKey;if($('budgetPlanSelect'))$('budgetPlanSelect').value=savedPlanKey;
   plan=db.budgetPlans[savedPlanKey];if(!Array.isArray(plan.rows))plan.rows=[];
  }else plan=currentBudgetPlan();
- const shared=!!(plan&&activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner),readOnly=shared&&activeSharedBudgetContext.permission!=='edit';
+ const shared=!!(plan&&activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner),readOnly=!!(plan&&budgetPlanIsReadOnly(activeBudgetKey));
  $('budgetName').value=plan?.name||$('budgetName').value||'';
  const range=plan?budgetDateRange(plan):{from:$('budgetHeaderFrom').value||today(),to:$('budgetHeaderTo').value||today()};
  $('budgetHeaderFrom').value=range.from||today();$('budgetHeaderTo').value=range.to||range.from||today();
@@ -1535,21 +1556,21 @@ function renderBudgetCreatePage(savedPlanKey=''){
  const rows=plan.rows;
  $('budgetList').innerHTML='<div class="budget-table-wrap"><table class="budget-entry-table"><thead><tr><th>Name</th><th>Q</th><th>R</th><th>T</th><th aria-label="Remove"></th></tr></thead><tbody>'+rows.map(budgetEditorRow).join('')+'</tbody></table></div>';updateBudgetTotals();
  $('budgetList').querySelectorAll('input,button').forEach(el=>el.disabled=readOnly);
- const status=$('budgetEditorStatus');if(status){status.textContent=readOnly?'Shared Budget · view only':'Saved. Add products with ＋, or show previous purchases to plan from history.';status.classList.remove('is-error')}
+ const status=$('budgetEditorStatus');if(status){status.textContent=readOnly?'Shared Budget · view only':'Product rows are editable. Changes save as you type.';status.classList.remove('is-error')}
 }
 function openBudgetProductRowFocus(){const inputs=$('budgetList').querySelectorAll('[data-field="product"]');inputs[inputs.length-1]?.focus()}
 async function addBudgetRow(){
- const plan=currentBudgetPlan();if(!plan){alert('Save the Budget date range first.');return}
- if(!Array.isArray(plan.rows))plan.rows=[];
- if(!plan.rows.length)plan.rows=[blankBudgetRow(plan.from||today())];
- if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner&&activeSharedBudgetContext.permission!=='edit'){alert('This shared Budget is view only.');return}
- plan.rows=Array.isArray(plan.rows)?plan.rows:[];plan.rows.push(blankBudgetRow(plan.from||today()));plan.updatedAt=new Date().toISOString();
- localSaveOnly();renderBudgetCreatePage();await syncActiveSharedBudget();openBudgetProductRowFocus();
+ const key=activeBudgetKey,plan=budgetPlanForEditor(key);
+ if(!plan){showBudgetPurchaseMessage('Open or save a Budget before adding products.');return}
+ if(budgetPlanIsReadOnly(key)){showBudgetPurchaseMessage('This shared Budget is view only.');return}
+ plan.rows.push(blankBudgetRow(plan.from||today()));
+ if(!persistBudgetEditorState(true))return;
+ renderBudgetCreatePage(key);openBudgetProductRowFocus();
 }
 function updateBudgetRowFromInput(event){
  const input=event.target;if(!input.matches('[data-field]'))return;
  const tr=input.closest('[data-budget-row]');if(!tr)return;
- const plan=currentBudgetPlan();if(!plan)return;
+ const plan=budgetPlanForEditor(activeBudgetKey);if(!plan||budgetPlanIsReadOnly(activeBudgetKey))return;
  const index=Number(tr.dataset.budgetRow),field=input.dataset.field,get=name=>tr.querySelector('[data-field="'+name+'"]');
  let row=plan.rows[index];if(!row)row=plan.rows[index]=blankBudgetRow(plan.from||today());
  if(field==='product')row.product=input.value;
@@ -1631,24 +1652,40 @@ async function showPurchasedProductsInBudget(){
  showBudgetPurchaseMessage(result.count+' purchase line(s) found. Loading them into Planned Products so you can edit quantities and rates.');
  await importBudgetPurchasesToPlan({fromShow:true,planKey:activeBudgetKey});
 }
-async function deleteCurrentBudget(){
-  const plan=currentBudgetPlan();if(!plan)return;
-  if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner){alert('You cannot delete a Budget shared with you.');return}
-  if(!await window.dayQuestConfirm('Delete Budget “'+plan.name+'”? Any sharing access for this Budget will also be revoked.'))return;
-  if(cloudUser&&supabaseClient){
-   try{
-    const {data,error}=await supabaseClient.rpc('dayquest_list_owned_budget_shares');
-    if(error)throw error;
-    const shares=(Array.isArray(data)?data:[]).filter(item=>item.budget_key===activeBudgetKey);
-    const sharedIds=[...new Set(shares.map(item=>item.shared_budget_id).filter(Boolean))];
-    for(const sharedId of sharedIds){
-     const result=await supabaseClient.rpc('dayquest_remove_budget_access',{p_shared_budget_id:sharedId,p_member_id:null});
-     if(result.error)throw result.error;
-    }
-   }catch(error){alert('Budget was not deleted because shared access could not be cleared: '+String(error.message||error).slice(0,140));return}
-  }
-  delete db.budgetPlans[activeBudgetKey];activeBudgetKey='';setActiveSharedBudgetContext(null);localSaveOnly();renderBudget();alert('Budget deleted.');if(document.querySelector('.panel.active')?.id==='budgetCreatePage')setTab('budget',{skipHistory:true});
+function isRecipientBudgetCopy(key){
+ if(activeSharedBudgetContext?.budget_key===key&&!activeSharedBudgetContext.is_owner)return true;
+ const storageKey=cloudUser?.id?'dayquest_shared_budget_keys_v1:'+cloudUser.id:'';
+ if(!storageKey)return false;
+ try{return (JSON.parse(localStorage.getItem(storageKey)||'[]')||[]).some(item=>String(item?.budget_key||'')===String(key))}
+ catch{return false}
 }
+function canDeleteRecentBudget(key){
+ const plan=db.budgetPlans?.[key];return !!plan&&!isRecipientBudgetCopy(key);
+}
+async function deleteBudgetByKey(key){
+ const plan=db.budgetPlans?.[key];if(!plan)return false;
+ if(isRecipientBudgetCopy(key)){alert('You cannot delete a Budget shared with you.');return false}
+ if(!await window.dayQuestConfirm('Delete Budget “'+String(plan.name||'Budget')+'”? Any sharing access for this Budget will also be revoked.'))return false;
+ if(cloudUser&&supabaseClient){
+  try{
+   const {data,error}=await supabaseClient.rpc('dayquest_list_owned_budget_shares');
+   if(error)throw error;
+   const shares=(Array.isArray(data)?data:[]).filter(item=>item.budget_key===key);
+   const sharedIds=[...new Set(shares.map(item=>item.shared_budget_id).filter(Boolean))];
+   for(const sharedId of sharedIds){
+    const result=await supabaseClient.rpc('dayquest_remove_budget_access',{p_shared_budget_id:sharedId,p_member_id:null});
+    if(result.error)throw result.error;
+   }
+  }catch(error){alert('Budget was not deleted because shared access could not be cleared: '+String(error.message||error).slice(0,140));return false}
+ }
+ delete db.budgetPlans[key];
+ const wasActive=activeBudgetKey===key;
+ if(wasActive){activeBudgetKey='';if(activeSharedBudgetContext?.budget_key===key)setActiveSharedBudgetContext(null)}
+ localSaveOnly();renderBudget();alert('Budget deleted.');
+ if(wasActive&&document.querySelector('.panel.active')?.id==='budgetCreatePage')setTab('budget',{skipHistory:true});
+ return true;
+}
+async function deleteCurrentBudget(){return deleteBudgetByKey(activeBudgetKey||$('budgetPlanSelect')?.value||'')}
 
 function budgetViewRows(plan){
  return (plan?.rows||[]).map((row,index)=>({sl:index+1,date:String(row.date||''),product:String(row.product||''),spec:String(row.spec||''),rate:Number(row.rate||0),quantity:Math.max(0,Number(row.quantity||0)),unit:String(row.unit||''),total:budgetRowAmount(row)}));
@@ -1907,19 +1944,28 @@ $('budgetViewPrint').addEventListener('click',()=>exportBudgetStatement('print')
 $('budgetViewPdf').addEventListener('click',()=>exportBudgetStatement('pdf'));
 $('budgetViewExcel').addEventListener('click',()=>exportBudgetStatement('excel'));
 $('budgetList').addEventListener('change',event=>{
- if(event.target.matches('[data-field="unit"]'))updateBudgetRowFromInput(event);
- if(event.target.matches('[data-field="product"],[data-field="unit"]'))prefillBudgetPreviousRate(event.target);
- if(event.target.matches('[data-field="product"],[data-field="unit"],[data-field="quantity"],[data-field="rate"],[data-field="total"]'))saveBudget({silent:true,productsOnly:true});
+ const input=event.target;if(!input.matches('[data-field]'))return;
+ if(input.dataset.field==='unit')updateBudgetRowFromInput(event);
+ if(['product','unit'].includes(input.dataset.field)){
+  prefillBudgetPreviousRate(input);
+  const rateInput=input.closest('[data-budget-row]')?.querySelector('[data-field="rate"]');
+  if(rateInput)updateBudgetRowFromInput({target:rateInput});
+ }
+ persistBudgetEditorState(true);
 });
 $('budgetList').addEventListener('input',event=>{
- if(event.target.matches('[data-field="product"],[data-field="quantity"],[data-field="rate"],[data-field="total"]'))updateBudgetRowFromInput(event);
+ const input=event.target;if(!input.matches('[data-field]'))return;
+ updateBudgetRowFromInput(event);
+ persistBudgetEditorState(false);
 });
 $('budgetList').addEventListener('click',async event=>{
  const button=event.target.closest('[data-remove-budget-row]');if(!button)return;
- const plan=currentBudgetPlan();if(!plan)return;
- if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner&&activeSharedBudgetContext.permission!=='edit'){alert('This shared Budget is view only.');return}
- plan.rows.splice(Number(button.dataset.removeBudgetRow),1);if(!plan.rows.length)plan.rows=[blankBudgetRow(plan.from||today())];
- plan.updatedAt=new Date().toISOString();localSaveOnly();renderBudget();renderBudgetCreatePage();await syncActiveSharedBudget();
+ const key=activeBudgetKey,plan=budgetPlanForEditor(key);if(!plan)return;
+ if(budgetPlanIsReadOnly(key)){showBudgetPurchaseMessage('This shared Budget is view only.');return}
+ const index=Number(button.dataset.removeBudgetRow);if(!Number.isInteger(index)||index<0||index>=plan.rows.length)return;
+ plan.rows.splice(index,1);if(!plan.rows.length)plan.rows=[blankBudgetRow(plan.from||today())];
+ if(!persistBudgetEditorState(true))return;
+ renderBudgetCreatePage(key);
 });
 $('purchaseDate').addEventListener('change',updatePurchaseBillNo);
 $('purchaseAmountMode').addEventListener('change',()=>{
@@ -4938,7 +4984,7 @@ $('installBtn').onclick=async()=>{
  }
  showDayQuestInstallHelp();
 };
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v54').then(registration=>{
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v55').then(registration=>{
  console.info('DayQuest offline support is ready:',registration.scope);
 }).catch(error=>{
  console.warn('DayQuest offline support could not be registered:',error);
