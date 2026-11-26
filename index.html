@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261125-share-page-fix-v44">
+<link rel="stylesheet" href="style.css?v=20261126-budget-page-v45">
 <title>DayQuest</title>
 </head>
 <body>
@@ -351,26 +351,39 @@
  <div id="inventoryList" class="list"></div>
 </section>
 <section id="budget" class="panel">
- <div class="budget-toolbar">
-  <label class="budget-select-label">Budget <select id="budgetPlanSelect"><option value="">Select Budget</option></select></label>
-  <button type="button" class="secondary" id="newBudgetBtn">＋ New Budget</button>
-  <button type="button" class="secondary" id="budgetDeleteBtn" disabled>Delete</button>
+ <div class="section-head budget-main-head"><div><h2>Recent Budgets</h2><span class="muted" id="recentBudgetCount">0 budgets</span></div><button type="button" class="primary budget-create-open" id="newBudgetBtn">＋ Create</button></div>
+ <div id="recentBudgetList" class="list budget-recent-list"><div class="empty">No budgets yet. Create your first Budget.</div></div>
+ <div class="budget-legacy-controls" hidden aria-hidden="true">
+  <label>Budget <select id="budgetPlanSelect"><option value="">Select Budget</option></select></label>
+  <button type="button" id="budgetDeleteBtn" disabled>Delete</button><button type="button" id="saveBudgetBtn">Save Budget</button>
+  <strong id="budgetRangeLabel"></strong><span id="budgetProductCount"></span><strong id="budgetGrandTotal">৳0.00</strong><strong id="budgetActualTotal">৳0.00</strong><strong id="budgetRemainingTotal">৳0.00</strong><strong id="budgetProgress">—</strong><div id="budgetComparison"></div>
  </div>
- <div class="budget-create-head">
-  <label>Budget Name <input id="budgetName" maxlength="100" placeholder="e.g. Monthly Grocery"></label>
-  <div class="budget-create-actions"><button type="button" class="secondary" id="addBudgetRowBtn">＋ Add Product</button><button type="button" class="primary" id="saveBudgetBtn">Save Budget</button></div>
- </div>
- <div class="section-head budget-result-head"><div><h3>Planned Items</h3><span class="muted" id="budgetRangeLabel">Create a Budget</span></div><div class="budget-result-actions"><span class="pill" id="budgetProductCount">0 items</span><button type="button" class="secondary" id="budgetShareBtn" disabled>Share</button><button type="button" class="secondary" id="budgetViewBtn" disabled>Details</button></div></div>
- <div id="budgetList" class="budget-list"><div class="empty">Create a Budget to plan products by purchase date.</div></div>
- <div class="budget-total-row"><span>Planned Total</span><strong id="budgetGrandTotal">৳0.00</strong></div>
- <div class="cards budget-actual-summary">
-  <article class="stat"><span class="muted">Actual</span><strong id="budgetActualTotal">৳0.00</strong></article>
-  <article class="stat"><span class="muted">Remaining</span><strong id="budgetRemainingTotal">৳0.00</strong></article>
-  <article class="stat"><span class="muted">Progress</span><strong id="budgetProgress">—</strong></article>
- </div>
- <div id="budgetComparison"></div>
 </section>
-<section id="budgetViewPage" class="panel budget-view-page">
+<section id="budgetCreatePage" class="panel budget-create-page">
+ <label class="budget-name-field">Budget Name<input id="budgetName" maxlength="100" placeholder="Enter Budget Name" autocomplete="off"></label>
+ <div class="budget-header-save-row">
+  <div class="budget-header-date-box">
+   <label><span>From</span><input id="budgetHeaderFrom" type="date" aria-label="Budget start date" required></label>
+   <label><span>To</span><input id="budgetHeaderTo" type="date" aria-label="Budget end date" required></label>
+  </div>
+  <button type="button" class="primary budget-header-save" id="budgetHeaderSaveBtn">Save</button>
+ </div>
+ <div class="budget-purchase-filter-row">
+  <div class="budget-filter-date-box">
+   <label class="budget-filter-date"><span>From</span><input id="budgetLoadFromDate" type="date" aria-label="Purchase filter from date" title="From"></label>
+   <label class="budget-filter-date"><span>To</span><input id="budgetLoadToDate" type="date" aria-label="Purchase filter to date" title="To"></label>
+  </div>
+  <button type="button" class="secondary budget-filter-show" id="budgetLoadShowBtn" disabled>Show</button><button type="button" class="delete budget-filter-delete" id="budgetLoadDeleteBtn" disabled>Delete</button>
+ </div>
+ <p id="budgetPurchaseMessage" class="budget-purchase-message" role="status" aria-live="polite" hidden></p>
+ <section class="budget-products-section">
+  <div class="budget-products-heading"><h3>Products</h3><span class="muted" id="budgetCreateProductCount">0 items</span></div>
+  <div id="budgetList" class="budget-list"><div class="empty">Save the Budget date range to add products.</div></div>
+  <div class="budget-products-footer"><div class="budget-products-total"><span>Total</span><strong id="budgetGrandTotalCreate">৳0.00</strong></div><button type="button" class="mini-add budget-add-product" id="addBudgetRowBtn" aria-label="Add product row" title="Add product row" disabled>＋</button></div>
+ </section>
+ <div class="budget-create-page-actions"><button type="button" class="secondary" id="budgetShareBtn" disabled>Share</button><button type="button" class="secondary" id="budgetViewBtn" disabled>Details</button></div>
+ <div class="budget-legacy-summary" hidden aria-hidden="true"><strong id="budgetActualTotalCreate">৳0.00</strong><strong id="budgetRemainingTotalCreate">৳0.00</strong><strong id="budgetProgressCreate">—</strong><div id="budgetComparisonCreate"></div></div>
+</section><section id="budgetViewPage" class="panel budget-view-page">
  <div class="section-head budget-view-toolbar"><div><h2>Budget View</h2><span class="muted" id="budgetViewRange">Selected date range</span></div></div>
  <div class="budget-view-document">
   <div class="budget-view-heading"><div><h2>DayQuest · Budget Statement</h2><span id="budgetViewPeriod"></span></div><strong id="budgetViewTotal">৳0.00</strong></div>
@@ -1215,5 +1228,5 @@
 <dialog id="dqMessageDialog" class="dq-message-dialog" aria-labelledby="dqMessageTitle"><div class="dq-message-card"><div class="dq-message-brand"><img src="icons/icon-192.png?v=20261121-coin-check" alt="DayQuest app icon"><h2 id="dqMessageTitle">DayQuest</h2></div><p id="dqMessageText"></p><input id="dqMessagePromptInput" class="dq-message-prompt-input" type="text" maxlength="200" autocomplete="off" aria-label="Enter a value" hidden><div class="dq-message-actions"><button id="dqMessageCancel" class="secondary" type="button" hidden>Cancel</button><button id="dqMessageOk" class="primary" type="button">OK</button></div></div></dialog>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261125-budget-sharing-v43"></script>
+<script src="app.js?v=20261126-budget-page-v44"></script>
 </body></html>
