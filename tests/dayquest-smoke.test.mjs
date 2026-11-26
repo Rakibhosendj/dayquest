@@ -109,7 +109,7 @@ test("PWA cache uses the current CSS and JavaScript asset versions", () => {
   const appAsset = html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset && worker.includes("./style.css?v=" + cssAsset));
   assert.ok(appAsset && worker.includes("./app.js?v=" + appAsset));
-  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v52'\)/);
+  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v53'\)/);
 });
 
 test("shared Budget context is saved per account and revalidated on refresh", () => {
@@ -254,7 +254,7 @@ test("Historical Budget import controls are responsive and assets are cache-vers
   const appAsset=html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset&&worker.includes("./style.css?v="+cssAsset));
   assert.ok(appAsset&&worker.includes("./app.js?v="+appAsset));
-  assert.match(app,/serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v52'\)/);
+  assert.match(app,/serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v53'\)/);
 });
 
 test("Filled Budget purchase date labels hide only the caption, never the date-entry control", () => {
@@ -322,4 +322,36 @@ test("Purchase form has a responsive mobile layout with touch-sized controls", (
   assert.match(css,/\.purchase-payment-grid input\{[\s\S]*?min-height:44px[\s\S]*?font-size:16px!important/);
   assert.match(html,/id="addPurchaseLine"[^>]*>＋ Add line</);
   for(const id of ["purchaseSupplier","purchaseBillNo","purchaseDate","purchaseAmountMode","purchaseDiscount","purchaseTransitCost","purchaseCashPaid","purchaseBankPaid","purchaseBillSubmit"])assert.ok(html.includes('id="'+id+'"'));
+});
+
+test("Show normalizes legacy purchase dates and loads matches into editable Planned Products", () => {
+  assert.match(app,/function normalizeBudgetPurchaseDate\(value\)/);
+  assert.match(app,/const date=normalizeBudgetPurchaseDate\(bill\?\.date\)/);
+  assert.match(app,/Array\.isArray\(bill\.lines\)\?bill\.lines:\[\]/);
+  const show=app.slice(app.indexOf("async function showPurchasedProductsInBudget"),app.indexOf("async function deleteCurrentBudget"));
+  assert.match(show,/renderBudgetPurchaseResults\(normalizedFrom,normalizedTo\)/);
+  assert.match(show,/await importBudgetPurchasesToPlan\(\{fromShow:true\}\)/);
+  assert.doesNotMatch(show,/alert\('No purchase products found/);
+  const importer=app.slice(app.indexOf("async function importBudgetPurchasesToPlan"),app.indexOf("function budgetRowError"));
+  assert.match(importer,/plan\.rows\.push\(/);
+  assert.match(importer,/sourcePurchaseKeys:/);
+  assert.match(importer,/Original purchase records and actual spending were not changed/);
+});
+test("Saved Budget always persists at least one editable blank product row", () => {
+  const editor=app.slice(app.indexOf("function renderBudgetCreatePage"),app.indexOf("function openBudgetProductRowFocus"));
+  assert.match(editor,/if\(!Array\.isArray\(plan\.rows\)\)plan\.rows=\[\]/);
+  assert.match(editor,/if\(!plan\.rows\.length\)\{\s*plan\.rows=\[blankBudgetRow\(plan\.from\|\|today\(\)\)\]/);
+  assert.match(editor,/if\(!readOnly\)localSaveOnly\(\)/);
+  assert.match(editor,/const rows=plan\.rows/);
+  assert.match(app,/function saveBudgetHeader\(\)[\s\S]*?rows:\[blankBudgetRow\(from\)\]/);
+});
+test("Historical purchase date normalizer accepts ISO, display dates and legacy timestamps", () => {
+  const parseSource=app.match(/function parseDQTypedDate\(raw\)\{[\s\S]*?\n\}/)?.[0];
+  const normalizeSource=app.match(/function normalizeBudgetPurchaseDate\(value\)\{[\s\S]*?\n\}/)?.[0];
+  assert.ok(parseSource&&normalizeSource);
+  const normalize=runInNewContext("(()=>{"+parseSource+";"+normalizeSource+";return normalizeBudgetPurchaseDate})()");
+  assert.equal(normalize("2026-11-26"),"2026-11-26");
+  assert.equal(normalize("2026-11-26T00:00:00.000Z"),"2026-11-26");
+  assert.equal(normalize("26-Nov-2026"),"2026-11-26");
+  assert.equal(normalize("26/11/2026"),"2026-11-26");
 });
