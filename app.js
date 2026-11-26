@@ -1219,11 +1219,13 @@ function currentBudgetPlan(){
 }
 function budgetRowAmount(row){return budgetAmount(row.rate,row.quantity)}
 function budgetProductIdentity(value){return productMasterKey(resolvePurchaseProductName(value||''))}
-function budgetRowMatchKey(row){return [budgetProductIdentity(row.product),String(row.unit||'pcs').trim().toLocaleLowerCase()].join('|')}
+function budgetSpecIdentity(value){return productMasterKey(String(value||''))}
+function budgetSpecsCompatible(left,right){const a=budgetSpecIdentity(left.spec),b=budgetSpecIdentity(right.spec);return !a||!b||a===b}
+function budgetRowMatchKey(row){return [budgetProductIdentity(row.product),budgetSpecIdentity(row.spec),String(row.unit||'pcs').trim().toLocaleLowerCase()].join('|')}
 function findBudgetActualGroup(groups,row){
  const identity=budgetProductIdentity(row.product),exact=groups.get(budgetRowMatchKey(row));if(exact)return {group:exact,ratio:1};
  for(const group of groups.values()){
-  if(budgetProductIdentity(group.product)!==identity)continue;
+  if(budgetProductIdentity(group.product)!==identity||!budgetSpecsCompatible(group,row))continue;
   const ratio=unitConversionRatio(row.unit||'pcs',group.unit||'pcs');if(ratio!==null)return {group,ratio};
  }
  return null;
@@ -1249,7 +1251,7 @@ function budgetUnplannedPurchases(plan){
  const planned=(plan?.rows||[]).filter(row=>String(row.product||'').trim()),rows=[];
  (db.purchaseBills||[]).forEach(bill=>(bill.lines||[]).forEach(line=>{
   const row={date:String(bill.date||''),product:String(line.product||''),spec:String(line.spec||''),unit:String(line.unit||'pcs')};
-  const isPlanned=planned.some(item=>budgetProductIdentity(item.product)===budgetProductIdentity(row.product)&&unitConversionRatio(row.unit||'pcs',item.unit||'pcs')!==null);
+  const isPlanned=planned.some(item=>budgetProductIdentity(item.product)===budgetProductIdentity(row.product)&&budgetSpecsCompatible(item,row)&&unitConversionRatio(row.unit||'pcs',item.unit||'pcs')!==null);
   if(row.date<range.from||row.date>range.to||isPlanned)return;
   const qty=Math.max(0,Number(line.quantity||0));if(qty)rows.push({...row,quantity:qty,amount:purchaseLineCost(bill,line)});
  }));
@@ -4773,7 +4775,7 @@ $('installBtn').onclick=async()=>{
  }
  showDayQuestInstallHelp();
 };
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v46').then(registration=>{
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v47').then(registration=>{
  console.info('DayQuest offline support is ready:',registration.scope);
 }).catch(error=>{
  console.warn('DayQuest offline support could not be registered:',error);
