@@ -109,7 +109,7 @@ test("PWA cache uses the current CSS and JavaScript asset versions", () => {
   const appAsset = html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset && worker.includes("./style.css?v=" + cssAsset));
   assert.ok(appAsset && worker.includes("./app.js?v=" + appAsset));
-  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v56'\)/);
+  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v57'\)/);
 });
 
 test("shared Budget context is saved per account and revalidated on refresh", () => {
@@ -262,7 +262,7 @@ test("Historical Budget import controls are responsive and assets are cache-vers
   const appAsset=html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset&&worker.includes("./style.css?v="+cssAsset));
   assert.ok(appAsset&&worker.includes("./app.js?v="+appAsset));
-  assert.match(app,/serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v56'\)/);
+  assert.match(app,/serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v57'\)/);
 });
 
 test("Filled Budget purchase date labels hide only the caption, never the date-entry control", () => {
@@ -415,7 +415,7 @@ test("Budget row inputs are saved as users type and retain edit permission state
   assert.match(app,/const plan=budgetPlanForEditor\(activeBudgetKey\);if\(!plan\|\|budgetPlanIsReadOnly\(activeBudgetKey\)\)return/);
   assert.match(app,/function budgetPlanIsReadOnly\(key\)/);
   assert.match(app,/queueCloudSave\(\)/);
-  assert.match(css,/#budgetCreatePage \.budget-entry-table td input:not\(:disabled\)\{pointer-events:auto/);
+  assert.match(css,/#budgetCreatePage \.budget-edit-row/);
 });
 
 test("Shared Budget Edit permission survives reload and keeps row editing enabled", () => {
@@ -423,4 +423,32 @@ test("Shared Budget Edit permission survives reload and keeps row editing enable
   assert.match(app,/permission:saved\.is_owner\?'owner':\(saved\.permission==='edit'\?'edit':'view'\)/);
   assert.match(app,/function budgetPlanIsReadOnly\(key\)/);
   assert.match(app,/permission!=='edit'/);
+});
+
+test("Budget pages always show the Budget title and a dedicated Budget icon", () => {
+  assert.match(app,/const budgetPages=new Set\(\['budget','budgetCreatePage','budgetViewPage','budgetSharePage'\]\)/);
+  assert.match(app,/pageIcon\.src=isBudgetPage\?'icons\/budget\.svg\?v=20261126-budget-icon'/);
+  assert.match(app,/updatePageBalanceTitle\(document\.querySelector\('\.panel\.active'\)\?\.id\|\|t\)/);
+  assert.match(html,/id="pageContextIcon"/);
+});
+test("View All is available for any saved Budgets and displays every migrated record", () => {
+  assert.match(app,/const recent=showAllBudgetEntries\?entries:entries\.slice\(0,8\)/);
+  assert.match(app,/allButton\.hidden=entries\.length===0/);
+  assert.match(app,/function ensureLegacyBudgetPlans\(\)[\s\S]*?plan\.products[\s\S]*?plan\.items/);
+  assert.match(app,/db\.budgetPlans\[newKey\]=\{\.\.\.plan,id,name:[\s\S]*?rows,/);
+});
+test("Planned Products render as a responsive accessible grid with editable controls", () => {
+  const row=app.slice(app.indexOf("function budgetEditorRow"),app.indexOf("function renderBudgetComparison"));
+  assert.match(row,/class="budget-edit-row" role="row"/);
+  assert.match(row,/data-field="product"/);
+  assert.match(row,/data-field="quantity"/);
+  assert.match(row,/data-field="rate"/);
+  assert.match(row,/data-field="total"/);
+  assert.doesNotMatch(row,/<tr|<td/);
+  const renderer=app.slice(app.indexOf("function renderBudgetCreatePage"),app.indexOf("function openBudgetProductRowFocus"));
+  assert.match(renderer,/class="budget-entry-table" role="table"/);
+  assert.match(renderer,/class="budget-entry-body" role="rowgroup"/);
+  assert.match(css,/#budgetCreatePage \.budget-entry-head/);
+  assert.match(css,/#budgetCreatePage \.budget-edit-row/);
+  assert.match(css,/@media\(max-width:560px\)[\s\S]*?\.budget-number-cell small/);
 });
