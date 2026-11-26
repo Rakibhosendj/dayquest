@@ -1151,7 +1151,7 @@ function setActiveSharedBudgetContext(context){
  activeSharedBudgetContext=context?{...context}:null;
  const storageKey=budgetShareContextStorageKey();if(!storageKey)return;
  try{
-  if(activeSharedBudgetContext)localStorage.setItem(storageKey,JSON.stringify({id:activeSharedBudgetContext.id||null,budget_key:String(activeSharedBudgetContext.budget_key||''),is_owner:!!activeSharedBudgetContext.is_owner}));
+  if(activeSharedBudgetContext)localStorage.setItem(storageKey,JSON.stringify({id:activeSharedBudgetContext.id||null,budget_key:String(activeSharedBudgetContext.budget_key||''),is_owner:!!activeSharedBudgetContext.is_owner,permission:activeSharedBudgetContext.is_owner?'owner':(activeSharedBudgetContext.permission==='edit'?'edit':'view')}));
   else localStorage.removeItem(storageKey);
  }catch(error){console.warn('Could not save Budget sharing context:',error)}
 }
@@ -1161,7 +1161,7 @@ function primeBudgetShareContext(){
   const saved=JSON.parse(localStorage.getItem(storageKey)||'null');
   if(!saved?.budget_key)return;
   activeBudgetKey=String(saved.budget_key);
-  activeSharedBudgetContext={id:saved.id||null,budget_key:activeBudgetKey,permission:saved.is_owner?'owner':'view',is_owner:!!saved.is_owner};
+  activeSharedBudgetContext={id:saved.id||null,budget_key:activeBudgetKey,permission:saved.is_owner?'owner':(saved.permission==='edit'?'edit':'view'),is_owner:!!saved.is_owner};
  }catch(error){console.warn('Could not restore Budget sharing context:',error)}
 }
 function syncKnownSharedBudgetCopies(items){
@@ -4984,7 +4984,7 @@ $('installBtn').onclick=async()=>{
  }
  showDayQuestInstallHelp();
 };
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v55').then(registration=>{
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v56').then(registration=>{
  console.info('DayQuest offline support is ready:',registration.scope);
 }).catch(error=>{
  console.warn('DayQuest offline support could not be registered:',error);
