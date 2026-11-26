@@ -1204,7 +1204,7 @@ function restoreBudgetShareContextFromList(items){
  renderBudget();return true;
 }
 function budgetPlanKey(id){return 'budget:'+String(id||'')}
-function budgetPlanEntries(){return Object.entries(db.budgetPlans||{}).filter(([key,plan])=>key.startsWith('budget:')&&plan&&Array.isArray(plan.rows))}
+function budgetPlanEntries(){return Object.entries(db.budgetPlans||{}).filter(([key,plan])=>key.startsWith('budget:')&&plan&&typeof plan==='object'&&!Array.isArray(plan))}
 function ensureLegacyBudgetPlans(){
  Object.entries(db.budgetPlans||{}).forEach(([key,plan])=>{
   if(key.startsWith('budget:')||!plan||!Array.isArray(plan.rows))return;
@@ -1223,10 +1223,11 @@ function budgetPlanMatchingCurrentHeader(entries=budgetPlanEntries()){
 }
 function currentBudgetPlan(){
  const select=$('budgetPlanSelect'),entries=budgetPlanEntries(),candidates=[activeBudgetKey,select?.value].filter(Boolean);
- const key=candidates.find(candidate=>db.budgetPlans?.[candidate]&&Array.isArray(db.budgetPlans[candidate].rows))||budgetPlanMatchingCurrentHeader(entries)?.[0]||'';
+ const key=candidates.find(candidate=>db.budgetPlans?.[candidate]&&candidate.startsWith('budget:'))||budgetPlanMatchingCurrentHeader(entries)?.[0]||'';
  if(!key){activeBudgetKey='';return null}
+ const plan=db.budgetPlans[key];if(!Array.isArray(plan.rows))plan.rows=[];
  activeBudgetKey=key;if(select&&select.value!==key)select.value=key;
- return db.budgetPlans[key];
+ return plan;
 }
 function budgetRowAmount(row){return budgetAmount(row.rate,row.quantity)}
 function budgetProductIdentity(value){return productMasterKey(resolvePurchaseProductName(value||''))}
@@ -1443,7 +1444,7 @@ function renderBudgetPurchaseResults(from,to){
  return {count:rows.length,total,importable:preview.groups.length};
 }
 async function importBudgetPurchasesToPlan(options={}){
- const plan=currentBudgetPlan();if(!plan){showBudgetPurchaseMessage('Save the Budget date range first.');return}
+ const plan=options.planKey&&db.budgetPlans?.[options.planKey]?db.budgetPlans[options.planKey]:currentBudgetPlan();if(!plan){showBudgetPurchaseMessage('Save the Budget date range first.');return}
  if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner&&activeSharedBudgetContext.permission!=='edit'){showBudgetPurchaseMessage('This shared Budget is view only.');return}
  const from=String($('budgetLoadFromDate').value||''),to=String($('budgetLoadToDate').value||'');
  if(!from||!to||from>to){showBudgetPurchaseMessage('Choose a valid purchase From and To date range.');return}
@@ -1480,7 +1481,7 @@ async function importBudgetPurchasesToPlan(options={}){
  });
  plan.updatedAt=createdAt;
  localSaveOnly();
- renderBudgetCreatePage();renderBudgetPurchaseResults(from,to);
+ renderBudgetCreatePage(activeBudgetKey);renderBudgetPurchaseResults(from,to);
  const skipped=preview.alreadyPlanned?' '+preview.alreadyPlanned+' matching product group(s) already existed manually and were left unchanged.':'';
  showBudgetPurchaseMessage(addedCount+' new product group(s) added'+(updatedCount?' and '+updatedCount+' existing imported group(s) updated':'')+' to the editable Planned Products table using purchases from '+fmt(from)+' – '+fmt(to)+'. Planned date: '+fmt(targetDate)+'. Original purchase records and actual spending were not changed.'+skipped);
  await syncActiveSharedBudget();
@@ -1504,8 +1505,13 @@ function updateBudgetEditorValidation(){
  return errors.length===0;
 }
 function updateBudgetFilterDateHints(){['budgetLoadFromDate','budgetLoadToDate'].forEach(id=>{const input=$(id),label=input?.closest('.budget-filter-date');if(label)label.classList.toggle('is-filled',!!input.value)})}
-function renderBudgetCreatePage(){
- const plan=currentBudgetPlan(),shared=!!(plan&&activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner),readOnly=shared&&activeSharedBudgetContext.permission!=='edit';
+function renderBudgetCreatePage(savedPlanKey=''){
+ let plan=null;
+ if(savedPlanKey&&db.budgetPlans?.[savedPlanKey]){
+  activeBudgetKey=savedPlanKey;if($('budgetPlanSelect'))$('budgetPlanSelect').value=savedPlanKey;
+  plan=db.budgetPlans[savedPlanKey];if(!Array.isArray(plan.rows))plan.rows=[];
+ }else plan=currentBudgetPlan();
+ const shared=!!(plan&&activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner),readOnly=shared&&activeSharedBudgetContext.permission!=='edit';
  $('budgetName').value=plan?.name||$('budgetName').value||'';
  const range=plan?budgetDateRange(plan):{from:$('budgetHeaderFrom').value||today(),to:$('budgetHeaderTo').value||today()};
  $('budgetHeaderFrom').value=range.from||today();$('budgetHeaderTo').value=range.to||range.from||today();
@@ -1524,7 +1530,7 @@ function renderBudgetCreatePage(){
  if(!Array.isArray(plan.rows))plan.rows=[];
  if(!plan.rows.length){
   plan.rows=[blankBudgetRow(plan.from||today())];plan.updatedAt=new Date().toISOString();
-  if(!readOnly)localSaveOnly();
+  if(!readOnly){try{localStorage.setItem('dayquest_v1',JSON.stringify(db))}catch(error){console.error('Could not persist the blank Budget row:',error)}}
  }
  const rows=plan.rows;
  $('budgetList').innerHTML='<div class="budget-table-wrap"><table class="budget-entry-table"><thead><tr><th>Name</th><th>Q</th><th>R</th><th>T</th><th aria-label="Remove"></th></tr></thead><tbody>'+rows.map(budgetEditorRow).join('')+'</tbody></table></div>';updateBudgetTotals();
@@ -1534,6 +1540,8 @@ function renderBudgetCreatePage(){
 function openBudgetProductRowFocus(){const inputs=$('budgetList').querySelectorAll('[data-field="product"]');inputs[inputs.length-1]?.focus()}
 async function addBudgetRow(){
  const plan=currentBudgetPlan();if(!plan){alert('Save the Budget date range first.');return}
+ if(!Array.isArray(plan.rows))plan.rows=[];
+ if(!plan.rows.length)plan.rows=[blankBudgetRow(plan.from||today())];
  if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner&&activeSharedBudgetContext.permission!=='edit'){alert('This shared Budget is view only.');return}
  plan.rows=Array.isArray(plan.rows)?plan.rows:[];plan.rows.push(blankBudgetRow(plan.from||today()));plan.updatedAt=new Date().toISOString();
  localSaveOnly();renderBudgetCreatePage();await syncActiveSharedBudget();openBudgetProductRowFocus();
@@ -1583,8 +1591,9 @@ async function saveBudgetHeader(){
  try{localSaveOnly()}catch(error){alert('Budget could not be saved on this device: '+String(error.message||error).slice(0,160));return}
  // Refresh the Recent Budgets list, then restore this exact selected plan before rendering its table.
  renderBudget();activeBudgetKey=savedKey;if($('budgetPlanSelect'))$('budgetPlanSelect').value=savedKey;
- renderBudgetCreatePage();
- if(!currentBudgetPlan()){alert('Budget was saved locally, but the editor could not reopen it. Return to Recent Budgets and open it again.');return}
+ renderBudgetCreatePage(savedKey);
+ const reopenedPlan=db.budgetPlans?.[savedKey];
+ if(!reopenedPlan||!Array.isArray(reopenedPlan.rows)||!reopenedPlan.rows.length){alert('Budget was saved locally, but its editable product row could not be created.');return}
  await syncActiveSharedBudget();
  showBudgetPurchaseMessage('Budget saved. Add products below or show purchases from a date range.');
  alert('Budget saved successfully. Your Budget is now in Recent Budgets.');
@@ -1620,7 +1629,7 @@ async function showPurchasedProductsInBudget(){
   return;
  }
  showBudgetPurchaseMessage(result.count+' purchase line(s) found. Loading them into Planned Products so you can edit quantities and rates.');
- await importBudgetPurchasesToPlan({fromShow:true});
+ await importBudgetPurchasesToPlan({fromShow:true,planKey:activeBudgetKey});
 }
 async function deleteCurrentBudget(){
   const plan=currentBudgetPlan();if(!plan)return;
@@ -4929,7 +4938,7 @@ $('installBtn').onclick=async()=>{
  }
  showDayQuestInstallHelp();
 };
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v53').then(registration=>{
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v54').then(registration=>{
  console.info('DayQuest offline support is ready:',registration.scope);
 }).catch(error=>{
  console.warn('DayQuest offline support could not be registered:',error);
