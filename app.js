@@ -1276,7 +1276,7 @@ function updateBudgetTotals(){
  });
  if($('budgetGrandTotalCreate'))$('budgetGrandTotalCreate').textContent=money(total);
  if($('budgetGrandTotal'))$('budgetGrandTotal').textContent=money(total);
- if($('budgetCreateProductCount'))$('budgetCreateProductCount').textContent=root.querySelectorAll('[data-budget-row]').length+' items';
+ if($('budgetCreateProductCount'))$('budgetCreateProductCount').textContent=[...root.querySelectorAll('[data-budget-row]')].filter(row=>String(row.querySelector('[data-field="product"]')?.value||'').trim()).length+' items';
 }
 function budgetEditorRow(row,index){
  const qty=Number(row.quantity||0),rate=Number(row.rate||0),total=budgetAmount(rate,qty),selectedUnit=String(row.unit||'pcs');
@@ -1325,8 +1325,8 @@ function renderBudget(){
  }
  if($('recentBudgetCount'))$('recentBudgetCount').textContent=entries.length+' '+(entries.length===1?'budget':'budgets');
  const plan=currentBudgetPlan(),shared=!!(activeSharedBudgetContext&&plan&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner);
- if($('budgetViewBtn'))$('budgetViewBtn').disabled=!plan||!(plan.rows||[]).some(row=>String(row.product||'').trim());
- if($('budgetShareBtn'))$('budgetShareBtn').disabled=!plan||shared||!(plan.rows||[]).some(row=>String(row.product||'').trim());
+ if($('budgetViewBtn'))$('budgetViewBtn').disabled=!plan;
+ if($('budgetShareBtn'))$('budgetShareBtn').disabled=!plan||shared;
  if($('budgetDeleteBtn'))$('budgetDeleteBtn').disabled=!plan||shared;
  const planned=(plan?.rows||[]).reduce((sum,row)=>sum+(String(row.product||'').trim()?budgetRowAmount(row):0),0);
  if($('budgetGrandTotal'))$('budgetGrandTotal').textContent=money(planned);
@@ -1336,18 +1336,31 @@ function renderBudget(){
 function createBudget(){
  activeBudgetKey='';if($('budgetPlanSelect'))$('budgetPlanSelect').value='';setActiveSharedBudgetContext(null);
  $('budgetName').value='';$('budgetHeaderFrom').value=today();$('budgetHeaderTo').value=today();
- $('budgetLoadFromDate').value='';$('budgetLoadToDate').value='';showBudgetPurchaseMessage('');
+ $('budgetLoadFromDate').value='';$('budgetLoadToDate').value='';clearBudgetPurchaseResults();
  setTab('budgetCreatePage');renderBudgetCreatePage();$('budgetName').focus();
 }
 function openBudgetPlan(key){
  if(!db.budgetPlans[key])return;
  if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key!==key)setActiveSharedBudgetContext(null);
  activeBudgetKey=key;if($('budgetPlanSelect'))$('budgetPlanSelect').value=key;
- const range=budgetDateRange(db.budgetPlans[key]);$('budgetLoadFromDate').value=range.from||'';$('budgetLoadToDate').value=range.to||'';
+ const range=budgetDateRange(db.budgetPlans[key]),purchaseRange=budgetPurchaseDefaultRange(range.from);
+ $('budgetLoadFromDate').value=purchaseRange.from;$('budgetLoadToDate').value=purchaseRange.to;clearBudgetPurchaseResults();
  setTab('budgetCreatePage');renderBudgetCreatePage();
 }
 function blankBudgetRow(date=today()){return {id:'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),date:String(date||today()),product:'',spec:'',unit:'pcs',quantity:1,rate:0}}
 function showBudgetPurchaseMessage(message){const node=$('budgetPurchaseMessage');if(node){node.textContent=String(message||'');node.hidden=!message}}
+function budgetPurchaseDefaultRange(startDate){
+ const start=dateObj(/^\\d{4}-\\d{2}-\\d{2}$/.test(String(startDate||''))?String(startDate):today());
+ const end=new Date(start);end.setDate(end.getDate()-1);
+ const from=new Date(start);
+ if(from.getDate()===1){from.setDate(0);from.setDate(1)}else from.setDate(1);
+ const key=date=>String(date.getFullYear()).padStart(4,'0')+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');
+ return {from:key(from),to:key(end)};
+}
+function clearBudgetPurchaseResults(){
+ const root=$('budgetPurchaseResults');if(root){root.hidden=true;root.innerHTML=''}
+ showBudgetPurchaseMessage('');
+}
 function collectBudgetPurchaseRows(from,to){
  const rows=[];
  (db.purchaseBills||[]).forEach((bill,billIndex)=>{
@@ -1471,19 +1484,21 @@ function renderBudgetCreatePage(){
  const range=plan?budgetDateRange(plan):{from:$('budgetHeaderFrom').value||today(),to:$('budgetHeaderTo').value||today()};
  $('budgetHeaderFrom').value=range.from||today();$('budgetHeaderTo').value=range.to||range.from||today();
  if(plan){
-  if(!String($('budgetLoadFromDate').value||''))$('budgetLoadFromDate').value=range.from||'';
-  if(!String($('budgetLoadToDate').value||''))$('budgetLoadToDate').value=range.to||'';
+  const defaults=budgetPurchaseDefaultRange(range.from);
+  if(!String($('budgetLoadFromDate').value||''))$('budgetLoadFromDate').value=defaults.from;
+  if(!String($('budgetLoadToDate').value||''))$('budgetLoadToDate').value=defaults.to;
+  syncDQDateDisplay($('budgetLoadFromDate'));syncDQDateDisplay($('budgetLoadToDate'));
  }
  updateBudgetFilterDateHints();
- if($('budgetPurchaseResults')){$('budgetPurchaseResults').hidden=true;$('budgetPurchaseResults').innerHTML=''}
  $('budgetName').disabled=readOnly;$('budgetHeaderFrom').disabled=readOnly;$('budgetHeaderTo').disabled=readOnly;$('budgetHeaderSaveBtn').disabled=readOnly;
  $('budgetLoadShowBtn').disabled=!plan||readOnly;$('budgetLoadDeleteBtn').disabled=!plan||shared;$('addBudgetRowBtn').disabled=!plan||readOnly;
- $('budgetShareBtn').disabled=!plan||readOnly||shared||!plan.rows.some(row=>String(row.product||'').trim());
- $('budgetViewBtn').disabled=!plan||!plan.rows.some(row=>String(row.product||'').trim());
+ $('budgetShareBtn').disabled=!plan||readOnly||shared;
+ $('budgetViewBtn').disabled=!plan;
  if(!plan){$('budgetList').innerHTML=empty('Save the Budget date range to add products.');$('budgetGrandTotalCreate').textContent=money(0);$('budgetCreateProductCount').textContent='0 items';if($('budgetEditorStatus'))$('budgetEditorStatus').textContent='Save the Budget date range first. The product table and other actions activate after saving.';return}
  const rows=Array.isArray(plan.rows)?plan.rows:[];if(!rows.length)rows.push(blankBudgetRow(plan.from));
  $('budgetList').innerHTML='<div class="budget-table-wrap"><table class="budget-entry-table"><thead><tr><th>Name</th><th>Q</th><th>R</th><th>T</th><th aria-label="Remove"></th></tr></thead><tbody>'+rows.map(budgetEditorRow).join('')+'</tbody></table></div>';updateBudgetTotals();
  $('budgetList').querySelectorAll('input,button').forEach(el=>el.disabled=readOnly);
+ const status=$('budgetEditorStatus');if(status){status.textContent=readOnly?'Shared Budget · view only':'Saved. Add products with ＋, or show previous purchases to plan from history.';status.classList.remove('is-error')}
 }
 function openBudgetProductRowFocus(){const inputs=$('budgetList').querySelectorAll('[data-field="product"]');inputs[inputs.length-1]?.focus()}
 async function addBudgetRow(){
@@ -1530,7 +1545,10 @@ async function saveBudgetHeader(){
   plan.updatedAt=new Date().toISOString();
  }
  activeBudgetKey=savedKey;if($('budgetPlanSelect'))$('budgetPlanSelect').value=savedKey;
- $('budgetLoadFromDate').value=from;$('budgetLoadToDate').value=to;updateBudgetFilterDateHints();
+ const purchaseDefaults=budgetPurchaseDefaultRange(from);
+ if(!$('budgetLoadFromDate').value)$('budgetLoadFromDate').value=purchaseDefaults.from;
+ if(!$('budgetLoadToDate').value)$('budgetLoadToDate').value=purchaseDefaults.to;
+ syncDQDateDisplay($('budgetLoadFromDate'));syncDQDateDisplay($('budgetLoadToDate'));updateBudgetFilterDateHints();
  try{localSaveOnly()}catch(error){alert('Budget could not be saved on this device: '+String(error.message||error).slice(0,160));return}
  // Refresh the Recent Budgets list, then restore this exact selected plan before rendering its table.
  renderBudget();activeBudgetKey=savedKey;if($('budgetPlanSelect'))$('budgetPlanSelect').value=savedKey;
@@ -4875,7 +4893,7 @@ $('installBtn').onclick=async()=>{
  }
  showDayQuestInstallHelp();
 };
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v49').then(registration=>{
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v50').then(registration=>{
  console.info('DayQuest offline support is ready:',registration.scope);
 }).catch(error=>{
  console.warn('DayQuest offline support could not be registered:',error);
