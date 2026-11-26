@@ -25,7 +25,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=20261121-coin-check">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v=20261126-budget-page-v45">
+<link rel="stylesheet" href="style.css?v=20261126-budget-page-v46">
 <title>DayQuest</title>
 </head>
 <body>
@@ -351,7 +351,7 @@
  <div id="inventoryList" class="list"></div>
 </section>
 <section id="budget" class="panel">
- <div class="section-head budget-main-head"><div><h2>Recent Budgets</h2><span class="muted" id="recentBudgetCount">0 budgets</span></div><button type="button" class="primary budget-create-open" id="newBudgetBtn">＋ Create</button></div>
+ <div class="section-head budget-main-head"><div><h2 id="budgetListHeading">Recent Budgets</h2><span class="muted" id="recentBudgetCount">0 budgets</span></div><div class="budget-list-actions"><button type="button" class="secondary" id="budgetShowAllBtn" hidden>View all</button><button type="button" class="primary budget-create-open" id="newBudgetBtn">＋ Create</button></div></div>
  <div id="recentBudgetList" class="list budget-recent-list"><div class="empty">No budgets yet. Create your first Budget.</div></div>
  <div class="budget-legacy-controls" hidden aria-hidden="true">
   <label>Budget <select id="budgetPlanSelect"><option value="">Select Budget</option></select></label>
@@ -373,13 +373,15 @@
    <label class="budget-filter-date"><span>From</span><input id="budgetLoadFromDate" type="date" aria-label="Purchase filter from date" title="From"></label>
    <label class="budget-filter-date"><span>To</span><input id="budgetLoadToDate" type="date" aria-label="Purchase filter to date" title="To"></label>
   </div>
-  <button type="button" class="secondary budget-filter-show" id="budgetLoadShowBtn" disabled>Show</button><button type="button" class="delete budget-filter-delete" id="budgetLoadDeleteBtn" disabled>Delete</button>
+  <button type="button" class="secondary budget-filter-show" id="budgetLoadShowBtn" disabled>Show</button><button type="button" class="delete budget-filter-delete" id="budgetLoadDeleteBtn" disabled>Delete Budget</button>
  </div>
  <p id="budgetPurchaseMessage" class="budget-purchase-message" role="status" aria-live="polite" hidden></p>
+ <section id="budgetPurchaseResults" class="budget-purchase-results" aria-live="polite" hidden></section>
  <section class="budget-products-section">
-  <div class="budget-products-heading"><h3>Products</h3><span class="muted" id="budgetCreateProductCount">0 items</span></div>
+  <div class="budget-products-heading"><h3>Planned Products</h3><span class="muted" id="budgetCreateProductCount">0 items</span></div>
   <div id="budgetList" class="budget-list"><div class="empty">Save the Budget date range to add products.</div></div>
   <div class="budget-products-footer"><div class="budget-products-total"><span>Total</span><strong id="budgetGrandTotalCreate">৳0.00</strong></div><button type="button" class="mini-add budget-add-product" id="addBudgetRowBtn" aria-label="Add product row" title="Add product row" disabled>＋</button></div>
+  <small id="budgetEditorStatus" class="budget-editor-status" role="status" aria-live="polite">Product edits save automatically. Tap Save to update the name and dates.</small>
  </section>
  <div class="budget-create-page-actions"><button type="button" class="secondary" id="budgetShareBtn" disabled>Share</button><button type="button" class="secondary" id="budgetViewBtn" disabled>Details</button></div>
  <div class="budget-legacy-summary" hidden aria-hidden="true"><strong id="budgetActualTotalCreate">৳0.00</strong><strong id="budgetRemainingTotalCreate">৳0.00</strong><strong id="budgetProgressCreate">—</strong><div id="budgetComparisonCreate"></div></div>
@@ -1228,5 +1230,5 @@
 <dialog id="dqMessageDialog" class="dq-message-dialog" aria-labelledby="dqMessageTitle"><div class="dq-message-card"><div class="dq-message-brand"><img src="icons/icon-192.png?v=20261121-coin-check" alt="DayQuest app icon"><h2 id="dqMessageTitle">DayQuest</h2></div><p id="dqMessageText"></p><input id="dqMessagePromptInput" class="dq-message-prompt-input" type="text" maxlength="200" autocomplete="off" aria-label="Enter a value" hidden><div class="dq-message-actions"><button id="dqMessageCancel" class="secondary" type="button" hidden>Cancel</button><button id="dqMessageOk" class="primary" type="button">OK</button></div></div></dialog>
 <script src="cloud-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js" crossorigin="anonymous"></script>
-<script src="app.js?v=20261126-budget-page-v44"></script>
+<script src="app.js?v=20261126-budget-page-v46"></script>
 </body></html>
