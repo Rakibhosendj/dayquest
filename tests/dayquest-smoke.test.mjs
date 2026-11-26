@@ -148,7 +148,9 @@ test("Budget landing page has Recent Budgets and a separate Create Budget page",
 });
 test("Create Budget has compact date rows and editable Name Q R T columns", () => {
   for (const id of ["budgetName","budgetHeaderFrom","budgetHeaderTo","budgetHeaderSaveBtn","budgetLoadFromDate","budgetLoadToDate","budgetLoadShowBtn","budgetLoadDeleteBtn","budgetList","addBudgetRowBtn"]) assert.ok(html.includes('id="' + id + '"'));
-  assert.ok(app.includes('<th>Name</th><th>Q</th><th>R</th><th>T</th>'));
+  assert.ok(app.includes('class="budget-entry-head" role="row"'));
+  assert.ok(app.includes('class="budget-entry-table" role="table"'));
+  assert.ok(app.includes('class="budget-edit-row" role="row"'));
   for (const field of ["product","quantity","rate","total"]) assert.ok(app.includes('data-field="' + field + '"'));
   assert.match(app,/function updateBudgetRowFromInput\(event\)/);
 });
@@ -192,13 +194,16 @@ test("Invalid Budget rows show inline validation instead of silently appearing s
 test("Older Budgets can be opened from All Budgets", () => {
   assert.ok(html.includes('id="budgetShowAllBtn"'));
   assert.ok(app.includes("showAllBudgetEntries?entries:entries.slice(0,8)"));
+  assert.match(app,/allButton\.hidden=entries\.length===0/);
 });
 test("Budget deletion uses the branded confirmation dialog", () => {
   assert.match(app,/window\.dayQuestConfirm\('Delete Budget/);
   assert.doesNotMatch(app,/if\(!confirm\('Delete/);
 });
 test("Budget editor uses app title and Back navigation", () => {
-  assert.ok(app.includes("budgetCreatePage:'Create Budget'"));
+  assert.ok(app.includes("budgetCreatePage:'Budget'"));
+  assert.ok(app.includes("budgetSharePage:'Budget'"));
+  assert.ok(app.includes("icons/budget.svg?v=20261126-budget-icon"));
   assert.ok(app.includes("['budgetViewPage','budgetCreatePage'].includes(t)?'budget':t"));
 });
 
