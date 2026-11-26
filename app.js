@@ -1213,9 +1213,17 @@ function ensureLegacyBudgetPlans(){
   db.budgetPlans[newKey]={id,name:'Previous Budget · '+match[1]+' to '+match[2],from:match[1],to:match[2],rows:plan.rows.map((r,i)=>({...r,id:'legacy-'+i,date:match[1]})),createdAt:plan.builtAt||new Date().toISOString(),legacy:true};
  });
 }
+function budgetPlanMatchingCurrentHeader(entries=budgetPlanEntries()){
+ const name=String($('budgetName')?.value||'').trim().toLocaleLowerCase(),from=String($('budgetHeaderFrom')?.value||''),to=String($('budgetHeaderTo')?.value||'');
+ if(!from||!to)return null;
+ const matches=entries.filter(([,plan])=>String(plan.from||'')===from&&String(plan.to||'')===to);
+ const named=matches.find(([,plan])=>String(plan.name||'').trim().toLocaleLowerCase()===name);
+ if(named)return named;
+ return matches.length===1?matches[0]:null;
+}
 function currentBudgetPlan(){
- const select=$('budgetPlanSelect'),candidates=[activeBudgetKey,select?.value].filter(Boolean);
- const key=candidates.find(candidate=>db.budgetPlans?.[candidate]&&Array.isArray(db.budgetPlans[candidate].rows))||'';
+ const select=$('budgetPlanSelect'),entries=budgetPlanEntries(),candidates=[activeBudgetKey,select?.value].filter(Boolean);
+ const key=candidates.find(candidate=>db.budgetPlans?.[candidate]&&Array.isArray(db.budgetPlans[candidate].rows))||budgetPlanMatchingCurrentHeader(entries)?.[0]||'';
  if(!key){activeBudgetKey='';return null}
  activeBudgetKey=key;if(select&&select.value!==key)select.value=key;
  return db.budgetPlans[key];
@@ -1309,7 +1317,7 @@ function prefillBudgetPreviousRate(input){
 function renderBudget(){
  ensureLegacyBudgetPlans();
  const select=$('budgetPlanSelect'),entries=budgetPlanEntries().sort((a,b)=>String(b[1].updatedAt||b[1].createdAt||'').localeCompare(String(a[1].updatedAt||a[1].createdAt||'')));
- const candidates=[activeBudgetKey,select?.value].filter(Boolean),prior=candidates.find(key=>entries.some(([entryKey])=>entryKey===key))||'';
+ const candidates=[activeBudgetKey,select?.value].filter(Boolean),prior=candidates.find(key=>entries.some(([entryKey])=>entryKey===key))||budgetPlanMatchingCurrentHeader(entries)?.[0]||'';
  if(select){select.innerHTML='<option value="">Select Budget</option>'+entries.map(([key,plan])=>'<option value="'+esc(key)+'">'+esc(plan.name||'Budget')+'</option>').join('');const landingActive=document.querySelector('.panel.active')?.id==='budget';activeBudgetKey=prior||(landingActive?(entries[0]?.[0]||''):'');select.value=activeBudgetKey}
  const list=$('recentBudgetList');
  if(list){
