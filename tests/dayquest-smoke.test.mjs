@@ -108,7 +108,7 @@ test("PWA cache uses the current CSS and JavaScript asset versions", () => {
   const appAsset = html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset && worker.includes("./style.css?v=" + cssAsset));
   assert.ok(appAsset && worker.includes("./app.js?v=" + appAsset));
-  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v46'\)/);
+  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v47'\)/);
 });
 
 test("shared Budget context is saved per account and revalidated on refresh", () => {
