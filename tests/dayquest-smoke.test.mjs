@@ -122,7 +122,8 @@ test("shared Budget context is saved per account and revalidated on refresh", ()
 test("Budget summary, view, and statement use the same actual-spend calculation", () => {
   assert.match(app, /function budgetActualTotal\(plan\)/);
   assert.equal((app.match(/actual=budgetActualTotal\(plan\)/g) ?? []).length, 2);
-  assert.match(app, /function renderBudgetView\(\)[\s\S]*?actual=budgetActualTotal\(plan\)/);\n  assert.match(app, /function budgetStatementHtml\(plan\)[\s\S]*?actual=budgetActualTotal\(plan\)/);
+  assert.match(app, /function renderBudgetView\(\)[\s\S]*?actual=budgetActualTotal\(plan\)/);
+  assert.match(app, /function budgetStatementHtml\(plan\)[\s\S]*?actual=budgetActualTotal\(plan\)/);
 });
 
 test("revoking or deleting shared Budgets cleans up the parent share record", () => {
