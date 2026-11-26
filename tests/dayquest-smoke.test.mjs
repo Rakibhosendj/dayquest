@@ -109,7 +109,7 @@ test("PWA cache uses the current CSS and JavaScript asset versions", () => {
   const appAsset = html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset && worker.includes("./style.css?v=" + cssAsset));
   assert.ok(appAsset && worker.includes("./app.js?v=" + appAsset));
-  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v54'\)/);
+  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v55'\)/);
 });
 
 test("shared Budget context is saved per account and revalidated on refresh", () => {
@@ -259,7 +259,7 @@ test("Historical Budget import controls are responsive and assets are cache-vers
   const appAsset=html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset&&worker.includes("./style.css?v="+cssAsset));
   assert.ok(appAsset&&worker.includes("./app.js?v="+appAsset));
-  assert.match(app,/serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v54'\)/);
+  assert.match(app,/serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v55'\)/);
 });
 
 test("Filled Budget purchase date labels hide only the caption, never the date-entry control", () => {
@@ -382,4 +382,33 @@ test("Show and import refresh the same exact selected Budget product table", () 
   assert.match(app,/await importBudgetPurchasesToPlan\(\{fromShow:true,planKey:activeBudgetKey\}\)/);
   assert.match(app,/options\.planKey&&db\.budgetPlans\?\.\[options\.planKey\]/);
   assert.match(app,/renderBudgetCreatePage\(activeBudgetKey\);renderBudgetPurchaseResults\(from,to\)/);
+});
+
+test("Recent Budgets has separate Delete actions and hides them for recipient copies", () => {
+  assert.match(app,/function canDeleteRecentBudget\(key\)/);
+  assert.match(app,/function isRecipientBudgetCopy\(key\)/);
+  assert.match(app,/data-budget-delete=/);
+  assert.match(app,/\[data-budget-delete\]/);
+  assert.match(app,/deleteBudgetByKey\(button\.dataset\.budgetDelete\)/);
+  assert.match(app,/async function deleteBudgetByKey\(key\)/);
+  assert.match(app,/dayquest_remove_budget_access/);
+  assert.match(css,/#budget \.budget-recent-item/);
+});
+test("Adding and editing Budget rows uses the active key and saves without a full app rerender", () => {
+  assert.match(app,/function budgetPlanForEditor\(key=activeBudgetKey\)/);
+  assert.match(app,/function persistBudgetEditorState\(syncShared=false\)/);
+  const add=app.slice(app.indexOf("async function addBudgetRow"),app.indexOf("function updateBudgetRowFromInput"));
+  assert.match(add,/budgetPlanForEditor\(key\)/);
+  assert.match(add,/renderBudgetCreatePage\(key\)/);
+  assert.doesNotMatch(add,/localSaveOnly\(\)|renderBudget\(\)/);
+  const handlers=app.slice(app.indexOf("\$\('budgetList'\)\.addEventListener\('change'"),app.indexOf("\$\('purchaseDate'\)\.addEventListener"));
+  assert.match(handlers,/persistBudgetEditorState\(false\)/);
+  assert.match(handlers,/persistBudgetEditorState\(true\)/);
+  assert.doesNotMatch(handlers,/saveBudget\(\{silent:true,productsOnly:true\}\)/);
+});
+test("Budget row inputs are saved as users type and retain edit permission state", () => {
+  assert.match(app,/const plan=budgetPlanForEditor\(activeBudgetKey\);if\(!plan\|\|budgetPlanIsReadOnly\(activeBudgetKey\)\)return/);
+  assert.match(app,/function budgetPlanIsReadOnly\(key\)/);
+  assert.match(app,/queueCloudSave\(\)/);
+  assert.match(css,/#budgetCreatePage \.budget-entry-table td input:not\(:disabled\)\{pointer-events:auto/);
 });
