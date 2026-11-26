@@ -506,7 +506,7 @@ function paymentBalanceError(method,amount,addBack=0){
 let activeReportSectionKey='members';
 let latestCreditorOutstandingTotal=0;
 function updatePageBalanceTitle(tab){
- const titles={home:'Overview',purchaseBills:'Purchase',inventory:'Inventory',budget:'Budget',budgetViewPage:'Budget',production:'Production',supplierAccounts:'Supplier Accounts',supplierEntry:'Supplier Entry',creditors:'Creditors',debitors:'Debtors',payExpenseDue:'Outstanding',loans:'Loans',income:'Income',meals:'Meals',quests:'Daily Quest',questSetup:'Daily Quest',profile:'Profile',memberProfilePage:selectedMemberProfileName||'Member Profile',settings:'Settings',costChartPage:'Cost Chart',quickExpenses:'Quick Expenses',expenseEntries:'Expenses'};
+ const titles={home:'Overview',purchaseBills:'Purchase',inventory:'Inventory',budget:'Budget',budgetCreatePage:'Create Budget',budgetViewPage:'Budget',production:'Production',supplierAccounts:'Supplier Accounts',supplierEntry:'Supplier Entry',creditors:'Creditors',debitors:'Debtors',payExpenseDue:'Outstanding',loans:'Loans',income:'Income',meals:'Meals',quests:'Daily Quest',questSetup:'Daily Quest',profile:'Profile',memberProfilePage:selectedMemberProfileName||'Member Profile',settings:'Settings',costChartPage:'Cost Chart',quickExpenses:'Quick Expenses',expenseEntries:'Expenses'};
  let title=titles[tab]||String(tab||'DayQuest').replace(/([A-Z])/g,' $1').replace(/^./,c=>c.toUpperCase());
  if(tab==='reports'){
   const selected=activeReportSectionKey||document.querySelector('[data-report-go].active')?.dataset.reportGo||document.querySelector('[data-report-pane]:not([hidden])')?.dataset.reportPane||'members';
@@ -862,7 +862,7 @@ function setTab(t,options={}){
  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===t));
  // Refresh recent records and page lists whenever a page is opened, including after cloud/profile/settings changes.
  render();
- const activeTab=tabs.find(b=>b.dataset.tab===(t==='budgetViewPage'?'budget':t));
+ const activeTab=tabs.find(b=>b.dataset.tab===(['budgetViewPage','budgetCreatePage'].includes(t)?'budget':t));
  const requestedReportSection=options.reportSection;
  const activeReportSection=t==='reports'
   ? (['creditors','debitors','members','production','cost','income','sales','assets','purchase','all'].includes(requestedReportSection)
@@ -892,6 +892,7 @@ function setTab(t,options={}){
  if(t==='questSetup'){if($('questSetupList'))$('questSetupList').innerHTML=questHTML(dayQuests(questLocalDate()),true);}
  if(t==='inventory')renderInventory();
  if(t==='budget'){primeBudgetShareContext();renderBudget();renderSharedBudgetList()}
+ if(t==='budgetCreatePage')renderBudgetCreatePage();
  if(t==='production'){fillProductionOptions();renderProductionList();renderProductionInputs()}
  if(t==='supplierAccounts')renderSupplierAccounts();
   if(t==='creditors')renderCreditorsPage();
@@ -1226,26 +1227,29 @@ function currentBudgetPlan(){
  return plan&&Array.isArray(plan.rows)?plan:null;
 }
 function budgetRowAmount(row){return budgetAmount(row.rate,row.quantity)}
-function budgetRowMatchKey(row){return [String(row.date||''),String(row.product||'').trim().toLocaleLowerCase(),String(row.spec||'').trim().toLocaleLowerCase(),String(row.unit||'').trim().toLocaleLowerCase()].join('|')}
+function budgetRowMatchKey(row){return [String(row.product||'').trim().toLocaleLowerCase(),String(row.spec||'').trim().toLocaleLowerCase(),String(row.unit||'').trim().toLocaleLowerCase()].join('|')}
 function budgetActualGroups(plan){
- const groups=new Map();
- (plan?.rows||[]).forEach(row=>{
+ const groups=new Map(),range=budgetDateRange(plan);
+ (plan?.rows||[]).filter(row=>String(row.product||'').trim()).forEach(row=>{
   const key=budgetRowMatchKey(row);let g=groups.get(key);
-  if(!g){g={key,date:row.date||'',product:row.product||'',spec:row.spec||'',unit:row.unit||'',plannedQty:0,plannedAmount:0,actualQty:0,actualAmount:0};groups.set(key,g)}
+  if(!g){g={key,date:row.date||range.from||'',product:row.product||'',spec:row.spec||'',unit:row.unit||'pcs',plannedQty:0,plannedAmount:0,actualQty:0,actualAmount:0};groups.set(key,g)}
   g.plannedQty+=Math.max(0,Number(row.quantity||0));g.plannedAmount+=budgetRowAmount(row);
  });
- (db.purchaseBills||[]).forEach(bill=>(bill.lines||[]).forEach(line=>{
-  const row={date:String(bill.date||''),product:String(line.product||''),spec:String(line.spec||''),unit:String(line.unit||'pcs')},g=groups.get(budgetRowMatchKey(row));
-  if(!g)return;g.actualQty+=Math.max(0,Number(line.quantity||0));g.actualAmount+=purchaseLineCost(bill,line);
- }));
+ (db.purchaseBills||[]).forEach(bill=>{
+  const date=String(bill.date||'');if((range.from&&date<range.from)||(range.to&&date>range.to))return;
+  (bill.lines||[]).forEach(line=>{
+   const row={product:String(line.product||''),spec:String(line.spec||''),unit:String(line.unit||'pcs')},g=groups.get(budgetRowMatchKey(row));
+   if(g){g.actualQty+=Math.max(0,Number(line.quantity||0));g.actualAmount+=purchaseLineCost(bill,line)}
+  });
+ });
  return [...groups.values()].sort((a,b)=>a.date.localeCompare(b.date)||a.product.localeCompare(b.product));
 }
 function budgetUnplannedPurchases(plan){
- const dates=(plan?.rows||[]).map(r=>r.date).filter(Boolean);if(!dates.length)return [];
- const sorted=dates.slice().sort(),from=sorted[0],to=sorted[sorted.length-1],matched=new Set((plan.rows||[]).map(budgetRowMatchKey)),rows=[];
+ const range=budgetDateRange(plan);if(!range.from||!range.to)return [];
+ const matched=new Set((plan?.rows||[]).filter(row=>String(row.product||'').trim()).map(budgetRowMatchKey)),rows=[];
  (db.purchaseBills||[]).forEach(bill=>(bill.lines||[]).forEach(line=>{
   const row={date:String(bill.date||''),product:String(line.product||''),spec:String(line.spec||''),unit:String(line.unit||'pcs')};
-  if(row.date<from||row.date>to||matched.has(budgetRowMatchKey(row)))return;
+  if(row.date<range.from||row.date>range.to||matched.has(budgetRowMatchKey(row)))return;
   const qty=Math.max(0,Number(line.quantity||0));if(qty)rows.push({...row,quantity:qty,amount:purchaseLineCost(bill,line)});
  }));
  return rows;
@@ -1258,20 +1262,24 @@ function budgetActualTotal(plan){
 function updateBudgetTotals(){
  const root=$('budgetList');if(!root)return;let total=0;
  root.querySelectorAll('[data-budget-row]').forEach(row=>{
-  const qty=Number(row.querySelector('[data-field="quantity"]')?.value||0),rate=Number(row.querySelector('[data-field="rate"]')?.value||0),amount=budgetAmount(rate,qty);
-  const cell=row.querySelector('[data-budget-line-total]');if(cell)cell.textContent=money(amount);total+=amount;
+  const q=row.querySelector('[data-field="quantity"]'),r=row.querySelector('[data-field="rate"]'),t=row.querySelector('[data-field="total"]');
+  const qty=Math.max(0,Number(q?.value||0)),rate=Math.max(0,Number(r?.value||0)),amount=budgetAmount(rate,qty);
+  if(t&&document.activeElement!==t)t.value=amount?amount.toFixed(2):'';
+  if(row.querySelector('[data-budget-line-total]'))row.querySelector('[data-budget-line-total]').textContent=money(amount);
+  if(String(row.querySelector('[data-field="product"]')?.value||'').trim())total+=amount;
  });
+ if($('budgetGrandTotalCreate'))$('budgetGrandTotalCreate').textContent=money(total);
  if($('budgetGrandTotal'))$('budgetGrandTotal').textContent=money(total);
+ if($('budgetCreateProductCount'))$('budgetCreateProductCount').textContent=root.querySelectorAll('[data-budget-row]').length+' items';
 }
 function budgetEditorRow(row,index){
- return '<div class="budget-edit-row" data-budget-row="'+index+'">'+
-  '<label class="budget-date-field">Date<input type="date" data-field="date" value="'+esc(row.date||today())+'"></label>'+
-  '<label class="budget-product-field">Product<input data-field="product" list="productNameSuggestions" maxlength="100" value="'+esc(row.product||'')+'" placeholder="Product"></label>'+
-  '<label>Qty<input type="number" min="0" step="any" inputmode="decimal" data-field="quantity" value="'+Number(row.quantity||0)+'"></label>'+
-  '<label>Unit<input data-field="unit" maxlength="20" value="'+esc(row.unit||'pcs')+'" placeholder="Unit"></label>'+
-  '<label>Rate<input type="number" min="0" step="0.01" inputmode="decimal" data-field="rate" value="'+Number(row.rate||0)+'"></label>'+
-  '<strong class="budget-line-total" data-budget-line-total>'+money(budgetRowAmount(row))+'</strong>'+
-  '<button type="button" class="delete budget-row-remove" data-remove-budget-row="'+index+'" aria-label="Remove item">×</button></div>';
+ const qty=Number(row.quantity||0),rate=Number(row.rate||0),total=budgetAmount(rate,qty);
+ return '<tr class="budget-edit-row" data-budget-row="'+index+'" data-purchase-key="'+esc(row.sourcePurchaseKey||'')+'">'+
+  '<td class="budget-product-cell"><input data-field="product" list="productNameSuggestions" maxlength="100" value="'+esc(row.product||'')+'" placeholder="Product name" aria-label="Product name"><small class="budget-product-meta">'+esc([row.spec||'',row.unit||'pcs',row.date?fmt(row.date):''].filter(Boolean).join(' · '))+'</small></td>'+
+  '<td><input type="number" min="0" step="any" inputmode="decimal" data-field="quantity" value="'+(qty||'')+'" placeholder="Q" aria-label="Quantity"></td>'+
+  '<td><input type="number" min="0" step="0.01" inputmode="decimal" data-field="rate" value="'+(rate||'')+'" placeholder="R" aria-label="Rate"></td>'+
+  '<td><input type="number" min="0" step="0.01" inputmode="decimal" data-field="total" value="'+(total?total.toFixed(2):'')+'" placeholder="T" aria-label="Total"></td>'+
+  '<td><button type="button" class="delete budget-row-remove" data-remove-budget-row="'+index+'" aria-label="Remove '+esc(row.product||'product row')+'">×</button></td></tr>';
 }
 function renderBudgetComparison(groups,unplanned){
  const rows=groups.map(g=>{
@@ -1291,48 +1299,131 @@ function prefillBudgetPreviousRate(input){
  if(previous){rateInput.value=Number(previous.rate).toFixed(2);updateBudgetTotals()}
 }
 function renderBudget(){
- ensureLegacyBudgetPlans();const select=$('budgetPlanSelect');if(!select)return;
- const entries=budgetPlanEntries().sort((a,b)=>String(b[1].updatedAt||b[1].createdAt||'').localeCompare(String(a[1].updatedAt||a[1].createdAt||'')));
- const prior=activeBudgetKey||select.value;
- select.innerHTML='<option value="">Select Budget</option>'+entries.map(([key,plan])=>'<option value="'+esc(key)+'">'+esc(plan.name||'Budget')+'</option>').join('');
- activeBudgetKey=entries.some(([key])=>key===prior)?prior:(entries[0]?.[0]||'');select.value=activeBudgetKey;
- const plan=currentBudgetPlan();$('budgetName').value=plan?.name||'';
- $('budgetViewBtn').disabled=!plan||!plan.rows.length;$('budgetShareBtn').disabled=!plan||!plan.rows.length;$('budgetDeleteBtn').disabled=!plan;
- $('budgetList').innerHTML=plan?plan.rows.map(budgetEditorRow).join()||empty('Add your first planned item.'):'<div class="empty">Create a Budget to start planning purchases by date.</div>';
- const comparisons=plan?budgetActualGroups(plan):[],unplanned=plan?budgetUnplannedPurchases(plan):[],planned=comparisons.reduce((n,r)=>n+r.plannedAmount,0),actual=plan?budgetActualTotal(plan):0;
- $('budgetRangeLabel').textContent=plan?plan.rows.length+' items · '+comparisons.length+' date/product groups':'No Budget selected';
- $('budgetProductCount').textContent=plan?plan.rows.length+' items':'0 items';$('budgetGrandTotal').textContent=money(planned);
- if($('budgetActualTotal'))$('budgetActualTotal').textContent=money(actual);
- if($('budgetRemainingTotal'))$('budgetRemainingTotal').textContent=money(planned-actual);
- if($('budgetProgress'))$('budgetProgress').textContent=planned>0?Math.round(actual/planned*100)+'% used':'—';
- if($('budgetComparison'))$('budgetComparison').innerHTML=plan?renderBudgetComparison(comparisons,unplanned):'';
- const isSharedCopy=!!(activeSharedBudgetContext&&plan&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner);
- const readOnly=isSharedCopy&&activeSharedBudgetContext.permission!=='edit';
- $('budgetName').disabled=readOnly;$('addBudgetRowBtn').disabled=readOnly;$('saveBudgetBtn').disabled=readOnly;$('budgetShareBtn').disabled=!plan||!plan.rows.length||isSharedCopy;$('budgetDeleteBtn').disabled=!plan||isSharedCopy;
- $('budgetList').querySelectorAll('input,button').forEach(el=>el.disabled=readOnly);
+ ensureLegacyBudgetPlans();
+ const select=$('budgetPlanSelect'),entries=budgetPlanEntries().sort((a,b)=>String(b[1].updatedAt||b[1].createdAt||'').localeCompare(String(a[1].updatedAt||a[1].createdAt||'')));
+ const prior=activeBudgetKey||select?.value||'';
+ if(select){select.innerHTML='<option value="">Select Budget</option>'+entries.map(([key,plan])=>'<option value="'+esc(key)+'">'+esc(plan.name||'Budget')+'</option>').join('');activeBudgetKey=entries.some(([key])=>key===prior)?prior:(entries[0]?.[0]||'');select.value=activeBudgetKey}
+ const list=$('recentBudgetList');
+ if(list){
+  const recent=entries.slice(0,8);
+  list.innerHTML=recent.length?recent.map(([key,plan])=>{
+   const range=budgetDateRange(plan),count=(plan.rows||[]).filter(row=>String(row.product||'').trim()).length,total=(plan.rows||[]).reduce((sum,row)=>sum+(String(row.product||'').trim()?budgetRowAmount(row):0),0);
+   const dates=range.from&&range.to?fmt(range.from)+' – '+fmt(range.to):'Date range not set';
+   return '<button type="button" class="recent-purchase-row budget-recent-row" data-budget-open="'+esc(key)+'" aria-label="Open Budget '+esc(plan.name||'Budget')+'"><span class="recent-purchase-main"><strong>'+esc(plan.name||'Budget')+'</strong><small>'+esc(dates)+' · '+count+' products</small></span><span class="budget-recent-right"><strong class="recent-purchase-cost">'+money(total)+'</strong><small>Planned</small></span></button>';
+  }).join(''):empty('No budgets yet. Create your first Budget.');
+  list.querySelectorAll('[data-budget-open]').forEach(button=>button.addEventListener('click',()=>openBudgetPlan(button.dataset.budgetOpen)));
+ }
+ if($('recentBudgetCount'))$('recentBudgetCount').textContent=entries.length+' '+(entries.length===1?'budget':'budgets');
+ const plan=currentBudgetPlan(),shared=!!(activeSharedBudgetContext&&plan&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner);
+ if($('budgetViewBtn'))$('budgetViewBtn').disabled=!plan||!(plan.rows||[]).some(row=>String(row.product||'').trim());
+ if($('budgetShareBtn'))$('budgetShareBtn').disabled=!plan||shared||!(plan.rows||[]).some(row=>String(row.product||'').trim());
+ if($('budgetDeleteBtn'))$('budgetDeleteBtn').disabled=!plan||shared;
+ const planned=(plan?.rows||[]).reduce((sum,row)=>sum+(String(row.product||'').trim()?budgetRowAmount(row):0),0);
+ if($('budgetGrandTotal'))$('budgetGrandTotal').textContent=money(planned);
+ if($('budgetActualTotal'))$('budgetActualTotal').textContent=money(plan?budgetActualTotal(plan):0);
+ if($('budgetRemainingTotal'))$('budgetRemainingTotal').textContent=money(planned-(plan?budgetActualTotal(plan):0));
 }
 function createBudget(){
- const name=String($('budgetName').value||'').trim()||'New Budget',id='b'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),key=budgetPlanKey(id);
- db.budgetPlans[key]={id,name,rows:[{id:'r'+Date.now().toString(36),date:today(),product:'',spec:'',unit:'pcs',quantity:1,rate:0}],createdAt:new Date().toISOString()};
- activeBudgetKey=key;setActiveSharedBudgetContext(null);localSaveOnly();renderBudget();$('budgetName').focus();
+ activeBudgetKey='';if($('budgetPlanSelect'))$('budgetPlanSelect').value='';setActiveSharedBudgetContext(null);
+ $('budgetName').value='';$('budgetHeaderFrom').value=today();$('budgetHeaderTo').value=today();
+ $('budgetLoadFromDate').value='';$('budgetLoadToDate').value='';showBudgetPurchaseMessage('');
+ setTab('budgetCreatePage');renderBudgetCreatePage();$('budgetName').focus();
 }
-function addBudgetRow(){
- const plan=currentBudgetPlan();if(!plan){createBudget();return}
- plan.rows.push({id:'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),date:today(),product:'',spec:'',unit:'pcs',quantity:1,rate:0});
- renderBudget();const inputs=$('budgetList').querySelectorAll('[data-field="product"]');inputs[inputs.length-1]?.focus();
+function openBudgetPlan(key){
+ if(!db.budgetPlans[key])return;
+ if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key!==key)setActiveSharedBudgetContext(null);
+ activeBudgetKey=key;if($('budgetPlanSelect'))$('budgetPlanSelect').value=key;
+ const range=budgetDateRange(db.budgetPlans[key]);$('budgetLoadFromDate').value=range.from||'';$('budgetLoadToDate').value=range.to||'';
+ setTab('budgetCreatePage');renderBudgetCreatePage();
+}
+function blankBudgetRow(date=today()){return {id:'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),date:String(date||today()),product:'',spec:'',unit:'pcs',quantity:1,rate:0}}
+function showBudgetPurchaseMessage(message){const node=$('budgetPurchaseMessage');if(node){node.textContent=String(message||'');node.hidden=!message}}
+function updateBudgetFilterDateHints(){['budgetLoadFromDate','budgetLoadToDate'].forEach(id=>{const input=$(id),label=input?.closest('.budget-filter-date');if(label)label.classList.toggle('is-filled',!!input.value)})}
+function renderBudgetCreatePage(){
+ const plan=currentBudgetPlan(),shared=!!(plan&&activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner),readOnly=shared&&activeSharedBudgetContext.permission!=='edit';
+ $('budgetName').value=plan?.name||$('budgetName').value||'';
+ const range=plan?budgetDateRange(plan):{from:$('budgetHeaderFrom').value||today(),to:$('budgetHeaderTo').value||today()};
+ $('budgetHeaderFrom').value=range.from||today();$('budgetHeaderTo').value=range.to||range.from||today();
+ if(!String($('budgetLoadFromDate').value||''))$('budgetLoadFromDate').value=range.from||today();
+ if(!String($('budgetLoadToDate').value||''))$('budgetLoadToDate').value=range.to||today();
+ updateBudgetFilterDateHints();
+ $('budgetName').disabled=readOnly;$('budgetHeaderFrom').disabled=readOnly;$('budgetHeaderTo').disabled=readOnly;$('budgetHeaderSaveBtn').disabled=readOnly;
+ $('budgetLoadShowBtn').disabled=!plan||readOnly;$('budgetLoadDeleteBtn').disabled=!plan||shared;$('addBudgetRowBtn').disabled=!plan||readOnly;
+ $('budgetShareBtn').disabled=!plan||readOnly||shared||!plan.rows.some(row=>String(row.product||'').trim());
+ $('budgetViewBtn').disabled=!plan||!plan.rows.some(row=>String(row.product||'').trim());
+ if(!plan){$('budgetList').innerHTML=empty('Save the Budget date range to add products.');$('budgetGrandTotalCreate').textContent=money(0);$('budgetCreateProductCount').textContent='0 items';return}
+ const rows=Array.isArray(plan.rows)?plan.rows:[];if(!rows.length)rows.push(blankBudgetRow(plan.from));
+ $('budgetList').innerHTML='<div class="budget-table-wrap"><table class="budget-entry-table"><thead><tr><th>Name</th><th>Q</th><th>R</th><th>T</th><th aria-label="Remove"></th></tr></thead><tbody>'+rows.map(budgetEditorRow).join('')+'</tbody></table></div>';updateBudgetTotals();
+}
+function openBudgetProductRowFocus(){const inputs=$('budgetList').querySelectorAll('[data-field="product"]');inputs[inputs.length-1]?.focus()}
+async function addBudgetRow(){
+ const plan=currentBudgetPlan();if(!plan){alert('Save the Budget date range first.');return}
+ if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner&&activeSharedBudgetContext.permission!=='edit'){alert('This shared Budget is view only.');return}
+ plan.rows=Array.isArray(plan.rows)?plan.rows:[];plan.rows.push(blankBudgetRow(plan.from||today()));plan.updatedAt=new Date().toISOString();
+ localSaveOnly();renderBudgetCreatePage();await syncActiveSharedBudget();openBudgetProductRowFocus();
+}
+function updateBudgetRowFromInput(event){
+ const input=event.target;if(!input.matches('[data-field]'))return;
+ const tr=input.closest('[data-budget-row]');if(!tr)return;
+ const plan=currentBudgetPlan();if(!plan)return;
+ const index=Number(tr.dataset.budgetRow),field=input.dataset.field,get=name=>tr.querySelector('[data-field="'+name+'"]');
+ let row=plan.rows[index];if(!row)row=plan.rows[index]=blankBudgetRow(plan.from||today());
+ if(field==='product')row.product=input.value;
+ if(field==='quantity')row.quantity=Math.max(0,Number(input.value||0));
+ if(field==='rate')row.rate=Math.max(0,Number(input.value||0));
+ if(field==='total'){
+  const total=Math.max(0,Number(input.value||0)),quantity=Math.max(0,Number(get('quantity')?.value||0)),rate=Math.max(0,Number(get('rate')?.value||0));
+  if(quantity>0){row.quantity=quantity;row.rate=Number((total/quantity).toFixed(4));if(get('rate'))get('rate').value=row.rate?String(row.rate):''}
+  else if(rate>0){row.rate=rate;row.quantity=Number((total/rate).toFixed(4));if(get('quantity'))get('quantity').value=row.quantity?String(row.quantity):''}
+  else{row.quantity=1;row.rate=total;if(get('quantity'))get('quantity').value='1';if(get('rate'))get('rate').value=total?String(total):''}
+ }
+ row.date=row.date||plan.from||today();row.unit=row.unit||'pcs';
+ if(field!=='total'){row.rate=Math.max(0,Number(get('rate')?.value||0));row.quantity=Math.max(0,Number(get('quantity')?.value||0))}
+ const sum=budgetAmount(row.rate,row.quantity),totalInput=get('total');if(totalInput&&document.activeElement!==totalInput)totalInput.value=sum?sum.toFixed(2):'';
+ const meta=tr.querySelector('.budget-product-meta');if(meta)meta.textContent=[row.spec||'',row.unit||'pcs',row.date?fmt(row.date):''].filter(Boolean).join(' · ');updateBudgetTotals();
+}
+async function saveBudgetHeader(){
+ const name=String($('budgetName').value||'').trim(),from=String($('budgetHeaderFrom').value||''),to=String($('budgetHeaderTo').value||'');
+ if(!name){alert('Enter a Budget name.');$('budgetName').focus();return}
+ if(!from||!to||from>to){alert('Choose a valid From and To date. From must be on or before To.');return}
+ let plan=currentBudgetPlan();
+ if(plan&&activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner&&activeSharedBudgetContext.permission!=='edit'){alert('This shared Budget is view only.');return}
+ if(!plan){const id='b'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);activeBudgetKey=budgetPlanKey(id);plan=db.budgetPlans[activeBudgetKey]={id,name,from,to,rows:[blankBudgetRow(from)],createdAt:new Date().toISOString()}}
+ else{plan.name=name;plan.from=from;plan.to=to;if(!Array.isArray(plan.rows)||!plan.rows.length)plan.rows=[blankBudgetRow(from)];plan.updatedAt=new Date().toISOString()}
+ $('budgetLoadFromDate').value=from;$('budgetLoadToDate').value=to;updateBudgetFilterDateHints();
+ localSaveOnly();renderBudget();renderBudgetCreatePage();await syncActiveSharedBudget();
+ showBudgetPurchaseMessage('Budget saved. Add products below or show purchases from a date range.');alert('Budget saved successfully.');
 }
 async function saveBudget(options={}){
- const plan=currentBudgetPlan();if(!plan){alert('Create a Budget first.');return}
- if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner&&activeSharedBudgetContext.permission!=='edit'){alert('This shared Budget is view only.');renderBudget();return false}
- const name=String($('budgetName').value||'').trim();if(!name){alert('Enter a Budget name.');$('budgetName').focus();return}
+ const plan=currentBudgetPlan();if(!plan){if(!options.silent)alert('Save the Budget date range first.');return false}
+ if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner&&activeSharedBudgetContext.permission!=='edit'){if(!options.silent)alert('This shared Budget is view only.');renderBudgetCreatePage();return false}
+ const name=String($('budgetName').value||plan.name||'').trim(),from=String($('budgetHeaderFrom').value||plan.from||''),to=String($('budgetHeaderTo').value||plan.to||'');
+ if(!name||!from||!to||from>to){if(!options.silent)alert('Enter a Budget name and a valid From / To date range.');return false}
  const rows=[...$('budgetList').querySelectorAll('[data-budget-row]')].map((el,index)=>{
-  const get=k=>el.querySelector('[data-field="'+k+'"]')?.value??'';
-  return {id:plan.rows[index]?.id||'r'+Date.now()+index,date:get('date'),product:get('product').trim(),spec:plan.rows[index]?.spec||'',unit:get('unit').trim()||'pcs',quantity:Number(get('quantity')),rate:Number(get('rate'))};
+  const get=k=>el.querySelector('[data-field="'+k+'"]')?.value??'',old=plan.rows?.[index]||{};
+  return {...old,id:old.id||'r'+Date.now()+index,date:old.date||from,product:String(get('product')||'').trim(),spec:String(old.spec||''),unit:String(old.unit||'pcs'),quantity:Math.max(0,Number(get('quantity')||0)),rate:Math.max(0,Number(get('rate')||0))};
  });
- if(!rows.length||rows.some(r=>!r.date||!r.product||!Number.isFinite(r.quantity)||r.quantity<=0||!Number.isFinite(r.rate)||r.rate<0)){alert('Each item needs a date, product, valid quantity and rate.');return false}
- plan.name=name;plan.rows=rows;plan.updatedAt=new Date().toISOString();localSaveOnly();renderBudget();
- if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey)await syncActiveSharedBudget();
-  if(!options.silent)alert('Budget saved successfully.');return true;
+ if(rows.some(row=>row.product&&(!Number.isFinite(row.quantity)||row.quantity<=0||!Number.isFinite(row.rate)||row.rate<0))){if(!options.silent)alert('Each product needs a valid quantity and rate.');return false}
+ plan.name=name;plan.from=from;plan.to=to;plan.rows=rows.length?rows:[blankBudgetRow(from)];plan.updatedAt=new Date().toISOString();
+ localSaveOnly();renderBudget();updateBudgetTotals();if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey)await syncActiveSharedBudget();
+ if(!options.silent)alert('Budget products saved successfully.');return true;
+}
+async function showPurchasedProductsInBudget(){
+ const plan=currentBudgetPlan();if(!plan){alert('Save the Budget date range first.');return}
+ if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner&&activeSharedBudgetContext.permission!=='edit'){alert('This shared Budget is view only.');return}
+ const from=String($('budgetLoadFromDate').value||''),to=String($('budgetLoadToDate').value||'');
+ if(!from||!to||from>to){alert('Choose a valid purchase From and To date range.');return}
+ const known=new Set((plan.rows||[]).map(row=>String(row.sourcePurchaseKey||'')).filter(Boolean)),added=[];
+ (db.purchaseBills||[]).filter(bill=>String(bill.date||'')>=from&&String(bill.date||'')<=to).forEach(bill=>(bill.lines||[]).forEach(line=>{
+  const sourcePurchaseKey=String(bill.id||'')+'::'+String(line.id||line.product||'');if(known.has(sourcePurchaseKey))return;
+  const quantity=Math.max(0,Number(line.quantity||0));if(!quantity)return;
+  const total=Math.max(0,Number(purchaseLineCost(bill,line)||0)),rate=Number((total/quantity).toFixed(4));
+  added.push({id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),sourcePurchaseKey,date:String(bill.date||from),product:String(line.product||''),spec:String(line.spec||''),unit:String(line.unit||'pcs'),quantity,rate});known.add(sourcePurchaseKey);
+ }));
+ if(!added.length){showBudgetPurchaseMessage('No purchase products found in '+fmt(from)+' – '+fmt(to)+'.');alert('No purchase products found for the selected date range.');return}
+ plan.rows=(plan.rows||[]).filter(row=>String(row.product||'').trim()).concat(added);
+ plan.updatedAt=new Date().toISOString();localSaveOnly();renderBudget();renderBudgetCreatePage();await syncActiveSharedBudget();
+ showBudgetPurchaseMessage(added.length+' purchase product '+(added.length===1?'row':'rows')+' added from '+fmt(from)+' – '+fmt(to)+'.');alert(added.length+' purchase product rows added successfully.');
 }
 async function deleteCurrentBudget(){
   const plan=currentBudgetPlan();if(!plan)return;
@@ -1350,15 +1441,15 @@ async function deleteCurrentBudget(){
     }
    }catch(error){alert('Budget was not deleted because shared access could not be cleared: '+String(error.message||error).slice(0,140));return}
   }
-  delete db.budgetPlans[activeBudgetKey];activeBudgetKey='';setActiveSharedBudgetContext(null);localSaveOnly();renderBudget();alert('Budget deleted.');
+  delete db.budgetPlans[activeBudgetKey];activeBudgetKey='';setActiveSharedBudgetContext(null);localSaveOnly();renderBudget();alert('Budget deleted.');if(document.querySelector('.panel.active')?.id==='budgetCreatePage')setTab('budget',{skipHistory:true});
 }
 
 function budgetViewRows(plan){
  return (plan?.rows||[]).map((row,index)=>({sl:index+1,date:String(row.date||''),product:String(row.product||''),spec:String(row.spec||''),rate:Number(row.rate||0),quantity:Math.max(0,Number(row.quantity||0)),unit:String(row.unit||''),total:budgetRowAmount(row)}));
 }
 function budgetDateRange(plan){
- const dates=(plan?.rows||[]).map(row=>String(row.date||'')).filter(value=>/^\\d{4}-\\d{2}-\\d{2}$/.test(value)).sort();
- return {from:dates[0]||plan?.from||'',to:dates[dates.length-1]||plan?.to||''};
+ const dates=(plan?.rows||[]).map(row=>String(row.date||'')).filter(value=>/^\d{4}-\d{2}-\d{2}$/.test(value)).sort();
+ return {from:String(plan?.from||dates[0]||''),to:String(plan?.to||dates[dates.length-1]||'')};
 }
 function renderBudgetView(){
  const plan=currentBudgetPlan();
@@ -1591,6 +1682,10 @@ $('budgetShareBtn').addEventListener('click',async()=>{
  $('refreshSharedBudgets').addEventListener('click',renderSharedBudgetList);
  $('budgetPlanSelect').addEventListener('change',()=>{activeBudgetKey=$('budgetPlanSelect').value;setActiveSharedBudgetContext(null);renderBudget()});
 $('newBudgetBtn').addEventListener('click',createBudget);
+$('budgetHeaderSaveBtn').addEventListener('click',saveBudgetHeader);
+$('budgetLoadShowBtn').addEventListener('click',showPurchasedProductsInBudget);
+$('budgetLoadDeleteBtn').addEventListener('click',deleteCurrentBudget);
+['budgetLoadFromDate','budgetLoadToDate'].forEach(id=>$(id).addEventListener('change',updateBudgetFilterDateHints));
 $('budgetDeleteBtn').addEventListener('click',deleteCurrentBudget);
 $('addBudgetRowBtn').addEventListener('click',addBudgetRow);
 $('saveBudgetBtn').addEventListener('click',saveBudget);
@@ -1606,11 +1701,17 @@ $('budgetList').addEventListener('change',event=>{
  if(event.target.matches('[data-field="product"],[data-field="unit"]'))prefillBudgetPreviousRate(event.target);
 });
 $('budgetList').addEventListener('input',event=>{
- if(event.target.matches('[data-field="quantity"],[data-field="rate"]'))updateBudgetTotals();
+ if(event.target.matches('[data-field="product"],[data-field="quantity"],[data-field="rate"],[data-field="total"]'))updateBudgetRowFromInput(event);
 });
-$('budgetList').addEventListener('click',event=>{
+$('budgetList').addEventListener('change',event=>{
+ if(event.target.matches('[data-field="product"],[data-field="quantity"],[data-field="rate"],[data-field="total"]'))saveBudget({silent:true});
+});
+$('budgetList').addEventListener('click',async event=>{
  const button=event.target.closest('[data-remove-budget-row]');if(!button)return;
- const plan=currentBudgetPlan();if(!plan)return;plan.rows.splice(Number(button.dataset.removeBudgetRow),1);renderBudget();
+ const plan=currentBudgetPlan();if(!plan)return;
+ if(activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner&&activeSharedBudgetContext.permission!=='edit'){alert('This shared Budget is view only.');return}
+ plan.rows.splice(Number(button.dataset.removeBudgetRow),1);if(!plan.rows.length)plan.rows=[blankBudgetRow(plan.from||today())];
+ plan.updatedAt=new Date().toISOString();localSaveOnly();renderBudget();renderBudgetCreatePage();await syncActiveSharedBudget();
 });
 $('purchaseDate').addEventListener('change',updatePurchaseBillNo);
 $('purchaseAmountMode').addEventListener('change',()=>{
@@ -4629,7 +4730,7 @@ $('installBtn').onclick=async()=>{
  }
  showDayQuestInstallHelp();
 };
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261125-budget-sharing-fixes-v43').then(registration=>{
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v45').then(registration=>{
  console.info('DayQuest offline support is ready:',registration.scope);
 }).catch(error=>{
  console.warn('DayQuest offline support could not be registered:',error);
