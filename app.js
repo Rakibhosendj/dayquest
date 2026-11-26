@@ -1214,8 +1214,11 @@ function ensureLegacyBudgetPlans(){
  });
 }
 function currentBudgetPlan(){
- const key=activeBudgetKey||$('budgetPlanSelect')?.value||'';const plan=db.budgetPlans[key];
- return plan&&Array.isArray(plan.rows)?plan:null;
+ const select=$('budgetPlanSelect'),candidates=[activeBudgetKey,select?.value].filter(Boolean);
+ const key=candidates.find(candidate=>db.budgetPlans?.[candidate]&&Array.isArray(db.budgetPlans[candidate].rows))||'';
+ if(!key){activeBudgetKey='';return null}
+ activeBudgetKey=key;if(select&&select.value!==key)select.value=key;
+ return db.budgetPlans[key];
 }
 function budgetRowAmount(row){return budgetAmount(row.rate,row.quantity)}
 function budgetProductIdentity(value){return productMasterKey(resolvePurchaseProductName(value||''))}
@@ -1306,8 +1309,8 @@ function prefillBudgetPreviousRate(input){
 function renderBudget(){
  ensureLegacyBudgetPlans();
  const select=$('budgetPlanSelect'),entries=budgetPlanEntries().sort((a,b)=>String(b[1].updatedAt||b[1].createdAt||'').localeCompare(String(a[1].updatedAt||a[1].createdAt||'')));
- const prior=activeBudgetKey||select?.value||'';
- if(select){select.innerHTML='<option value="">Select Budget</option>'+entries.map(([key,plan])=>'<option value="'+esc(key)+'">'+esc(plan.name||'Budget')+'</option>').join('');const landingActive=document.querySelector('.panel.active')?.id==='budget';activeBudgetKey=entries.some(([key])=>key===prior)?prior:(landingActive?(entries[0]?.[0]||''):'');select.value=activeBudgetKey}
+ const candidates=[activeBudgetKey,select?.value].filter(Boolean),prior=candidates.find(key=>entries.some(([entryKey])=>entryKey===key))||'';
+ if(select){select.innerHTML='<option value="">Select Budget</option>'+entries.map(([key,plan])=>'<option value="'+esc(key)+'">'+esc(plan.name||'Budget')+'</option>').join('');const landingActive=document.querySelector('.panel.active')?.id==='budget';activeBudgetKey=prior||(landingActive?(entries[0]?.[0]||''):'');select.value=activeBudgetKey}
  const list=$('recentBudgetList');
  if(list){
   const recent=showAllBudgetEntries?entries:entries.slice(0,8);
@@ -1376,7 +1379,7 @@ function updateBudgetEditorValidation(){
   if(message)errors.push(message);
  });
  const status=$('budgetEditorStatus');
- if(status){status.textContent=errors.length?'Not saved: '+errors[0]:'Product edits save automatically. Tap Save to update the name and dates.';status.classList.toggle('is-error',errors.length>0)}
+ if(status){status.textContent=errors.length?'Not saved: '+errors[0]:'Product edits save automatically. Tap Save to update the name and dates. Add a product to enable Share and Details.';status.classList.toggle('is-error',errors.length>0)}
  return errors.length===0;
 }
 function updateBudgetFilterDateHints(){['budgetLoadFromDate','budgetLoadToDate'].forEach(id=>{const input=$(id),label=input?.closest('.budget-filter-date');if(label)label.classList.toggle('is-filled',!!input.value)})}
@@ -1395,7 +1398,7 @@ function renderBudgetCreatePage(){
  $('budgetLoadShowBtn').disabled=!plan||readOnly;$('budgetLoadDeleteBtn').disabled=!plan||shared;$('addBudgetRowBtn').disabled=!plan||readOnly;
  $('budgetShareBtn').disabled=!plan||readOnly||shared||!plan.rows.some(row=>String(row.product||'').trim());
  $('budgetViewBtn').disabled=!plan||!plan.rows.some(row=>String(row.product||'').trim());
- if(!plan){$('budgetList').innerHTML=empty('Save the Budget date range to add products.');$('budgetGrandTotalCreate').textContent=money(0);$('budgetCreateProductCount').textContent='0 items';if($('budgetEditorStatus'))$('budgetEditorStatus').textContent='Save the Budget date range first.';return}
+ if(!plan){$('budgetList').innerHTML=empty('Save the Budget date range to add products.');$('budgetGrandTotalCreate').textContent=money(0);$('budgetCreateProductCount').textContent='0 items';if($('budgetEditorStatus'))$('budgetEditorStatus').textContent='Save the Budget date range first. The product table and other actions activate after saving.';return}
  const rows=Array.isArray(plan.rows)?plan.rows:[];if(!rows.length)rows.push(blankBudgetRow(plan.from));
  $('budgetList').innerHTML='<div class="budget-table-wrap"><table class="budget-entry-table"><thead><tr><th>Name</th><th>Q</th><th>R</th><th>T</th><th aria-label="Remove"></th></tr></thead><tbody>'+rows.map(budgetEditorRow).join('')+'</tbody></table></div>';updateBudgetTotals();
  $('budgetList').querySelectorAll('input,button').forEach(el=>el.disabled=readOnly);
@@ -1435,11 +1438,25 @@ async function saveBudgetHeader(){
  let plan=currentBudgetPlan();
  if(plan&&activeSharedBudgetContext&&activeSharedBudgetContext.budget_key===activeBudgetKey&&!activeSharedBudgetContext.is_owner&&activeSharedBudgetContext.permission!=='edit'){alert('This shared Budget is view only.');return}
  if(plan&&!updateBudgetEditorValidation()){alert('Fix the highlighted product quantity or rate before saving the Budget.');return}
- if(!plan){const id='b'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);activeBudgetKey=budgetPlanKey(id);plan=db.budgetPlans[activeBudgetKey]={id,name,from,to,rows:[blankBudgetRow(from)],createdAt:new Date().toISOString()}}
- else{plan.name=name;plan.from=from;plan.to=to;if(!Array.isArray(plan.rows)||!plan.rows.length)plan.rows=[blankBudgetRow(from)];plan.updatedAt=new Date().toISOString()}
+ let savedKey=activeBudgetKey;
+ if(!plan){
+  const id='b'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);savedKey=budgetPlanKey(id);
+  plan=db.budgetPlans[savedKey]={id,name,from,to,rows:[blankBudgetRow(from)],createdAt:new Date().toISOString()};
+ }else{
+  savedKey=activeBudgetKey;plan.name=name;plan.from=from;plan.to=to;
+  if(!Array.isArray(plan.rows)||!plan.rows.length)plan.rows=[blankBudgetRow(from)];
+  plan.updatedAt=new Date().toISOString();
+ }
+ activeBudgetKey=savedKey;if($('budgetPlanSelect'))$('budgetPlanSelect').value=savedKey;
  $('budgetLoadFromDate').value=from;$('budgetLoadToDate').value=to;updateBudgetFilterDateHints();
- localSaveOnly();renderBudget();renderBudgetCreatePage();await syncActiveSharedBudget();
- showBudgetPurchaseMessage('Budget saved. Add products below or show purchases from a date range.');alert('Budget saved successfully.');
+ try{localSaveOnly()}catch(error){alert('Budget could not be saved on this device: '+String(error.message||error).slice(0,160));return}
+ // Refresh the Recent Budgets list, then restore this exact selected plan before rendering its table.
+ renderBudget();activeBudgetKey=savedKey;if($('budgetPlanSelect'))$('budgetPlanSelect').value=savedKey;
+ renderBudgetCreatePage();
+ if(!currentBudgetPlan()){alert('Budget was saved locally, but the editor could not reopen it. Return to Recent Budgets and open it again.');return}
+ await syncActiveSharedBudget();
+ showBudgetPurchaseMessage('Budget saved. Add products below or show purchases from a date range.');
+ alert('Budget saved successfully. Your Budget is now in Recent Budgets.');
 }
 async function saveBudget(options={}){
  const plan=currentBudgetPlan();if(!plan){if(!options.silent)alert('Save the Budget date range first.');return false}
@@ -1729,6 +1746,7 @@ $('budgetShareBtn').addEventListener('click',async()=>{
 $('newBudgetBtn').addEventListener('click',createBudget);
 $('budgetShowAllBtn').addEventListener('click',()=>{showAllBudgetEntries=!showAllBudgetEntries;renderBudget()});
 $('budgetHeaderSaveBtn').addEventListener('click',saveBudgetHeader);
+$('budgetBackRecentBtn').addEventListener('click',()=>{renderBudget();setTab('budget',{skipHistory:true})});
 $('budgetLoadShowBtn').addEventListener('click',showPurchasedProductsInBudget);
 $('budgetLoadDeleteBtn').addEventListener('click',deleteCurrentBudget);
 ['budgetLoadFromDate','budgetLoadToDate'].forEach(id=>$(id).addEventListener('change',updateBudgetFilterDateHints));
@@ -4775,7 +4793,7 @@ $('installBtn').onclick=async()=>{
  }
  showDayQuestInstallHelp();
 };
-if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v47').then(registration=>{
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=20261126-budget-page-v48').then(registration=>{
  console.info('DayQuest offline support is ready:',registration.scope);
 }).catch(error=>{
  console.warn('DayQuest offline support could not be registered:',error);
