@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { runInNewContext } from "node:vm";
 import { isTrustedWebPushEndpoint } from "../supabase/functions/_shared/push-endpoint.mjs";
 
 const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
@@ -108,7 +109,7 @@ test("PWA cache uses the current CSS and JavaScript asset versions", () => {
   const appAsset = html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset && worker.includes("./style.css?v=" + cssAsset));
   assert.ok(appAsset && worker.includes("./app.js?v=" + appAsset));
-  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v51'\)/);
+  assert.match(app, /serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v52'\)/);
 });
 
 test("shared Budget context is saved per account and revalidated on refresh", () => {
@@ -253,7 +254,7 @@ test("Historical Budget import controls are responsive and assets are cache-vers
   const appAsset=html.match(/app\.js\?v=([^"']+)/)?.[1];
   assert.ok(cssAsset&&worker.includes("./style.css?v="+cssAsset));
   assert.ok(appAsset&&worker.includes("./app.js?v="+appAsset));
-  assert.match(app,/serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v51'\)/);
+  assert.match(app,/serviceWorker\.register\('\.\/sw\.js\?v=20261126-budget-page-v52'\)/);
 });
 
 test("Filled Budget purchase date labels hide only the caption, never the date-entry control", () => {
@@ -298,4 +299,27 @@ test("Budget start date automatically updates the previous-purchase range while 
   assert.match(app,/const initialPurchaseRange=budgetPurchaseDefaultRange\(\$\('budgetHeaderFrom'\)\.value\)/);
   assert.match(app,/\$\('budgetLoadFromDate'\)\.value=range\.from/);
   assert.match(app,/\$\('budgetLoadToDate'\)\.value=range\.to/);
+});
+
+test("Budget purchase filter calculates the correct prior-purchase range from ISO dates", () => {
+  const source=app.match(/function budgetPurchaseDefaultRange\(startDate\)\{[\s\S]*?\n\}/)?.[0];
+  assert.ok(source,"Budget range helper exists");
+  const calculate=runInNewContext("(" + source + ")",{
+    dateObj:value=>new Date(value+"T12:00:00"),
+    today:()=>"2026-11-26",
+  });
+  assert.deepEqual({...calculate("2026-11-27")},{from:"2026-11-01",to:"2026-11-26"});
+  assert.deepEqual({...calculate("2026-12-01")},{from:"2026-11-01",to:"2026-11-30"});
+});
+test("Budget custom date wrapper does not inherit caption positioning or offset", () => {
+  assert.match(css,/#budgetCreatePage \.budget-filter-date>span:not\(\.dq-date-wrap\)/);
+  assert.match(css,/#budgetCreatePage \.budget-filter-date>\.dq-date-wrap\{[\s\S]*?left:auto!important[\s\S]*?transform:none!important/);
+  assert.match(css,/#budgetCreatePage \.budget-filter-date>\.dq-date-wrap>input\.dq-date-entry/);
+});
+test("Purchase form has a responsive mobile layout with touch-sized controls", () => {
+  assert.match(css,/@media\(max-width:560px\)\{[\s\S]*?\.purchase-form\{[\s\S]*?\.purchase-lines-footer\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css,/\.purchase-line input,\.purchase-line select\{[\s\S]*?min-height:44px[\s\S]*?font-size:16px!important/);
+  assert.match(css,/\.purchase-payment-grid input\{[\s\S]*?min-height:44px[\s\S]*?font-size:16px!important/);
+  assert.match(html,/id="addPurchaseLine"[^>]*>＋ Add line</);
+  for(const id of ["purchaseSupplier","purchaseBillNo","purchaseDate","purchaseAmountMode","purchaseDiscount","purchaseTransitCost","purchaseCashPaid","purchaseBankPaid","purchaseBillSubmit"])assert.ok(html.includes('id="'+id+'"'));
 });
