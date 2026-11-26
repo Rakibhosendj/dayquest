@@ -1,14 +1,4 @@
 const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slice(0,10);
-// Keep core Budget actions delegated at document level so rerenders or other
-// page initialization cannot leave these buttons without click handlers.
-document.addEventListener('click',event=>{
- const target=event.target?.closest?.('#newBudgetBtn,#budgetDeleteBtn,#addBudgetRowBtn');
- if(!target||target.disabled)return;
- event.preventDefault();
- if(target.id==='newBudgetBtn')createBudget();
- else if(target.id==='budgetDeleteBtn')deleteCurrentBudget();
- else addBudgetRow();
-},true);
 const appPageHistory=[];
 let outstandingReturnReport='';
 let adminCloudUnlocked=false;
